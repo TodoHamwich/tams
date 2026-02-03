@@ -148,7 +148,7 @@ class TAMSItem extends Item {}
 /**
  * Sheets
  */
-class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2) {
+class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.TabsMixin(foundry.applications.sheets.ActorSheetV2)) {
   static DEFAULT_OPTIONS = {
     tag: "form",
     classes: ["tams", "sheet", "actor"],
@@ -164,7 +164,10 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       roll: "_onRoll",
       resourceAdd: "_onResourceAdd",
       resourceDelete: "_onResourceDelete"
-    }
+    },
+    tabs: [
+      {navSelector: ".tabs[data-group='primary']", contentSelector: ".sheet-body", initial: "stats"}
+    ]
   };
 
   static PARTS = {
@@ -180,11 +183,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
   }
 
   async _prepareContext(options) {
-    const context = {
-      actor: this.document,
+    const context = await super._prepareContext(options);
+    
+    // Add custom context
+    Object.assign(context, {
       system: this.document.system,
-      owner: this.document.isOwner,
-      editable: this.isEditable,
       statOptions: {
         "strength": "TAMS.StatStrength",
         "dexterity": "TAMS.StatDexterity",
@@ -199,12 +202,6 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         "dark": "Dark",
         "parchment": "Parchment"
       }
-    };
-
-    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description || "", {
-      async: true,
-      secrets: this.document.isOwner,
-      relativeTo: this.document
     });
 
     const weapons = [];
@@ -420,12 +417,10 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   };
 
   async _prepareContext(options) {
-    const context = {
-      item: this.document,
+    const context = await super._prepareContext(options);
+    
+    Object.assign(context, {
       system: this.document.system,
-      actor: this.document.actor,
-      owner: this.document.isOwner,
-      editable: this.isEditable,
       statOptions: {
         "strength": "TAMS.StatStrength",
         "dexterity": "TAMS.StatDexterity",
@@ -434,12 +429,6 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
         "intelligence": "TAMS.StatIntelligence",
         "bravery": "TAMS.StatBravery"
       }
-    };
-
-    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description || "", {
-      async: true,
-      secrets: this.document.isOwner,
-      relativeTo: this.document
     });
 
     if (this.document.type === 'ability' && this.document.actor) {
