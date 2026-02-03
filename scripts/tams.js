@@ -543,59 +543,12 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Dodge.');
-
-      // Resource spending dialog
-      const resources = [{id: "stamina", name: "Stamina", value: actor.system.stamina.value}];
-      actor.system.customResources.forEach((res, idx) => {
-          resources.push({id: idx.toString(), name: res.name, value: res.value});
-      });
-      const options = resources.map(r => `<option value="${r.id}">${r.name} (${r.value} avail)</option>`).join('');
-
-      const spending = await new Promise(resolve => {
-        new Dialog({
-          title: "Boost Dodge",
-          content: `
-            <div class="form-group"><label>Resource</label><select id="res-type">${options}</select></div>
-            <div class="form-group">
-                <label>Points Spent (Max 10)</label>
-                <input type="number" id="res-points" value="0" min="0" max="10"/>
-                <p><small>Each point gives +5 to Dodge.</small></p>
-            </div>`,
-          buttons: {
-            go: { label: "Roll Dodge", callback: (html) => resolve({
-                resId: html.find("#res-type").val(),
-                points: Math.clamp(parseInt(html.find("#res-points").val()) || 0, 0, 10)
-            })},
-            cancel: { label: "Cancel", callback: () => resolve(null) }
-          },
-          default: "go"
-        }).render(true);
-      });
-
-      if (!spending) return;
-      const { resId, points } = spending;
-      const bonus = points * 5;
-
-      if (points > 0) {
-        if (resId === 'stamina') {
-            const current = actor.system.stamina.value;
-            if (current < points) return ui.notifications.warn("Not enough Stamina!");
-            await actor.update({"system.stamina.value": current - points});
-        } else {
-            const idx = parseInt(resId);
-            const res = actor.system.customResources[idx];
-            if (res.value < points) return ui.notifications.warn(`Not enough ${res.name}!`);
-            const customResources = foundry.utils.duplicate(actor.system.customResources);
-            customResources[idx].value -= points;
-            await actor.update({"system.customResources": customResources});
-        }
-      }
       
-      const statValue = Math.floor(actor.system.specialSkills.dodge.value || 0);
+      const statValue = Math.floor(actor.system.stats.dexterity.value || 0);
       const roll = await new Roll('1d100').evaluate();
       const raw = roll.total;
       const capped = Math.min(raw, statValue);
-      const total = capped + bonus;
+      const total = capped;
 
       let critInfo = "";
       if (total >= attackerTotal) {
@@ -613,20 +566,111 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       }
 
       const msg = `
-        <div class="tams-roll">
+        <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}">
           <h3 class="roll-label">Dodge — ${actor.name}</h3>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
-          <div class="roll-row"><small>Stat Cap (${statValue}):</small><span>${capped}</span></div>
-          ${bonus > 0 ? `<div class="roll-row"><small>Boost (+5/pt):</small><span>+${bonus}</span></div>` : ''}
+          <div class="roll-row"><small>Stat Cap (Dex ${statValue}):</small><span>${capped}</span></div>
+          <div class="roll-boost-container"></div>
           <hr>
           <div class="roll-total">Total: <b>${total}</b></div>
-          ${critInfo}
+          <div class="roll-crit-info">${critInfo}</div>
           <div class="roll-contest-hint">
             <small><b>Contest:</b> Total vs Attacker Total (${attackerTotal})</small><br>
             <small><b>Crit Check:</b> Raw vs Attacker Raw (${attackerRaw})</small>
           </div>
+          <div class="roll-row" style="margin-top: 5px;">
+            <button class="tams-boost-dodge">Spend Resource to Boost (+5/pt)</button>
+          </div>
         </div>`;
       ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll] });
+    });
+
+    // Boost Dodge action
+    html.querySelector('.tams-boost-dodge')?.addEventListener("click", async ev => {
+      ev.preventDefault();
+      const btn = ev.currentTarget;
+      const container = btn.closest(".tams-roll");
+      const attackerRaw = parseInt(container.dataset.attackerRaw);
+      const attackerTotal = parseInt(container.dataset.attackerTotal);
+      const actorId = container.dataset.actorId;
+      const raw = parseInt(container.dataset.raw);
+      const capped = parseInt(container.dataset.capped);
+      
+      const actor = game.actors.get(actorId);
+      if (!actor) return;
+
+      const resources = [{id: "stamina", name: "Stamina", value: actor.system.stamina.value}];
+      actor.system.customResources.forEach((res, idx) => {
+          resources.push({id: idx.toString(), name: res.name, value: res.value});
+      });
+      const options = resources.map(r => `<option value="${r.id}">${r.name} (${r.value} avail)</option>`).join('');
+
+      const spending = await new Promise(resolve => {
+        new Dialog({
+          title: "Boost Dodge Result",
+          content: `
+            <div class="form-group"><label>Resource</label><select id="res-type">${options}</select></div>
+            <div class="form-group">
+                <label>Points Spent (Max 10)</label>
+                <input type="number" id="res-points" value="0" min="0" max="10"/>
+                <p><small>Each point gives +5 to Dodge.</small></p>
+            </div>`,
+          buttons: {
+            go: { label: "Apply Boost", callback: (html) => resolve({
+                resId: html.find("#res-type").val(),
+                points: Math.clamp(parseInt(html.find("#res-points").val()) || 0, 0, 10)
+            })},
+            cancel: { label: "Cancel", callback: () => resolve(null) }
+          },
+          default: "go"
+        }).render(true);
+      });
+
+      if (!spending || spending.points === 0) return;
+      const { resId, points } = spending;
+      const bonus = points * 5;
+
+      if (resId === 'stamina') {
+          const current = actor.system.stamina.value;
+          if (current < points) return ui.notifications.warn("Not enough Stamina!");
+          await actor.update({"system.stamina.value": current - points});
+      } else {
+          const idx = parseInt(resId);
+          const res = actor.system.customResources[idx];
+          if (res.value < points) return ui.notifications.warn(`Not enough ${res.name}!`);
+          const customResources = foundry.utils.duplicate(actor.system.customResources);
+          customResources[idx].value -= points;
+          await actor.update({"system.customResources": customResources});
+      }
+
+      const total = capped + bonus;
+      let critInfo = "";
+      if (total >= attackerTotal) {
+          if (raw >= (attackerRaw * 2)) {
+              critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
+          } else {
+              critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
+          }
+      } else {
+          if (attackerRaw >= (raw * 2)) {
+              critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
+          } else {
+              critInfo = `<div class="tams-failure">Dodge Failed vs Total ${attackerTotal}</div>`;
+          }
+      }
+
+      const boostHtml = `<div class="roll-row"><small>Boost (+5/pt):</small><span>+${bonus}</span></div>`;
+      container.querySelector(".roll-boost-container").innerHTML = boostHtml;
+      container.querySelector(".roll-total b").innerText = total;
+      container.querySelector(".roll-crit-info").innerHTML = critInfo;
+      btn.remove(); // Remove the button after use
+
+      // Update the chat message content in DB so it persists
+      const messageId = btn.closest(".chat-message").dataset.messageId;
+      const message = game.messages.get(messageId);
+      if (message) {
+        message.update({ content: container.outerHTML });
+      }
     });
 
     // Retaliate action
