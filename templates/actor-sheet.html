@@ -63,14 +63,14 @@
                     <div class="limb-row flexrow">
                         <label class="resource-label limb-label">{{limb.label}}</label>
                         <div class="limb-hp flexrow">
-                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input" min="0" max="{{limb.max}}"/>
+                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input" max="{{limb.max}}" min="0"/>
                             <span>/{{limb.max}}</span>
                         </div>
                         <div class="limb-armor flexrow">
                             <label>Armour</label>
-                            <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input" min="0" max="40"/>
+                            <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input" max="40" min="0"/>
                             <span>/</span>
-                            <input type="number" name="system.limbs.{{id}}.armorMax" value="{{limb.armorMax}}" class="small-input" min="0" max="40"/>
+                            <input type="number" name="system.limbs.{{id}}.armorMax" value="{{limb.armorMax}}" class="small-input" max="40" min="0"/>
                         </div>
                     </div>
                     {{/each}}
@@ -130,7 +130,7 @@
                     <div class="flexrow">
                         <label class="resource-label">Stamina</label>
                         <div class="bar-container">
-                            <input type="number" name="system.stamina.value" value="{{system.stamina.value}}" min="0" max="{{system.stamina.max}}"/>
+                            <input type="number" name="system.stamina.value" value="{{system.stamina.value}}" max="{{system.stamina.max}}" min="0"/>
                             <div class="bar">
                                 <div class="fill" style="width: {{staminaPercentage}}%; background: {{system.stamina.color}};"></div>
                             </div>
@@ -145,7 +145,7 @@
                     <div class="flexrow">
                         <input type="text" name="system.customResources.{{index}}.name" value="{{res.name}}" placeholder="Resource Name" class="resource-name-input"/>
                         <div class="bar-container">
-                            <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}" min="0" max="{{res.max}}"/>
+                            <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}" max="{{res.max}}" min="0"/>
                             <div class="bar">
                                 <div class="fill" style="width: {{res.percentage}}%; background: {{res.color}};"></div>
                             </div>
