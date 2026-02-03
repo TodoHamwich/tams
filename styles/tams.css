@@ -243,8 +243,34 @@
     color: #ff0000;
 }
 
-.tams .modifier-row {
+.tams .upgrade-pool {
+    justify-content: flex-start;
+    gap: 10px;
     margin-bottom: 5px;
+}
+
+.tams .upgrade-pool label {
+    flex: 0 0 auto;
+    font-weight: bold;
+}
+
+.tams .upgrade-pool input {
+    width: 55px !important;
+    flex: 0 0 auto;
+    text-align: center;
+}
+
+.tams .modifier-row {
+    margin-bottom: 2px;
+}
+
+.tams .modifiers h3 {
+    margin-top: 5px;
+    margin-bottom: 2px;
+}
+
+.tams .modifiers hr {
+    margin: 5px 0;
 }
 
 /* Themes */

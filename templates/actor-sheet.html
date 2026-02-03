@@ -198,41 +198,47 @@
         {{!-- Modifiers Tab --}}
         <div class="tab modifiers {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-group="primary" data-tab="modifiers">
             <div class="flexcol">
-                <h3>Stamina Modifier</h3>
-                <div class="flexrow">
-                    <label>Stamina Multiplier</label>
-                    <input type="number" name="system.stamina.mult" value="{{system.stamina.mult}}" step="0.25" style="width: 60px;"/>
-                    <label>Bar Color</label>
-                    <input type="color" name="system.stamina.color" value="{{system.stamina.color}}" style="width: 50px; padding: 0;"/>
+                <div class="grid grid-2col">
+                    <div class="modifier-group">
+                        <h3>Stamina</h3>
+                        <div class="flexrow">
+                            <label>Multiplier</label>
+                            <input type="number" name="system.stamina.mult" value="{{system.stamina.mult}}" step="0.25" style="width: 50px;"/>
+                            <label>Color</label>
+                            <input type="color" name="system.stamina.color" value="{{system.stamina.color}}" style="width: 30px; padding: 0;"/>
+                        </div>
+                    </div>
+                    <div class="modifier-group">
+                        <h3>Combat</h3>
+                        <div class="flexrow">
+                            <label>Behind Mult</label>
+                            <input type="number" name="system.behindMult" value="{{system.behindMult}}" step="0.05" style="width: 50px;"/>
+                        </div>
+                    </div>
                 </div>
                 <hr>
                 <h3>Limb Multipliers</h3>
-                {{#each system.limbs as |limb id|}}
-                <div class="flexrow">
-                    <label style="flex:1">{{limb.label}}</label>
-                    <small>Mult:</small>
-                    <input type="number" name="system.limbs.{{id}}.mult" value="{{limb.mult}}" step="0.25" style="width:60px;"/>
-                </div>
-                {{/each}}
-                <hr>
-                <h3>Combat Modifiers</h3>
-                <div class="flexrow">
-                    <label style="flex:1">Behind Multiplier</label>
-                    <input type="number" name="system.behindMult" value="{{system.behindMult}}" step="0.05" style="width: 60px;"/>
+                <div class="grid grid-2col">
+                    {{#each system.limbs as |limb id|}}
+                    <div class="flexrow">
+                        <label style="font-size: 13px;">{{limb.label}}</label>
+                        <input type="number" name="system.limbs.{{id}}.mult" value="{{limb.mult}}" step="0.25" style="width:45px;"/>
+                    </div>
+                    {{/each}}
                 </div>
                 <hr>
                 <h3>Resource Modifiers</h3>
                 {{#each system.customResources as |res index|}}
                 <div class="flexrow modifier-row" data-index="{{index}}">
                     <label style="flex:1">{{res.name}}</label>
-                    <select name="system.customResources.{{index}}.stat" style="width:110px;">
+                    <select name="system.customResources.{{index}}.stat" style="width:100px;">
                         {{selectOptions ../statOptions selected=res.stat localize=true}}
                     </select>
                     <small>x</small>
                     <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 45px;"/>
                     <small>+</small>
-                    <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 45px;"/>
-                    <input type="color" name="system.customResources.{{index}}.color" value="{{res.color}}" style="width: 40px; padding: 0;"/>
+                    <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 40px;"/>
+                    <input type="color" name="system.customResources.{{index}}.color" value="{{res.color}}" style="width: 30px; padding: 0;"/>
                 </div>
                 {{/each}}
             </div>
