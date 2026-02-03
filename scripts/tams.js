@@ -159,9 +159,9 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     form: { 
       submitOnChange: true,
       closeOnSubmit: false,
-      editors: [
-        { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
-      ]
+      editors: {
+        "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
+      }
     },
     actions: {
       itemCreate: TAMSActorSheet.prototype._onItemCreate,
@@ -428,6 +428,10 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     this._activeTab = target.dataset.tab;
     this.render();
   }
+
+  _onActivateEditor(event, target) {
+    this.editors.get(target.dataset.target)?.activate();
+  }
 }
 
 class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
@@ -439,9 +443,9 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
     form: { 
       submitOnChange: true,
       closeOnSubmit: false,
-      editors: [
-        { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
-      ]
+      editors: {
+        "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
+      }
     },
     actions: {
       activateEditor: TAMSItemSheet.prototype._onActivateEditor
@@ -484,6 +488,9 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
         context.resourceOptions = resources;
     }
     return context;
+  }
+  _onActivateEditor(event, target) {
+    this.editors.get(target.dataset.target)?.activate();
   }
 }
 
