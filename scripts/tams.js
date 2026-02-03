@@ -268,7 +268,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const dataset = target.dataset;
     const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
 
-    let label = dataset.label ? `Rolling ${dataset.label}` : '';
+    let label = dataset.label || '';
     let statValue = parseInt(dataset.statValue) || 100;
     let familiarity = parseInt(dataset.familiarity) || 0;
 
@@ -287,6 +287,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
     if (item && item.type === 'skill') {
         const name = item.name;
+        label = name;
         if (name.includes("(") && name.includes(")")) {
             const confirmed = await new Promise(resolve => {
                 new Dialog({

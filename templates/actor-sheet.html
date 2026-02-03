@@ -89,7 +89,7 @@
                 {{#each weapons as |item id|}}
                 <li class="item flexrow" data-item-id="{{item.id}}">
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                    <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-familiarity="{{item.system.familiarity}}">
+                    <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} (Dmg: {{item.system.calculatedDamage}}) [Fam: {{item.system.familiarity}}]
                     </h4>
                     <div class="item-controls">
@@ -104,7 +104,7 @@
             <ol class="items-list">
                 {{#each skills as |item id|}}
                 <li class="item flexrow" data-item-id="{{item.id}}">
-                    <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-familiarity="{{item.system.familiarity}}">
+                    <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} [Fam: {{item.system.familiarity}}]
                     </h4>
                     <div class="item-controls">
@@ -165,7 +165,7 @@
             <ol class="items-list">
                 {{#each abilities as |item id|}}
                 <li class="item flexrow" data-item-id="{{item.id}}">
-                    <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-familiarity="{{item.system.familiarity}}">
+                    <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} 
                         {{#if item.system.isAttack}}
                         (Dmg: {{item.system.calculatedDamage}})
