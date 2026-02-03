@@ -1,58 +1,144 @@
 ﻿/**
- * Extend the base Actor document to calculate derived values
- * @extends {Actor}
+ * Data Models
  */
-class TAMSActor extends Actor {
-  /** @override */
+class TAMSCharacterData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      stats: new fields.SchemaField({
+        strength: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), label: new fields.StringField({initial: "TAMS.StatStrength"}) }),
+        dexterity: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), label: new fields.StringField({initial: "TAMS.StatDexterity"}) }),
+        endurance: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), label: new fields.StringField({initial: "TAMS.StatEndurance"}) }),
+        wisdom: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), label: new fields.StringField({initial: "TAMS.StatWisdom"}) }),
+        intelligence: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), label: new fields.StringField({initial: "TAMS.StatIntelligence"}) }),
+        bravery: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), label: new fields.StringField({initial: "TAMS.StatBravery"}) })
+      }),
+      limbs: new fields.SchemaField({
+        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Head"}) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Thorax"}) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Stomach"}) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Left Arm"}) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Right Arm"}) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Left Leg"}) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Right Leg"}) })
+      }),
+      stamina: new fields.SchemaField({
+        value: new fields.NumberField({initial: 10}),
+        max: new fields.NumberField({initial: 10}),
+        mult: new fields.NumberField({initial: 1.0})
+      }),
+      customResources: new fields.ArrayField(new fields.SchemaField({
+        name: new fields.StringField({initial: "New Resource"}),
+        value: new fields.NumberField({initial: 0}),
+        max: new fields.NumberField({initial: 0}),
+        stat: new fields.StringField({initial: "endurance"}),
+        mult: new fields.NumberField({initial: 1.0}),
+        bonus: new fields.NumberField({initial: 0})
+      })),
+      theme: new fields.StringField({initial: "default"}),
+      physicalNotes: new fields.StringField({initial: ""}),
+      traits: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""}),
+      specialSkills: new fields.SchemaField({
+        dodge: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
+        retaliation: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
+        perception: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) })
+      })
+    };
+  }
+
   prepareDerivedData() {
-    super.prepareDerivedData();
-    const system = this.system;
-
-    // Calculate limb max HP based on Endurance
-    const end = system.stats.endurance.value;
-    const str = system.stats.strength.value;
-
-    for (let [id, limb] of Object.entries(system.limbs)) {
+    const end = this.stats.endurance.value;
+    for ( let limb of Object.values(this.limbs) ) {
       limb.max = Math.floor(end * limb.mult);
     }
-
-    // Calculate stamina max
-    system.stamina.max = Math.floor(end * system.stamina.mult);
-
-    // Calculate custom resources max
-    for (let res of (system.customResources || [])) {
-       const statValue = system.stats[res.stat]?.value || 0;
-       res.max = Math.floor(statValue * res.mult) + (res.bonus || 0);
-    }
-
-    // Calculate Weapon & Ability Damage
-    for (let item of this.items) {
-      if (item.type === 'weapon') {
-        let mult = 0.5;
-        const tags = (item.system.tags || "").toLowerCase();
-        if (tags.includes("heavy")) mult += 0.25;
-        if (tags.includes("two handed") || tags.includes("two-handed")) mult += 0.25;
-        
-        item.system.calculatedDamage = Math.floor(str * mult);
-      } else if (item.type === 'ability' && item.system.isAttack) {
-        const damageStatValue = system.stats[item.system.damageStat]?.value || 0;
-        const mult = item.system.damageMult || 0;
-        const bonus = item.system.damageBonus || 0;
-        item.system.calculatedDamage = Math.floor(damageStatValue * mult) + bonus;
-      }
+    this.stamina.max = Math.floor(end * this.stamina.mult);
+    for ( let res of this.customResources ) {
+      const statValue = this.stats[res.stat]?.value || 0;
+      res.max = Math.floor(statValue * res.mult) + res.bonus;
     }
   }
 }
 
+class TAMSWeaponData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      familiarity: new fields.NumberField({initial: 0}),
+      tags: new fields.StringField({initial: ""}),
+      special: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+
+  get calculatedDamage() {
+    const actor = this.parent?.actor;
+    if ( !actor ) return 0;
+    const str = actor.system.stats.strength.value;
+    let mult = 0.5;
+    const tags = (this.tags || "").toLowerCase();
+    if (tags.includes("heavy")) mult += 0.25;
+    if (tags.includes("two handed") || tags.includes("two-handed")) mult += 0.25;
+    return Math.floor(str * mult);
+  }
+}
+
+class TAMSSkillData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      familiarity: new fields.NumberField({initial: 0}),
+      upgradePoints: new fields.NumberField({initial: 0}),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+class TAMSAbilityData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      familiarity: new fields.NumberField({initial: 0}),
+      upgradePoints: new fields.NumberField({initial: 0}),
+      cost: new fields.NumberField({initial: 0}),
+      resource: new fields.StringField({initial: "stamina"}),
+      isApex: new fields.BooleanField({initial: false}),
+      uses: new fields.SchemaField({
+        value: new fields.NumberField({initial: 0}),
+        max: new fields.NumberField({initial: 0})
+      }),
+      isAttack: new fields.BooleanField({initial: false}),
+      attackStat: new fields.StringField({initial: "strength"}),
+      damageStat: new fields.StringField({initial: "strength"}),
+      damageMult: new fields.NumberField({initial: 0.5, step: 0.05}),
+      damageBonus: new fields.NumberField({initial: 0}),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+
+  get calculatedDamage() {
+    if ( !this.isAttack ) return 0;
+    const actor = this.parent?.actor;
+    if ( !actor ) return 0;
+    const damageStatValue = actor.system.stats[this.damageStat]?.value || 0;
+    return Math.floor(damageStatValue * this.damageMult) + this.damageBonus;
+  }
+}
+
 /**
- * Extend the basic ActorSheet with some very simple modifications
- * @extends {ActorSheet}
+ * Documents
+ */
+class TAMSActor extends Actor {}
+class TAMSItem extends Item {}
+
+/**
+ * Sheets
  */
 class TAMSActorSheet extends ActorSheet {
-
-  /** @override */
   static get defaultOptions() {
-    return mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions, {
       classes: ["tams", "sheet", "actor"],
       template: "systems/tams/templates/actor-sheet.html",
       width: 650,
@@ -61,43 +147,23 @@ class TAMSActorSheet extends ActorSheet {
     });
   }
 
-  /** @override */
   async getData(options) {
-    // The context retrieved from super.getData() contains:
-    // actor: the Actor document
-    // data: a copy of the actor's data
-    // items: a copy of the actor's items
-    // etc.
     const context = await super.getData(options);
-
-    // Set owner and editable for the editor helper (usually already present, but being explicit)
+    context.system = this.actor.system;
     context.owner = this.actor.isOwner;
     context.editable = this.editable;
 
-    // Enrich biography for the editor
     context.enrichedDescription = await TextEditor.enrichHTML(this.actor.system.description, {
       async: true,
       secrets: this.actor.isOwner,
       relativeTo: this.actor
     });
 
-    // Prepare items
-    this._prepareItems(context);
-
-    return context;
-  }
-
-  _prepareItems(context) {
     const weapons = [];
     const skills = [];
     const abilities = [];
 
-    // In super.getData(), items is typically the result of this.actor.items
-    // But we want plain objects for the template
-    const items = this.actor.items.map(i => i.toObject(false));
-
-    for (let i of items) {
-      i.img = i.img || 'icons/svg/item-bag.svg';
+    for (let i of this.actor.items) {
       if (i.type === 'weapon') weapons.push(i);
       else if (i.type === 'skill') skills.push(i);
       else if (i.type === 'ability') abilities.push(i);
@@ -106,62 +172,41 @@ class TAMSActorSheet extends ActorSheet {
     context.weapons = weapons;
     context.skills = skills;
     context.abilities = abilities;
+
+    return context;
   }
 
-  /** @override */
   activateListeners(html) {
     super.activateListeners(html);
-
-    // Everything below here is only needed if the sheet is editable
     if (!this.options.editable) return;
 
-    // Add Inventory Item
     html.find('.item-create').click(this._onItemCreate.bind(this));
-
-    // Update Inventory Item
     html.find('.item-edit').click(ev => {
       const li = $(ev.currentTarget).parents(".item");
       const item = this.actor.items.get(li.data("itemId"));
       item.sheet.render(true);
     });
-
-    // Delete Inventory Item
     html.find('.item-delete').click(ev => {
       const li = $(ev.currentTarget).parents(".item");
       const item = this.actor.items.get(li.data("itemId"));
       item.delete();
     });
-
-    // Rollable elements
     html.find('.rollable').click(this._onRoll.bind(this));
-
-    // Resource Management
     html.find('.resource-add').click(this._onResourceAdd.bind(this));
     html.find('.resource-delete').click(this._onResourceDelete.bind(this));
   }
 
-  /**
-   * Handle creating a new Owned Item for the actor using initial data defined in the HTML dataset
-   * @param {Event} event   The originating click event
-   * @private
-   */
   async _onItemCreate(event) {
     event.preventDefault();
-    const header = event.currentTarget;
-    const type = header.dataset.type;
+    const type = event.currentTarget.dataset.type;
     const itemData = {
-      name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+      name: `New ${type.capitalize()}`,
       type: type,
       system: {}
     };
     return await this.actor.createEmbeddedDocuments("Item", [itemData]);
   }
 
-  /**
-   * Handle clickable rolls.
-   * @param {Event} event   The originating click event
-   * @private
-   */
   async _onRoll(event) {
     event.preventDefault();
     const element = event.currentTarget;
@@ -172,17 +217,14 @@ class TAMSActorSheet extends ActorSheet {
     let statValue = parseInt(dataset.statValue) || 100;
     let familiarity = parseInt(dataset.familiarity) || 0;
 
-    // Logic for Weapons
     if (item && item.type === 'weapon') {
         const tags = (item.system.tags || "").toLowerCase();
         const str = this.actor.system.stats.strength.value;
         const dex = this.actor.system.stats.dexterity.value;
-        // Light weapons can use Dex for the cap
         statValue = tags.includes("light") ? dex : str;
         label = `Attacking with ${item.name}`;
     }
 
-    // Logic for Skills with specifiers: Type(Specifier)
     if (item && item.type === 'skill') {
         const name = item.name;
         if (name.includes("(") && name.includes(")")) {
@@ -201,16 +243,14 @@ class TAMSActorSheet extends ActorSheet {
         }
     }
 
-    // Logic for Abilities: Subtract Cost & Attack Config
     if (item && item.type === 'ability') {
         if (item.system.isAttack) {
             statValue = this.actor.system.stats[item.system.attackStat]?.value || 100;
             label = `Using Ability: ${item.name}`;
         }
-
         const cost = parseInt(item.system.cost) || 0;
         if (!item.system.isApex && cost > 0) {
-            const resourceKey = item.system.resource; // 'stamina' or index of customResources
+            const resourceKey = item.system.resource;
             if (resourceKey === 'stamina') {
                 const current = this.actor.system.stamina.value;
                 if (current < cost) return ui.notifications.warn("Not enough Stamina!");
@@ -220,7 +260,7 @@ class TAMSActorSheet extends ActorSheet {
                 const res = this.actor.system.customResources[idx];
                 if (res) {
                     if (res.value < cost) return ui.notifications.warn(`Not enough ${res.name}!`);
-                    const resources = duplicate(this.actor.system.customResources);
+                    const resources = foundry.utils.duplicate(this.actor.system.customResources);
                     resources[idx].value -= cost;
                     await this.actor.update({"system.customResources": resources});
                 }
@@ -228,35 +268,25 @@ class TAMSActorSheet extends ActorSheet {
         }
     }
 
-    // Shift-click to enter a Difficulty or Target Result
     let difficulty = 0;
     if (event.shiftKey) {
-        const d = await new Promise(resolve => {
+        difficulty = await new Promise(resolve => {
             new Dialog({
                 title: "Roll Parameters",
                 content: `<div class="form-group"><label>Difficulty / Target Result</label><input type="number" id="diff" value="0"/></div>`,
                 buttons: {
-                    roll: {
-                        label: "Roll",
-                        callback: (html) => resolve(parseInt(html.find("#diff").val()) || 0)
-                    }
+                    roll: { label: "Roll", callback: (html) => resolve(parseInt(html.find("#diff").val()) || 0) }
                 },
                 default: "roll"
             }).render(true);
         });
-        difficulty = d;
     }
 
-    // Core mechanic: 1d100, result capped by stat, then add familiarity
-    let roll = await new Roll("1d100").evaluate({async: true});
-    let rawResult = roll.total;
-    let cappedResult = Math.min(rawResult, statValue);
-    let finalTotal = cappedResult + familiarity;
+    const roll = await new Roll("1d100").evaluate();
+    const rawResult = roll.total;
+    const cappedResult = Math.min(rawResult, statValue);
+    const finalTotal = cappedResult + familiarity;
 
-    // Crit Logic:
-    // 1. Vs Difficulty: Crit if finalTotal >= 2 * difficulty
-    // 2. Contested: Attacker Dice vs Defender Dice comparison (shown in chat)
-    
     let critInfo = "";
     if (difficulty > 0) {
         if (finalTotal >= (difficulty * 2)) {
@@ -268,13 +298,10 @@ class TAMSActorSheet extends ActorSheet {
         }
     }
 
-    // Show Damage if it's an attack
     let damageInfo = "";
-    let hitLocation = "";
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
-        damageInfo = `<div class="roll-row"><b>Damage: ${item.system.calculatedDamage}</b></div>`;
-        
-        // Hit Location Logic
+        const damage = item.system.calculatedDamage;
+        let hitLocation = "";
         if (rawResult >= 96) hitLocation = "Head";
         else if (rawResult >= 56) hitLocation = "Thorax";
         else if (rawResult >= 41) hitLocation = "Stomach";
@@ -283,30 +310,22 @@ class TAMSActorSheet extends ActorSheet {
         else if (rawResult >= 11) hitLocation = "Left Leg";
         else hitLocation = "Right Leg";
 
-        damageInfo += `<div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>`;
-        damageInfo += `<button class="tams-take-damage" data-damage="${item.system.calculatedDamage}" data-location="${hitLocation}">Apply Damage</button>`;
+        damageInfo = `
+            <div class="roll-row"><b>Damage: ${damage}</b></div>
+            <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
+            <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
+        `;
     }
 
-    let messageContent = `
+    const messageContent = `
       <div class="tams-roll">
         <h3 class="roll-label">${label}</h3>
         ${damageInfo}
-        <div class="roll-row">
-            <span>Raw Dice Result:</span>
-            <span class="roll-value">${rawResult}</span>
-        </div>
-        <div class="roll-row">
-            <small>Stat Cap (${statValue}):</small>
-            <span>${cappedResult}</span>
-        </div>
-        <div class="roll-row">
-            <small>Familiarity:</small>
-            <span>+${familiarity}</span>
-        </div>
+        <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${rawResult}</span></div>
+        <div class="roll-row"><small>Stat Cap (${statValue}):</small><span>${cappedResult}</span></div>
+        <div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>
         <hr>
-        <div class="roll-total">
-            Total: <b>${finalTotal}</b>
-        </div>
+        <div class="roll-total">Total: <b>${finalTotal}</b></div>
         ${critInfo}
         <div class="roll-contest-hint">
             <br><small><b>Crit Check (Contested):</b> Attacker Raw Dice (${rawResult}) vs 2x Defender Raw Dice.</small>
@@ -316,32 +335,24 @@ class TAMSActorSheet extends ActorSheet {
     `;
 
     ChatMessage.create({
-      user: game.user._id,
       speaker: ChatMessage.getSpeaker({ actor: this.actor }),
       content: messageContent,
-      type: CONST.CHAT_MESSAGE_TYPES.ROLL,
-      roll: roll
+      rolls: [roll],
+      type: CONST.CHAT_MESSAGE_TYPES.ROLL
     });
   }
 
   async _onResourceAdd(event) {
     event.preventDefault();
-    const resources = this.actor.system.customResources || [];
-    resources.push({
-      name: "New Resource",
-      value: 0,
-      max: 0,
-      stat: "endurance",
-      mult: 1.0,
-      bonus: 0
-    });
+    const resources = [...(this.actor.system.customResources || [])];
+    resources.push({ name: "New Resource", value: 0, max: 0, stat: "endurance", mult: 1.0, bonus: 0 });
     return this.actor.update({"system.customResources": resources});
   }
 
   async _onResourceDelete(event) {
     event.preventDefault();
     const index = event.currentTarget.dataset.index;
-    const resources = this.actor.system.customResources || [];
+    const resources = [...(this.actor.system.customResources || [])];
     resources.splice(index, 1);
     return this.actor.update({"system.customResources": resources});
   }
@@ -349,7 +360,7 @@ class TAMSActorSheet extends ActorSheet {
 
 class TAMSItemSheet extends ItemSheet {
   static get defaultOptions() {
-    return mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions, {
       classes: ["tams", "sheet", "item"],
       template: "systems/tams/templates/item-sheet.html",
       width: 500,
@@ -357,20 +368,16 @@ class TAMSItemSheet extends ItemSheet {
     });
   }
 
-  /** @override */
   async getData(options) {
     const context = await super.getData(options);
-    
-    // Enrich description for the editor
+    context.system = this.item.system;
     context.enrichedDescription = await TextEditor.enrichHTML(this.item.system.description, {
       async: true,
       secrets: this.item.isOwner,
       relativeTo: this.item
     });
-
     context.owner = this.item.isOwner;
     context.editable = this.editable;
-
     return context;
   }
 }
@@ -378,74 +385,64 @@ class TAMSItemSheet extends ItemSheet {
 Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
 
-  CONFIG.Actor.documentClass = TAMSActor;
+  CONFIG.Actor.dataModels.character = TAMSCharacterData;
+  CONFIG.Item.dataModels.weapon = TAMSWeaponData;
+  CONFIG.Item.dataModels.skill = TAMSSkillData;
+  CONFIG.Item.dataModels.ability = TAMSAbilityData;
 
-  // Register sheet application classes
+  CONFIG.Actor.documentClass = TAMSActor;
+  CONFIG.Item.documentClass = TAMSItem;
+
   Actors.unregisterSheet("core", ActorSheet);
   Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
-
   Items.unregisterSheet("core", ItemSheet);
   Items.registerSheet("tams", TAMSItemSheet, { makeDefault: true });
 
-  // Chat Button Listener
-  Hooks.on("renderChatMessage", (message, html, data) => {
+  // Register Handlebars Helpers
+  Handlebars.registerHelper('eq', function (a, b) {
+    return a === b;
+  });
+  Handlebars.registerHelper('or', function (a, b) {
+    return a || b;
+  });
+});
+
+Hooks.on("renderChatMessage", (message, html, data) => {
     html.find(".tams-take-damage").click(async ev => {
       ev.preventDefault();
       const btn = ev.currentTarget;
       const damage = parseInt(btn.dataset.damage);
       const location = btn.dataset.location;
       
-      // Get the controlled actor (the target)
       const target = canvas.tokens.controlled[0]?.actor;
       if (!target) return ui.notifications.warn("Please select a token to apply damage to.");
 
-      // Map location string to system key
       const locationMap = {
-        "Head": "head",
-        "Thorax": "thorax",
-        "Stomach": "stomach",
-        "Left Arm": "leftArm",
-        "Right Arm": "rightArm",
-        "Left Leg": "leftLeg",
-        "Right Leg": "rightLeg"
+        "Head": "head", "Thorax": "thorax", "Stomach": "stomach",
+        "Left Arm": "leftArm", "Right Arm": "rightArm",
+        "Left Leg": "leftLeg", "Right Leg": "rightLeg"
       };
       const limbKey = locationMap[location];
       const limb = target.system.limbs[limbKey];
       const armor = limb.armor || 0;
 
-      // Ask for confirmation/adjustment
       new Dialog({
         title: `Apply Damage to ${target.name}`,
         content: `
-          <div class="form-group">
-            <label>Incoming Damage:</label>
-            <input type="number" id="dmg" value="${damage}"/>
-          </div>
-          <div class="form-group">
-            <label>Location:</label>
-            <span>${location} (Armor: ${armor})</span>
-          </div>
+          <div class="form-group"><label>Incoming Damage:</label><input type="number" id="dmg" value="${damage}"/></div>
+          <div class="form-group"><label>Location:</label><span>${location} (Armor: ${armor})</span></div>
         `,
         buttons: {
-          apply: {
-            label: "Apply",
-            callback: async (html) => {
+          apply: { label: "Apply", callback: async (html) => {
               const finalDmg = parseInt(html.find("#dmg").val());
               const effectiveDmg = Math.max(0, finalDmg - armor);
               const newHp = Math.max(0, limb.value - effectiveDmg);
-              
-              const updateData = {};
-              updateData[`system.limbs.${limbKey}.value`] = newHp;
-              await target.update(updateData);
-              
-              ChatMessage.create({
-                content: `<b>${target.name}</b> took ${effectiveDmg} damage to the ${location} (${armor} armor blocked).`
-              });
+              await target.update({[`system.limbs.${limbKey}.value`]: newHp});
+              ChatMessage.create({ content: `<b>${target.name}</b> took ${effectiveDmg} damage to the ${location} (${armor} armor blocked).` });
             }
           }
         },
         default: "apply"
       }).render(true);
     });
-  });
 });
