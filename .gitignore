@@ -1,0 +1,16 @@
+﻿# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node files (if any)
+node_modules/
+package-lock.json
+
+# Foundry VTT specific (if any local testing artifacts)
+*.log

@@ -1,0 +1,10 @@
+﻿{
+  "TAMS": {
+    "StatStrength": "Strength",
+    "StatDexterity": "Dexterity",
+    "StatEndurance": "Endurance",
+    "StatWisdom": "Wisdom",
+    "StatIntelligence": "Intelligence",
+    "StatBravery": "Bravery"
+  }
+}

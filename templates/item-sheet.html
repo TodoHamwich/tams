@@ -1,0 +1,122 @@
+﻿<form class="{{cssClass}}" autocomplete="off">
+    <header class="sheet-header">
+        <img src="{{item.img}}" data-edit="img" title="{{item.name}}" height="64" width="64"/>
+        <h1><input name="name" type="text" value="{{item.name}}" placeholder="Name"/></h1>
+    </header>
+
+    <div class="sheet-content">
+        <div class="flexcol">
+            <div class="flexrow">
+                <label>Familiarity</label>
+                <input type="number" name="system.familiarity" value="{{system.familiarity}}" data-dtype="Number"/>
+            </div>
+
+            {{#if (eq item.type "weapon")}}
+            <div class="flexrow">
+                <label>Tags</label>
+                <input type="text" name="system.tags" value="{{system.tags}}" placeholder="Heavy, Two Handed, Light..."/>
+            </div>
+            <div class="flexrow">
+                <label>Calculated Damage</label>
+                <span>{{system.calculatedDamage}}</span>
+            </div>
+            <div class="flexrow">
+                <label>Special</label>
+                <input type="text" name="system.special" value="{{system.special}}"/>
+            </div>
+            {{/if}}
+
+            {{#if (or (eq item.type "skill") (eq item.type "ability"))}}
+            <div class="flexrow">
+                <label>Upgrade Points</label>
+                <input type="number" name="system.upgradePoints" value="{{system.upgradePoints}}" data-dtype="Number"/>
+            </div>
+            <div class="flexrow">
+                <label>Tags</label>
+                <input type="text" name="system.tags" value="{{system.tags}}"/>
+            </div>
+            {{/if}}
+
+            {{#if (eq item.type "ability")}}
+            <div class="flexrow">
+                <label>Apex Ability?</label>
+                <input type="checkbox" name="system.isApex" {{checked system.isApex}}/>
+            </div>
+            {{#if system.isApex}}
+            <div class="flexrow">
+                <label>Uses</label>
+                <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
+                <span> / </span>
+                <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
+            </div>
+            {{else}}
+            <div class="flexrow">
+                <label>Cost</label>
+                <input type="number" name="system.cost" value="{{system.cost}}"/>
+            </div>
+            <div class="flexrow">
+                <label>Resource</label>
+                <select name="system.resource">
+                    <option value="stamina">Stamina</option>
+                    {{#each actor.system.customResources as |res index|}}
+                    <option value="{{index}}">{{res.name}}</option>
+                    {{/each}}
+                </select>
+            </div>
+            {{/if}}
+
+            <hr>
+            <div class="flexrow">
+                <label>Is Attack?</label>
+                <input type="checkbox" name="system.isAttack" {{checked system.isAttack}}/>
+            </div>
+            {{#if system.isAttack}}
+            <div class="flexcol" style="border: 1px solid #7a7971; padding: 5px; margin-top: 5px;">
+                <div class="flexrow">
+                    <label>Attack Stat</label>
+                    <select name="system.attackStat">
+                        {{#select system.attackStat}}
+                        <option value="strength">Strength</option>
+                        <option value="dexterity">Dexterity</option>
+                        <option value="endurance">Endurance</option>
+                        <option value="wisdom">Wisdom</option>
+                        <option value="intelligence">Intelligence</option>
+                        <option value="bravery">Bravery</option>
+                        {{/select}}
+                    </select>
+                </div>
+                <div class="flexrow">
+                    <label>Damage Stat</label>
+                    <select name="system.damageStat">
+                        {{#select system.damageStat}}
+                        <option value="strength">Strength</option>
+                        <option value="dexterity">Dexterity</option>
+                        <option value="endurance">Endurance</option>
+                        <option value="wisdom">Wisdom</option>
+                        <option value="intelligence">Intelligence</option>
+                        <option value="bravery">Bravery</option>
+                        {{/select}}
+                    </select>
+                </div>
+                <div class="flexrow">
+                    <label>Damage Multiplier</label>
+                    <input type="number" name="system.damageMult" value="{{system.damageMult}}" step="0.05"/>
+                </div>
+                <div class="flexrow">
+                    <label>Damage Bonus</label>
+                    <input type="number" name="system.damageBonus" value="{{system.damageBonus}}"/>
+                </div>
+                <div class="flexrow">
+                    <label>Calculated Damage</label>
+                    <span>{{system.calculatedDamage}}</span>
+                </div>
+            </div>
+            {{/if}}
+            {{/if}}
+
+            <hr>
+            <label>Description</label>
+            {{editor content=system.description target="system.description" button=true owner=owner editable=editable}}
+        </div>
+    </div>
+</form>

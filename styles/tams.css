@@ -1,0 +1,235 @@
+﻿.tams .sheet-header {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    border-bottom: 2px solid #7a7971;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.tams .profile-img {
+    flex: 0 0 100px;
+    border: 2px solid #7a7971;
+}
+
+.tams .header-details {
+    flex: 1;
+}
+
+.tams .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.tams .physical-notes {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tams .physical-notes input {
+    flex: 1;
+}
+
+.tams .grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.tams .flexrow {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.tams .flexcol {
+    display: flex;
+    flex-direction: column;
+}
+
+.tams .stat label, .tams .limb label {
+    flex: 1;
+    font-weight: bold;
+}
+
+.tams .stat input {
+    width: 60px;
+    text-align: center;
+}
+
+.tams .limb-row {
+    border-bottom: 1px solid #7a7971;
+    padding: 5px 0;
+}
+
+.tams .limb-details {
+    padding-left: 20px;
+}
+
+.tams .limb-details input {
+    width: 40px;
+}
+
+.tams .rollable {
+    cursor: pointer;
+}
+
+.tams .rollable:hover {
+    color: #ff0000;
+    text-shadow: 0 0 5px #ff0000;
+}
+
+.tams .resources-list {
+    list-style: none;
+    padding: 0;
+}
+
+.tams .resource-item {
+    border-bottom: 1px solid #CCC;
+    padding: 5px 0;
+    gap: 10px;
+}
+
+/* Themes */
+.tams.theme-dark {
+    background: #222;
+    color: #eee;
+}
+
+.tams.theme-dark input, .tams.theme-dark select, .tams.theme-dark textarea {
+    background: #333;
+    color: #eee;
+    border: 1px solid #555;
+}
+
+.tams.theme-parchment {
+    background: #f4e4bc;
+    color: #3e2723;
+    font-family: "Georgia", serif;
+}
+
+.tams.theme-parchment input, .tams.theme-parchment select, .tams.theme-parchment textarea {
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    border-bottom: 1px dashed #3e2723;
+}
+
+.tams .sheet-tabs {
+    flex: 0 0 30px;
+    border-top: 1px solid #AAA;
+    border-bottom: 1px solid #AAA;
+    margin: 10px 0;
+}
+
+.tams .sheet-tabs .item {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.tams .sheet-tabs .item.active {
+    font-weight: bold;
+    text-shadow: 0 0 5px red;
+}
+
+.tams .items-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tams .item {
+    border-bottom: 1px solid #CCC;
+    padding: 5px 0;
+}
+
+.tams .item-name {
+    flex: 1;
+    margin: 0;
+}
+
+.tams .item-controls {
+    flex: 0 0 60px;
+    text-align: right;
+}
+
+.tams textarea {
+    width: 100%;
+    min-height: 100px;
+}
+
+.tams-roll {
+    font-size: 14px;
+}
+
+.tams-roll .roll-label {
+    margin: 0 0 5px 0;
+    border-bottom: 1px solid #7a7971;
+}
+
+.tams-roll .roll-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.tams-roll .roll-value {
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.tams-roll .roll-total {
+    text-align: center;
+    font-size: 1.4em;
+    margin: 5px 0;
+}
+
+.tams-crit {
+    color: #006400;
+    font-weight: bold;
+    text-align: center;
+    background: #ccffcc;
+    border: 1px solid #006400;
+    padding: 5px;
+    margin-top: 5px;
+}
+
+.tams-success {
+    color: #00008b;
+    text-align: center;
+}
+
+.tams-failure {
+    color: #8b0000;
+    text-align: center;
+}
+
+.tams-roll .roll-contest-hint {
+    border-top: 1px dashed #aaa;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+.tams-take-damage {
+    margin-top: 5px;
+    background: #4a0000;
+    color: white;
+    border: 1px solid #7a0000;
+    cursor: pointer;
+}
+
+.tams-take-damage:hover {
+    background: #7a0000;
+}
+
+.theme-dark .tams-take-damage {
+    background: #2a0000;
+    border-color: #ff0000;
+}
+
+.theme-parchment .tams-take-damage {
+    background: #8b4513;
+    border-color: #5d2e0d;
+}

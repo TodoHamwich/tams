@@ -1,0 +1,65 @@
+﻿{
+  "Actor": {
+    "types": ["character"],
+    "character": {
+      "stats": {
+        "strength": { "value": 10, "label": "TAMS.StatStrength" },
+        "dexterity": { "value": 10, "label": "TAMS.StatDexterity" },
+        "endurance": { "value": 10, "label": "TAMS.StatEndurance" },
+        "wisdom": { "value": 10, "label": "TAMS.StatWisdom" },
+        "intelligence": { "value": 10, "label": "TAMS.StatIntelligence" },
+        "bravery": { "value": 10, "label": "TAMS.StatBravery" }
+      },
+      "limbs": {
+        "head": { "value": 5, "max": 5, "mult": 0.5, "armor": 0, "label": "Head" },
+        "thorax": { "value": 10, "max": 10, "mult": 1.0, "armor": 0, "label": "Thorax" },
+        "stomach": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Stomach" },
+        "leftArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Left Arm" },
+        "rightArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Right Arm" },
+        "leftLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Left Leg" },
+        "rightLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Right Leg" }
+      },
+      "stamina": { "value": 10, "max": 10, "mult": 1.0 },
+      "customResources": [],
+      "theme": "default",
+      "physicalNotes": "",
+      "traits": "",
+      "description": "",
+      "specialSkills": {
+        "dodge": { "value": 0 },
+        "retaliation": { "value": 0 },
+        "perception": { "value": 0 }
+      }
+    }
+  },
+  "Item": {
+    "types": ["weapon", "skill", "ability"],
+    "weapon": {
+      "familiarity": 0,
+      "damage": "",
+      "special": "",
+      "description": ""
+    },
+    "skill": {
+      "familiarity": 0,
+      "upgradePoints": 0,
+      "tags": "",
+      "description": ""
+    },
+    "ability": {
+      "familiarity": 0,
+      "upgradePoints": 0,
+      "cost": "",
+      "resource": "stamina",
+      "isApex": false,
+      "uses": { "value": 0, "max": 0 },
+      "isAttack": false,
+      "attackStat": "strength",
+      "damageStat": "strength",
+      "damageMult": 0.5,
+      "damageBonus": 0,
+      "tags": "",
+      "description": ""
+    }
+  }
+}
