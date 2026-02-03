@@ -482,8 +482,8 @@ Hooks.once("init", async function() {
   });
 });
 
-Hooks.on("renderChatMessage", (message, html, data) => {
-    html.find(".tams-take-damage").click(async ev => {
+Hooks.on("renderChatMessageHTML", (message, html, data) => {
+    html.querySelector(".tams-take-damage")?.addEventListener("click", async ev => {
       ev.preventDefault();
       const btn = ev.currentTarget;
       const damage = parseInt(btn.dataset.damage);
@@ -504,8 +504,8 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       new Dialog({
         title: `Apply Damage to ${target.name}`,
         content: `
-          <div class=\"form-group\"><label>Incoming Damage:</label><input type=\"number\" id=\"dmg\" value=\"${damage}\"/></div>
-          <div class=\"form-group\"><label>Location:</label><span>${location} (Armor: ${armor})</span></div>
+          <div class="form-group"><label>Incoming Damage:</label><input type="number" id="dmg" value="${damage}"/></div>
+          <div class="form-group"><label>Location:</label><span>${location} (Armor: ${armor})</span></div>
         `,
         buttons: {
           apply: { label: "Apply", callback: async (html) => {
@@ -522,7 +522,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
     });
 
     // Dodge action
-    html.find('.tams-dodge').click(async ev => {
+    html.querySelector('.tams-dodge')?.addEventListener("click", async ev => {
       ev.preventDefault();
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Dodge.');
@@ -544,7 +544,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
     });
 
     // Retaliate action
-    html.find('.tams-retaliate').click(async ev => {
+    html.querySelector('.tams-retaliate')?.addEventListener("click", async ev => {
       ev.preventDefault();
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Retaliate.');
@@ -555,7 +555,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       let chosenId = await new Promise(resolve => {
         new Dialog({
           title: 'Choose Weapon to Retaliate',
-          content: `<div class=\"form-group\"><label>Weapon</label><select id=\"ret-weapon\">${options}</select></div>`,
+          content: `<div class="form-group"><label>Weapon</label><select id="ret-weapon">${options}</select></div>`,
           buttons: { go: { label: 'Roll', callback: html => resolve(html.find('#ret-weapon').val()) } },
           default: 'go'
         }).render(true);
