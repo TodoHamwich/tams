@@ -166,11 +166,26 @@ class TAMSActorSheet extends ActorSheet {
     context.owner = this.actor.isOwner;
     context.editable = this.editable;
 
-    context.enrichedDescription = await TextEditor.enrichHTML(this.actor.system.description || "", {
+    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.actor.system.description || "", {
       async: true,
       secrets: this.actor.isOwner,
       relativeTo: this.actor
     });
+
+    context.statOptions = {
+      "strength": "TAMS.StatStrength",
+      "dexterity": "TAMS.StatDexterity",
+      "endurance": "TAMS.StatEndurance",
+      "wisdom": "TAMS.StatWisdom",
+      "intelligence": "TAMS.StatIntelligence",
+      "bravery": "TAMS.StatBravery",
+      "custom": "Custom"
+    };
+    context.themeOptions = {
+      "default": "Default",
+      "dark": "Dark",
+      "parchment": "Parchment"
+    };
 
     const weapons = [];
     const skills = [];
@@ -397,11 +412,28 @@ class TAMSItemSheet extends ItemSheet {
     context.item = this.item;
     context.system = this.item.system;
     context.actor = this.item.actor;
-    context.enrichedDescription = await TextEditor.enrichHTML(this.item.system.description || "", {
+    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.item.system.description || "", {
       async: true,
       secrets: this.item.isOwner,
       relativeTo: this.item
     });
+
+    context.statOptions = {
+      "strength": "TAMS.StatStrength",
+      "dexterity": "TAMS.StatDexterity",
+      "endurance": "TAMS.StatEndurance",
+      "wisdom": "TAMS.StatWisdom",
+      "intelligence": "TAMS.StatIntelligence",
+      "bravery": "TAMS.StatBravery"
+    };
+
+    if (this.item.type === 'ability' && this.item.actor) {
+        const resources = { "stamina": "Stamina" };
+        this.item.actor.system.customResources.forEach((res, index) => {
+            resources[index.toString()] = res.name;
+        });
+        context.resourceOptions = resources;
+    }
     context.owner = this.item.isOwner;
     context.editable = this.editable;
     return context;

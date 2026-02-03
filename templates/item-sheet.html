@@ -77,10 +77,7 @@
             <div class="flexrow">
                 <label>Resource</label>
                 <select name="system.resource">
-                    <option value="stamina">Stamina</option>
-                    {{#each actor.system.customResources as |res index|}}
-                    <option value="{{index}}">{{res.name}}</option>
-                    {{/each}}
+                    {{selectOptions resourceOptions selected=system.resource}}
                 </select>
             </div>
             {{/if}}
@@ -95,27 +92,13 @@
                 <div class="flexrow">
                     <label>Attack Stat</label>
                     <select name="system.attackStat">
-                        {{#select system.attackStat}}
-                        <option value="strength">Strength</option>
-                        <option value="dexterity">Dexterity</option>
-                        <option value="endurance">Endurance</option>
-                        <option value="wisdom">Wisdom</option>
-                        <option value="intelligence">Intelligence</option>
-                        <option value="bravery">Bravery</option>
-                        {{/select}}
+                        {{selectOptions statOptions selected=system.attackStat localize=true}}
                     </select>
                 </div>
                 <div class="flexrow">
                     <label>Damage Stat</label>
                     <select name="system.damageStat">
-                        {{#select system.damageStat}}
-                        <option value="strength">Strength</option>
-                        <option value="dexterity">Dexterity</option>
-                        <option value="endurance">Endurance</option>
-                        <option value="wisdom">Wisdom</option>
-                        <option value="intelligence">Intelligence</option>
-                        <option value="bravery">Bravery</option>
-                        {{/select}}
+                        {{selectOptions statOptions selected=system.damageStat localize=true}}
                     </select>
                 </div>
                 <div class="flexrow">

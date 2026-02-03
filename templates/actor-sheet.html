@@ -18,9 +18,7 @@
                 <div class="theme-selector">
                     <label>Theme</label>
                     <select name="system.theme">
-                        <option value="default">Default</option>
-                        <option value="dark">Dark</option>
-                        <option value="parchment">Parchment</option>
+                        {{selectOptions themeOptions selected=system.theme localize=true}}
                     </select>
                 </div>
             </div>
@@ -105,15 +103,7 @@
                 <div class="flexrow" data-index="{{index}}">
                     <label style="flex:1">{{res.name}}</label>
                     <select name="system.customResources.{{index}}.stat" style="width:110px;">
-                        {{#select res.stat}}
-                        <option value="strength">Str</option>
-                        <option value="dexterity">Dex</option>
-                        <option value="endurance">End</option>
-                        <option value="wisdom">Wis</option>
-                        <option value="intelligence">Int</option>
-                        <option value="bravery">Bra</option>
-                        <option value="custom">Custom</option>
-                        {{/select}}
+                        {{selectOptions ../statOptions selected=res.stat localize=true}}
                     </select>
                     <small>x</small>
                     <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 60px;"/>
