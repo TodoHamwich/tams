@@ -1,5 +1,4 @@
-﻿<form class="{{cssClass}} theme-{{system.theme}}" autocomplete="off">
-    <header class="sheet-header">
+﻿    <header class="sheet-header">
         <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" height="100" width="100"/>
         <div class="header-details">
             <h1 class="charname"><input name="name" type="text" value="{{actor.name}}" placeholder="Name"/></h1>
@@ -44,7 +43,7 @@
                 <section class="stats-list">
                     {{#each system.stats as |stat id|}}
                     <div class="stat flexrow">
-                        <label class="resource-label rollable" data-roll="stat" data-label="{{localize stat.label}}" data-stat-value="{{stat.value}}">
+                        <label class="resource-label rollable" data-action="roll" data-roll="stat" data-label="{{localize stat.label}}" data-stat-value="{{stat.value}}">
                             <i class="fas fa-dice-d20"></i> {{localize stat.label}}
                         </label>
                         <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number"/>
@@ -54,7 +53,7 @@
                     <h3>Special Skills</h3>
                     {{#each system.specialSkills as |skill id|}}
                     <div class="stat flexrow">
-                        <label class="resource-label rollable" data-label="{{capitalize id}}" data-stat-value="{{skill.value}}">
+                        <label class="resource-label rollable" data-action="roll" data-label="{{capitalize id}}" data-stat-value="{{skill.value}}">
                             <i class="fas fa-dice-d20"></i> {{capitalize id}}
                         </label>
                         <input type="number" name="system.specialSkills.{{id}}.value" value="{{skill.value}}" data-dtype="Number"/>
@@ -122,32 +121,32 @@
                 <label>Skill Upgrade Points:</label>
                 <input type="number" name="system.upgradePoints.skills" value="{{system.upgradePoints.skills}}"/>
             </div>
-            <h3>Weapons <a class="item-create" data-type="weapon"><i class="fas fa-plus"></i> Add</a></h3>
+            <h3>Weapons <a data-action="itemCreate" data-type="weapon"><i class="fas fa-plus"></i> Add</a></h3>
             <ol class="items-list">
                 {{#each weapons as |item id|}}
                 <li class="item flexrow" data-item-id="{{item.id}}">
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                    <h4 class="item-name rollable" data-item-id="{{item.id}}" data-familiarity="{{item.system.familiarity}}">
+                    <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} (Dmg: {{item.system.calculatedDamage}}) [Fam: {{item.system.familiarity}}]
                     </h4>
                     <div class="item-controls">
-                        <a class="item-control item-edit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                        <a class="item-control item-delete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
                     </div>
                 </li>
                 {{/each}}
             </ol>
 
-            <h3>Skills <a class="item-create" data-type="skill"><i class="fas fa-plus"></i> Add</a></h3>
+            <h3>Skills <a data-action="itemCreate" data-type="skill"><i class="fas fa-plus"></i> Add</a></h3>
             <ol class="items-list">
                 {{#each skills as |item id|}}
                 <li class="item flexrow" data-item-id="{{item.id}}">
-                    <h4 class="item-name rollable" data-item-id="{{item.id}}" data-familiarity="{{item.system.familiarity}}">
+                    <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} [Fam: {{item.system.familiarity}}]
                     </h4>
                     <div class="item-controls">
-                        <a class="item-control item-edit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                        <a class="item-control item-delete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
                     </div>
                 </li>
                 {{/each}}
@@ -158,7 +157,7 @@
         <div class="tab abilities" data-group="primary" data-tab="abilities">
             <div class="flexrow">
                 <h3>Custom Resources</h3>
-                <a class="resource-add"><i class="fas fa-plus"></i> Add Resource</a>
+                <a data-action="resourceAdd"><i class="fas fa-plus"></i> Add Resource</a>
             </div>
             <ol class="resources-list">
                 {{#each system.customResources as |res index|}}
@@ -166,7 +165,7 @@
                     <input type="text" name="system.customResources.{{index}}.name" value="{{res.name}}" placeholder="Resource Name"/>
                     <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}"/>
                     <span> / {{res.max}}</span>
-                    <a class="resource-delete" data-index="{{index}}"><i class="fas fa-trash"></i></a>
+                    <a data-action="resourceDelete" data-index="{{index}}"><i class="fas fa-trash"></i></a>
                 </li>
                 {{/each}}
             </ol>
@@ -177,11 +176,11 @@
                 <label>Ability Upgrade Points:</label>
                 <input type="number" name="system.upgradePoints.abilities" value="{{system.upgradePoints.abilities}}"/>
             </div>
-            <h3>Abilities <a class="item-create" data-type="ability"><i class="fas fa-plus"></i> Add</a></h3>
+            <h3>Abilities <a data-action="itemCreate" data-type="ability"><i class="fas fa-plus"></i> Add</a></h3>
             <ol class="items-list">
                 {{#each abilities as |item id|}}
                 <li class="item flexrow" data-item-id="{{item.id}}">
-                    <h4 class="item-name rollable" data-item-id="{{item.id}}" data-familiarity="{{item.system.familiarity}}">
+                    <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} 
                         {{#if item.system.isAttack}}
                         (Dmg: {{item.system.calculatedDamage}})
@@ -193,8 +192,8 @@
                         {{/if}}
                     </h4>
                     <div class="item-controls">
-                        <a class="item-control item-edit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                        <a class="item-control item-delete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
                     </div>
                 </li>
                 {{/each}}
@@ -212,4 +211,3 @@
             </div>
         </div>
     </section>
-</form>

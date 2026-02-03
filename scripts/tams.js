@@ -148,50 +148,70 @@ class TAMSItem extends Item {}
 /**
  * Sheets
  */
-class TAMSActorSheet extends ActorSheet {
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ["tams", "sheet", "actor"],
-      template: "systems/tams/templates/actor-sheet.html",
-      width: 650,
-      height: 800,
-      tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "stats" }]
-    });
+class TAMSActorSheet extends foundry.applications.sheets.ActorSheetV2 {
+  static DEFAULT_OPTIONS = {
+    tag: "form",
+    classes: ["tams", "sheet", "actor"],
+    position: { width: 650, height: 800 },
+    form: { 
+      submitOnChange: true,
+      closeOnSubmit: false
+    },
+    actions: {
+      itemCreate: "_onItemCreate",
+      itemEdit: "_onItemEdit",
+      itemDelete: "_onItemDelete",
+      roll: "_onRoll",
+      resourceAdd: "_onResourceAdd",
+      resourceDelete: "_onResourceDelete"
+    }
+  };
+
+  static PARTS = {
+    form: {
+      template: "systems/tams/templates/actor-sheet.html"
+    }
+  };
+
+  _onRender(context, options) {
+    const theme = this.document.system.theme || "default";
+    this.element.classList.remove("theme-default", "theme-dark", "theme-parchment");
+    this.element.classList.add(`theme-${theme}`);
   }
 
-  async getData(options) {
-    const context = await super.getData(options);
-    context.actor = this.actor;
-    context.system = this.actor.system;
-    context.owner = this.actor.isOwner;
-    context.editable = this.editable;
+  async _prepareContext(options) {
+    const context = {
+      actor: this.document,
+      system: this.document.system,
+      owner: this.document.isOwner,
+      editable: this.isEditable,
+      statOptions: {
+        "strength": "TAMS.StatStrength",
+        "dexterity": "TAMS.StatDexterity",
+        "endurance": "TAMS.StatEndurance",
+        "wisdom": "TAMS.StatWisdom",
+        "intelligence": "TAMS.StatIntelligence",
+        "bravery": "TAMS.StatBravery",
+        "custom": "Custom"
+      },
+      themeOptions: {
+        "default": "Default",
+        "dark": "Dark",
+        "parchment": "Parchment"
+      }
+    };
 
-    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.actor.system.description || "", {
+    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description || "", {
       async: true,
-      secrets: this.actor.isOwner,
-      relativeTo: this.actor
+      secrets: this.document.isOwner,
+      relativeTo: this.document
     });
-
-    context.statOptions = {
-      "strength": "TAMS.StatStrength",
-      "dexterity": "TAMS.StatDexterity",
-      "endurance": "TAMS.StatEndurance",
-      "wisdom": "TAMS.StatWisdom",
-      "intelligence": "TAMS.StatIntelligence",
-      "bravery": "TAMS.StatBravery",
-      "custom": "Custom"
-    };
-    context.themeOptions = {
-      "default": "Default",
-      "dark": "Dark",
-      "parchment": "Parchment"
-    };
 
     const weapons = [];
     const skills = [];
     const abilities = [];
 
-    for (let i of this.actor.items) {
+    for (let i of this.document.items) {
       if (i.type === 'weapon') weapons.push(i);
       else if (i.type === 'skill') skills.push(i);
       else if (i.type === 'ability') abilities.push(i);
@@ -204,52 +224,39 @@ class TAMSActorSheet extends ActorSheet {
     return context;
   }
 
-  activateListeners(html) {
-    super.activateListeners(html);
-    if (!this.options.editable) return;
-
-    html.find('.item-create').click(this._onItemCreate.bind(this));
-    html.find('.item-edit').click(ev => {
-      ev.preventDefault();
-      const li = ev.currentTarget.closest(".item");
-      const item = this.actor.items.get(li.dataset.itemId);
-      if (item) item.sheet.render(true);
-    });
-    html.find('.item-delete').click(ev => {
-      ev.preventDefault();
-      const li = ev.currentTarget.closest(".item");
-      const item = this.actor.items.get(li.dataset.itemId);
-      if (item) item.delete();
-    });
-    html.find('.rollable').click(this._onRoll.bind(this));
-    html.find('.resource-add').click(this._onResourceAdd.bind(this));
-    html.find('.resource-delete').click(this._onResourceDelete.bind(this));
-  }
-
-  async _onItemCreate(event) {
-    event.preventDefault();
-    const type = event.currentTarget.dataset.type;
+  async _onItemCreate(event, target) {
+    const type = target.dataset.type;
     const itemData = {
-      name: `New ${type.capitalize()}`,
+      name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
       type: type,
       system: {}
     };
-    return await this.actor.createEmbeddedDocuments("Item", [itemData]);
+    return await this.document.createEmbeddedDocuments("Item", [itemData]);
   }
 
-  async _onRoll(event) {
-    event.preventDefault();
-    const element = event.currentTarget;
-    const dataset = element.dataset;
-    const item = dataset.itemId ? this.actor.items.get(dataset.itemId) : null;
+  async _onItemEdit(event, target) {
+    const li = target.closest(".item");
+    const item = this.document.items.get(li.dataset.itemId);
+    if (item) item.sheet.render(true);
+  }
+
+  async _onItemDelete(event, target) {
+    const li = target.closest(".item");
+    const item = this.document.items.get(li.dataset.itemId);
+    if (item) item.delete();
+  }
+
+  async _onRoll(event, target) {
+    const dataset = target.dataset;
+    const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
 
     let label = dataset.label ? `Rolling ${dataset.label}` : '';
     let statValue = parseInt(dataset.statValue) || 100;
     let familiarity = parseInt(dataset.familiarity) || 0;
 
     if (item && item.type === 'weapon') {
-        const str = this.actor.system.stats.strength.value;
-        const dex = this.actor.system.stats.dexterity.value;
+        const str = this.document.system.stats.strength.value;
+        const dex = this.document.system.stats.dexterity.value;
         let usesDex = false;
         if (item.system.isRanged) {
             usesDex = !item.system.isThrown;
@@ -280,24 +287,24 @@ class TAMSActorSheet extends ActorSheet {
 
     if (item && item.type === 'ability') {
         if (item.system.isAttack) {
-            statValue = this.actor.system.stats[item.system.attackStat]?.value || 100;
+            statValue = this.document.system.stats[item.system.attackStat]?.value || 100;
             label = `Using Ability: ${item.name}`;
         }
         const cost = parseInt(item.system.cost) || 0;
         if (!item.system.isApex && cost > 0) {
             const resourceKey = item.system.resource;
             if (resourceKey === 'stamina') {
-                const current = this.actor.system.stamina.value;
+                const current = this.document.system.stamina.value;
                 if (current < cost) return ui.notifications.warn("Not enough Stamina!");
-                await this.actor.update({"system.stamina.value": current - cost});
+                await this.document.update({"system.stamina.value": current - cost});
             } else {
                 const idx = parseInt(resourceKey);
-                const res = this.actor.system.customResources[idx];
+                const res = this.document.system.customResources[idx];
                 if (res) {
                     if (res.value < cost) return ui.notifications.warn(`Not enough ${res.name}!`);
-                    const resources = foundry.utils.duplicate(this.actor.system.customResources);
+                    const resources = foundry.utils.duplicate(this.document.system.customResources);
                     resources[idx].value -= cost;
-                    await this.actor.update({"system.customResources": resources});
+                    await this.document.update({"system.customResources": resources});
                 }
             }
         }
@@ -374,68 +381,74 @@ class TAMSActorSheet extends ActorSheet {
     `;
 
     ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      speaker: ChatMessage.getSpeaker({ actor: this.document }),
       content: messageContent,
       rolls: [roll],
       type: CONST.CHAT_MESSAGE_TYPES.ROLL
     });
   }
 
-  async _onResourceAdd(event) {
-    event.preventDefault();
-    const resources = [...(this.actor.system.customResources || [])];
+  async _onResourceAdd(event, target) {
+    const resources = [...(this.document.system.customResources || [])];
     resources.push({ name: "New Resource", value: 0, max: 0, stat: "endurance", mult: 1.0, bonus: 0 });
-    return this.actor.update({"system.customResources": resources});
+    return this.document.update({"system.customResources": resources});
   }
 
-  async _onResourceDelete(event) {
-    event.preventDefault();
-    const index = event.currentTarget.dataset.index;
-    const resources = [...(this.actor.system.customResources || [])];
+  async _onResourceDelete(event, target) {
+    const index = target.dataset.index;
+    const resources = [...(this.document.system.customResources || [])];
     resources.splice(index, 1);
-    return this.actor.update({"system.customResources": resources});
+    return this.document.update({"system.customResources": resources});
   }
 }
 
-class TAMSItemSheet extends ItemSheet {
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ["tams", "sheet", "item"],
-      template: "systems/tams/templates/item-sheet.html",
-      width: 500,
-      height: 700
-    });
-  }
+class TAMSItemSheet extends foundry.applications.sheets.ItemSheetV2 {
+  static DEFAULT_OPTIONS = {
+    tag: "form",
+    classes: ["tams", "sheet", "item"],
+    position: { width: 500, height: 700 },
+    form: { 
+      submitOnChange: true,
+      closeOnSubmit: false
+    }
+  };
 
-  async getData(options) {
-    const context = await super.getData(options);
-    context.item = this.item;
-    context.system = this.item.system;
-    context.actor = this.item.actor;
-    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.item.system.description || "", {
-      async: true,
-      secrets: this.item.isOwner,
-      relativeTo: this.item
-    });
+  static PARTS = {
+    form: {
+      template: "systems/tams/templates/item-sheet.html"
+    }
+  };
 
-    context.statOptions = {
-      "strength": "TAMS.StatStrength",
-      "dexterity": "TAMS.StatDexterity",
-      "endurance": "TAMS.StatEndurance",
-      "wisdom": "TAMS.StatWisdom",
-      "intelligence": "TAMS.StatIntelligence",
-      "bravery": "TAMS.StatBravery"
+  async _prepareContext(options) {
+    const context = {
+      item: this.document,
+      system: this.document.system,
+      actor: this.document.actor,
+      owner: this.document.isOwner,
+      editable: this.isEditable,
+      statOptions: {
+        "strength": "TAMS.StatStrength",
+        "dexterity": "TAMS.StatDexterity",
+        "endurance": "TAMS.StatEndurance",
+        "wisdom": "TAMS.StatWisdom",
+        "intelligence": "TAMS.StatIntelligence",
+        "bravery": "TAMS.StatBravery"
+      }
     };
 
-    if (this.item.type === 'ability' && this.item.actor) {
+    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description || "", {
+      async: true,
+      secrets: this.document.isOwner,
+      relativeTo: this.document
+    });
+
+    if (this.document.type === 'ability' && this.document.actor) {
         const resources = { "stamina": "Stamina" };
-        this.item.actor.system.customResources.forEach((res, index) => {
+        this.document.actor.system.customResources.forEach((res, index) => {
             resources[index.toString()] = res.name;
         });
         context.resourceOptions = resources;
     }
-    context.owner = this.item.isOwner;
-    context.editable = this.editable;
     return context;
   }
 }

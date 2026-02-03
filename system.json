@@ -27,7 +27,7 @@
   ],
   "grid": 50,
   "compatibility": {
-    "minimum": "11",
+    "minimum": "12",
     "verified": "13"
   }
 }
