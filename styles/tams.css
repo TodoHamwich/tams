@@ -145,8 +145,28 @@
 
 .tams .resource-item {
     border-bottom: 1px solid #CCC;
-    padding: 5px 0;
-    gap: 10px;
+    padding: 10px 0;
+    gap: 5px;
+}
+
+.tams .resource-name-input {
+    font-weight: bold;
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+.tams .delete-resource {
+    margin-left: 5px;
+    color: #666;
+}
+
+.tams .delete-resource:hover {
+    color: #ff0000;
+}
+
+.tams .modifier-row {
+    margin-bottom: 5px;
 }
 
 /* Themes */

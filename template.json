@@ -19,7 +19,7 @@
         "leftLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Left Leg" },
         "rightLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Right Leg" }
       },
-      "stamina": { "value": 10, "max": 10, "mult": 1.0 },
+      "stamina": { "value": 10, "max": 10, "mult": 1.0, "color": "#66bb6a" },
       "customResources": [],
       "theme": "default",
       "physicalNotes": "",

@@ -25,7 +25,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       stamina: new fields.SchemaField({
         value: new fields.NumberField({initial: 10}),
         max: new fields.NumberField({initial: 10}),
-        mult: new fields.NumberField({initial: 1.0})
+        mult: new fields.NumberField({initial: 1.0}),
+        color: new fields.StringField({initial: "#66bb6a"})
       }),
       customResources: new fields.ArrayField(new fields.SchemaField({
         name: new fields.StringField({initial: "New Resource"}),
@@ -33,7 +34,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({initial: 0}),
         stat: new fields.StringField({initial: "endurance"}),
         mult: new fields.NumberField({initial: 1.0}),
-        bonus: new fields.NumberField({initial: 0})
+        bonus: new fields.NumberField({initial: 0}),
+        color: new fields.StringField({initial: "#3498db"})
       })),
       theme: new fields.StringField({initial: "default"}),
       physicalNotes: new fields.StringField({initial: ""}),
@@ -200,6 +202,15 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     context.editable = this.isEditable;
     context.owner = this.document.isOwner;
     context.staminaPercentage = Math.clamp((this.document.system.stamina.value / (this.document.system.stamina.max || 1)) * 100, 0, 100);
+    
+    // Calculate percentages for custom resources
+    context.customResourceData = this.document.system.customResources.map(res => {
+      return {
+        ...res,
+        percentage: Math.clamp((res.value / (res.max || 1)) * 100, 0, 100)
+      };
+    });
+
     context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description, {
       async: true,
       secrets: this.document.isOwner,
@@ -402,7 +413,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
   async _onResourceAdd(event, target) {
     const resources = [...(this.document.system.customResources || [])];
-    resources.push({ name: "New Resource", value: 0, max: 0, stat: "endurance", mult: 1.0, bonus: 0 });
+    resources.push({ name: "New Resource", value: 0, max: 0, stat: "endurance", mult: 1.0, bonus: 0, color: "#3498db" });
     return this.document.update({"system.customResources": resources});
   }
 

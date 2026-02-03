@@ -10,16 +10,6 @@
                 </div>
             </div>
             <div class="header-row">
-                <div class="resource stamina">
-                    <label>Stamina</label>
-                    <div class="bar-container">
-                        <input type="number" name="system.stamina.value" value="{{system.stamina.value}}"/>
-                        <div class="bar">
-                            <div class="fill" style="width: {{staminaPercentage}}%"></div>
-                        </div>
-                        <span class="max-label"> / {{system.stamina.max}} </span>
-                    </div>
-                </div>
                 <div class="theme-selector">
                     <label>Theme</label>
                     <select name="system.theme">
@@ -127,16 +117,38 @@
         {{!-- Abilities & Resources Tab --}}
         <div class="tab abilities {{#if (eq activeTab 'abilities')}}active{{/if}}" data-group="primary" data-tab="abilities">
             <div class="flexrow">
-                <h3>Custom Resources</h3>
+                <h3>Resources</h3>
                 <a data-action="resourceAdd"><i class="fas fa-plus"></i> Add Resource</a>
             </div>
             <ol class="resources-list">
-                {{#each system.customResources as |res index|}}
-                <li class="resource-item flexrow" data-index="{{index}}">
-                    <input type="text" name="system.customResources.{{index}}.name" value="{{res.name}}" placeholder="Resource Name"/>
-                    <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}"/>
-                    <span> / {{res.max}}</span>
-                    <a data-action="resourceDelete" data-index="{{index}}"><i class="fas fa-trash"></i></a>
+                {{!-- Main Stamina Resource --}}
+                <li class="resource-item stamina flexcol">
+                    <div class="flexrow">
+                        <label class="resource-label">Stamina</label>
+                        <div class="bar-container">
+                            <input type="number" name="system.stamina.value" value="{{system.stamina.value}}"/>
+                            <div class="bar">
+                                <div class="fill" style="width: {{staminaPercentage}}%; background: {{system.stamina.color}};"></div>
+                            </div>
+                            <span class="max-label"> / {{system.stamina.max}} </span>
+                        </div>
+                    </div>
+                </li>
+
+                {{!-- Custom Resources --}}
+                {{#each customResourceData as |res index|}}
+                <li class="resource-item flexcol" data-index="{{index}}">
+                    <div class="flexrow">
+                        <input type="text" name="system.customResources.{{index}}.name" value="{{res.name}}" placeholder="Resource Name" class="resource-name-input"/>
+                        <div class="bar-container">
+                            <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}"/>
+                            <div class="bar">
+                                <div class="fill" style="width: {{res.percentage}}%; background: {{res.color}};"></div>
+                            </div>
+                            <span class="max-label"> / {{res.max}} </span>
+                            <a data-action="resourceDelete" data-index="{{index}}" class="delete-resource"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </div>
                 </li>
                 {{/each}}
             </ol>
@@ -190,6 +202,8 @@
                 <div class="flexrow">
                     <label>Stamina Multiplier</label>
                     <input type="number" name="system.stamina.mult" value="{{system.stamina.mult}}" step="0.25" style="width: 60px;"/>
+                    <label>Bar Color</label>
+                    <input type="color" name="system.stamina.color" value="{{system.stamina.color}}" style="width: 50px; padding: 0;"/>
                 </div>
                 <hr>
                 <h3>Limb Multipliers</h3>
@@ -203,15 +217,16 @@
                 <hr>
                 <h3>Resource Modifiers</h3>
                 {{#each system.customResources as |res index|}}
-                <div class="flexrow" data-index="{{index}}">
+                <div class="flexrow modifier-row" data-index="{{index}}">
                     <label style="flex:1">{{res.name}}</label>
                     <select name="system.customResources.{{index}}.stat" style="width:110px;">
                         {{selectOptions ../statOptions selected=res.stat localize=true}}
                     </select>
                     <small>x</small>
-                    <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 60px;"/>
+                    <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 45px;"/>
                     <small>+</small>
-                    <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 60px;"/>
+                    <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 45px;"/>
+                    <input type="color" name="system.customResources.{{index}}.color" value="{{res.color}}" style="width: 40px; padding: 0;"/>
                 </div>
                 {{/each}}
             </div>
