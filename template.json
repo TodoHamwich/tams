@@ -57,6 +57,7 @@
     "skill": {
       "familiarity": 0,
       "upgradePoints": 0,
+      "stat": "strength",
       "tags": "",
       "description": ""
     },

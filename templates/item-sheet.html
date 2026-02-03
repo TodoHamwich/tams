@@ -63,6 +63,14 @@
                 <label>Upgrade Points</label>
                 <input type="number" name="system.upgradePoints" value="{{system.upgradePoints}}" data-dtype="Number"/>
             </div>
+            {{#if (eq item.type "skill")}}
+            <div class="flexrow">
+                <label>Linked Stat</label>
+                <select name="system.stat">
+                    {{selectOptions statOptions selected=system.stat localize=true}}
+                </select>
+            </div>
+            {{/if}}
             <div class="flexrow">
                 <label>Tags</label>
                 <input type="text" name="system.tags" value="{{system.tags}}"/>

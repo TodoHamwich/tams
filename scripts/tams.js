@@ -106,6 +106,7 @@ class TAMSSkillData extends foundry.abstract.TypeDataModel {
     return {
       familiarity: new fields.NumberField({initial: 0}),
       upgradePoints: new fields.NumberField({initial: 0}),
+      stat: new fields.StringField({initial: "strength"}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -288,6 +289,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     if (item && item.type === 'skill') {
         const name = item.name;
         label = name;
+        statValue = this.document.system.stats[item.system.stat]?.value || 100;
         if (name.includes("(") && name.includes(")")) {
             const confirmed = await new Promise(resolve => {
                 new Dialog({
