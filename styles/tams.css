@@ -2,6 +2,8 @@
 
 .tams {
     font-family: 'Signika', sans-serif;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
 }
 
 .tams-actor-form, .tams-item-form {
@@ -144,9 +146,43 @@
     padding: 5px 0;
 }
 
+.tams .special-skill label {
+    font-size: 13px;
+}
+
+.tams .limb-label {
+    flex: 0 0 90px;
+    font-size: 13px;
+}
+
+.tams .limb-hp {
+    flex: 0 0 100px;
+    gap: 2px;
+    justify-content: flex-start;
+}
+
+.tams .limb-hp span {
+    font-size: 13px;
+}
+
+.tams .limb-armor {
+    flex: 1;
+    justify-content: flex-end;
+    gap: 5px;
+}
+
+.tams .limb-armor label {
+    font-size: 11px;
+    font-weight: normal;
+    text-transform: uppercase;
+    color: #666;
+}
+
 .tams .small-input {
-    width: 45px !important;
+    width: 40px !important;
     text-align: center;
+    height: 20px;
+    font-size: 13px;
 }
 
 .tams .limb-values {
@@ -294,6 +330,12 @@
     text-transform: uppercase;
     letter-spacing: 1px;
     font-weight: bold;
+    font-size: 14px;
+}
+
+.tams h3.small-header {
+    font-size: 12px;
+    margin-top: 5px;
 }
 
 .tams .sheet-tabs {
@@ -347,8 +389,12 @@
 .tams .item-name {
     flex: 1;
     margin: 0;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
+}
+
+.tams .abilities .item-name {
+    font-size: 18px;
 }
 
 .tams .item-controls {

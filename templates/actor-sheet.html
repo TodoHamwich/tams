@@ -46,9 +46,9 @@
                     </div>
                     {{/each}}
                     <hr>
-                    <h3>Special Skills</h3>
+                    <h3 class="small-header">Special Skills</h3>
                     {{#each system.specialSkills as |skill id|}}
-                    <div class="stat flexrow">
+                    <div class="stat flexrow special-skill">
                         <label class="resource-label rollable" data-action="roll" data-label="{{capitalize id}}" data-stat-value="{{skill.value}}">
                             <i class="fas fa-dice-d20"></i> {{capitalize id}}
                         </label>
@@ -58,14 +58,16 @@
                 </section>
 
                 <section class="limbs-list">
-                    <h3>Limbs (HP / Armor)</h3>
+                    <h3 class="small-header">Limbs (HP / Armor)</h3>
                     {{#each system.limbs as |limb id|}}
                     <div class="limb-row flexrow">
-                        <label class="resource-label">{{limb.label}}</label>
-                        <div class="flexrow limb-values">
+                        <label class="resource-label limb-label">{{limb.label}}</label>
+                        <div class="limb-hp flexrow">
                             <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input"/>
-                            <span>/ {{limb.max}}</span>
-                            <small>Arm:</small>
+                            <span>/{{limb.max}}</span>
+                        </div>
+                        <div class="limb-armor flexrow">
+                            <label>Armour</label>
                             <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input"/>
                         </div>
                     </div>

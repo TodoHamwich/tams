@@ -684,6 +684,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const actor = game.actors.get(actorId);
       if (!actor) return;
 
+      const bonusNeeded = attackerTotal - capped;
+      const pointsNeeded = Math.max(0, Math.ceil(bonusNeeded / 5));
+      const pointsCapped = Math.min(pointsNeeded, 10);
+
       const resources = [{id: "stamina", name: "Stamina", value: actor.system.stamina.value}];
       actor.system.customResources.forEach((res, idx) => {
           resources.push({id: idx.toString(), name: res.name, value: res.value});
@@ -697,19 +701,28 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
             <div class="form-group"><label>Resource</label><select id="res-type">${options}</select></div>
             <div class="form-group">
                 <label>Points Spent (Max 10)</label>
-                <input type="number" id="res-points" value="0" min="0" max="10"/>
+                <input type="number" id="res-points" value="${pointsCapped}" min="0" max="10"/>
                 <p><small>Each point gives +5 to Dodge.</small></p>
+                <p><i>${pointsNeeded > 0 ? `Minimum to dodge: <b>${pointsNeeded}</b>` : "Already Dodged!"}</i></p>
             </div>
             <div class="form-group">
                 <label>Unaware? (Dex halved again)</label>
                 <input type="checkbox" id="unaware"/>
             </div>`,
           buttons: {
-            go: { label: "Apply Boost", callback: (html) => resolve({
-                resId: html.find("#res-type").val(),
-                points: Math.clamp(parseInt(html.find("#res-points").val()) || 0, 0, 10),
-                unaware: html.find("#unaware").is(":checked")
-            })},
+            go: { label: "Apply Boost", callback: (html) => {
+                const resId = html.find("#res-type").val();
+                const res = resources.find(r => r.id === resId);
+                let requestedPoints = Math.clamp(parseInt(html.find("#res-points").val()) || 0, 0, 10);
+                // Adjust to closest possible if not enough resource
+                if (requestedPoints > res.value) requestedPoints = res.value;
+                
+                resolve({
+                    resId: resId,
+                    points: requestedPoints,
+                    unaware: html.find("#unaware").is(":checked")
+                });
+            }},
             cancel: { label: "Cancel", callback: () => resolve(null) }
           },
           default: "go"
