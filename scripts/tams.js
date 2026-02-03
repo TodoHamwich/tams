@@ -388,7 +388,7 @@ class TAMSItemSheet extends ItemSheet {
       classes: ["tams", "sheet", "item"],
       template: "systems/tams/templates/item-sheet.html",
       width: 500,
-      height: 600
+      height: 700
     });
   }
 
@@ -396,6 +396,7 @@ class TAMSItemSheet extends ItemSheet {
     const context = await super.getData(options);
     context.item = this.item;
     context.system = this.item.system;
+    context.actor = this.item.actor;
     context.enrichedDescription = await TextEditor.enrichHTML(this.item.system.description || "", {
       async: true,
       secrets: this.item.isOwner,

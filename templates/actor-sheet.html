@@ -217,7 +217,9 @@
             <textarea name="system.traits" rows="5">{{system.traits}}</textarea>
             <hr>
             <h3>Biography</h3>
-            {{editor system.description target="system.description" button=true owner=owner editable=editable}}
+            <div class="editor-container">
+                {{editor system.description target="system.description" engine="prosemirror" button=true owner=owner editable=editable}}
+            </div>
         </div>
     </section>
 </form>

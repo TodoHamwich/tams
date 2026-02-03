@@ -136,7 +136,9 @@
 
             <hr>
             <label>Description</label>
-            {{editor system.description target="system.description" button=true owner=owner editable=editable}}
+            <div class="editor-container">
+                {{editor system.description target="system.description" engine="prosemirror" button=true owner=owner editable=editable}}
+            </div>
         </div>
     </div>
 </form>
