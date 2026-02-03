@@ -148,7 +148,7 @@ class TAMSItem extends Item {}
 /**
  * Sheets
  */
-class TAMSActorSheet extends foundry.applications.sheets.ActorSheetV2 {
+class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2) {
   static DEFAULT_OPTIONS = {
     tag: "form",
     classes: ["tams", "sheet", "actor"],
@@ -402,7 +402,7 @@ class TAMSActorSheet extends foundry.applications.sheets.ActorSheetV2 {
   }
 }
 
-class TAMSItemSheet extends foundry.applications.sheets.ItemSheetV2 {
+class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
   static DEFAULT_OPTIONS = {
     tag: "form",
     classes: ["tams", "sheet", "item"],
