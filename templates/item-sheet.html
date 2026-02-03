@@ -119,9 +119,7 @@
 
             <hr>
             <label>Description</label>
-            <div class="editor-container">
-                {{editor enrichedDescription target="system.description" engine="prosemirror" button=true owner=owner editable=editable}}
-            </div>
+            <textarea name="system.description" rows="10">{{system.description}}</textarea>
         </div>
     </div>
 </section>

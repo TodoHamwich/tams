@@ -158,9 +158,6 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       position: { width: 650, height: 800 },
       window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
-      editors: {
-        "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
-      },
       actions: {
         itemCreate: TAMSActorSheet.prototype._onItemCreate,
         itemEdit: TAMSActorSheet.prototype._onItemEdit,
@@ -168,8 +165,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         roll: TAMSActorSheet.prototype._onRoll,
         resourceAdd: TAMSActorSheet.prototype._onResourceAdd,
         resourceDelete: TAMSActorSheet.prototype._onResourceDelete,
-        setTab: TAMSActorSheet.prototype._onSetTab,
-        activateEditor: TAMSActorSheet.prototype._onActivateEditor
+        setTab: TAMSActorSheet.prototype._onSetTab
       }
     }, { inplace: false });
   }
@@ -210,11 +206,6 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       };
     });
 
-    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description, {
-      async: true,
-      secrets: this.document.isOwner,
-      relativeTo: this.document
-    });
     context.statOptions = {
       "strength": "TAMS.StatStrength",
       "dexterity": "TAMS.StatDexterity",
@@ -427,11 +418,6 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     this._activeTab = target.dataset.tab;
     this.render();
   }
-
-  _onActivateEditor(event, target) {
-    const editorTarget = target.dataset.target;
-    if (editorTarget) this.editors.get(editorTarget)?.activate();
-  }
 }
 
 class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
@@ -442,12 +428,7 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       position: { width: 500, height: 700 },
       window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
-      editors: {
-        "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
-      },
-      actions: {
-        activateEditor: TAMSItemSheet.prototype._onActivateEditor
-      }
+      actions: { }
     }, { inplace: false });
   }
 
@@ -465,11 +446,6 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
     context.system = this.document.system;
     context.editable = this.isEditable;
     context.owner = this.document.isOwner;
-    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description, {
-      async: true,
-      secrets: this.document.isOwner,
-      relativeTo: this.document
-    });
     context.statOptions = {
       "strength": "TAMS.StatStrength",
       "dexterity": "TAMS.StatDexterity",
@@ -487,11 +463,6 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
         context.resourceOptions = resources;
     }
     return context;
-  }
-
-  _onActivateEditor(event, target) {
-    const editorTarget = target.dataset.target;
-    if (editorTarget) this.editors.get(editorTarget)?.activate();
   }
 }
 

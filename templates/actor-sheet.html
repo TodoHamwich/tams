@@ -190,9 +190,7 @@
             <textarea name="system.traits" rows="5">{{system.traits}}</textarea>
             <hr>
             <h3>Biography</h3>
-            <div class="editor-container">
-                {{editor enrichedDescription target="system.description" engine="prosemirror" button=true owner=owner editable=editable}}
-            </div>
+            <textarea name="system.description" rows="10">{{system.description}}</textarea>
         </div>
 
         {{!-- Modifiers Tab --}}
