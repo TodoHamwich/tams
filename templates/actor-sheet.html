@@ -29,10 +29,9 @@
 
     <nav class="sheet-tabs tabs" data-group="primary">
         <a class="item" data-tab="stats">Stats & Limbs</a>
-        <a class="item" data-tab="resources">Resources</a>
         <a class="item" data-tab="modifiers">Modifiers</a>
         <a class="item" data-tab="items">Weapons & Skills</a>
-        <a class="item" data-tab="abilities">Abilities</a>
+        <a class="item" data-tab="abilities">Abilities & Resources</a>
         <a class="item" data-tab="description">Traits & Bio</a>
     </nav>
 
@@ -82,23 +81,6 @@
             </div>
         </div>
 
-        {{!-- Resources Tab --}}
-        <div class="tab resources" data-group="primary" data-tab="resources">
-            <div class="flexrow">
-                <h3>Custom Resources</h3>
-                <a class="resource-add"><i class="fas fa-plus"></i> Add Resource</a>
-            </div>
-            <ol class="resources-list">
-                {{#each system.customResources as |res index|}}
-                <li class="resource-item flexrow" data-index="{{index}}">
-                    <input type="text" name="system.customResources.{{index}}.name" value="{{res.name}}" placeholder="Resource Name"/>
-                    <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}"/>
-                    <span> / {{res.max}}</span>
-                    <a class="resource-delete" data-index="{{index}}"><i class="fas fa-trash"></i></a>
-                </li>
-                {{/each}}
-            </ol>
-        </div>
 
         {{!-- Modifiers Tab --}}
         <div class="tab modifiers" data-group="primary" data-tab="modifiers">
@@ -182,8 +164,25 @@
             </ol>
         </div>
 
-        {{!-- Abilities Tab --}}
+        {{!-- Abilities & Resources Tab --}}
         <div class="tab abilities" data-group="primary" data-tab="abilities">
+            <div class="flexrow">
+                <h3>Custom Resources</h3>
+                <a class="resource-add"><i class="fas fa-plus"></i> Add Resource</a>
+            </div>
+            <ol class="resources-list">
+                {{#each system.customResources as |res index|}}
+                <li class="resource-item flexrow" data-index="{{index}}">
+                    <input type="text" name="system.customResources.{{index}}.name" value="{{res.name}}" placeholder="Resource Name"/>
+                    <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}"/>
+                    <span> / {{res.max}}</span>
+                    <a class="resource-delete" data-index="{{index}}"><i class="fas fa-trash"></i></a>
+                </li>
+                {{/each}}
+            </ol>
+
+            <hr>
+
             <div class="upgrade-pool flexrow">
                 <label>Ability Upgrade Points:</label>
                 <input type="number" name="system.upgradePoints.abilities" value="{{system.upgradePoints.abilities}}"/>
