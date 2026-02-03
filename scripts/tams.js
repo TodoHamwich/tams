@@ -62,17 +62,24 @@ class TAMSActorSheet extends ActorSheet {
   }
 
   /** @override */
-  getData() {
-    const context = super.getData();
-    const actorData = this.actor.toObject(false);
+  async getData(options) {
+    // The context retrieved from super.getData() contains:
+    // actor: the Actor document
+    // data: a copy of the actor's data
+    // items: a copy of the actor's items
+    // etc.
+    const context = await super.getData(options);
 
-    context.actor = actorData;
-    context.system = actorData.system;
-    context.flags = actorData.flags;
-
-    // Set owner and editable for the editor helper
+    // Set owner and editable for the editor helper (usually already present, but being explicit)
     context.owner = this.actor.isOwner;
     context.editable = this.editable;
+
+    // Enrich biography for the editor
+    context.enrichedDescription = await TextEditor.enrichHTML(this.actor.system.description, {
+      async: true,
+      secrets: this.actor.isOwner,
+      relativeTo: this.actor
+    });
 
     // Prepare items
     this._prepareItems(context);
@@ -85,7 +92,11 @@ class TAMSActorSheet extends ActorSheet {
     const skills = [];
     const abilities = [];
 
-    for (let i of context.items) {
+    // In super.getData(), items is typically the result of this.actor.items
+    // But we want plain objects for the template
+    const items = this.actor.items.map(i => i.toObject(false));
+
+    for (let i of items) {
       i.img = i.img || 'icons/svg/item-bag.svg';
       if (i.type === 'weapon') weapons.push(i);
       else if (i.type === 'skill') skills.push(i);
@@ -347,15 +358,16 @@ class TAMSItemSheet extends ItemSheet {
   }
 
   /** @override */
-  getData() {
-    const context = super.getData();
-    const itemData = this.item.toObject(false);
+  async getData(options) {
+    const context = await super.getData(options);
+    
+    // Enrich description for the editor
+    context.enrichedDescription = await TextEditor.enrichHTML(this.item.system.description, {
+      async: true,
+      secrets: this.item.isOwner,
+      relativeTo: this.item
+    });
 
-    context.item = itemData;
-    context.system = itemData.system;
-    context.flags = itemData.flags;
-
-    // Set owner and editable for the editor helper
     context.owner = this.item.isOwner;
     context.editable = this.editable;
 
