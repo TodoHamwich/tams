@@ -427,6 +427,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     this._activeTab = target.dataset.tab;
     this.render();
   }
+
+  _onActivateEditor(event, target) {
+    const editorTarget = target.dataset.target;
+    if (editorTarget) this.editors.get(editorTarget)?.activate();
+  }
 }
 
 class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
@@ -482,6 +487,11 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
         context.resourceOptions = resources;
     }
     return context;
+  }
+
+  _onActivateEditor(event, target) {
+    const editorTarget = target.dataset.target;
+    if (editorTarget) this.editors.get(editorTarget)?.activate();
   }
 }
 
