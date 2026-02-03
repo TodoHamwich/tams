@@ -300,39 +300,53 @@
 }
 
 .tams.theme-parchment {
-    background: #fdf1d1 url('https://www.transparenttextures.com/patterns/old-mathematics.png');
-    color: #4e342e;
+    background-color: #f5e6c8;
+    background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+    color: #1a0f0d;
+    letter-spacing: 0.03em;
+    line-height: 1.5;
 }
 
 .tams.theme-parchment h1, .tams.theme-parchment h3 {
-    color: #3e2723;
+    color: #000000;
 }
 
 .tams.theme-parchment input, .tams.theme-parchment select, .tams.theme-parchment textarea {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    border-bottom: 1px solid #8d6e63;
-    color: #3e2723;
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid #8d6e63;
+    color: #000000;
+    font-weight: 500;
 }
 
 .tams.theme-parchment .sheet-tabs {
-    background: rgba(141, 110, 99, 0.1);
+    background: rgba(0, 0, 0, 0.05);
     border-color: #8d6e63;
 }
 
 .tams.theme-parchment .sheet-tabs .item {
     border-right-color: #8d6e63;
+    color: #5d4037;
 }
 
 .tams.theme-parchment .sheet-tabs .item.active {
-    background: rgba(141, 110, 99, 0.3);
-    border-bottom-color: #3e2723;
+    background: rgba(0, 0, 0, 0.1);
+    border-bottom-color: #000000;
     text-shadow: none;
-    color: #3e2723;
+    color: #000000;
+}
+
+.tams.theme-parchment .item-name,
+.tams.theme-parchment .resource-label {
+    color: #1a0f0d;
+}
+
+.tams.theme-parchment .item:hover {
+    background: rgba(0, 0, 0, 0.05);
 }
 
 .tams.theme-parchment .bar {
-    border-color: #4e342e;
+    border-color: #1a0f0d;
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .tams .sheet-body {
