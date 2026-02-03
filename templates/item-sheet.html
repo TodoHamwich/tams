@@ -13,16 +13,22 @@
 
             {{#if (eq item.type "weapon")}}
             <div class="flexrow">
+                {{#unless system.isRanged}}
                 <label>Heavy?</label>
                 <input type="checkbox" name="system.isHeavy" {{checked system.isHeavy}}/>
                 <label>Two Handed?</label>
                 <input type="checkbox" name="system.isTwoHanded" {{checked system.isTwoHanded}}/>
+                {{/unless}}
                 <label>Light?</label>
                 <input type="checkbox" name="system.isLight" {{checked system.isLight}}/>
             </div>
             <div class="flexrow">
                 <label>Ranged?</label>
                 <input type="checkbox" name="system.isRanged" {{checked system.isRanged}}/>
+                {{#if system.isRanged}}
+                <label>Thrown?</label>
+                <input type="checkbox" name="system.isThrown" {{checked system.isThrown}}/>
+                {{/if}}
             </div>
             {{#if system.isRanged}}
             <div class="flexrow">

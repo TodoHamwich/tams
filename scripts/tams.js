@@ -75,6 +75,7 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       isTwoHanded: new fields.BooleanField({initial: false}),
       isLight: new fields.BooleanField({initial: false}),
       isRanged: new fields.BooleanField({initial: false}),
+      isThrown: new fields.BooleanField({initial: false}),
       rangedDamage: new fields.NumberField({initial: 0}),
       special: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
@@ -231,7 +232,12 @@ class TAMSActorSheet extends ActorSheet {
     if (item && item.type === 'weapon') {
         const str = this.actor.system.stats.strength.value;
         const dex = this.actor.system.stats.dexterity.value;
-        const usesDex = !!item.system.isLight;
+        let usesDex = false;
+        if (item.system.isRanged) {
+            usesDex = !item.system.isThrown;
+        } else {
+            usesDex = !!item.system.isLight;
+        }
         statValue = usesDex ? dex : str;
         label = `Attacking with ${item.name}`;
     }
@@ -509,7 +515,13 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
       const str = actor.system.stats.strength.value;
       const dex = actor.system.stats.dexterity.value;
-      const cap = weapon.system.isLight ? dex : str;
+      let usesDex = false;
+      if (weapon.system.isRanged) {
+          usesDex = !weapon.system.isThrown;
+      } else {
+          usesDex = !!weapon.system.isLight;
+      }
+      const cap = usesDex ? dex : str;
       const fam = Math.floor(weapon.system.familiarity || 0);
       const roll = await new Roll('1d100').evaluate();
       const raw = roll.total;

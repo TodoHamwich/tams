@@ -46,6 +46,7 @@
       "isTwoHanded": false,
       "isLight": false,
       "isRanged": false,
+      "isThrown": false,
       "rangedDamage": 0,
       "special": "",
       "description": ""
