@@ -113,7 +113,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     return {
       familiarity: new fields.NumberField({initial: 0}),
       upgradePoints: new fields.NumberField({initial: 0}),
-      cost: new fields.NumberField({initial: 0}),
+      cost: new fields.NumberField({initial: 0, nullable: true}),
       resource: new fields.StringField({initial: "stamina"}),
       isApex: new fields.BooleanField({initial: false}),
       uses: new fields.SchemaField({
@@ -161,11 +161,12 @@ class TAMSActorSheet extends ActorSheet {
 
   async getData(options) {
     const context = await super.getData(options);
+    context.actor = this.actor;
     context.system = this.actor.system;
     context.owner = this.actor.isOwner;
     context.editable = this.editable;
 
-    context.enrichedDescription = await TextEditor.enrichHTML(this.actor.system.description, {
+    context.enrichedDescription = await TextEditor.enrichHTML(this.actor.system.description || "", {
       async: true,
       secrets: this.actor.isOwner,
       relativeTo: this.actor
@@ -194,14 +195,16 @@ class TAMSActorSheet extends ActorSheet {
 
     html.find('.item-create').click(this._onItemCreate.bind(this));
     html.find('.item-edit').click(ev => {
-      const li = $(ev.currentTarget).parents(".item");
-      const item = this.actor.items.get(li.data("itemId"));
-      item.sheet.render(true);
+      ev.preventDefault();
+      const li = ev.currentTarget.closest(".item");
+      const item = this.actor.items.get(li.dataset.itemId);
+      if (item) item.sheet.render(true);
     });
     html.find('.item-delete').click(ev => {
-      const li = $(ev.currentTarget).parents(".item");
-      const item = this.actor.items.get(li.data("itemId"));
-      item.delete();
+      ev.preventDefault();
+      const li = ev.currentTarget.closest(".item");
+      const item = this.actor.items.get(li.dataset.itemId);
+      if (item) item.delete();
     });
     html.find('.rollable').click(this._onRoll.bind(this));
     html.find('.resource-add').click(this._onResourceAdd.bind(this));
@@ -391,8 +394,9 @@ class TAMSItemSheet extends ItemSheet {
 
   async getData(options) {
     const context = await super.getData(options);
+    context.item = this.item;
     context.system = this.item.system;
-    context.enrichedDescription = await TextEditor.enrichHTML(this.item.system.description, {
+    context.enrichedDescription = await TextEditor.enrichHTML(this.item.system.description || "", {
       async: true,
       secrets: this.item.isOwner,
       relativeTo: this.item
