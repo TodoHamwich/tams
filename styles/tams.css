@@ -151,12 +151,12 @@
 }
 
 .tams .limb-label {
-    flex: 0 0 90px;
+    flex: 0 0 80px;
     font-size: 13px;
 }
 
 .tams .limb-hp {
-    flex: 0 0 100px;
+    flex: 0 0 70px;
     gap: 2px;
     justify-content: flex-start;
 }
