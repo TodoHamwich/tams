@@ -199,7 +199,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     context.activeTab = this._activeTab;
     context.editable = this.isEditable;
     context.owner = this.document.isOwner;
-    context.staminaPercentage = Math.clamped((this.document.system.stamina.value / (this.document.system.stamina.max || 1)) * 100, 0, 100);
+    context.staminaPercentage = Math.clamp((this.document.system.stamina.value / (this.document.system.stamina.max || 1)) * 100, 0, 100);
     context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description, {
       async: true,
       secrets: this.document.isOwner,
