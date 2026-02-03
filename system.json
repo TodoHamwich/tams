@@ -28,6 +28,6 @@
   "grid": 50,
   "compatibility": {
     "minimum": "11",
-    "verified": "11"
+    "verified": "13"
   }
 }
