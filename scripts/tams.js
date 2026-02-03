@@ -464,10 +464,10 @@ Hooks.once("init", async function() {
   CONFIG.Actor.documentClass = TAMSActor;
   CONFIG.Item.documentClass = TAMSItem;
 
-  Actors.unregisterSheet("core", ActorSheet);
-  Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
-  Items.unregisterSheet("core", ItemSheet);
-  Items.registerSheet("tams", TAMSItemSheet, { makeDefault: true });
+  foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
+  foundry.documents.collections.Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
+  foundry.documents.collections.Items.unregisterSheet("core", foundry.appv1.sheets.ItemSheet);
+  foundry.documents.collections.Items.registerSheet("tams", TAMSItemSheet, { makeDefault: true });
 
   // Register Handlebars Helpers
   Handlebars.registerHelper('eq', function (a, b) {
