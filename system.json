@@ -3,7 +3,6 @@
   "title": "Todo's Advanced Modular System",
   "description": "A custom system for Foundry VTT",
   "version": "1.0.0",
-  "library": false,
   "manifest": "https://github.com/TodoHamwich/tams/releases/latest/download/system.json",
   "download": "https://github.com/TodoHamwich/tams/releases/latest/download/tams.zip",
   "authors": [
@@ -12,13 +11,12 @@
       "url": "https://github.com/TodoHamwich"
     }
   ],
-  "scripts": [
+  "esmodules": [
     "scripts/tams.js"
   ],
   "styles": [
     "styles/tams.css"
   ],
-  "template": "template.json",
   "packs": [],
   "languages": [
     {
@@ -28,8 +26,6 @@
     }
   ],
   "grid": 50,
-  "gridDistance": 5,
-  "gridUnits": "ft",
   "compatibility": {
     "minimum": "11",
     "verified": "11"
