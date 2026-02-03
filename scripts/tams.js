@@ -168,7 +168,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       roll: TAMSActorSheet.prototype._onRoll,
       resourceAdd: TAMSActorSheet.prototype._onResourceAdd,
       resourceDelete: TAMSActorSheet.prototype._onResourceDelete,
-      setTab: TAMSActorSheet.prototype._onSetTab
+      setTab: TAMSActorSheet.prototype._onSetTab,
+      activateEditor: TAMSActorSheet.prototype._onActivateEditor
     }
   };
 
@@ -198,6 +199,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     context.activeTab = this._activeTab;
     context.editable = this.isEditable;
     context.owner = this.document.isOwner;
+    context.staminaPercentage = Math.clamped((this.document.system.stamina.value / (this.document.system.stamina.max || 1)) * 100, 0, 100);
     context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description, {
       async: true,
       secrets: this.document.isOwner,
@@ -429,6 +431,9 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       editors: [
         { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
       ]
+    },
+    actions: {
+      activateEditor: TAMSItemSheet.prototype._onActivateEditor
     }
   };
 

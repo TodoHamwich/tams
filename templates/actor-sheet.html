@@ -10,10 +10,15 @@
                 </div>
             </div>
             <div class="header-row">
-                <div class="resource">
+                <div class="resource stamina">
                     <label>Stamina</label>
-                    <input type="number" name="system.stamina.value" value="{{system.stamina.value}}"/>
-                    <span> / {{system.stamina.max}} </span>
+                    <div class="bar-container">
+                        <input type="number" name="system.stamina.value" value="{{system.stamina.value}}"/>
+                        <div class="bar">
+                            <div class="fill" style="width: {{staminaPercentage}}%"></div>
+                        </div>
+                        <span class="max-label"> / {{system.stamina.max}} </span>
+                    </div>
                 </div>
                 <div class="theme-selector">
                     <label>Theme</label>

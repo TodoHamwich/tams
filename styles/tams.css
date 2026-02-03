@@ -39,6 +39,50 @@
     flex: 1;
 }
 
+.tams .resource.stamina {
+    flex: 1;
+}
+
+.tams .bar-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 10px;
+    border-radius: 4px;
+    border: 1px solid #7a7971;
+}
+
+.tams .bar-container input {
+    width: 50px;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #7a7971;
+    height: 24px;
+}
+
+.tams .bar {
+    flex: 1;
+    height: 14px;
+    background: #444;
+    border: 1px solid #000;
+    border-radius: 7px;
+    overflow: hidden;
+    position: relative;
+}
+
+.tams .bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2e7d32, #66bb6a);
+    transition: width 0.3s ease;
+}
+
+.tams .max-label {
+    min-width: 50px;
+    font-weight: bold;
+}
+
 .tams .grid-2col {
     display: grid;
     grid-template-columns: 1fr 1fr;
