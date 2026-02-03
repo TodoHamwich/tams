@@ -158,13 +158,13 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       closeOnSubmit: false
     },
     actions: {
-      itemCreate: "_onItemCreate",
-      itemEdit: "_onItemEdit",
-      itemDelete: "_onItemDelete",
-      roll: "_onRoll",
-      resourceAdd: "_onResourceAdd",
-      resourceDelete: "_onResourceDelete",
-      setTab: "_onSetTab"
+      itemCreate: TAMSActorSheet.prototype._onItemCreate,
+      itemEdit: TAMSActorSheet.prototype._onItemEdit,
+      itemDelete: TAMSActorSheet.prototype._onItemDelete,
+      roll: TAMSActorSheet.prototype._onRoll,
+      resourceAdd: TAMSActorSheet.prototype._onResourceAdd,
+      resourceDelete: TAMSActorSheet.prototype._onResourceDelete,
+      setTab: TAMSActorSheet.prototype._onSetTab
     }
   };
 
@@ -175,6 +175,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
   };
 
   _onRender(context, options) {
+    super._onRender(context, options);
     const theme = this.document.system.theme || "default";
     this.element.classList.remove("theme-default", "theme-dark", "theme-parchment");
     this.element.classList.add(`theme-${theme}`);
@@ -187,24 +188,24 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     this._activeTab ??= "stats";
     
     // Add custom context
-    Object.assign(context, {
-      system: this.document.system,
-      activeTab: this._activeTab,
-      statOptions: {
-        "strength": "TAMS.StatStrength",
-        "dexterity": "TAMS.StatDexterity",
-        "endurance": "TAMS.StatEndurance",
-        "wisdom": "TAMS.StatWisdom",
-        "intelligence": "TAMS.StatIntelligence",
-        "bravery": "TAMS.StatBravery",
-        "custom": "Custom"
-      },
-      themeOptions: {
-        "default": "Default",
-        "dark": "Dark",
-        "parchment": "Parchment"
-      }
-    });
+    context.actor = this.document;
+    context.document = this.document;
+    context.system = this.document.system;
+    context.activeTab = this._activeTab;
+    context.statOptions = {
+      "strength": "TAMS.StatStrength",
+      "dexterity": "TAMS.StatDexterity",
+      "endurance": "TAMS.StatEndurance",
+      "wisdom": "TAMS.StatWisdom",
+      "intelligence": "TAMS.StatIntelligence",
+      "bravery": "TAMS.StatBravery",
+      "custom": "Custom"
+    };
+    context.themeOptions = {
+      "default": "Default",
+      "dark": "Dark",
+      "parchment": "Parchment"
+    };
 
     const weapons = [];
     const skills = [];
@@ -426,17 +427,17 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     
-    Object.assign(context, {
-      system: this.document.system,
-      statOptions: {
-        "strength": "TAMS.StatStrength",
-        "dexterity": "TAMS.StatDexterity",
-        "endurance": "TAMS.StatEndurance",
-        "wisdom": "TAMS.StatWisdom",
-        "intelligence": "TAMS.StatIntelligence",
-        "bravery": "TAMS.StatBravery"
-      }
-    });
+    context.item = this.document;
+    context.document = this.document;
+    context.system = this.document.system;
+    context.statOptions = {
+      "strength": "TAMS.StatStrength",
+      "dexterity": "TAMS.StatDexterity",
+      "endurance": "TAMS.StatEndurance",
+      "wisdom": "TAMS.StatWisdom",
+      "intelligence": "TAMS.StatIntelligence",
+      "bravery": "TAMS.StatBravery"
+    };
 
     if (this.document.type === 'ability' && this.document.actor) {
         const resources = { "stamina": "Stamina" };
