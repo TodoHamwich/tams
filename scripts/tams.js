@@ -64,8 +64,9 @@ class TAMSActorSheet extends ActorSheet {
   /** @override */
   getData() {
     const context = super.getData();
-    const actorData = context.data;
+    const actorData = this.actor.toObject(false);
 
+    context.actor = actorData;
     context.system = actorData.system;
     context.flags = actorData.flags;
 
@@ -339,6 +340,18 @@ class TAMSItemSheet extends ItemSheet {
       width: 500,
       height: 600
     });
+  }
+
+  /** @override */
+  getData() {
+    const context = super.getData();
+    const itemData = this.item.toObject(false);
+
+    context.item = itemData;
+    context.system = itemData.system;
+    context.flags = itemData.flags;
+
+    return context;
   }
 }
 
