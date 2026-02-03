@@ -85,7 +85,7 @@
             {{#if system.isApex}}
             <div class="flexrow">
                 <label>Uses</label>
-                <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
+                <input type="number" name="system.uses.value" value="{{system.uses.value}}" min="0" max="{{system.uses.max}}"/>
                 <span> / </span>
                 <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
             </div>

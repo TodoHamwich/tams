@@ -14,13 +14,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         bravery: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), label: new fields.StringField({initial: "TAMS.StatBravery"}) })
       }),
       limbs: new fields.SchemaField({
-        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Head"}) }),
-        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Thorax"}) }),
-        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Stomach"}) }),
-        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Left Arm"}) }),
-        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Right Arm"}) }),
-        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Left Leg"}) }),
-        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Right Leg"}) })
+        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Thorax"}) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Stomach"}) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Arm"}) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Arm"}) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Leg"}) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}) })
       }),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({initial: 10}),
@@ -60,11 +60,14 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const end = this.stats.endurance.value;
     for ( let limb of Object.values(this.limbs) ) {
       limb.max = Math.floor(end * limb.mult);
+      limb.value = Math.clamp(limb.value, 0, limb.max);
     }
     this.stamina.max = Math.floor(end * this.stamina.mult);
+    this.stamina.value = Math.clamp(this.stamina.value, 0, this.stamina.max);
     for ( let res of this.customResources ) {
       const statValue = this.stats[res.stat]?.value || 0;
       res.max = Math.floor((statValue * res.mult) + res.bonus);
+      res.value = Math.clamp(res.value, 0, res.max);
     }
   }
 }
@@ -135,6 +138,12 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
+  }
+
+  prepareDerivedData() {
+    if ( this.isApex ) {
+      this.uses.value = Math.clamp(this.uses.value, 0, this.uses.max || 0);
+    }
   }
 
   get calculatedDamage() {
