@@ -13,9 +13,23 @@
 
             {{#if (eq item.type "weapon")}}
             <div class="flexrow">
-                <label>Tags</label>
-                <input type="text" name="system.tags" value="{{system.tags}}" placeholder="Heavy, Two Handed, Light..."/>
+                <label>Heavy?</label>
+                <input type="checkbox" name="system.isHeavy" {{checked system.isHeavy}}/>
+                <label>Two Handed?</label>
+                <input type="checkbox" name="system.isTwoHanded" {{checked system.isTwoHanded}}/>
+                <label>Light?</label>
+                <input type="checkbox" name="system.isLight" {{checked system.isLight}}/>
             </div>
+            <div class="flexrow">
+                <label>Ranged?</label>
+                <input type="checkbox" name="system.isRanged" {{checked system.isRanged}}/>
+            </div>
+            {{#if system.isRanged}}
+            <div class="flexrow">
+                <label>Ranged Damage</label>
+                <input type="number" name="system.rangedDamage" value="{{system.rangedDamage}}" data-dtype="Number"/>
+            </div>
+            {{/if}}
             <div class="flexrow">
                 <label>Calculated Damage</label>
                 <span>{{system.calculatedDamage}}</span>

@@ -25,6 +25,12 @@
       "physicalNotes": "",
       "traits": "",
       "description": "",
+      "upgradePoints": {
+        "stats": 0,
+        "weapons": 0,
+        "skills": 0,
+        "abilities": 0
+      },
       "specialSkills": {
         "dodge": { "value": 0 },
         "retaliation": { "value": 0 },
@@ -36,7 +42,11 @@
     "types": ["weapon", "skill", "ability"],
     "weapon": {
       "familiarity": 0,
-      "damage": "",
+      "isHeavy": false,
+      "isTwoHanded": false,
+      "isLight": false,
+      "isRanged": false,
+      "rangedDamage": 0,
       "special": "",
       "description": ""
     },

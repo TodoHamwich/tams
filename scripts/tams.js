@@ -39,6 +39,12 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       physicalNotes: new fields.StringField({initial: ""}),
       traits: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""}),
+      upgradePoints: new fields.SchemaField({
+        stats: new fields.NumberField({initial: 0}),
+        weapons: new fields.NumberField({initial: 0}),
+        skills: new fields.NumberField({initial: 0}),
+        abilities: new fields.NumberField({initial: 0})
+      }),
       specialSkills: new fields.SchemaField({
         dodge: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
         retaliation: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
@@ -55,7 +61,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.stamina.max = Math.floor(end * this.stamina.mult);
     for ( let res of this.customResources ) {
       const statValue = this.stats[res.stat]?.value || 0;
-      res.max = Math.floor(statValue * res.mult) + res.bonus;
+      res.max = Math.floor((statValue * res.mult) + res.bonus);
     }
   }
 }
@@ -65,20 +71,25 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({initial: 0}),
-      tags: new fields.StringField({initial: ""}),
+      isHeavy: new fields.BooleanField({initial: false}),
+      isTwoHanded: new fields.BooleanField({initial: false}),
+      isLight: new fields.BooleanField({initial: false}),
+      isRanged: new fields.BooleanField({initial: false}),
+      rangedDamage: new fields.NumberField({initial: 0}),
       special: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
   }
 
   get calculatedDamage() {
+    // If ranged, damage is player-set and not derived from stats
+    if (this.isRanged) return Math.floor(this.rangedDamage || 0);
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
     const str = actor.system.stats.strength.value;
     let mult = 0.5;
-    const tags = (this.tags || "").toLowerCase();
-    if (tags.includes("heavy")) mult += 0.25;
-    if (tags.includes("two handed") || tags.includes("two-handed")) mult += 0.25;
+    if (this.isHeavy) mult += 0.25;
+    if (this.isTwoHanded) mult += 0.25;
     return Math.floor(str * mult);
   }
 }
@@ -218,10 +229,10 @@ class TAMSActorSheet extends ActorSheet {
     let familiarity = parseInt(dataset.familiarity) || 0;
 
     if (item && item.type === 'weapon') {
-        const tags = (item.system.tags || "").toLowerCase();
         const str = this.actor.system.stats.strength.value;
         const dex = this.actor.system.stats.dexterity.value;
-        statValue = tags.includes("light") ? dex : str;
+        const usesDex = !!item.system.isLight;
+        statValue = usesDex ? dex : str;
         label = `Attacking with ${item.name}`;
     }
 
@@ -313,7 +324,11 @@ class TAMSActorSheet extends ActorSheet {
         damageInfo = `
             <div class="roll-row"><b>Damage: ${damage}</b></div>
             <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
-            <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
+            <div class="roll-row" style="gap:6px;">
+              <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
+              <button class="tams-dodge" data-raw="${rawResult}">Dodge</button>
+              <button class="tams-retaliate">Retaliate</button>
+            </div>
         `;
     }
 
@@ -405,6 +420,10 @@ Hooks.once("init", async function() {
   Handlebars.registerHelper('or', function (a, b) {
     return a || b;
   });
+  Handlebars.registerHelper('capitalize', function (str) {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  });
 });
 
 Hooks.on("renderChatMessage", (message, html, data) => {
@@ -424,19 +443,19 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       };
       const limbKey = locationMap[location];
       const limb = target.system.limbs[limbKey];
-      const armor = limb.armor || 0;
+      const armor = Math.floor(limb.armor || 0);
 
       new Dialog({
         title: `Apply Damage to ${target.name}`,
         content: `
-          <div class="form-group"><label>Incoming Damage:</label><input type="number" id="dmg" value="${damage}"/></div>
-          <div class="form-group"><label>Location:</label><span>${location} (Armor: ${armor})</span></div>
+          <div class=\"form-group\"><label>Incoming Damage:</label><input type=\"number\" id=\"dmg\" value=\"${damage}\"/></div>
+          <div class=\"form-group\"><label>Location:</label><span>${location} (Armor: ${armor})</span></div>
         `,
         buttons: {
           apply: { label: "Apply", callback: async (html) => {
-              const finalDmg = parseInt(html.find("#dmg").val());
+              const finalDmg = Math.floor(parseFloat(html.find("#dmg").val()) || 0);
               const effectiveDmg = Math.max(0, finalDmg - armor);
-              const newHp = Math.max(0, limb.value - effectiveDmg);
+              const newHp = Math.max(0, Math.floor(limb.value) - effectiveDmg);
               await target.update({[`system.limbs.${limbKey}.value`]: newHp});
               ChatMessage.create({ content: `<b>${target.name}</b> took ${effectiveDmg} damage to the ${location} (${armor} armor blocked).` });
             }
@@ -444,5 +463,84 @@ Hooks.on("renderChatMessage", (message, html, data) => {
         },
         default: "apply"
       }).render(true);
+    });
+
+    // Dodge action
+    html.find('.tams-dodge').click(async ev => {
+      ev.preventDefault();
+      const actor = canvas.tokens.controlled[0]?.actor;
+      if (!actor) return ui.notifications.warn('Select a token to Dodge.');
+      const statValue = Math.floor(actor.system.specialSkills.dodge.value || 0);
+      const roll = await new Roll('1d100').evaluate();
+      const raw = roll.total;
+      const capped = Math.min(raw, statValue);
+      const total = capped; // no familiarity for special skill
+      const msg = `
+        <div class="tams-roll">
+          <h3 class="roll-label">Dodge — ${actor.name}</h3>
+          <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
+          <div class="roll-row"><small>Stat Cap (${statValue}):</small><span>${capped}</span></div>
+          <hr>
+          <div class="roll-total">Total: <b>${total}</b></div>
+          <div class="roll-contest-hint"><small>Use Raw Dice to check crit (Attacker vs Defender).</small></div>
+        </div>`;
+      ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll], type: CONST.CHAT_MESSAGE_TYPES.ROLL });
+    });
+
+    // Retaliate action
+    html.find('.tams-retaliate').click(async ev => {
+      ev.preventDefault();
+      const actor = canvas.tokens.controlled[0]?.actor;
+      if (!actor) return ui.notifications.warn('Select a token to Retaliate.');
+      const weapons = actor.items.filter(i => i.type === 'weapon');
+      if (!weapons.length) return ui.notifications.warn('Selected actor has no weapons.');
+
+      const options = weapons.map(w => `<option value="${w.id}">${w.name} (Fam ${w.system.familiarity||0})</option>`).join('');
+      let chosenId = await new Promise(resolve => {
+        new Dialog({
+          title: 'Choose Weapon to Retaliate',
+          content: `<div class=\"form-group\"><label>Weapon</label><select id=\"ret-weapon\">${options}</select></div>`,
+          buttons: { go: { label: 'Roll', callback: html => resolve(html.find('#ret-weapon').val()) } },
+          default: 'go'
+        }).render(true);
+      });
+      const weapon = actor.items.get(chosenId);
+      if (!weapon) return;
+
+      const str = actor.system.stats.strength.value;
+      const dex = actor.system.stats.dexterity.value;
+      const cap = weapon.system.isLight ? dex : str;
+      const fam = Math.floor(weapon.system.familiarity || 0);
+      const roll = await new Roll('1d100').evaluate();
+      const raw = roll.total;
+      const capped = Math.min(raw, cap);
+      const total = capped + fam;
+
+      let hitLocation = '';
+      if (raw >= 96) hitLocation = 'Head';
+      else if (raw >= 56) hitLocation = 'Thorax';
+      else if (raw >= 41) hitLocation = 'Stomach';
+      else if (raw >= 31) hitLocation = 'Left Arm';
+      else if (raw >= 21) hitLocation = 'Right Arm';
+      else if (raw >= 11) hitLocation = 'Left Leg';
+      else hitLocation = 'Right Leg';
+      const damage = weapon.system.calculatedDamage;
+
+      const msg = `
+        <div class="tams-roll">
+          <h3 class="roll-label">Retaliation — ${actor.name} with ${weapon.name}</h3>
+          <div class="roll-row"><b>Damage: ${damage}</b></div>
+          <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
+          <div class="roll-row" style="gap:6px;">
+            <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
+          </div>
+          <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
+          <div class="roll-row"><small>Stat Cap (${cap}):</small><span>${capped}</span></div>
+          <div class="roll-row"><small>Familiarity:</small><span>+${fam}</span></div>
+          <hr>
+          <div class="roll-total">Total: <b>${total}</b></div>
+          <div class="roll-contest-hint"><small>Use Raw Dice to check crit (Attacker doubles Defender).</small></div>
+        </div>`;
+      ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll], type: CONST.CHAT_MESSAGE_TYPES.ROLL });
     });
 });

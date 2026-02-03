@@ -66,12 +66,18 @@
     padding: 5px 0;
 }
 
-.tams .limb-details {
-    padding-left: 20px;
+.tams .small-input {
+    width: 45px !important;
+    text-align: center;
 }
 
-.tams .limb-details input {
-    width: 40px;
+.tams .limb-values {
+    flex: 0 0 auto;
+    gap: 5px;
+}
+
+.tams .limb-values span, .tams .limb-values small {
+    white-space: nowrap;
 }
 
 .tams .rollable {

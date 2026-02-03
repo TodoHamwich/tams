@@ -14,8 +14,6 @@
                     <label>Stamina</label>
                     <input type="number" name="system.stamina.value" value="{{system.stamina.value}}"/>
                     <span> / {{system.stamina.max}} </span>
-                    <small>Mult: </small>
-                    <input type="number" name="system.stamina.mult" value="{{system.stamina.mult}}" step="0.25" style="width: 50px;"/>
                 </div>
                 <div class="theme-selector">
                     <label>Theme</label>
@@ -32,6 +30,7 @@
     <nav class="sheet-tabs tabs" data-group="primary">
         <a class="item" data-tab="stats">Stats & Limbs</a>
         <a class="item" data-tab="resources">Resources</a>
+        <a class="item" data-tab="modifiers">Modifiers</a>
         <a class="item" data-tab="items">Weapons & Skills</a>
         <a class="item" data-tab="abilities">Abilities</a>
         <a class="item" data-tab="description">Traits & Bio</a>
@@ -40,6 +39,10 @@
     <section class="sheet-body">
         {{!-- Stats Tab --}}
         <div class="tab stats" data-group="primary" data-tab="stats">
+            <div class="upgrade-pool flexrow">
+                <label>Stat Upgrade Points:</label>
+                <input type="number" name="system.upgradePoints.stats" value="{{system.upgradePoints.stats}}"/>
+            </div>
             <div class="grid grid-2col">
                 <section class="stats-list">
                     {{#each system.stats as |stat id|}}
@@ -54,8 +57,8 @@
                     <h3>Special Skills</h3>
                     {{#each system.specialSkills as |skill id|}}
                     <div class="stat flexrow">
-                        <label class="resource-label rollable" data-label="{{id}}" data-stat-value="{{skill.value}}">
-                            <i class="fas fa-dice-d20"></i> {{id}}
+                        <label class="resource-label rollable" data-label="{{capitalize id}}" data-stat-value="{{skill.value}}">
+                            <i class="fas fa-dice-d20"></i> {{capitalize id}}
                         </label>
                         <input type="number" name="system.specialSkills.{{id}}.value" value="{{skill.value}}" data-dtype="Number"/>
                     </div>
@@ -65,17 +68,13 @@
                 <section class="limbs-list">
                     <h3>Limbs (HP / Armor)</h3>
                     {{#each system.limbs as |limb id|}}
-                    <div class="limb-row flexcol">
-                        <div class="flexrow">
-                            <label class="resource-label">{{limb.label}}</label>
-                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}"/>
-                            <span> / {{limb.max}}</span>
-                        </div>
-                        <div class="flexrow limb-details">
-                            <small>Mult:</small>
-                            <input type="number" name="system.limbs.{{id}}.mult" value="{{limb.mult}}" step="0.25"/>
-                            <small>Armor:</small>
-                            <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}"/>
+                    <div class="limb-row flexrow">
+                        <label class="resource-label">{{limb.label}}</label>
+                        <div class="flexrow limb-values">
+                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input"/>
+                            <span>/ {{limb.max}}</span>
+                            <small>Arm:</small>
+                            <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input"/>
                         </div>
                     </div>
                     {{/each}}
@@ -95,7 +94,35 @@
                     <input type="text" name="system.customResources.{{index}}.name" value="{{res.name}}" placeholder="Resource Name"/>
                     <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}"/>
                     <span> / {{res.max}}</span>
-                    <select name="system.customResources.{{index}}.stat">
+                    <a class="resource-delete" data-index="{{index}}"><i class="fas fa-trash"></i></a>
+                </li>
+                {{/each}}
+            </ol>
+        </div>
+
+        {{!-- Modifiers Tab --}}
+        <div class="tab modifiers" data-group="primary" data-tab="modifiers">
+            <div class="flexcol">
+                <h3>Stamina Modifier</h3>
+                <div class="flexrow">
+                    <label>Stamina Multiplier</label>
+                    <input type="number" name="system.stamina.mult" value="{{system.stamina.mult}}" step="0.25" style="width: 60px;"/>
+                </div>
+                <hr>
+                <h3>Limb Multipliers</h3>
+                {{#each system.limbs as |limb id|}}
+                <div class="flexrow">
+                    <label style="flex:1">{{limb.label}}</label>
+                    <small>Mult:</small>
+                    <input type="number" name="system.limbs.{{id}}.mult" value="{{limb.mult}}" step="0.25" style="width:60px;"/>
+                </div>
+                {{/each}}
+                <hr>
+                <h3>Resource Modifiers</h3>
+                {{#each system.customResources as |res index|}}
+                <div class="flexrow" data-index="{{index}}">
+                    <label style="flex:1">{{res.name}}</label>
+                    <select name="system.customResources.{{index}}.stat" style="width:110px;">
                         {{#select res.stat}}
                         <option value="strength">Str</option>
                         <option value="dexterity">Dex</option>
@@ -107,17 +134,22 @@
                         {{/select}}
                     </select>
                     <small>x</small>
-                    <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 50px;"/>
+                    <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 60px;"/>
                     <small>+</small>
-                    <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 50px;"/>
-                    <a class="resource-delete" data-index="{{index}}"><i class="fas fa-trash"></i></a>
-                </li>
+                    <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 60px;"/>
+                </div>
                 {{/each}}
-            </ol>
+            </div>
         </div>
 
         {{!-- Items Tab --}}
         <div class="tab items" data-group="primary" data-tab="items">
+            <div class="upgrade-pool flexrow">
+                <label>Weapon Upgrade Points:</label>
+                <input type="number" name="system.upgradePoints.weapons" value="{{system.upgradePoints.weapons}}"/>
+                <label>Skill Upgrade Points:</label>
+                <input type="number" name="system.upgradePoints.skills" value="{{system.upgradePoints.skills}}"/>
+            </div>
             <h3>Weapons <a class="item-create" data-type="weapon"><i class="fas fa-plus"></i> Add</a></h3>
             <ol class="items-list">
                 {{#each weapons as |item id|}}
@@ -152,6 +184,10 @@
 
         {{!-- Abilities Tab --}}
         <div class="tab abilities" data-group="primary" data-tab="abilities">
+            <div class="upgrade-pool flexrow">
+                <label>Ability Upgrade Points:</label>
+                <input type="number" name="system.upgradePoints.abilities" value="{{system.upgradePoints.abilities}}"/>
+            </div>
             <h3>Abilities <a class="item-create" data-type="ability"><i class="fas fa-plus"></i> Add</a></h3>
             <ol class="items-list">
                 {{#each abilities as |item id|}}
