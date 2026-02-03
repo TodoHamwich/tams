@@ -371,8 +371,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
             <div class="roll-row" style="gap:6px;">
               <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
-              <button class="tams-dodge" data-raw="${rawResult}">Dodge</button>
-              <button class="tams-retaliate">Retaliate</button>
+              <button class="tams-dodge" data-raw="${rawResult}" data-total="${finalTotal}">Dodge</button>
+              <button class="tams-retaliate" data-raw="${rawResult}" data-total="${finalTotal}">Retaliate</button>
             </div>
         `;
     }
@@ -537,13 +537,34 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
     // Dodge action
     html.querySelector('.tams-dodge')?.addEventListener("click", async ev => {
       ev.preventDefault();
+      const btn = ev.currentTarget;
+      const attackerRaw = parseInt(btn.dataset.raw);
+      const attackerTotal = parseInt(btn.dataset.total);
+      
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Dodge.');
+      
       const statValue = Math.floor(actor.system.specialSkills.dodge.value || 0);
       const roll = await new Roll('1d100').evaluate();
       const raw = roll.total;
       const capped = Math.min(raw, statValue);
       const total = capped; // no familiarity for special skill
+
+      let critInfo = "";
+      if (total >= attackerTotal) {
+          if (raw >= (attackerRaw * 2)) {
+              critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
+          } else {
+              critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
+          }
+      } else {
+          if (attackerRaw >= (raw * 2)) {
+              critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
+          } else {
+              critInfo = `<div class="tams-failure">Dodge Failed vs Total ${attackerTotal}</div>`;
+          }
+      }
+
       const msg = `
         <div class="tams-roll">
           <h3 class="roll-label">Dodge — ${actor.name}</h3>
@@ -551,7 +572,11 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           <div class="roll-row"><small>Stat Cap (${statValue}):</small><span>${capped}</span></div>
           <hr>
           <div class="roll-total">Total: <b>${total}</b></div>
-          <div class="roll-contest-hint"><small>Use Raw Dice to check crit (Attacker vs Defender).</small></div>
+          ${critInfo}
+          <div class="roll-contest-hint">
+            <small><b>Contest:</b> Total vs Attacker Total (${attackerTotal})</small><br>
+            <small><b>Crit Check:</b> Raw vs Attacker Raw (${attackerRaw})</small>
+          </div>
         </div>`;
       ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll] });
     });
@@ -559,6 +584,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
     // Retaliate action
     html.querySelector('.tams-retaliate')?.addEventListener("click", async ev => {
       ev.preventDefault();
+      const btn = ev.currentTarget;
+      const attackerRaw = parseInt(btn.dataset.raw);
+      const attackerTotal = parseInt(btn.dataset.total);
+
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Retaliate.');
       const weapons = actor.items.filter(i => i.type === 'weapon');
@@ -591,6 +620,21 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const capped = Math.min(raw, cap);
       const total = capped + fam;
 
+      let critInfo = "";
+      if (total >= attackerTotal) {
+          if (raw >= (attackerRaw * 2)) {
+              critInfo = `<div class="tams-crit success">CRITICAL RETALIATION! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
+          } else {
+              critInfo = `<div class="tams-success">Retaliate Success vs Total ${attackerTotal}</div>`;
+          }
+      } else {
+          if (attackerRaw >= (raw * 2)) {
+              critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
+          } else {
+              critInfo = `<div class="tams-failure">Retaliate Failed vs Total ${attackerTotal}</div>`;
+          }
+      }
+
       let hitLocation = '';
       if (raw >= 96) hitLocation = 'Head';
       else if (raw >= 56) hitLocation = 'Thorax';
@@ -608,13 +652,19 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
           <div class="roll-row" style="gap:6px;">
             <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
+            <button class="tams-dodge" data-raw="${raw}" data-total="${total}">Dodge</button>
+            <button class="tams-retaliate" data-raw="${raw}" data-total="${total}">Retaliate</button>
           </div>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>Stat Cap (${cap}):</small><span>${capped}</span></div>
           <div class="roll-row"><small>Familiarity:</small><span>+${fam}</span></div>
           <hr>
           <div class="roll-total">Total: <b>${total}</b></div>
-          <div class="roll-contest-hint"><small>Use Raw Dice to check crit (Attacker doubles Defender).</small></div>
+          ${critInfo}
+          <div class="roll-contest-hint">
+            <small><b>Contest:</b> Total vs Attacker Total (${attackerTotal})</small><br>
+            <small><b>Crit Check:</b> Raw vs Attacker Raw (${attackerRaw})</small>
+          </div>
         </div>`;
       ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll] });
     });
