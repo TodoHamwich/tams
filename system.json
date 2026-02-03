@@ -4,12 +4,12 @@
   "description": "A custom system for Foundry VTT",
   "version": "1.0.0",
   "library": "false",
-  "manifest": "https://github.com/USERNAME/tams/releases/latest/download/system.json",
-  "download": "https://github.com/USERNAME/tams/releases/latest/download/tams.zip",
+  "manifest": "https://github.com/TodoHamwich/tams/releases/latest/download/system.json",
+  "download": "https://github.com/TodoHamwich/tams/releases/latest/download/tams.zip",
   "authors": [
     {
-      "name": "Your Name",
-      "url": ""
+      "name": "TodoHamwich",
+      "url": "https://github.com/TodoHamwich"
     }
   ],
   "scripts": [
