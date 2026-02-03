@@ -155,7 +155,10 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     position: { width: 650, height: 800 },
     form: { 
       submitOnChange: true,
-      closeOnSubmit: false
+      closeOnSubmit: false,
+      editors: [
+        { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
+      ]
     },
     actions: {
       itemCreate: TAMSActorSheet.prototype._onItemCreate,
@@ -192,6 +195,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     context.document = this.document;
     context.system = this.document.system;
     context.activeTab = this._activeTab;
+    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description, {
+      async: true,
+      secrets: this.document.isOwner,
+      relativeTo: this.document
+    });
     context.statOptions = {
       "strength": "TAMS.StatStrength",
       "dexterity": "TAMS.StatDexterity",
@@ -413,7 +421,10 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
     position: { width: 500, height: 700 },
     form: { 
       submitOnChange: true,
-      closeOnSubmit: false
+      closeOnSubmit: false,
+      editors: [
+        { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
+      ]
     }
   };
 
@@ -429,6 +440,11 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
     context.item = this.document;
     context.document = this.document;
     context.system = this.document.system;
+    context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description, {
+      async: true,
+      secrets: this.document.isOwner,
+      relativeTo: this.document
+    });
     context.statOptions = {
       "strength": "TAMS.StatStrength",
       "dexterity": "TAMS.StatDexterity",
