@@ -25,6 +25,7 @@
       "physicalNotes": "",
       "traits": "",
       "description": "",
+      "behindMult": 0.5,
       "upgradePoints": {
         "stats": 0,
         "weapons": 0,
@@ -48,6 +49,8 @@
       "isRanged": false,
       "isThrown": false,
       "rangedDamage": 0,
+      "fireRate": "1",
+      "fireRateCustom": 1,
       "special": "",
       "description": ""
     },
@@ -69,6 +72,7 @@
       "damageStat": "strength",
       "damageMult": 0.5,
       "damageBonus": 0,
+      "multiAttack": 1,
       "tags": "",
       "description": ""
     }

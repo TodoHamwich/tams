@@ -213,6 +213,12 @@
                 </div>
                 {{/each}}
                 <hr>
+                <h3>Combat Modifiers</h3>
+                <div class="flexrow">
+                    <label style="flex:1">Behind Multiplier</label>
+                    <input type="number" name="system.behindMult" value="{{system.behindMult}}" step="0.05" style="width: 60px;"/>
+                </div>
+                <hr>
                 <h3>Resource Modifiers</h3>
                 {{#each system.customResources as |res index|}}
                 <div class="flexrow modifier-row" data-index="{{index}}">

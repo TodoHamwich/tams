@@ -41,6 +41,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       physicalNotes: new fields.StringField({initial: ""}),
       traits: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""}),
+      behindMult: new fields.NumberField({initial: 0.5, min: 0, step: 0.05}),
       upgradePoints: new fields.SchemaField({
         stats: new fields.NumberField({initial: 0}),
         weapons: new fields.NumberField({initial: 0}),
@@ -79,6 +80,8 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       isRanged: new fields.BooleanField({initial: false}),
       isThrown: new fields.BooleanField({initial: false}),
       rangedDamage: new fields.NumberField({initial: 0}),
+      fireRate: new fields.StringField({initial: "1"}),
+      fireRateCustom: new fields.NumberField({initial: 1}),
       special: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -127,6 +130,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       damageStat: new fields.StringField({initial: "strength"}),
       damageMult: new fields.NumberField({initial: 0.5, step: 0.05}),
       damageBonus: new fields.NumberField({initial: 0}),
+      multiAttack: new fields.NumberField({initial: 1}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -357,6 +361,15 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     let damageInfo = "";
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
         const damage = item.system.calculatedDamage;
+        let multiVal = 1;
+        if (item.type === 'weapon' && item.system.isRanged) {
+            if (item.system.fireRate === '3') multiVal = 3;
+            else if (item.system.fireRate === 'auto') multiVal = 10;
+            else if (item.system.fireRate === 'custom') multiVal = item.system.fireRateCustom || 1;
+        } else if (item.type === 'ability') {
+            multiVal = item.system.multiAttack || 1;
+        }
+
         let hitLocation = "";
         if (rawResult >= 96) hitLocation = "Head";
         else if (rawResult >= 56) hitLocation = "Thorax";
@@ -369,10 +382,12 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         damageInfo = `
             <div class="roll-row"><b>Damage: ${damage}</b></div>
             <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
-            <div class="roll-row" style="gap:6px;">
+            <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
+            <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
               <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
-              <button class="tams-dodge" data-raw="${rawResult}" data-total="${finalTotal}">Dodge</button>
-              <button class="tams-retaliate" data-raw="${rawResult}" data-total="${finalTotal}">Retaliate</button>
+              <button class="tams-dodge" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}">Dodge</button>
+              <button class="tams-retaliate" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}">Retaliate</button>
+              <button class="tams-behind-toggle" style="background: #444; color: white;">Toggle Behind Attack</button>
             </div>
         `;
     }
@@ -540,39 +555,56 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const btn = ev.currentTarget;
       const attackerRaw = parseInt(btn.dataset.raw);
       const attackerTotal = parseInt(btn.dataset.total);
+      const attackerMulti = parseInt(btn.dataset.multi) || 1;
+      const container = btn.closest(".tams-roll");
+      const isBehind = container.classList.contains("behind-attack");
       
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Dodge.');
       
-      const statValue = Math.floor(actor.system.stats.dexterity.value || 0);
+      let dexVal = Math.floor(actor.system.stats.dexterity.value || 0);
+      if (isBehind) {
+          const behindMult = actor.system.behindMult ?? 0.5;
+          dexVal = Math.floor(dexVal * behindMult);
+      }
+
       const roll = await new Roll('1d100').evaluate();
       const raw = roll.total;
-      const capped = Math.min(raw, statValue);
+      const capped = Math.min(raw, dexVal);
       const total = capped;
 
       let critInfo = "";
-      if (total >= attackerTotal) {
-          if (raw >= (attackerRaw * 2)) {
-              critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
-          } else {
-              critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
-          }
-      } else {
+      let hitsScored = 0;
+
+      if (attackerTotal > total) {
+          // Attacker wins
+          hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
+          hitsScored = Math.min(hitsScored, attackerMulti);
+
           if (attackerRaw >= (raw * 2)) {
               critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
           } else {
               critInfo = `<div class="tams-failure">Dodge Failed vs Total ${attackerTotal}</div>`;
           }
+      } else {
+          // Defender wins
+          hitsScored = 0;
+          if (raw >= (attackerRaw * 2)) {
+              critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
+          } else {
+              critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
+          }
       }
 
       const msg = `
-        <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}">
-          <h3 class="roll-label">Dodge — ${actor.name}</h3>
+        <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-attacker-multi="${attackerMulti}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}" data-behind="${isBehind ? '1' : '0'}">
+          <h3 class="roll-label">Dodge — ${actor.name} ${isBehind ? '(From Behind)' : ''}</h3>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
-          <div class="roll-row"><small>Stat Cap (Dex ${statValue}):</small><span>${capped}</span></div>
+          <div class="roll-row"><small>Stat Cap (Dex ${dexVal}):</small><span>${capped}</span></div>
           <div class="roll-boost-container"></div>
           <hr>
           <div class="roll-total">Total: <b>${total}</b></div>
+          <div class="roll-hits"><b>Hits Taken: ${hitsScored} / ${attackerMulti}</b></div>
           <div class="roll-crit-info">${critInfo}</div>
           <div class="roll-contest-hint">
             <small><b>Contest:</b> Total vs Attacker Total (${attackerTotal})</small><br>
@@ -592,6 +624,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const container = btn.closest(".tams-roll");
       const attackerRaw = parseInt(container.dataset.attackerRaw);
       const attackerTotal = parseInt(container.dataset.attackerTotal);
+      const attackerMulti = parseInt(container.dataset.attackerMulti) || 1;
       const actorId = container.dataset.actorId;
       const raw = parseInt(container.dataset.raw);
       const capped = parseInt(container.dataset.capped);
@@ -614,11 +647,16 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                 <label>Points Spent (Max 10)</label>
                 <input type="number" id="res-points" value="0" min="0" max="10"/>
                 <p><small>Each point gives +5 to Dodge.</small></p>
+            </div>
+            <div class="form-group">
+                <label>Unaware? (Dex halved again)</label>
+                <input type="checkbox" id="unaware"/>
             </div>`,
           buttons: {
             go: { label: "Apply Boost", callback: (html) => resolve({
                 resId: html.find("#res-type").val(),
-                points: Math.clamp(parseInt(html.find("#res-points").val()) || 0, 0, 10)
+                points: Math.clamp(parseInt(html.find("#res-points").val()) || 0, 0, 10),
+                unaware: html.find("#unaware").is(":checked")
             })},
             cancel: { label: "Cancel", callback: () => resolve(null) }
           },
@@ -626,51 +664,65 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
         }).render(true);
       });
 
-      if (!spending || spending.points === 0) return;
-      const { resId, points } = spending;
+      if (!spending) return;
+      const { resId, points, unaware } = spending;
       const bonus = points * 5;
 
-      if (resId === 'stamina') {
-          const current = actor.system.stamina.value;
-          if (current < points) return ui.notifications.warn("Not enough Stamina!");
-          await actor.update({"system.stamina.value": current - points});
-      } else {
-          const idx = parseInt(resId);
-          const res = actor.system.customResources[idx];
-          if (res.value < points) return ui.notifications.warn(`Not enough ${res.name}!`);
-          const customResources = foundry.utils.duplicate(actor.system.customResources);
-          customResources[idx].value -= points;
-          await actor.update({"system.customResources": customResources});
+      if (points > 0) {
+        if (resId === 'stamina') {
+            const current = actor.system.stamina.value;
+            if (current < points) return ui.notifications.warn("Not enough Stamina!");
+            await actor.update({"system.stamina.value": current - points});
+        } else {
+            const idx = parseInt(resId);
+            const res = actor.system.customResources[idx];
+            if (res.value < points) return ui.notifications.warn(`Not enough ${res.name}!`);
+            const customResources = foundry.utils.duplicate(actor.system.customResources);
+            customResources[idx].value -= points;
+            await actor.update({"system.customResources": customResources});
+        }
       }
 
-      const total = capped + bonus;
+      let finalCapped = capped;
+      if (unaware) {
+          finalCapped = Math.floor(finalCapped * 0.5);
+      }
+
+      const total = finalCapped + bonus;
       let critInfo = "";
-      if (total >= attackerTotal) {
-          if (raw >= (attackerRaw * 2)) {
-              critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
-          } else {
-              critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
-          }
-      } else {
+      let hitsScored = 0;
+
+      if (attackerTotal > total) {
+          hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
+          hitsScored = Math.min(hitsScored, attackerMulti);
           if (attackerRaw >= (raw * 2)) {
               critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
           } else {
               critInfo = `<div class="tams-failure">Dodge Failed vs Total ${attackerTotal}</div>`;
           }
+      } else {
+          hitsScored = 0;
+          if (raw >= (attackerRaw * 2)) {
+              critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
+          } else {
+              critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
+          }
       }
 
       const boostHtml = `<div class="roll-row"><small>Boost (+5/pt):</small><span>+${bonus}</span></div>`;
+      if (unaware) {
+          container.querySelector(".roll-label").innerText += " (Unaware)";
+          container.querySelectorAll(".roll-row")[1].innerHTML = `<span>Stat Cap (Unaware):</span><span>${finalCapped}</span>`;
+      }
       container.querySelector(".roll-boost-container").innerHTML = boostHtml;
       container.querySelector(".roll-total b").innerText = total;
+      container.querySelector(".roll-hits b").innerText = `Hits Taken: ${hitsScored} / ${attackerMulti}`;
       container.querySelector(".roll-crit-info").innerHTML = critInfo;
-      btn.remove(); // Remove the button after use
+      btn.remove();
 
-      // Update the chat message content in DB so it persists
       const messageId = btn.closest(".chat-message").dataset.messageId;
       const message = game.messages.get(messageId);
-      if (message) {
-        message.update({ content: container.outerHTML });
-      }
+      if (message) message.update({ content: container.outerHTML });
     });
 
     // Retaliate action
@@ -679,6 +731,9 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const btn = ev.currentTarget;
       const attackerRaw = parseInt(btn.dataset.raw);
       const attackerTotal = parseInt(btn.dataset.total);
+      const attackerMulti = parseInt(btn.dataset.multi) || 1;
+      const container = btn.closest(".tams-roll");
+      const isBehind = container.classList.contains("behind-attack");
 
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Retaliate.');
@@ -697,8 +752,15 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const weapon = actor.items.get(chosenId);
       if (!weapon) return;
 
-      const str = actor.system.stats.strength.value;
-      const dex = actor.system.stats.dexterity.value;
+      let str = actor.system.stats.strength.value;
+      let dex = actor.system.stats.dexterity.value;
+      
+      if (isBehind) {
+          const behindMult = actor.system.behindMult ?? 0.5;
+          str = Math.floor(str * behindMult);
+          dex = Math.floor(dex * behindMult);
+      }
+
       let usesDex = false;
       if (weapon.system.isRanged) {
           usesDex = !weapon.system.isThrown;
@@ -713,17 +775,21 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const total = capped + fam;
 
       let critInfo = "";
-      if (total >= attackerTotal) {
-          if (raw >= (attackerRaw * 2)) {
-              critInfo = `<div class="tams-crit success">CRITICAL RETALIATION! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
-          } else {
-              critInfo = `<div class="tams-success">Retaliate Success vs Total ${attackerTotal}</div>`;
-          }
-      } else {
+      let hitsTaken = 0;
+      if (attackerTotal > total) {
+          hitsTaken = 1 + Math.floor((attackerTotal - total) / 5);
+          hitsTaken = Math.min(hitsTaken, attackerMulti);
           if (attackerRaw >= (raw * 2)) {
               critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
           } else {
               critInfo = `<div class="tams-failure">Retaliate Failed vs Total ${attackerTotal}</div>`;
+          }
+      } else {
+          hitsTaken = 0;
+          if (raw >= (attackerRaw * 2)) {
+              critInfo = `<div class="tams-crit success">CRITICAL RETALIATION! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
+          } else {
+              critInfo = `<div class="tams-success">Retaliate Success vs Total ${attackerTotal}</div>`;
           }
       }
 
@@ -737,21 +803,31 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       else hitLocation = 'Right Leg';
       const damage = weapon.system.calculatedDamage;
 
+      let multiVal = 1;
+      if (weapon.system.isRanged) {
+          if (weapon.system.fireRate === '3') multiVal = 3;
+          else if (weapon.system.fireRate === 'auto') multiVal = 10;
+          else if (weapon.system.fireRate === 'custom') multiVal = weapon.system.fireRateCustom || 1;
+      }
+
       const msg = `
-        <div class="tams-roll">
-          <h3 class="roll-label">Retaliation — ${actor.name} with ${weapon.name}</h3>
+        <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}">
+          <h3 class="roll-label">Retaliation — ${actor.name} with ${weapon.name} ${isBehind ? '(From Behind)' : ''}</h3>
           <div class="roll-row"><b>Damage: ${damage}</b></div>
           <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
-          <div class="roll-row" style="gap:6px;">
+          <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
+          <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
             <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
-            <button class="tams-dodge" data-raw="${raw}" data-total="${total}">Dodge</button>
-            <button class="tams-retaliate" data-raw="${raw}" data-total="${total}">Retaliate</button>
+            <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}">Dodge</button>
+            <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}">Retaliate</button>
+            <button class="tams-behind-toggle" style="background: #444; color: white;">Toggle Behind Attack</button>
           </div>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>Stat Cap (${cap}):</small><span>${capped}</span></div>
           <div class="roll-row"><small>Familiarity:</small><span>+${fam}</span></div>
           <hr>
           <div class="roll-total">Total: <b>${total}</b></div>
+          <div class="roll-hits"><b>Hits Taken: ${hitsTaken} / ${attackerMulti}</b></div>
           ${critInfo}
           <div class="roll-contest-hint">
             <small><b>Contest:</b> Total vs Attacker Total (${attackerTotal})</small><br>
@@ -759,5 +835,20 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           </div>
         </div>`;
       ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll] });
+    });
+
+    // Behind toggle action
+    html.querySelector('.tams-behind-toggle')?.addEventListener("click", async ev => {
+        ev.preventDefault();
+        const btn = ev.currentTarget;
+        const container = btn.closest(".tams-roll");
+        container.classList.toggle("behind-attack");
+        if (container.classList.contains("behind-attack")) {
+            btn.innerText = "Behind Attack: ON";
+            btn.style.background = "#2e7d32";
+        } else {
+            btn.innerText = "Toggle Behind Attack";
+            btn.style.background = "#444";
+        }
     });
 });
