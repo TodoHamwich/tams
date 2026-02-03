@@ -543,12 +543,59 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Dodge.');
+
+      // Resource spending dialog
+      const resources = [{id: "stamina", name: "Stamina", value: actor.system.stamina.value}];
+      actor.system.customResources.forEach((res, idx) => {
+          resources.push({id: idx.toString(), name: res.name, value: res.value});
+      });
+      const options = resources.map(r => `<option value="${r.id}">${r.name} (${r.value} avail)</option>`).join('');
+
+      const spending = await new Promise(resolve => {
+        new Dialog({
+          title: "Boost Dodge",
+          content: `
+            <div class="form-group"><label>Resource</label><select id="res-type">${options}</select></div>
+            <div class="form-group">
+                <label>Points Spent (Max 10)</label>
+                <input type="number" id="res-points" value="0" min="0" max="10"/>
+                <p><small>Each point gives +5 to Dodge.</small></p>
+            </div>`,
+          buttons: {
+            go: { label: "Roll Dodge", callback: (html) => resolve({
+                resId: html.find("#res-type").val(),
+                points: Math.clamp(parseInt(html.find("#res-points").val()) || 0, 0, 10)
+            })},
+            cancel: { label: "Cancel", callback: () => resolve(null) }
+          },
+          default: "go"
+        }).render(true);
+      });
+
+      if (!spending) return;
+      const { resId, points } = spending;
+      const bonus = points * 5;
+
+      if (points > 0) {
+        if (resId === 'stamina') {
+            const current = actor.system.stamina.value;
+            if (current < points) return ui.notifications.warn("Not enough Stamina!");
+            await actor.update({"system.stamina.value": current - points});
+        } else {
+            const idx = parseInt(resId);
+            const res = actor.system.customResources[idx];
+            if (res.value < points) return ui.notifications.warn(`Not enough ${res.name}!`);
+            const customResources = foundry.utils.duplicate(actor.system.customResources);
+            customResources[idx].value -= points;
+            await actor.update({"system.customResources": customResources});
+        }
+      }
       
       const statValue = Math.floor(actor.system.specialSkills.dodge.value || 0);
       const roll = await new Roll('1d100').evaluate();
       const raw = roll.total;
       const capped = Math.min(raw, statValue);
-      const total = capped; // no familiarity for special skill
+      const total = capped + bonus;
 
       let critInfo = "";
       if (total >= attackerTotal) {
@@ -570,6 +617,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           <h3 class="roll-label">Dodge — ${actor.name}</h3>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>Stat Cap (${statValue}):</small><span>${capped}</span></div>
+          ${bonus > 0 ? `<div class="roll-row"><small>Boost (+5/pt):</small><span>+${bonus}</span></div>` : ''}
           <hr>
           <div class="roll-total">Total: <b>${total}</b></div>
           ${critInfo}
