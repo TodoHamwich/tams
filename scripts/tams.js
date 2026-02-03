@@ -383,8 +383,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this.document }),
       content: messageContent,
-      rolls: [roll],
-      type: CONST.CHAT_MESSAGE_TYPES.ROLL
+      rolls: [roll]
     });
   }
 
@@ -537,7 +536,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           <div class="roll-total">Total: <b>${total}</b></div>
           <div class="roll-contest-hint"><small>Use Raw Dice to check crit (Attacker vs Defender).</small></div>
         </div>`;
-      ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll], type: CONST.CHAT_MESSAGE_TYPES.ROLL });
+      ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll] });
     });
 
     // Retaliate action
@@ -600,6 +599,6 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           <div class="roll-total">Total: <b>${total}</b></div>
           <div class="roll-contest-hint"><small>Use Raw Dice to check crit (Attacker doubles Defender).</small></div>
         </div>`;
-      ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll], type: CONST.CHAT_MESSAGE_TYPES.ROLL });
+      ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll] });
     });
 });
