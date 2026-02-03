@@ -3,8 +3,8 @@
   "title": "Todo's Advanced Modular System",
   "description": "A custom system for Foundry VTT",
   "version": "1.0.0",
-  "manifest": "https://github.com/TodoHamwich/tams/releases/latest/download/system.json",
-  "download": "https://github.com/TodoHamwich/tams/releases/latest/download/tams.zip",
+  "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+  "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
   "authors": [
     {
       "name": "TodoHamwich",
