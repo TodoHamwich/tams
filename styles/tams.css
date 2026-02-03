@@ -124,6 +124,14 @@
     border-bottom: 1px dashed #3e2723;
 }
 
+.tams .tab {
+    display: none;
+}
+
+.tams .tab.active {
+    display: block;
+}
+
 .tams .sheet-tabs {
     flex: 0 0 30px;
     border-top: 1px solid #AAA;

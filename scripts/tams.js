@@ -148,7 +148,7 @@ class TAMSItem extends Item {}
 /**
  * Sheets
  */
-class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.TabsMixin(foundry.applications.sheets.ActorSheetV2)) {
+class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2) {
   static DEFAULT_OPTIONS = {
     tag: "form",
     classes: ["tams", "sheet", "actor"],
@@ -163,11 +163,9 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       itemDelete: "_onItemDelete",
       roll: "_onRoll",
       resourceAdd: "_onResourceAdd",
-      resourceDelete: "_onResourceDelete"
-    },
-    tabs: [
-      {navSelector: ".tabs[data-group='primary']", contentSelector: ".sheet-body", initial: "stats"}
-    ]
+      resourceDelete: "_onResourceDelete",
+      setTab: "_onSetTab"
+    }
   };
 
   static PARTS = {
@@ -185,9 +183,13 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     
+    // Manual tab management
+    this._activeTab ??= "stats";
+    
     // Add custom context
     Object.assign(context, {
       system: this.document.system,
+      activeTab: this._activeTab,
       statOptions: {
         "strength": "TAMS.StatStrength",
         "dexterity": "TAMS.StatDexterity",
@@ -396,6 +398,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const resources = [...(this.document.system.customResources || [])];
     resources.splice(index, 1);
     return this.document.update({"system.customResources": resources});
+  }
+
+  _onSetTab(event, target) {
+    this._activeTab = target.dataset.tab;
+    this.render();
   }
 }
 

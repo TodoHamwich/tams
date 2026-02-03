@@ -26,16 +26,16 @@
     </header>
 
     <nav class="sheet-tabs tabs" data-group="primary">
-        <a class="item" data-tab="stats">Stats & Limbs</a>
-        <a class="item" data-tab="modifiers">Modifiers</a>
-        <a class="item" data-tab="items">Weapons & Skills</a>
-        <a class="item" data-tab="abilities">Abilities & Resources</a>
-        <a class="item" data-tab="description">Traits & Bio</a>
+        <a class="item {{#if (eq activeTab 'stats')}}active{{/if}}" data-action="setTab" data-tab="stats">Stats & Limbs</a>
+        <a class="item {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-action="setTab" data-tab="modifiers">Modifiers</a>
+        <a class="item {{#if (eq activeTab 'items')}}active{{/if}}" data-action="setTab" data-tab="items">Weapons & Skills</a>
+        <a class="item {{#if (eq activeTab 'abilities')}}active{{/if}}" data-action="setTab" data-tab="abilities">Abilities & Resources</a>
+        <a class="item {{#if (eq activeTab 'description')}}active{{/if}}" data-action="setTab" data-tab="description">Traits & Bio</a>
     </nav>
 
     <section class="sheet-body">
         {{!-- Stats Tab --}}
-        <div class="tab stats" data-group="primary" data-tab="stats">
+        <div class="tab stats {{#if (eq activeTab 'stats')}}active{{/if}}" data-group="primary" data-tab="stats">
             <div class="upgrade-pool flexrow">
                 <label>Stat Upgrade Points:</label>
                 <input type="number" name="system.upgradePoints.stats" value="{{system.upgradePoints.stats}}"/>
@@ -81,7 +81,7 @@
 
 
         {{!-- Modifiers Tab --}}
-        <div class="tab modifiers" data-group="primary" data-tab="modifiers">
+        <div class="tab modifiers {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-group="primary" data-tab="modifiers">
             <div class="flexcol">
                 <h3>Stamina Modifier</h3>
                 <div class="flexrow">
@@ -115,7 +115,7 @@
         </div>
 
         {{!-- Items Tab --}}
-        <div class="tab items" data-group="primary" data-tab="items">
+        <div class="tab items {{#if (eq activeTab 'items')}}active{{/if}}" data-group="primary" data-tab="items">
             <div class="upgrade-pool flexrow">
                 <label>Weapon Upgrade Points:</label>
                 <input type="number" name="system.upgradePoints.weapons" value="{{system.upgradePoints.weapons}}"/>
@@ -155,7 +155,7 @@
         </div>
 
         {{!-- Abilities & Resources Tab --}}
-        <div class="tab abilities" data-group="primary" data-tab="abilities">
+        <div class="tab abilities {{#if (eq activeTab 'abilities')}}active{{/if}}" data-group="primary" data-tab="abilities">
             <div class="flexrow">
                 <h3>Custom Resources</h3>
                 <a data-action="resourceAdd"><i class="fas fa-plus"></i> Add Resource</a>
@@ -202,7 +202,7 @@
         </div>
 
         {{!-- Description Tab --}}
-        <div class="tab" data-group="primary" data-tab="description">
+        <div class="tab {{#if (eq activeTab 'description')}}active{{/if}}" data-group="primary" data-tab="description">
             <h3>Traits</h3>
             <textarea name="system.traits" rows="5">{{system.traits}}</textarea>
             <hr>
