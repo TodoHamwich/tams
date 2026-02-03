@@ -39,7 +39,7 @@
                 <section class="stats-list">
                     {{#each system.stats as |stat id|}}
                     <div class="stat flexrow">
-                        <label class="resource-label rollable" data-action="roll" data-roll="stat" data-label="{{localize stat.label}}" data-stat-value="{{stat.value}}">
+                        <label class="resource-label rollable" data-action="roll" data-roll="stat" data-stat-id="{{id}}" data-label="{{localize stat.label}}" data-stat-value="{{stat.value}}">
                             <i class="fas fa-dice-d20"></i> {{localize stat.label}}
                         </label>
                         <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number"/>
@@ -49,7 +49,7 @@
                     <h3 class="small-header">Special Skills</h3>
                     {{#each system.specialSkills as |skill id|}}
                     <div class="stat flexrow special-skill">
-                        <label class="resource-label rollable" data-action="roll" data-label="{{capitalize id}}" data-stat-value="{{skill.value}}">
+                        <label class="resource-label rollable" data-action="roll" data-stat-id="{{id}}" data-label="{{capitalize id}}" data-stat-value="{{skill.value}}">
                             <i class="fas fa-dice-d20"></i> {{capitalize id}}
                         </label>
                         <input type="number" name="system.specialSkills.{{id}}.value" value="{{skill.value}}" data-dtype="Number"/>
@@ -69,6 +69,8 @@
                         <div class="limb-armor flexrow">
                             <label>Armour</label>
                             <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input"/>
+                            <span>/</span>
+                            <input type="number" name="system.limbs.{{id}}.armorMax" value="{{limb.armorMax}}" class="small-input"/>
                         </div>
                     </div>
                     {{/each}}

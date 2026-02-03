@@ -14,13 +14,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         bravery: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), label: new fields.StringField({initial: "TAMS.StatBravery"}) })
       }),
       limbs: new fields.SchemaField({
-        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Head"}) }),
-        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Thorax"}) }),
-        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Stomach"}) }),
-        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Left Arm"}) }),
-        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Right Arm"}) }),
-        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Left Leg"}) }),
-        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Right Leg"}) })
+        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Head"}) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Thorax"}) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Stomach"}) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Left Arm"}) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Right Arm"}) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Left Leg"}) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0}), armorMax: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "Right Leg"}) })
       }),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({initial: 10}),
@@ -272,6 +272,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     let label = dataset.label || '';
     let statValue = parseInt(dataset.statValue) || 100;
     let familiarity = parseInt(dataset.familiarity) || 0;
+    let statId = dataset.statId;
 
     if (item && item.type === 'weapon') {
         const str = this.document.system.stats.strength.value;
@@ -283,13 +284,15 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             usesDex = !!item.system.isLight;
         }
         statValue = usesDex ? dex : str;
+        statId = usesDex ? 'dexterity' : 'strength';
         label = `Attacking with ${item.name}`;
     }
 
     if (item && item.type === 'skill') {
         const name = item.name;
         label = name;
-        statValue = this.document.system.stats[item.system.stat]?.value || 100;
+        statId = item.system.stat;
+        statValue = this.document.system.stats[statId]?.value || 100;
         if (name.includes("(") && name.includes(")")) {
             const confirmed = await new Promise(resolve => {
                 new Dialog({
@@ -308,7 +311,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
     if (item && item.type === 'ability') {
         if (item.system.isAttack) {
-            statValue = this.document.system.stats[item.system.attackStat]?.value || 100;
+            statId = item.system.attackStat;
+            statValue = this.document.system.stats[statId]?.value || 100;
             label = `Using Ability: ${item.name}`;
         }
         const cost = parseInt(item.system.cost) || 0;
@@ -351,7 +355,17 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const finalTotal = cappedResult + familiarity;
 
     let critInfo = "";
-    if (difficulty > 0) {
+    let success = true;
+    let resultText = "";
+    let resultClass = "";
+
+    if (statId === 'bravery') {
+        const targetValue = statValue + familiarity;
+        success = rawResult <= targetValue;
+        resultText = success ? "SUCCESS" : "FAILURE";
+        resultClass = success ? "success" : "failure";
+        critInfo = `<div class="tams-crit ${resultClass}">${resultText}</div>`;
+    } else if (difficulty > 0) {
         if (finalTotal >= (difficulty * 2)) {
             critInfo = `<div class="tams-crit success">CRITICAL SUCCESS! (Total ${finalTotal} >= 2x Diff ${difficulty})</div>`;
         } else if (finalTotal >= difficulty) {
@@ -393,14 +407,20 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         <h3 class="roll-label">${label}</h3>
         ${damageInfo}
         <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${rawResult}</span></div>
-        <div class="roll-row"><small>Stat Cap (${statValue}):</small><span>${cappedResult}</span></div>
-        <div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>
+        ${statId === 'bravery' ? 
+            `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? ' + ' + familiarity : ''}</span></div>` :
+            `<div class="roll-row"><small>Stat Cap (${statValue}):</small><span>${cappedResult}</span></div>
+             <div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>`
+        }
         <hr>
-        <div class="roll-total">Total: <b>${finalTotal}</b></div>
+        <div class="roll-total">${statId === 'bravery' ? 'Target to beat' : 'Total'}: <b>${statId === 'bravery' ? (statValue + familiarity) : finalTotal}</b></div>
         ${critInfo}
         <div class="roll-contest-hint">
-            <br><small><b>Crit Check (Contested):</b> Attacker Raw Dice (${rawResult}) vs 2x Defender Raw Dice.</small>
-            <br><small><b>Crit Check (Static):</b> Total (${finalTotal}) vs 2x Difficulty.</small>
+            ${statId === 'bravery' ? 
+                `<br><small>Bravery checks are roll-under. Success if Roll <= Target.</small>` :
+                `<br><small><b>Crit Check (Contested):</b> Attacker Raw Dice (${rawResult}) vs 2x Defender Raw Dice.</small>
+                 <br><small><b>Crit Check (Static):</b> Total (${finalTotal}) vs 2x Difficulty.</small>`
+            }
         </div>
       </div>
     `;
@@ -542,13 +562,15 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       let dialogContent = `<p>Applying <b>${locations.length}</b> hits to <b>${target.name}</b>:</p>`;
       locations.forEach((loc, i) => {
           const limbKey = locationMap[loc];
-          const armor = Math.floor(target.system.limbs[limbKey]?.armor || 0);
+          const limb = target.system.limbs[limbKey];
+          const armor = Math.floor(limb?.armor || 0);
+          const armorMax = Math.floor(limb?.armorMax || 0);
           dialogContent += `
             <div class="form-group" style="margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
                 <label>Hit ${i+1}: ${loc}</label>
                 <div class="flexrow">
                     <span>Dmg: </span><input type="number" class="hit-dmg" data-index="${i}" value="${damageBase}" style="width: 50px;"/>
-                    <span>Armor: ${armor}</span>
+                    <span>Armor: ${armor}/${armorMax}</span>
                 </div>
             </div>`;
       });
@@ -565,16 +587,24 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
               for (let i = 0; i < locations.length; i++) {
                   const loc = locations[i];
                   const limbKey = locationMap[loc];
-                  const armor = Math.floor(target.system.limbs[limbKey]?.armor || 0);
+                  
+                  // Use updated armor/HP value if multiple hits to same limb
+                  const currentArmor = updates[`system.limbs.${limbKey}.armor`] ?? target.system.limbs[limbKey].armor;
+                  const armor = Math.floor(currentArmor || 0);
+                  
                   const incoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
                   const effective = Math.max(0, incoming - armor);
                   
-                  // Track cumulative damage to limbs if multiple hits land on same spot
-                  const currentVal = updates[`system.limbs.${limbKey}.value`] ?? target.system.limbs[limbKey].value;
-                  const newVal = Math.max(0, Math.floor(currentVal) - effective);
-                  updates[`system.limbs.${limbKey}.value`] = newVal;
+                  const currentHp = updates[`system.limbs.${limbKey}.value`] ?? target.system.limbs[limbKey].value;
+                  const newHp = Math.max(0, Math.floor(currentHp) - effective);
+                  updates[`system.limbs.${limbKey}.value`] = newHp;
                   
-                  report += `• ${loc}: ${effective} damage (${armor} armor blocked)<br>`;
+                  if (armor > 0 && effective < incoming) {
+                      updates[`system.limbs.${limbKey}.armor`] = Math.max(0, armor - 1);
+                      report += `• ${loc}: ${effective} damage (${armor} armor blocked, 1 armor point lost)<br>`;
+                  } else {
+                      report += `• ${loc}: ${effective} damage (${armor} armor blocked)<br>`;
+                  }
               }
               await target.update(updates);
               ChatMessage.create({ content: report });

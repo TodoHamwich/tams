@@ -11,13 +11,13 @@
         "bravery": { "value": 10, "label": "TAMS.StatBravery" }
       },
       "limbs": {
-        "head": { "value": 5, "max": 5, "mult": 0.5, "armor": 0, "label": "Head" },
-        "thorax": { "value": 10, "max": 10, "mult": 1.0, "armor": 0, "label": "Thorax" },
-        "stomach": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Stomach" },
-        "leftArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Left Arm" },
-        "rightArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Right Arm" },
-        "leftLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Left Leg" },
-        "rightLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "label": "Right Leg" }
+        "head": { "value": 5, "max": 5, "mult": 0.5, "armor": 0, "armorMax": 0, "label": "Head" },
+        "thorax": { "value": 10, "max": 10, "mult": 1.0, "armor": 0, "armorMax": 0, "label": "Thorax" },
+        "stomach": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Stomach" },
+        "leftArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Left Arm" },
+        "rightArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Right Arm" },
+        "leftLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Left Leg" },
+        "rightLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Right Leg" }
       },
       "stamina": { "value": 10, "max": 10, "mult": 1.0, "color": "#66bb6a" },
       "customResources": [],
