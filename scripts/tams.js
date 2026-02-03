@@ -158,10 +158,10 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     window: { resizable: true },
     form: { 
       submitOnChange: true,
-      closeOnSubmit: false,
-      editors: {
-        "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
-      }
+      closeOnSubmit: false
+    },
+    editors: {
+      "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
     },
     actions: {
       itemCreate: TAMSActorSheet.prototype._onItemCreate,
@@ -430,7 +430,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
   }
 
   _onActivateEditor(event, target) {
-    this.editors.get(target.dataset.target)?.activate();
+    const editorTarget = target.dataset.target || target.closest(".editor")?.dataset.target;
+    if (editorTarget) this.editors.get(editorTarget)?.activate();
   }
 }
 
@@ -442,10 +443,10 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
     window: { resizable: true },
     form: { 
       submitOnChange: true,
-      closeOnSubmit: false,
-      editors: {
-        "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
-      }
+      closeOnSubmit: false
+    },
+    editors: {
+      "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
     },
     actions: {
       activateEditor: TAMSItemSheet.prototype._onActivateEditor
@@ -490,7 +491,8 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
     return context;
   }
   _onActivateEditor(event, target) {
-    this.editors.get(target.dataset.target)?.activate();
+    const editorTarget = target.dataset.target || target.closest(".editor")?.dataset.target;
+    if (editorTarget) this.editors.get(editorTarget)?.activate();
   }
 }
 
