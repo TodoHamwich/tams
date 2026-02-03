@@ -179,10 +179,14 @@
 }
 
 .tams .small-input {
-    width: 40px !important;
+    width: 35px !important;
     text-align: center;
     height: 20px;
     font-size: 13px;
+}
+
+.tams .limb-armor input {
+    width: 30px !important;
 }
 
 .tams .limb-values {
