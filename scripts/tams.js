@@ -23,15 +23,15 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7, min: 0}), max: new fields.NumberField({initial: 7, min: 0}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}) })
       }),
       stamina: new fields.SchemaField({
-        value: new fields.NumberField({initial: 10}),
-        max: new fields.NumberField({initial: 10}),
+        value: new fields.NumberField({initial: 10, min: 0}),
+        max: new fields.NumberField({initial: 10, min: 0}),
         mult: new fields.NumberField({initial: 1.0}),
         color: new fields.StringField({initial: "#66bb6a"})
       }),
       customResources: new fields.ArrayField(new fields.SchemaField({
         name: new fields.StringField({initial: "New Resource"}),
-        value: new fields.NumberField({initial: 0}),
-        max: new fields.NumberField({initial: 0}),
+        value: new fields.NumberField({initial: 0, min: 0}),
+        max: new fields.NumberField({initial: 0, min: 0}),
         stat: new fields.StringField({initial: "endurance"}),
         mult: new fields.NumberField({initial: 1.0}),
         bonus: new fields.NumberField({initial: 0}),
