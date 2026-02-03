@@ -70,6 +70,10 @@ class TAMSActorSheet extends ActorSheet {
     context.system = actorData.system;
     context.flags = actorData.flags;
 
+    // Set owner and editable for the editor helper
+    context.owner = this.actor.isOwner;
+    context.editable = this.editable;
+
     // Prepare items
     this._prepareItems(context);
 
@@ -350,6 +354,10 @@ class TAMSItemSheet extends ItemSheet {
     context.item = itemData;
     context.system = itemData.system;
     context.flags = itemData.flags;
+
+    // Set owner and editable for the editor helper
+    context.owner = this.item.isOwner;
+    context.editable = this.editable;
 
     return context;
   }
