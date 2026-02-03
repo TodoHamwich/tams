@@ -370,14 +370,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             multiVal = item.system.multiAttack || 1;
         }
 
-        let hitLocation = "";
-        if (rawResult >= 96) hitLocation = "Head";
-        else if (rawResult >= 56) hitLocation = "Thorax";
-        else if (rawResult >= 41) hitLocation = "Stomach";
-        else if (rawResult >= 31) hitLocation = "Left Arm";
-        else if (rawResult >= 21) hitLocation = "Right Arm";
-        else if (rawResult >= 11) hitLocation = "Left Leg";
-        else hitLocation = "Right Leg";
+        const hitLocation = await getHitLocation(rawResult);
 
         damageInfo = `
             <div class="roll-row"><b>Damage: ${damage}</b></div>
@@ -385,8 +378,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
             <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
               <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
-              <button class="tams-dodge" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}">Dodge</button>
-              <button class="tams-retaliate" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}">Retaliate</button>
+              <button class="tams-dodge" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}">Dodge</button>
+              <button class="tams-retaliate" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}">Retaliate</button>
               <button class="tams-behind-toggle" style="background: #444; color: white;">Toggle Behind Attack</button>
             </div>
         `;
@@ -433,6 +426,20 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     this._activeTab = target.dataset.tab;
     this.render();
   }
+}
+
+/**
+ * Helper: Roll hit location
+ */
+async function getHitLocation(rollValue = null) {
+    const raw = rollValue ?? (await new Roll("1d100").evaluate()).total;
+    if (raw >= 96) return "Head";
+    if (raw >= 56) return "Thorax";
+    if (raw >= 41) return "Stomach";
+    if (raw >= 31) return "Left Arm";
+    if (raw >= 21) return "Right Arm";
+    if (raw >= 11) return "Left Leg";
+    return "Right Leg";
 }
 
 class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
@@ -514,8 +521,11 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
     html.querySelector(".tams-take-damage")?.addEventListener("click", async ev => {
       ev.preventDefault();
       const btn = ev.currentTarget;
-      const damage = parseInt(btn.dataset.damage);
-      const location = btn.dataset.location;
+      const damageBase = parseInt(btn.dataset.damage);
+      const singleLocation = btn.dataset.location;
+      const multiLocations = btn.dataset.locations ? JSON.parse(btn.dataset.locations) : null;
+      
+      const locations = multiLocations || [singleLocation];
       
       const target = canvas.tokens.controlled[0]?.actor;
       if (!target) return ui.notifications.warn("Please select a token to apply damage to.");
@@ -525,23 +535,46 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
         "Left Arm": "leftArm", "Right Arm": "rightArm",
         "Left Leg": "leftLeg", "Right Leg": "rightLeg"
       };
-      const limbKey = locationMap[location];
-      const limb = target.system.limbs[limbKey];
-      const armor = Math.floor(limb.armor || 0);
+
+      let dialogContent = `<p>Applying <b>${locations.length}</b> hits to <b>${target.name}</b>:</p>`;
+      locations.forEach((loc, i) => {
+          const limbKey = locationMap[loc];
+          const armor = Math.floor(target.system.limbs[limbKey]?.armor || 0);
+          dialogContent += `
+            <div class="form-group" style="margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
+                <label>Hit ${i+1}: ${loc}</label>
+                <div class="flexrow">
+                    <span>Dmg: </span><input type="number" class="hit-dmg" data-index="${i}" value="${damageBase}" style="width: 50px;"/>
+                    <span>Armor: ${armor}</span>
+                </div>
+            </div>`;
+      });
 
       new Dialog({
         title: `Apply Damage to ${target.name}`,
-        content: `
-          <div class="form-group"><label>Incoming Damage:</label><input type="number" id="dmg" value="${damage}"/></div>
-          <div class="form-group"><label>Location:</label><span>${location} (Armor: ${armor})</span></div>
-        `,
+        content: dialogContent,
         buttons: {
-          apply: { label: "Apply", callback: async (html) => {
-              const finalDmg = Math.floor(parseFloat(html.find("#dmg").val()) || 0);
-              const effectiveDmg = Math.max(0, finalDmg - armor);
-              const newHp = Math.max(0, Math.floor(limb.value) - effectiveDmg);
-              await target.update({[`system.limbs.${limbKey}.value`]: newHp});
-              ChatMessage.create({ content: `<b>${target.name}</b> took ${effectiveDmg} damage to the ${location} (${armor} armor blocked).` });
+          apply: { label: "Apply All Hits", callback: async (html) => {
+              const updates = {};
+              let report = `<b>${target.name}</b> taking damage:<br>`;
+              
+              const dmgInputs = html.find(".hit-dmg");
+              for (let i = 0; i < locations.length; i++) {
+                  const loc = locations[i];
+                  const limbKey = locationMap[loc];
+                  const armor = Math.floor(target.system.limbs[limbKey]?.armor || 0);
+                  const incoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
+                  const effective = Math.max(0, incoming - armor);
+                  
+                  // Track cumulative damage to limbs if multiple hits land on same spot
+                  const currentVal = updates[`system.limbs.${limbKey}.value`] ?? target.system.limbs[limbKey].value;
+                  const newVal = Math.max(0, Math.floor(currentVal) - effective);
+                  updates[`system.limbs.${limbKey}.value`] = newVal;
+                  
+                  report += `• ${loc}: ${effective} damage (${armor} armor blocked)<br>`;
+              }
+              await target.update(updates);
+              ChatMessage.create({ content: report });
             }
           }
         },
@@ -556,8 +589,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const attackerRaw = parseInt(btn.dataset.raw);
       const attackerTotal = parseInt(btn.dataset.total);
       const attackerMulti = parseInt(btn.dataset.multi) || 1;
+      const attackerDamage = parseInt(btn.dataset.damage) || 0;
+      const firstLocation = btn.dataset.location;
       const container = btn.closest(".tams-roll");
-      const isBehind = container.classList.contains("behind-attack");
+      const isBehind = container?.classList.contains("behind-attack") || false;
       
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Dodge.');
@@ -575,11 +610,26 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
 
       let critInfo = "";
       let hitsScored = 0;
+      let damageInfo = "";
+      let locations = [];
 
       if (attackerTotal > total) {
           // Attacker wins
           hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
           hitsScored = Math.min(hitsScored, attackerMulti);
+
+          locations.push(firstLocation);
+          for (let i = 1; i < hitsScored; i++) {
+              locations.push(await getHitLocation());
+          }
+
+          damageInfo = `
+            <div class="roll-row"><b>Hits: ${hitsScored} / ${attackerMulti}</b></div>
+            <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
+            <div class="roll-row" style="margin-top: 5px;">
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}'>Apply All Damage</button>
+            </div>
+          `;
 
           if (attackerRaw >= (raw * 2)) {
               critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
@@ -597,14 +647,14 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       }
 
       const msg = `
-        <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-attacker-multi="${attackerMulti}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}" data-behind="${isBehind ? '1' : '0'}">
+        <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}" data-behind="${isBehind ? '1' : '0'}" data-first-location="${firstLocation}">
           <h3 class="roll-label">Dodge — ${actor.name} ${isBehind ? '(From Behind)' : ''}</h3>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>Stat Cap (Dex ${dexVal}):</small><span>${capped}</span></div>
           <div class="roll-boost-container"></div>
           <hr>
           <div class="roll-total">Total: <b>${total}</b></div>
-          <div class="roll-hits"><b>Hits Taken: ${hitsScored} / ${attackerMulti}</b></div>
+          <div class="roll-hits-info">${damageInfo}</div>
           <div class="roll-crit-info">${critInfo}</div>
           <div class="roll-contest-hint">
             <small><b>Contest:</b> Total vs Attacker Total (${attackerTotal})</small><br>
@@ -625,6 +675,8 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const attackerRaw = parseInt(container.dataset.attackerRaw);
       const attackerTotal = parseInt(container.dataset.attackerTotal);
       const attackerMulti = parseInt(container.dataset.attackerMulti) || 1;
+      const attackerDamage = parseInt(container.dataset.attackerDamage) || 0;
+      const firstLocation = container.dataset.firstLocation;
       const actorId = container.dataset.actorId;
       const raw = parseInt(container.dataset.raw);
       const capped = parseInt(container.dataset.capped);
@@ -691,10 +743,26 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const total = finalCapped + bonus;
       let critInfo = "";
       let hitsScored = 0;
+      let damageInfo = "";
+      let locations = [];
 
       if (attackerTotal > total) {
           hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
           hitsScored = Math.min(hitsScored, attackerMulti);
+          
+          locations.push(firstLocation);
+          for (let i = 1; i < hitsScored; i++) {
+              locations.push(await getHitLocation());
+          }
+
+          damageInfo = `
+            <div class="roll-row"><b>Hits: ${hitsScored} / ${attackerMulti}</b></div>
+            <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
+            <div class="roll-row" style="margin-top: 5px;">
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}'>Apply All Damage</button>
+            </div>
+          `;
+
           if (attackerRaw >= (raw * 2)) {
               critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
           } else {
@@ -716,7 +784,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       }
       container.querySelector(".roll-boost-container").innerHTML = boostHtml;
       container.querySelector(".roll-total b").innerText = total;
-      container.querySelector(".roll-hits b").innerText = `Hits Taken: ${hitsScored} / ${attackerMulti}`;
+      container.querySelector(".roll-hits-info").innerHTML = damageInfo;
       container.querySelector(".roll-crit-info").innerHTML = critInfo;
       btn.remove();
 
@@ -732,8 +800,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const attackerRaw = parseInt(btn.dataset.raw);
       const attackerTotal = parseInt(btn.dataset.total);
       const attackerMulti = parseInt(btn.dataset.multi) || 1;
+      const attackerDamage = parseInt(btn.dataset.damage) || 0;
+      const firstLocation = btn.dataset.location;
       const container = btn.closest(".tams-roll");
-      const isBehind = container.classList.contains("behind-attack");
+      const isBehind = container?.classList.contains("behind-attack") || false;
 
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Retaliate.');
@@ -775,17 +845,34 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const total = capped + fam;
 
       let critInfo = "";
-      let hitsTaken = 0;
+      let hitsScoredCounter = 0;
+      let counterDamageInfo = "";
+      let counterLocations = [];
+
+      let defenseDamageInfo = "";
+      let defenseLocations = [];
+
+      // Check defender success/failure against incoming attack
       if (attackerTotal > total) {
-          hitsTaken = 1 + Math.floor((attackerTotal - total) / 5);
-          hitsTaken = Math.min(hitsTaken, attackerMulti);
+          const hitsTaken = Math.min(1 + Math.floor((attackerTotal - total) / 5), attackerMulti);
+          defenseLocations.push(firstLocation);
+          for (let i = 1; i < hitsTaken; i++) {
+              defenseLocations.push(await getHitLocation());
+          }
+          defenseDamageInfo = `
+            <div class="roll-row"><b style="color:red;">Failed to beat Attack!</b></div>
+            <div class="roll-row"><b>Hits Taken: ${hitsTaken} / ${attackerMulti}</b></div>
+            <div class="roll-row"><small>Locations: ${defenseLocations.join(", ")}</small></div>
+            <div class="roll-row" style="margin-bottom: 10px;">
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(defenseLocations)}'>Apply Hits to Defender</button>
+            </div>
+          `;
           if (attackerRaw >= (raw * 2)) {
               critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
           } else {
               critInfo = `<div class="tams-failure">Retaliate Failed vs Total ${attackerTotal}</div>`;
           }
       } else {
-          hitsTaken = 0;
           if (raw >= (attackerRaw * 2)) {
               critInfo = `<div class="tams-crit success">CRITICAL RETALIATION! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
           } else {
@@ -793,14 +880,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           }
       }
 
-      let hitLocation = '';
-      if (raw >= 96) hitLocation = 'Head';
-      else if (raw >= 56) hitLocation = 'Thorax';
-      else if (raw >= 41) hitLocation = 'Stomach';
-      else if (raw >= 31) hitLocation = 'Left Arm';
-      else if (raw >= 21) hitLocation = 'Right Arm';
-      else if (raw >= 11) hitLocation = 'Left Leg';
-      else hitLocation = 'Right Leg';
+      let hitLocation = await getHitLocation(raw);
       const damage = weapon.system.calculatedDamage;
 
       let multiVal = 1;
@@ -813,13 +893,17 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const msg = `
         <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}">
           <h3 class="roll-label">Retaliation — ${actor.name} with ${weapon.name} ${isBehind ? '(From Behind)' : ''}</h3>
+          
+          ${defenseDamageInfo}
+          <hr>
+          
           <div class="roll-row"><b>Damage: ${damage}</b></div>
           <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
           <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
           <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
             <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
-            <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}">Dodge</button>
-            <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}">Retaliate</button>
+            <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}">Dodge</button>
+            <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}">Retaliate</button>
             <button class="tams-behind-toggle" style="background: #444; color: white;">Toggle Behind Attack</button>
           </div>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
@@ -827,7 +911,6 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           <div class="roll-row"><small>Familiarity:</small><span>+${fam}</span></div>
           <hr>
           <div class="roll-total">Total: <b>${total}</b></div>
-          <div class="roll-hits"><b>Hits Taken: ${hitsTaken} / ${attackerMulti}</b></div>
           ${critInfo}
           <div class="roll-contest-hint">
             <small><b>Contest:</b> Total vs Attacker Total (${attackerTotal})</small><br>
