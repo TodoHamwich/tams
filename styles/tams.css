@@ -1,4 +1,9 @@
-﻿.tams .sheet-header {
+﻿.tams-actor-form, .tams-item-form {
+    height: 100%;
+}
+
+.tams .sheet-header {
+    flex: 0 0 auto;
     display: flex;
     flex-direction: row;
     gap: 15px;

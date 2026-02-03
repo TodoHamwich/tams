@@ -196,6 +196,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     context.document = this.document;
     context.system = this.document.system;
     context.activeTab = this._activeTab;
+    context.editable = this.isEditable;
+    context.owner = this.document.isOwner;
     context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description, {
       async: true,
       secrets: this.document.isOwner,
@@ -420,6 +422,7 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
     tag: "form",
     classes: ["tams", "sheet", "item"],
     position: { width: 500, height: 700 },
+    window: { resizable: true },
     form: { 
       submitOnChange: true,
       closeOnSubmit: false,
@@ -441,6 +444,8 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
     context.item = this.document;
     context.document = this.document;
     context.system = this.document.system;
+    context.editable = this.isEditable;
+    context.owner = this.document.isOwner;
     context.enrichedDescription = await foundry.applications.ux.TextEditor.enrichHTML(this.document.system.description, {
       async: true,
       secrets: this.document.isOwner,
