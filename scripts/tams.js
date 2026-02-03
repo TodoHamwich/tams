@@ -151,29 +151,28 @@ class TAMSItem extends Item {}
  * Sheets
  */
 class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2) {
-  static DEFAULT_OPTIONS = {
-    tag: "form",
-    classes: ["tams", "sheet", "actor"],
-    position: { width: 650, height: 800 },
-    window: { resizable: true },
-    form: { 
-      submitOnChange: true,
-      closeOnSubmit: false
-    },
-    editors: {
-      "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
-    },
-    actions: {
-      itemCreate: TAMSActorSheet.prototype._onItemCreate,
-      itemEdit: TAMSActorSheet.prototype._onItemEdit,
-      itemDelete: TAMSActorSheet.prototype._onItemDelete,
-      roll: TAMSActorSheet.prototype._onRoll,
-      resourceAdd: TAMSActorSheet.prototype._onResourceAdd,
-      resourceDelete: TAMSActorSheet.prototype._onResourceDelete,
-      setTab: TAMSActorSheet.prototype._onSetTab,
-      activateEditor: TAMSActorSheet.prototype._onActivateEditor
-    }
-  };
+  static get DEFAULT_OPTIONS() {
+    return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
+      tag: "form",
+      classes: ["tams", "sheet", "actor"],
+      position: { width: 650, height: 800 },
+      window: { resizable: true },
+      form: { submitOnChange: true, closeOnSubmit: false },
+      editors: {
+        "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
+      },
+      actions: {
+        itemCreate: TAMSActorSheet.prototype._onItemCreate,
+        itemEdit: TAMSActorSheet.prototype._onItemEdit,
+        itemDelete: TAMSActorSheet.prototype._onItemDelete,
+        roll: TAMSActorSheet.prototype._onRoll,
+        resourceAdd: TAMSActorSheet.prototype._onResourceAdd,
+        resourceDelete: TAMSActorSheet.prototype._onResourceDelete,
+        setTab: TAMSActorSheet.prototype._onSetTab,
+        activateEditor: TAMSActorSheet.prototype._onActivateEditor
+      }
+    }, { inplace: false });
+  }
 
   static PARTS = {
     form: {
@@ -428,30 +427,24 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     this._activeTab = target.dataset.tab;
     this.render();
   }
-
-  _onActivateEditor(event, target) {
-    const editorTarget = target.dataset.target || target.closest(".editor")?.dataset.target;
-    if (editorTarget) this.editors.get(editorTarget)?.activate();
-  }
 }
 
 class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
-  static DEFAULT_OPTIONS = {
-    tag: "form",
-    classes: ["tams", "sheet", "item"],
-    position: { width: 500, height: 700 },
-    window: { resizable: true },
-    form: { 
-      submitOnChange: true,
-      closeOnSubmit: false
-    },
-    editors: {
-      "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
-    },
-    actions: {
-      activateEditor: TAMSItemSheet.prototype._onActivateEditor
-    }
-  };
+  static get DEFAULT_OPTIONS() {
+    return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
+      tag: "form",
+      classes: ["tams", "sheet", "item"],
+      position: { width: 500, height: 700 },
+      window: { resizable: true },
+      form: { submitOnChange: true, closeOnSubmit: false },
+      editors: {
+        "system.description": { target: "system.description", button: true, engine: "prosemirror", collaborate: false }
+      },
+      actions: {
+        activateEditor: TAMSItemSheet.prototype._onActivateEditor
+      }
+    }, { inplace: false });
+  }
 
   static PARTS = {
     form: {
@@ -489,10 +482,6 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
         context.resourceOptions = resources;
     }
     return context;
-  }
-  _onActivateEditor(event, target) {
-    const editorTarget = target.dataset.target || target.closest(".editor")?.dataset.target;
-    if (editorTarget) this.editors.get(editorTarget)?.activate();
   }
 }
 
