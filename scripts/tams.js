@@ -175,7 +175,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         roll: TAMSActorSheet.prototype._onRoll,
         resourceAdd: TAMSActorSheet.prototype._onResourceAdd,
         resourceDelete: TAMSActorSheet.prototype._onResourceDelete,
-        setTab: TAMSActorSheet.prototype._onSetTab
+        setTab: TAMSActorSheet.prototype._onSetTab,
+        updateItemField: TAMSActorSheet.prototype._onUpdateItemField
       }
     }, { inplace: false });
   }
@@ -268,6 +269,15 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const li = target.closest(".item");
     const item = this.document.items.get(li.dataset.itemId);
     if (item) item.delete();
+  }
+
+  async _onUpdateItemField(event, target) {
+    const itemId = target.dataset.itemId;
+    const field = target.dataset.field;
+    let value = target.value;
+    if (target.type === "number") value = parseInt(value);
+    const item = this.document.items.get(itemId);
+    if (item) await item.update({ [field]: value });
   }
 
   async _onRoll(event, target) {

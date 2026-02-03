@@ -87,13 +87,36 @@
                 <input type="number" name="system.upgradePoints.skills" value="{{system.upgradePoints.skills}}"/>
             </div>
             <h3>Weapons <a data-action="itemCreate" data-type="weapon"><i class="fas fa-plus"></i> Add</a></h3>
+            <li class="item flexrow item-header">
+                <div class="item-name">Name</div>
+                <div class="item-stat">Dmg</div>
+                <div class="item-stat">Fam</div>
+                <div class="item-stat">Rate</div>
+                <div class="item-controls"></div>
+            </li>
             <ol class="items-list">
                 {{#each weapons as |item id|}}
                 <li class="item flexrow" data-item-id="{{item.id}}">
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
-                        {{item.name}} (Dmg: {{item.system.calculatedDamage}}) [Fam: {{item.system.familiarity}}]
+                        {{item.name}}
                     </h4>
+                    <div class="item-stat">{{item.system.calculatedDamage}}</div>
+                    <div class="item-stat">
+                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}"/>
+                    </div>
+                    <div class="item-stat">
+                        {{#if item.system.isRanged}}
+                        <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.fireRate">
+                            <option value="1" {{#if (eq item.system.fireRate "1")}}selected{{/if}}>S</option>
+                            <option value="3" {{#if (eq item.system.fireRate "3")}}selected{{/if}}>3</option>
+                            <option value="auto" {{#if (eq item.system.fireRate "auto")}}selected{{/if}}>A</option>
+                            <option value="custom" {{#if (eq item.system.fireRate "custom")}}selected{{/if}}>C</option>
+                        </select>
+                        {{else}}
+                        -
+                        {{/if}}
+                    </div>
                     <div class="item-controls">
                         <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
                         <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
@@ -103,12 +126,26 @@
             </ol>
 
             <h3>Skills <a data-action="itemCreate" data-type="skill"><i class="fas fa-plus"></i> Add</a></h3>
+            <li class="item flexrow item-header">
+                <div class="item-name">Name</div>
+                <div class="item-stat">Fam</div>
+                <div class="item-stat">Stat</div>
+                <div class="item-controls"></div>
+            </li>
             <ol class="items-list">
                 {{#each skills as |item id|}}
                 <li class="item flexrow" data-item-id="{{item.id}}">
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
-                        {{item.name}} [Fam: {{item.system.familiarity}}]
+                        {{item.name}}
                     </h4>
+                    <div class="item-stat">
+                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}"/>
+                    </div>
+                    <div class="item-stat">
+                        <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.stat">
+                            {{selectOptions ../statOptions selected=item.system.stat localize=true}}
+                        </select>
+                    </div>
                     <div class="item-controls">
                         <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
                         <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>

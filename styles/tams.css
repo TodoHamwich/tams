@@ -437,8 +437,34 @@
     font-weight: 600;
 }
 
+.tams .item-stat {
+    flex: 0 0 60px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.tams .item-header {
+    font-weight: bold;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #666;
+    border-bottom: 2px solid #7a7971;
+}
+
+.tams .fire-rate-select {
+    width: 45px;
+    height: 20px;
+    font-size: 11px;
+    padding: 0;
+}
+
 .tams .abilities .item-name {
     font-size: 18px;
+}
+
+.tams-item-form .charname input {
+    font-size: 22px;
+    height: 32px;
 }
 
 .tams .item-controls {
