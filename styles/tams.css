@@ -1,5 +1,13 @@
-﻿.tams-actor-form, .tams-item-form {
+﻿@import url('https://fonts.googleapis.com/css2?family=Signika:wght@300;400;600&family=MedievalSharp&family=Roboto+Condensed:wght@400;700&display=swap');
+
+.tams {
+    font-family: 'Signika', sans-serif;
+}
+
+.tams-actor-form, .tams-item-form {
     height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .tams .sheet-header {
@@ -15,10 +23,28 @@
 .tams .profile-img {
     flex: 0 0 100px;
     border: 2px solid #7a7971;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    border-radius: 5px;
 }
 
 .tams .header-details {
     flex: 1;
+}
+
+.tams .charname {
+    margin: 0;
+    padding: 0;
+    border-bottom: none;
+}
+
+.tams .charname input {
+    font-family: 'MedievalSharp', serif;
+    font-size: 28px;
+    height: 40px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #7a7971;
 }
 
 .tams .header-row {
@@ -47,9 +73,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(0, 0, 0, 0.1);
-    padding: 2px 10px;
-    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 4px 10px;
+    border-radius: 8px;
     border: 1px solid #7a7971;
 }
 
@@ -62,20 +88,23 @@
     height: 24px;
 }
 
+/* Progress Bars */
 .tams .bar {
     flex: 1;
-    height: 14px;
-    background: #444;
+    height: 16px;
+    background: #333;
     border: 1px solid #000;
-    border-radius: 7px;
+    border-radius: 8px;
     overflow: hidden;
     position: relative;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
 }
 
 .tams .bar .fill {
     height: 100%;
-    background: linear-gradient(90deg, #2e7d32, #66bb6a);
-    transition: width 0.3s ease;
+    transition: width 0.4s cubic-bezier(0.47, 0, 0.745, 0.715);
+    border-right: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 0 10px rgba(255,255,255,0.2);
 }
 
 .tams .max-label {
@@ -129,13 +158,26 @@
     white-space: nowrap;
 }
 
+/* Rollable elements */
 .tams .rollable {
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .tams .rollable:hover {
     color: #ff0000;
-    text-shadow: 0 0 5px #ff0000;
+    text-shadow: 0 0 8px rgba(255,0,0,0.4);
+    transform: translateX(3px);
+}
+
+.tams .rollable i {
+    margin-right: 5px;
+    color: #7a7971;
+    transition: color 0.2s ease;
+}
+
+.tams .rollable:hover i {
+    color: #ff0000;
 }
 
 .tams .resources-list {
@@ -171,26 +213,64 @@
 
 /* Themes */
 .tams.theme-dark {
-    background: #222;
-    color: #eee;
+    background: #1a1a1a;
+    color: #e0e0e0;
 }
 
 .tams.theme-dark input, .tams.theme-dark select, .tams.theme-dark textarea {
-    background: #333;
-    color: #eee;
-    border: 1px solid #555;
+    background: #2a2a2a;
+    color: #fff;
+    border: 1px solid #444;
+}
+
+.tams.theme-dark input:focus, .tams.theme-dark select:focus, .tams.theme-dark textarea:focus {
+    box-shadow: 0 0 5px #ff0000;
+    border-color: #ff0000;
+}
+
+.tams.theme-dark .sheet-tabs .item.active {
+    background: rgba(255,0,0,0.3);
+    color: #fff;
+}
+
+.tams.theme-dark .item:nth-child(even) {
+    background: rgba(255,255,255,0.05);
 }
 
 .tams.theme-parchment {
-    background: #f4e4bc;
+    background: #fdf1d1 url('https://www.transparenttextures.com/patterns/old-mathematics.png');
+    color: #4e342e;
+}
+
+.tams.theme-parchment h1, .tams.theme-parchment h3 {
     color: #3e2723;
-    font-family: "Georgia", serif;
 }
 
 .tams.theme-parchment input, .tams.theme-parchment select, .tams.theme-parchment textarea {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.2);
     border: none;
-    border-bottom: 1px dashed #3e2723;
+    border-bottom: 1px solid #8d6e63;
+    color: #3e2723;
+}
+
+.tams.theme-parchment .sheet-tabs {
+    background: rgba(141, 110, 99, 0.1);
+    border-color: #8d6e63;
+}
+
+.tams.theme-parchment .sheet-tabs .item {
+    border-right-color: #8d6e63;
+}
+
+.tams.theme-parchment .sheet-tabs .item.active {
+    background: rgba(141, 110, 99, 0.3);
+    border-bottom-color: #3e2723;
+    text-shadow: none;
+    color: #3e2723;
+}
+
+.tams.theme-parchment .bar {
+    border-color: #4e342e;
 }
 
 .tams .sheet-body {
@@ -207,21 +287,41 @@
     display: block;
 }
 
+.tams h3 {
+    border-bottom: 1px solid #7a7971;
+    margin: 10px 0 5px 0;
+    font-family: 'Roboto Condensed', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+}
+
 .tams .sheet-tabs {
-    flex: 0 0 30px;
+    flex: 0 0 32px;
     border-top: 1px solid #AAA;
     border-bottom: 1px solid #AAA;
-    margin: 10px 0;
+    margin: 5px 0;
+    background: rgba(0,0,0,0.05);
+    display: flex;
 }
 
 .tams .sheet-tabs .item {
-    padding: 5px 10px;
-    cursor: pointer;
+    line-height: 32px;
+    padding: 0 10px;
+    border-right: 1px solid #AAA;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.tams .sheet-tabs .item:hover {
+    background: rgba(255,0,0,0.1);
+    text-shadow: 0 0 5px rgba(255,0,0,0.5);
 }
 
 .tams .sheet-tabs .item.active {
-    font-weight: bold;
-    text-shadow: 0 0 5px red;
+    background: rgba(255,0,0,0.2);
+    text-shadow: 0 0 10px red;
+    border-bottom: 2px solid red;
 }
 
 .tams .items-list {
@@ -232,12 +332,23 @@
 
 .tams .item {
     border-bottom: 1px solid #CCC;
-    padding: 5px 0;
+    padding: 5px;
+    transition: background 0.2s ease;
+}
+
+.tams .item:nth-child(even) {
+    background: rgba(0,0,0,0.03);
+}
+
+.tams .item:hover {
+    background: rgba(255,0,0,0.05);
 }
 
 .tams .item-name {
     flex: 1;
     margin: 0;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 .tams .item-controls {
@@ -256,18 +367,31 @@
 }
 
 
+/* Chat Rolls */
 .tams-roll {
+    background: rgba(0,0,0,0.05);
+    border: 1px solid #7a7971;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     font-size: 14px;
 }
 
 .tams-roll .roll-label {
-    margin: 0 0 5px 0;
-    border-bottom: 1px solid #7a7971;
+    font-family: 'MedievalSharp', serif;
+    font-size: 1.2em;
+    color: #4a0000;
+    border-bottom: 2px solid #7a7971;
+    margin-bottom: 8px;
+    padding-bottom: 3px;
 }
 
 .tams-roll .roll-row {
     display: flex;
     justify-content: space-between;
+    line-height: 1.4;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding: 2px 0;
 }
 
 .tams-roll .roll-value {
@@ -279,6 +403,12 @@
     text-align: center;
     font-size: 1.4em;
     margin: 5px 0;
+    font-weight: bold;
+    color: #000;
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+    padding: 5px;
+    margin-top: 10px !important;
 }
 
 .tams-crit {
@@ -289,6 +419,14 @@
     border: 1px solid #006400;
     padding: 5px;
     margin-top: 5px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,255,0,0.2);
+}
+
+.tams-crit.failure {
+    background: #ffdada;
+    color: #8b0000;
+    border-color: #8b0000;
 }
 
 .tams-success {
@@ -307,24 +445,48 @@
     font-style: italic;
 }
 
-.tams-take-damage {
-    margin-top: 5px;
-    background: #4a0000;
-    color: white;
-    border: 1px solid #7a0000;
+/* Buttons */
+.tams button {
+    font-family: 'Roboto Condensed', sans-serif;
+    font-weight: bold;
     cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
 }
 
-.tams-take-damage:hover {
+.tams button:hover {
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}
+
+.tams-roll button {
+    font-size: 12px;
+    padding: 2px 8px;
+    margin: 2px 0;
+    border: 1px solid #7a7971;
+    background: #e0e0e0;
+    color: #333;
+}
+
+.tams-roll button:hover {
+    background: #fff;
+}
+
+.tams-roll .tams-take-damage {
+    background: #4a0000;
+    color: #fff;
+    border-color: #7a0000;
+}
+
+.tams-roll .tams-take-damage:hover {
     background: #7a0000;
 }
 
-.theme-dark .tams-take-damage {
-    background: #2a0000;
-    border-color: #ff0000;
+.tams-roll .tams-dodge, .tams-roll .tams-retaliate {
+    background: #004a00;
+    color: #fff;
+    border-color: #007a00;
 }
 
-.theme-parchment .tams-take-damage {
-    background: #8b4513;
-    border-color: #5d2e0d;
+.tams-roll .tams-dodge:hover, .tams-roll .tams-retaliate:hover {
+    background: #007a00;
 }
