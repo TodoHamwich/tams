@@ -124,6 +124,12 @@
     border-bottom: 1px dashed #3e2723;
 }
 
+.tams .sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 5px;
+}
+
 .tams .tab {
     display: none;
 }

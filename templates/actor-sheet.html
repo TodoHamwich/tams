@@ -27,10 +27,10 @@
 
     <nav class="sheet-tabs tabs" data-group="primary">
         <a class="item {{#if (eq activeTab 'stats')}}active{{/if}}" data-action="setTab" data-tab="stats">Stats & Limbs</a>
-        <a class="item {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-action="setTab" data-tab="modifiers">Modifiers</a>
         <a class="item {{#if (eq activeTab 'items')}}active{{/if}}" data-action="setTab" data-tab="items">Weapons & Skills</a>
         <a class="item {{#if (eq activeTab 'abilities')}}active{{/if}}" data-action="setTab" data-tab="abilities">Abilities & Resources</a>
         <a class="item {{#if (eq activeTab 'description')}}active{{/if}}" data-action="setTab" data-tab="description">Traits & Bio</a>
+        <a class="item {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-action="setTab" data-tab="modifiers">Modifiers</a>
     </nav>
 
     <section class="sheet-body">
@@ -76,41 +76,6 @@
                     </div>
                     {{/each}}
                 </section>
-            </div>
-        </div>
-
-
-        {{!-- Modifiers Tab --}}
-        <div class="tab modifiers {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-group="primary" data-tab="modifiers">
-            <div class="flexcol">
-                <h3>Stamina Modifier</h3>
-                <div class="flexrow">
-                    <label>Stamina Multiplier</label>
-                    <input type="number" name="system.stamina.mult" value="{{system.stamina.mult}}" step="0.25" style="width: 60px;"/>
-                </div>
-                <hr>
-                <h3>Limb Multipliers</h3>
-                {{#each system.limbs as |limb id|}}
-                <div class="flexrow">
-                    <label style="flex:1">{{limb.label}}</label>
-                    <small>Mult:</small>
-                    <input type="number" name="system.limbs.{{id}}.mult" value="{{limb.mult}}" step="0.25" style="width:60px;"/>
-                </div>
-                {{/each}}
-                <hr>
-                <h3>Resource Modifiers</h3>
-                {{#each system.customResources as |res index|}}
-                <div class="flexrow" data-index="{{index}}">
-                    <label style="flex:1">{{res.name}}</label>
-                    <select name="system.customResources.{{index}}.stat" style="width:110px;">
-                        {{selectOptions ../statOptions selected=res.stat localize=true}}
-                    </select>
-                    <small>x</small>
-                    <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 60px;"/>
-                    <small>+</small>
-                    <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 60px;"/>
-                </div>
-                {{/each}}
             </div>
         </div>
 
@@ -201,6 +166,7 @@
             </ol>
         </div>
 
+
         {{!-- Description Tab --}}
         <div class="tab {{#if (eq activeTab 'description')}}active{{/if}}" data-group="primary" data-tab="description">
             <h3>Traits</h3>
@@ -209,6 +175,40 @@
             <h3>Biography</h3>
             <div class="editor-container">
                 {{editor enrichedDescription target="system.description" engine="prosemirror" button=true owner=owner editable=editable}}
+            </div>
+        </div>
+
+        {{!-- Modifiers Tab --}}
+        <div class="tab modifiers {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-group="primary" data-tab="modifiers">
+            <div class="flexcol">
+                <h3>Stamina Modifier</h3>
+                <div class="flexrow">
+                    <label>Stamina Multiplier</label>
+                    <input type="number" name="system.stamina.mult" value="{{system.stamina.mult}}" step="0.25" style="width: 60px;"/>
+                </div>
+                <hr>
+                <h3>Limb Multipliers</h3>
+                {{#each system.limbs as |limb id|}}
+                <div class="flexrow">
+                    <label style="flex:1">{{limb.label}}</label>
+                    <small>Mult:</small>
+                    <input type="number" name="system.limbs.{{id}}.mult" value="{{limb.mult}}" step="0.25" style="width:60px;"/>
+                </div>
+                {{/each}}
+                <hr>
+                <h3>Resource Modifiers</h3>
+                {{#each system.customResources as |res index|}}
+                <div class="flexrow" data-index="{{index}}">
+                    <label style="flex:1">{{res.name}}</label>
+                    <select name="system.customResources.{{index}}.stat" style="width:110px;">
+                        {{selectOptions ../statOptions selected=res.stat localize=true}}
+                    </select>
+                    <small>x</small>
+                    <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 60px;"/>
+                    <small>+</small>
+                    <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 60px;"/>
+                </div>
+                {{/each}}
             </div>
         </div>
     </section>
