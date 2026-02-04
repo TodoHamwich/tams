@@ -122,7 +122,7 @@
 }
 
 .tams .tab.stats .grid-2col {
-    grid-template-columns: 1fr 330px;
+    grid-template-columns: 1fr 350px;
 }
 
 .tams .flexrow {
@@ -182,7 +182,7 @@
 }
 
 .tams .limb-armor {
-    flex: 0 0 180px;
+    flex: 0 0 200px;
     justify-content: flex-end;
     gap: 5px;
 }
