@@ -595,11 +595,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
             <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
             <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
-              <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}" title="Apply Damage"><i class="fas fa-heart-crack"></i></button>
-              <button class="tams-dodge" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}" title="Dodge"><i class="fas fa-person-running"></i></button>
-              <button class="tams-retaliate" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}" title="Retaliate"><i class="fas fa-reply"></i></button>
-              <button class="tams-behind-toggle" style="background: #444; color: white;" title="Toggle Behind Attack"><i class="fas fa-ghost"></i></button>
-              <button class="tams-unaware-toggle" style="background: #444; color: white;" title="Toggle Unaware Defender"><i class="fas fa-eye-slash"></i></button>
+              <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
+              <button class="tams-dodge" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Dodge</button>
+              <button class="tams-retaliate" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Retaliate</button>
+              <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
+              <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
             </div>
         `;
     }
@@ -983,7 +983,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
             <div class="roll-row"><b>Hits from Attacker: ${hitsScored} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
             <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}' title="Apply Damage"><i class="fas fa-heart-crack"></i></button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}'>Apply Damage</button>
             </div>
             <div class="roll-row"><small>Defender also hits back (Narrative/Manual)</small></div>
           `;
@@ -1001,7 +1001,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
             <div class="roll-row"><b>Hits: ${hitsScored} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
             <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}' title="Apply Damage"><i class="fas fa-heart-crack"></i></button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}'>Apply Damage</button>
             </div>
           `;
           if (!critInfo) critInfo = `<div class="tams-failure">Dodge Failed vs Total ${attackerTotal}</div>`;
@@ -1149,7 +1149,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
             <div class="roll-row"><b>Hits from Attacker: ${hitsScored} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
             <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}' title="Apply Damage"><i class="fas fa-heart-crack"></i></button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}'>Apply Damage</button>
             </div>
             <div class="roll-row"><small>Defender also hits back (Narrative/Manual)</small></div>
           `;
@@ -1166,7 +1166,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
             <div class="roll-row"><b>Hits: ${hitsScored} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
             <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}' title="Apply Damage"><i class="fas fa-heart-crack"></i></button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}'>Apply Damage</button>
             </div>
           `;
 
@@ -1316,7 +1316,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
             <div class="roll-row"><b>Hits Taken: ${hitsTaken} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${defenseLocations.join(", ")}</small></div>
             <div class="roll-row" style="margin-bottom: 10px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(defenseLocations)}' title="Apply Hits to Defender"><i class="fas fa-heart-crack"></i></button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(defenseLocations)}'>Apply Hits to Defender</button>
             </div>
           `;
       } else if (attackerTotal > total) {
@@ -1330,7 +1330,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
             <div class="roll-row"><b>Hits Taken: ${hitsTaken} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${defenseLocations.join(", ")}</small></div>
             <div class="roll-row" style="margin-bottom: 10px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(defenseLocations)}' title="Apply Hits to Defender"><i class="fas fa-heart-crack"></i></button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(defenseLocations)}'>Apply Hits to Defender</button>
             </div>
           `;
           if (!critInfo) critInfo = `<div class="tams-failure">Retaliate Failed vs Total ${attackerTotal}</div>`;
@@ -1351,13 +1351,13 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       }
 
       const retButtons = isMutual ? `
-          <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}" title="Apply Damage"><i class="fas fa-heart-crack"></i></button>
+          <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
       ` : `
-          <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}" title="Apply Damage"><i class="fas fa-heart-crack"></i></button>
-          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}" title="Dodge"><i class="fas fa-person-running"></i></button>
-          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}" title="Retaliate"><i class="fas fa-reply"></i></button>
-          <button class="tams-behind-toggle" style="background: #444; color: white;" title="Toggle Behind Attack"><i class="fas fa-ghost"></i></button>
-          <button class="tams-unaware-toggle" style="background: #444; color: white;" title="Toggle Unaware Defender"><i class="fas fa-eye-slash"></i></button>
+          <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
+          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Dodge</button>
+          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Retaliate</button>
+          <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
+          <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
       `;
 
       const msg = `

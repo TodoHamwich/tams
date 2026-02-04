@@ -587,7 +587,8 @@
 }
 
 /* Buttons */
-.tams button {
+.tams .window-content button,
+.tams-roll button {
     font-family: 'Roboto Condensed', sans-serif;
     font-weight: bold;
     cursor: pointer;
@@ -595,7 +596,8 @@
     transition: all 0.2s ease;
 }
 
-.tams button:hover {
+.tams .window-content button:hover,
+.tams-roll button:hover {
     box-shadow: 0 0 5px rgba(0,0,0,0.3);
 }
 
