@@ -29,13 +29,17 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         bravery: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatBravery"}})
       }),
       limbs: new fields.SchemaField({
-        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5, min: 0}), max: new fields.NumberField({initial: 5, min: 0}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}) }),
-        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10, min: 0}), max: new fields.NumberField({initial: 10, min: 0}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Thorax"}) }),
-        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7, min: 0}), max: new fields.NumberField({initial: 7, min: 0}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Stomach"}) }),
-        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7, min: 0}), max: new fields.NumberField({initial: 7, min: 0}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Arm"}) }),
-        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7, min: 0}), max: new fields.NumberField({initial: 7, min: 0}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Arm"}) }),
-        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7, min: 0}), max: new fields.NumberField({initial: 7, min: 0}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Leg"}) }),
-        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7, min: 0}), max: new fields.NumberField({initial: 7, min: 0}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}) })
+        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Thorax"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Stomach"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Arm"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Arm"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Leg"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}), criticallyInjured: new fields.BooleanField({initial: false}) })
+      }),
+      hp: new fields.SchemaField({
+        value: new fields.NumberField({initial: 0}),
+        max: new fields.NumberField({initial: 0})
       }),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({initial: 10, min: 0}),
@@ -73,12 +77,18 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
 
   prepareDerivedData() {
     const end = this.stats.endurance.total;
+    let totalHp = 0;
+    let totalMaxHp = 0;
     for ( let limb of Object.values(this.limbs) ) {
       limb.max = Math.floor(end * limb.mult);
-      limb.value = Math.clamp(limb.value, 0, limb.max);
+      // Removed clamp(min:0) to allow negative HP
       limb.armor = Math.clamp(limb.armor, 0, 40);
       limb.armorMax = Math.clamp(limb.armorMax, 0, 40);
+      totalHp += limb.value;
+      totalMaxHp += limb.max;
     }
+    this.hp.value = totalHp;
+    this.hp.max = totalMaxHp;
     this.stamina.max = Math.floor(end * this.stamina.mult);
     this.stamina.value = Math.clamp(this.stamina.value, 0, this.stamina.max);
     for ( let res of this.customResources ) {
@@ -143,6 +153,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       cost: new fields.NumberField({initial: 0, nullable: true}),
       resource: new fields.StringField({initial: "stamina"}),
       isApex: new fields.BooleanField({initial: false}),
+      isReaction: new fields.BooleanField({initial: false}),
       uses: new fields.SchemaField({
         value: new fields.NumberField({initial: 0}),
         max: new fields.NumberField({initial: 0})
@@ -371,6 +382,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     context.editable = this.isEditable;
     context.owner = this.document.isOwner;
     context.staminaPercentage = Math.clamp((this.document.system.stamina.value / (this.document.system.stamina.max || 1)) * 100, 0, 100);
+    context.hpPercentage = Math.clamp((this.document.system.hp.value / (this.document.system.hp.max || 1)) * 100, 0, 100);
     
     // Calculate percentages for custom resources
     context.customResourceData = this.document.system.customResources.map(res => {
@@ -829,16 +841,17 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
               for (let i = 0; i < locations.length; i++) {
                   const loc = locations[i];
                   const limbKey = locationMap[loc];
+                  const limb = target.system.limbs[limbKey];
                   
                   // Use updated armor/HP value if multiple hits to same limb
-                  const currentArmor = updates[`system.limbs.${limbKey}.armor`] ?? target.system.limbs[limbKey].armor;
+                  const currentArmor = updates[`system.limbs.${limbKey}.armor`] ?? limb.armor;
                   const armor = Math.floor(currentArmor || 0);
                   
                   const incoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
                   const effective = Math.max(0, incoming - armor);
                   
-                  const currentHp = updates[`system.limbs.${limbKey}.value`] ?? target.system.limbs[limbKey].value;
-                  const newHp = Math.max(0, Math.floor(currentHp) - effective);
+                  const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
+                  const newHp = Math.floor(currentHp) - effective;
                   updates[`system.limbs.${limbKey}.value`] = newHp;
                   
                   if (armor > 0 && effective < incoming) {
@@ -846,6 +859,55 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                       report += `• ${loc}: ${effective} damage (${armor} armor blocked, 1 armor point lost)<br>`;
                   } else {
                       report += `• ${loc}: ${effective} damage (${armor} armor blocked)<br>`;
+                  }
+
+                  // Negative HP logic
+                  if (newHp < 0) {
+                      const maxLimbHp = limb.max;
+                      if (Math.abs(newHp) > maxLimbHp) {
+                          updates[`system.limbs.${limbKey}.criticallyInjured`] = true;
+                          report += `<b style="color:red;">!!! ${loc} CRITICALLY INJURED (Negative HP > Max HP) !!!</b><br>`;
+                      } else {
+                          // Prompt for Endurance Check
+                          const dc = effective + (currentHp < 0 ? Math.abs(currentHp) : 0);
+                          const end = target.system.stats.endurance.total;
+                          
+                          new Dialog({
+                              title: `Endurance Check - ${loc}`,
+                              content: `
+                                <p><b>${target.name}</b> must roll Endurance to avoid Critical Injury on <b>${loc}</b>.</p>
+                                <p>DC: <b>${dc}</b> (Damage ${effective} + Prev. Negative ${currentHp < 0 ? Math.abs(currentHp) : 0})</p>
+                                <p>Endurance Total: <b>${end}</b></p>
+                              `,
+                              buttons: {
+                                  roll: {
+                                      label: "Roll Endurance",
+                                      callback: async () => {
+                                          const roll = await new Roll("1d100").evaluate();
+                                          const raw = roll.total;
+                                          const capped = Math.min(raw, end);
+                                          const success = capped >= dc;
+                                          
+                                          let endReport = `
+                                            <div class="tams-roll">
+                                                <h3 class="roll-label">Endurance Check: ${loc}</h3>
+                                                <div class="roll-row"><span>Dice:</span><span>${raw}</span></div>
+                                                <div class="roll-row"><span>Capped (End ${end}):</span><span>${capped}</span></div>
+                                                <div class="roll-total">Total: <b>${capped}</b> vs DC <b>${dc}</b></div>
+                                                ${success ? '<div class="tams-success">Success!</div>' : '<div class="tams-crit failure">FAILED! Limb Critically Injured</div>'}
+                                            </div>
+                                          `;
+                                          ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor: target}), content: endReport, rolls: [roll] });
+                                          
+                                          if (!success) {
+                                              await target.update({[`system.limbs.${limbKey}.criticallyInjured`]: true});
+                                          }
+                                      }
+                                  }
+                              },
+                              default: "roll"
+                          }).render(true);
+                      }
                   }
               }
               await target.update(updates);
@@ -872,7 +934,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Dodge.');
       
-      let dexVal = Math.floor(actor.system.stats.dexterity.value || 0);
+      let dexVal = Math.floor(actor.system.stats.dexterity.total || 0);
       if (isBehind) {
           const behindMult = actor.system.behindMult ?? 0.5;
           dexVal = Math.floor(dexVal * behindMult);
@@ -888,7 +950,11 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       let damageInfo = "";
       let locations = [];
 
-      if (attackerTotal > total) {
+      if (raw >= (attackerRaw * 2)) {
+          // Critical Dodge (Overrides everything)
+          hitsScored = 0;
+          critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
+      } else if (attackerTotal > total) {
           // Attacker wins
           hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
           hitsScored = Math.min(hitsScored, attackerMulti);
@@ -912,13 +978,9 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
               critInfo = `<div class="tams-failure">Dodge Failed vs Total ${attackerTotal}</div>`;
           }
       } else {
-          // Defender wins
+          // Defender wins normally
           hitsScored = 0;
-          if (raw >= (attackerRaw * 2)) {
-              critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
-          } else {
-              critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
-          }
+          critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
       }
 
       const msg = `
@@ -1034,7 +1096,11 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       let damageInfo = "";
       let locations = [];
 
-      if (attackerTotal > total) {
+      if (raw >= (attackerRaw * 2)) {
+          // Critical Dodge (Overrides everything)
+          hitsScored = 0;
+          critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
+      } else if (attackerTotal > total) {
           hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
           hitsScored = Math.min(hitsScored, attackerMulti);
           
@@ -1058,11 +1124,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           }
       } else {
           hitsScored = 0;
-          if (raw >= (attackerRaw * 2)) {
-              critInfo = `<div class="tams-crit success">CRITICAL DODGE! (Total ${total} >= ${attackerTotal} AND Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
-          } else {
-              critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
-          }
+          critInfo = `<div class="tams-success">Dodge Success vs Total ${attackerTotal}</div>`;
       }
 
       const boostHtml = `<div class="roll-row"><small>Boost (+5/pt):</small><span>+${bonus}</span></div>`;
@@ -1095,10 +1157,14 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
 
       const actor = canvas.tokens.controlled[0]?.actor;
       if (!actor) return ui.notifications.warn('Select a token to Retaliate.');
-      const weapons = actor.items.filter(i => i.type === 'weapon');
-      if (!weapons.length) return ui.notifications.warn('Selected actor has no weapons.');
+      const weapons = actor.items.filter(i => {
+        if (i.type === 'weapon') return true;
+        if (i.type === 'ability' && i.system.isReaction && i.system.isAttack) return true;
+        return false;
+      });
+      if (!weapons.length) return ui.notifications.warn('Selected actor has no valid weapons or reaction abilities.');
 
-      const options = weapons.map(w => `<option value="${w.id}">${w.name} (Fam ${w.system.familiarity||0})</option>`).join('');
+      const options = weapons.map(w => `<option value="${w.id}">${w.name} (${w.type === 'ability' ? 'Ability' : 'Weapon'}, Fam ${w.system.familiarity||0})</option>`).join('');
       let chosenId = await new Promise(resolve => {
         new Dialog({
           title: 'Choose Weapon to Retaliate',
@@ -1110,8 +1176,30 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const weapon = actor.items.get(chosenId);
       if (!weapon) return;
 
-      let str = actor.system.stats.strength.value;
-      let dex = actor.system.stats.dexterity.value;
+      // Handle cost for abilities
+      if (weapon.type === 'ability') {
+        const cost = parseInt(weapon.system.cost) || 0;
+        if (!weapon.system.isApex && cost > 0) {
+            const resourceKey = weapon.system.resource;
+            if (resourceKey === 'stamina') {
+                const current = actor.system.stamina.value;
+                if (current < cost) return ui.notifications.warn("Not enough Stamina!");
+                await actor.update({"system.stamina.value": current - cost});
+            } else {
+                const idx = parseInt(resourceKey);
+                const res = actor.system.customResources[idx];
+                if (res) {
+                    if (res.value < cost) return ui.notifications.warn(`Not enough ${res.name}!`);
+                    const resources = foundry.utils.duplicate(actor.system.customResources);
+                    resources[idx].value -= cost;
+                    await actor.update({"system.customResources": resources});
+                }
+            }
+        }
+      }
+
+      let str = actor.system.stats.strength.total;
+      let dex = actor.system.stats.dexterity.total;
       
       if (isBehind) {
           const behindMult = actor.system.behindMult ?? 0.5;
@@ -1120,12 +1208,23 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       }
 
       let usesDex = false;
-      if (weapon.system.isRanged) {
-          usesDex = !weapon.system.isThrown;
-      } else {
-          usesDex = !!weapon.system.isLight;
+      let cap = 0;
+      if (weapon.type === 'weapon') {
+          if (weapon.system.isRanged) {
+              usesDex = !weapon.system.isThrown;
+          } else {
+              usesDex = !!weapon.system.isLight;
+          }
+          cap = usesDex ? dex : str;
+      } else if (weapon.type === 'ability') {
+          const statId = weapon.system.attackStat;
+          const stat = actor.system.stats[statId];
+          cap = stat ? stat.total : 100;
+          if (isBehind) {
+              const behindMult = actor.system.behindMult ?? 0.5;
+              cap = Math.floor(cap * behindMult);
+          }
       }
-      const cap = usesDex ? dex : str;
       const fam = Math.floor(weapon.system.familiarity || 0);
       const roll = await new Roll('1d100').evaluate();
       const raw = roll.total;
@@ -1172,10 +1271,12 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const damage = weapon.system.calculatedDamage;
 
       let multiVal = 1;
-      if (weapon.system.isRanged) {
+      if (weapon.type === 'weapon' && weapon.system.isRanged) {
           if (weapon.system.fireRate === '3') multiVal = 3;
           else if (weapon.system.fireRate === 'auto') multiVal = 10;
           else if (weapon.system.fireRate === 'custom') multiVal = weapon.system.fireRateCustom || 1;
+      } else if (weapon.type === 'ability') {
+          multiVal = weapon.system.multiAttack || 1;
       }
 
       const msg = `

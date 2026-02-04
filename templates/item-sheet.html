@@ -4,7 +4,7 @@
         <h1 class="charname"><input name="name" type="text" value="{{document.name}}" placeholder="Name"/></h1>
     </header>
 
-    <div class="sheet-content">
+    <section class="sheet-body">
         <div class="flexcol">
             <div class="flexrow">
                 <label>Familiarity</label>
@@ -81,6 +81,8 @@
             <div class="flexrow">
                 <label>Apex Ability?</label>
                 <input type="checkbox" name="system.isApex" {{checked system.isApex}}/>
+                <label>Is Reaction?</label>
+                <input type="checkbox" name="system.isReaction" {{checked system.isReaction}}/>
             </div>
             {{#if system.isApex}}
             <div class="flexrow">
@@ -290,5 +292,5 @@
             <label>Description</label>
             <textarea name="system.description" rows="10">{{system.description}}</textarea>
         </div>
-    </div>
+    </section>
 </section>

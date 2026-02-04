@@ -64,13 +64,17 @@
                 <section class="limbs-list">
                     <h3 class="small-header">Limbs (HP / Armor)</h3>
                     {{#each system.limbs as |limb id|}}
-                    <div class="limb-row flexrow">
-                        <label class="resource-label limb-label">{{limb.label}}</label>
+                    <div class="limb-row flexrow {{#if limb.criticallyInjured}}crit-injured{{/if}}">
+                        <label class="resource-label limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}">
+                            {{#if limb.criticallyInjured}}<i class="fas fa-skull crit-icon"></i>{{/if}}
+                            {{limb.label}}
+                        </label>
                         <div class="limb-hp flexrow">
-                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input" max="{{limb.max}}" min="0"/>
+                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input {{#if (lt limb.value 0)}}negative-hp{{/if}}" title="Current HP"/>
                             <span>/{{limb.max}}</span>
                         </div>
                         <div class="limb-armor flexrow">
+                            <input type="checkbox" name="system.limbs.{{id}}.criticallyInjured" {{checked limb.criticallyInjured}} title="Critically Injured?"/>
                             <label>Armour</label>
                             <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input" max="40" min="0"/>
                             <span>/</span>
@@ -166,6 +170,20 @@
                 <a data-action="resourceAdd"><i class="fas fa-plus"></i> Add Resource</a>
             </div>
             <ol class="resources-list">
+                {{!-- Total HP Resource --}}
+                <li class="resource-item hp flexcol">
+                    <div class="flexrow">
+                        <label class="resource-label">Total HP</label>
+                        <div class="bar-container">
+                            <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled/>
+                            <div class="bar">
+                                <div class="fill" style="width: {{hpPercentage}}%; background: #e74c3c;"></div>
+                            </div>
+                            <span class="max-label"> / {{system.hp.max}} </span>
+                        </div>
+                    </div>
+                </li>
+
                 {{!-- Main Stamina Resource --}}
                 <li class="resource-item stamina flexcol">
                     <div class="flexrow">
