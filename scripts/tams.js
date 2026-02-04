@@ -334,8 +334,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
       tag: "form",
       classes: ["tams", "sheet", "actor"],
-      position: { width: 650, height: 800 },
-      window: { resizable: true },
+      position: { width: 600, height: 800 },
+      window: { resizable: false },
       form: { submitOnChange: true, closeOnSubmit: false },
       actions: {
         itemCreate: TAMSActorSheet.prototype._onItemCreate,
@@ -916,6 +916,89 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
               }
               await target.update(updates);
               ChatMessage.create({ content: report });
+
+              // Survival Checks
+              let survivalNeeded = false;
+              let survivalDC = 0;
+              let reasons = [];
+
+              let newTotalHp = target.system.hp.value;
+              // newTotalHp is already updated because we did await target.update(updates)
+              // Wait, no. target.update(updates) updates the document on the server, 
+              // but the local 'target' object might not have refreshed its derived data yet?
+              // Actually target.system.hp.value is derived.
+              // I should calculate it manually to be safe or refresh target.
+              
+              newTotalHp = 0;
+              for (let [key, limb] of Object.entries(target.system.limbs)) {
+                  const val = updates[`system.limbs.${key}.value`] ?? limb.value;
+                  newTotalHp += val;
+              }
+
+              if (newTotalHp < 0) {
+                  survivalNeeded = true;
+                  const dc = Math.abs(newTotalHp);
+                  if (dc > survivalDC) survivalDC = dc;
+                  reasons.push(`Total HP is negative (${newTotalHp})`);
+              }
+
+              const headVal = updates["system.limbs.head.value"] ?? target.system.limbs.head.value;
+              const headMax = target.system.limbs.head.max;
+              if (headVal < -headMax) {
+                  survivalNeeded = true;
+                  const dc = Math.abs(headVal);
+                  if (dc > survivalDC) survivalDC = dc;
+                  reasons.push(`Head is beyond negative max (${headVal}/${-headMax})`);
+              }
+
+              const thoraxVal = updates["system.limbs.thorax.value"] ?? target.system.limbs.thorax.value;
+              const thoraxMax = target.system.limbs.thorax.max;
+              if (thoraxVal < -thoraxMax) {
+                  survivalNeeded = true;
+                  const dc = Math.abs(thoraxVal);
+                  if (dc > survivalDC) survivalDC = dc;
+                  reasons.push(`Thorax is beyond negative max (${thoraxVal}/${-thoraxMax})`);
+              }
+
+              if (survivalNeeded) {
+                  const end = target.system.stats.endurance.total;
+                  new Dialog({
+                      title: "SURVIVAL ENDURANCE CHECK",
+                      content: `
+                        <div class="tams-roll">
+                            <p style="color:red; font-weight:bold;">CRITICAL SURVIVAL NEEDED!</p>
+                            <p><b>Reasons:</b><br>${reasons.join("<br>")}</p>
+                            <p><b>Survival DC: ${survivalDC}</b></p>
+                            <p>Endurance Stat: ${end}</p>
+                            <small>Failing this check means the character may succumb to their injuries.</small>
+                        </div>
+                      `,
+                      buttons: {
+                          roll: {
+                              label: "Roll for Survival",
+                              callback: async () => {
+                                  const roll = await new Roll("1d100").evaluate();
+                                  const raw = roll.total;
+                                  const capped = Math.min(raw, end);
+                                  const success = capped >= survivalDC;
+                                  
+                                  let endReport = `
+                                    <div class="tams-roll">
+                                        <h3 class="roll-label" style="color: #8b0000;">Survival Check: ${target.name}</h3>
+                                        <div class="roll-row"><span>Dice:</span><span>${raw}</span></div>
+                                        <div class="roll-row"><span>Capped (End ${end}):</span><span>${capped}</span></div>
+                                        <div class="roll-total">Total: <b>${capped}</b> vs DC <b>${survivalDC}</b></div>
+                                        ${success ? '<div class="tams-success" style="font-size:1.2em; font-weight:bold;">SURVIVED!</div>' : '<div class="tams-crit failure" style="font-size:1.2em;">FATAL INJURY / DECEASED</div>'}
+                                        <div class="roll-contest-hint"><small>Reasons: ${reasons.join(", ")}</small></div>
+                                    </div>
+                                  `;
+                                  ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor: target}), content: endReport, rolls: [roll] });
+                              }
+                          }
+                      },
+                      default: "roll"
+                  }).render(true);
+              }
             }
           }
         },

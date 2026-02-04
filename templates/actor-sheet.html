@@ -62,6 +62,20 @@
                 </section>
 
                 <section class="limbs-list">
+                    {{!-- Total HP Resource --}}
+                    <div class="resource-item hp flexcol" style="border-bottom: 2px solid #7a7971; margin-bottom: 10px; padding-bottom: 5px;">
+                        <div class="flexrow">
+                            <label class="resource-label">Total HP</label>
+                            <div class="bar-container">
+                                <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled/>
+                                <div class="bar">
+                                    <div class="fill" style="width: {{hpPercentage}}%; background: #e74c3c;"></div>
+                                </div>
+                                <span class="max-label"> / {{system.hp.max}} </span>
+                            </div>
+                        </div>
+                    </div>
+
                     <h3 class="small-header">Limbs (HP / Armor)</h3>
                     {{#each system.limbs as |limb id|}}
                     <div class="limb-row flexrow {{#if limb.criticallyInjured}}crit-injured{{/if}}">
@@ -170,20 +184,6 @@
                 <a data-action="resourceAdd"><i class="fas fa-plus"></i> Add Resource</a>
             </div>
             <ol class="resources-list">
-                {{!-- Total HP Resource --}}
-                <li class="resource-item hp flexcol">
-                    <div class="flexrow">
-                        <label class="resource-label">Total HP</label>
-                        <div class="bar-container">
-                            <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled/>
-                            <div class="bar">
-                                <div class="fill" style="width: {{hpPercentage}}%; background: #e74c3c;"></div>
-                            </div>
-                            <span class="max-label"> / {{system.hp.max}} </span>
-                        </div>
-                    </div>
-                </li>
-
                 {{!-- Main Stamina Resource --}}
                 <li class="resource-item stamina flexcol">
                     <div class="flexrow">

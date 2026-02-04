@@ -162,12 +162,12 @@
 }
 
 .tams .limb-label {
-    flex: 0 0 80px;
+    flex: 0 0 70px;
     font-size: 13px;
 }
 
 .tams .limb-hp {
-    flex: 0 0 70px;
+    flex: 0 0 60px;
     gap: 2px;
     justify-content: flex-start;
 }
@@ -177,7 +177,7 @@
 }
 
 .tams .limb-armor {
-    flex: 1;
+    flex: 0 0 130px;
     justify-content: flex-end;
     gap: 5px;
 }
