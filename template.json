@@ -3,12 +3,12 @@
     "types": ["character"],
     "character": {
       "stats": {
-        "strength": { "value": 10, "label": "TAMS.StatStrength" },
-        "dexterity": { "value": 10, "label": "TAMS.StatDexterity" },
-        "endurance": { "value": 10, "label": "TAMS.StatEndurance" },
-        "wisdom": { "value": 10, "label": "TAMS.StatWisdom" },
-        "intelligence": { "value": 10, "label": "TAMS.StatIntelligence" },
-        "bravery": { "value": 10, "label": "TAMS.StatBravery" }
+        "strength": { "value": 10, "mod": 0, "label": "TAMS.StatStrength" },
+        "dexterity": { "value": 10, "mod": 0, "label": "TAMS.StatDexterity" },
+        "endurance": { "value": 10, "mod": 0, "label": "TAMS.StatEndurance" },
+        "wisdom": { "value": 10, "mod": 0, "label": "TAMS.StatWisdom" },
+        "intelligence": { "value": 10, "mod": 0, "label": "TAMS.StatIntelligence" },
+        "bravery": { "value": 10, "mod": 0, "label": "TAMS.StatBravery" }
       },
       "limbs": {
         "head": { "value": 5, "max": 5, "mult": 0.5, "armor": 0, "armorMax": 0, "label": "Head" },

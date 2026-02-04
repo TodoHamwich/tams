@@ -39,10 +39,14 @@
                 <section class="stats-list">
                     {{#each system.stats as |stat id|}}
                     <div class="stat flexrow">
-                        <label class="resource-label rollable" data-action="roll" data-roll="stat" data-stat-id="{{id}}" data-label="{{localize stat.label}}" data-stat-value="{{stat.value}}">
+                        <label class="resource-label rollable" data-action="roll" data-roll="stat" data-stat-id="{{id}}" data-label="{{localize stat.label}}" data-stat-value="{{stat.value}}" data-stat-mod="{{stat.mod}}">
                             <i class="fas fa-dice-d20"></i> {{localize stat.label}}
                         </label>
-                        <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number"/>
+                        <div class="stat-inputs flexrow">
+                            <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number" title="Base Value"/>
+                            <span class="mod-sep">+</span>
+                            <input type="number" name="system.stats.{{id}}.mod" value="{{stat.mod}}" data-dtype="Number" title="Modifier" class="small-input"/>
+                        </div>
                     </div>
                     {{/each}}
                     <hr>
