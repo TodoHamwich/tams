@@ -1,17 +1,32 @@
 ﻿/**
  * Data Models
  */
+class StatModifier extends foundry.abstract.DataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      value: new fields.NumberField({initial: 10, integer: true}),
+      mod: new fields.NumberField({initial: 0, integer: true}),
+      label: new fields.StringField()
+    };
+  }
+
+  get total() {
+    return this.value + (this.mod || 0);
+  }
+}
+
 class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
       stats: new fields.SchemaField({
-        strength: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), mod: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "TAMS.StatStrength"}) }),
-        dexterity: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), mod: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "TAMS.StatDexterity"}) }),
-        endurance: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), mod: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "TAMS.StatEndurance"}) }),
-        wisdom: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), mod: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "TAMS.StatWisdom"}) }),
-        intelligence: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), mod: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "TAMS.StatIntelligence"}) }),
-        bravery: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), mod: new fields.NumberField({initial: 0}), label: new fields.StringField({initial: "TAMS.StatBravery"}) })
+        strength: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatStrength"}}),
+        dexterity: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatDexterity"}}),
+        endurance: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatEndurance"}}),
+        wisdom: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatWisdom"}}),
+        intelligence: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatIntelligence"}}),
+        bravery: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatBravery"}})
       }),
       limbs: new fields.SchemaField({
         head: new fields.SchemaField({ value: new fields.NumberField({initial: 5, min: 0}), max: new fields.NumberField({initial: 5, min: 0}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}) }),
@@ -57,7 +72,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   }
 
   prepareDerivedData() {
-    const end = this.stats.endurance.value + (this.stats.endurance.mod || 0);
+    const end = this.stats.endurance.total;
     for ( let limb of Object.values(this.limbs) ) {
       limb.max = Math.floor(end * limb.mult);
       limb.value = Math.clamp(limb.value, 0, limb.max);
@@ -68,7 +83,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.stamina.value = Math.clamp(this.stamina.value, 0, this.stamina.max);
     for ( let res of this.customResources ) {
       const stat = this.stats[res.stat];
-      const statValue = stat ? (stat.value + (stat.mod || 0)) : 0;
+      const statValue = stat ? stat.total : 0;
       res.max = Math.floor((statValue * res.mult) + res.bonus);
       res.value = Math.clamp(res.value, 0, res.max);
     }
@@ -98,7 +113,7 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     if (this.isRanged) return Math.floor(this.rangedDamage || 0);
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
-    const str = actor.system.stats.strength.value;
+    const str = actor.system.stats.strength.total;
     let mult = 0.5;
     if (this.isHeavy) mult += 0.25;
     if (this.isTwoHanded) mult += 0.25;
@@ -147,7 +162,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     if ( !this.isAttack ) return 0;
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
-    const damageStatValue = actor.system.stats[this.damageStat]?.value || 0;
+    const damageStatValue = actor.system.stats[this.damageStat]?.total || 0;
     return Math.floor(damageStatValue * this.damageMult) + this.damageBonus;
   }
 }
@@ -296,17 +311,20 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     let familiarity = parseInt(dataset.familiarity) || 0;
     let statId = dataset.statId;
 
+    if (!item) familiarity = 0; // Pure stat rolls don't include familiarity
+
     if (item && item.type === 'weapon') {
-        const str = this.document.system.stats.strength.value + (this.document.system.stats.strength.mod || 0);
-        const dex = this.document.system.stats.dexterity.value + (this.document.system.stats.dexterity.mod || 0);
+        const str = this.document.system.stats.strength;
+        const dex = this.document.system.stats.dexterity;
         let usesDex = false;
         if (item.system.isRanged) {
             usesDex = !item.system.isThrown;
         } else {
             usesDex = !!item.system.isLight;
         }
-        statValue = usesDex ? dex : str;
-        statMod = 0; // Already included in statValue for derived weapon rolls
+        const stat = usesDex ? dex : str;
+        statValue = stat.value;
+        statMod = stat.mod;
         statId = usesDex ? 'dexterity' : 'strength';
         label = `Attacking with ${item.name}`;
     }
@@ -316,8 +334,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         label = name;
         statId = item.system.stat;
         const stat = this.document.system.stats[statId];
-        statValue = stat ? (stat.value + (stat.mod || 0)) : 100;
-        statMod = 0; // Already included
+        statValue = stat ? stat.value : 100;
+        statMod = stat ? (stat.mod || 0) : 0;
         if (name.includes("(") && name.includes(")")) {
             const confirmed = await new Promise(resolve => {
                 new Dialog({
@@ -338,8 +356,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         if (item.system.isAttack) {
             statId = item.system.attackStat;
             const stat = this.document.system.stats[statId];
-            statValue = stat ? (stat.value + (stat.mod || 0)) : 100;
-            statMod = 0;
+            statValue = stat ? stat.value : 100;
+            statMod = stat ? (stat.mod || 0) : 0;
             label = `Using Ability: ${item.name}`;
         }
         const cost = parseInt(item.system.cost) || 0;
@@ -437,8 +455,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${rawResult}</span></div>
         ${statId === 'bravery' ? 
             `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? ' + ' + familiarity : ''}</span></div>` :
-            `<div class="roll-row"><small>Stat Cap (${statValue}):</small><span>${cappedResult}</span></div>
-             <div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>`
+            `<div class="roll-row"><small>Stat Cap (${statValue}${statMod >= 0 ? '+' : ''}${statMod}):</small><span>${cappedResult}</span></div>
+             ${familiarity > 0 ? `<div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>` : ''}`
         }
         <hr>
         <div class="roll-total">${statId === 'bravery' ? 'Target to beat' : 'Total'}: <b>${statId === 'bravery' ? (effectiveStat + familiarity) : finalTotal}</b></div>
