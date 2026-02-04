@@ -6,5 +6,9 @@
     "StatWisdom": "Wisdom",
     "StatIntelligence": "Intelligence",
     "StatBravery": "Bravery"
-  }
+  },
+  "TYPES.Actor.character": "Character",
+  "TYPES.Item.weapon": "Weapon",
+  "TYPES.Item.skill": "Skill",
+  "TYPES.Item.ability": "Ability"
 }

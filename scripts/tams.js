@@ -182,6 +182,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     }, { inplace: false });
   }
 
+  /** @override */
+  get title() {
+    return this.document.name;
+  }
+
   static PARTS = {
     form: {
       template: "systems/tams/templates/actor-sheet.html"
@@ -498,6 +503,11 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       form: { submitOnChange: true, closeOnSubmit: false },
       actions: { }
     }, { inplace: false });
+  }
+
+  /** @override */
+  get title() {
+    return this.document.name;
   }
 
   static PARTS = {
