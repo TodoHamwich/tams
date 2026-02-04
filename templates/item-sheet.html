@@ -13,6 +13,10 @@
 
             {{#if (eq item.type "weapon")}}
             <div class="flexrow">
+                <label>Equipped?</label>
+                <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
+            </div>
+            <div class="flexrow">
                 <label>Fire Rate</label>
                 <select name="system.fireRate">
                     <option value="1" {{#if (eq system.fireRate "1")}}selected{{/if}}>Single (1)</option>
@@ -55,6 +59,43 @@
             <div class="flexrow">
                 <label>Special</label>
                 <input type="text" name="system.special" value="{{system.special}}"/>
+            </div>
+            {{/if}}
+
+            {{#if (eq item.type "equipment")}}
+            <div class="flexrow">
+                <label>Quantity</label>
+                <input type="number" name="system.quantity" value="{{system.quantity}}" data-dtype="Number"/>
+                <label>Weight</label>
+                <input type="number" name="system.weight" value="{{system.weight}}" data-dtype="Number" step="0.1"/>
+            </div>
+            <div class="flexrow">
+                <label>Carried?</label>
+                <input type="checkbox" name="system.carried" {{checked system.carried}}/>
+                <label>Equipped?</label>
+                <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
+            </div>
+            <div class="flexrow">
+                <label>Is Armour?</label>
+                <input type="checkbox" name="system.isArmor" {{checked system.isArmor}}/>
+            </div>
+            {{#if system.isArmor}}
+            <div class="flexrow">
+                <label>Protecting Limb</label>
+                <select name="system.limb">
+                    {{selectOptions limbOptions selected=system.limb}}
+                </select>
+            </div>
+            <div class="flexrow">
+                <label>Armor Value</label>
+                <input type="number" name="system.armorValue" value="{{system.armorValue}}"/>
+                <label>Max Armor</label>
+                <input type="number" name="system.armorMax" value="{{system.armorMax}}"/>
+            </div>
+            {{/if}}
+            <div class="flexrow">
+                <label>Tags</label>
+                <input type="text" name="system.tags" value="{{system.tags}}"/>
             </div>
             {{/if}}
 

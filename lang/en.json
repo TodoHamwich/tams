@@ -10,5 +10,6 @@
   "TYPES.Actor.character": "Character",
   "TYPES.Item.weapon": "Weapon",
   "TYPES.Item.skill": "Skill",
-  "TYPES.Item.ability": "Ability"
+  "TYPES.Item.ability": "Ability",
+  "TYPES.Item.equipment": "Equipment"
 }

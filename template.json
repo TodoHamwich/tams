@@ -40,9 +40,10 @@
     }
   },
   "Item": {
-    "types": ["weapon", "skill", "ability"],
+    "types": ["weapon", "skill", "ability", "equipment"],
     "weapon": {
       "familiarity": 0,
+      "equipped": false,
       "isHeavy": false,
       "isTwoHanded": false,
       "isLight": false,
@@ -101,6 +102,18 @@
         "duration": "instant",
         "isStackable": false
       },
+      "tags": "",
+      "description": ""
+    },
+    "equipment": {
+      "quantity": 1,
+      "weight": 0,
+      "carried": true,
+      "equipped": false,
+      "isArmor": false,
+      "armorValue": 0,
+      "armorMax": 0,
+      "limb": "none",
       "tags": "",
       "description": ""
     }

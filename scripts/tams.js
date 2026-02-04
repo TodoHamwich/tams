@@ -79,14 +79,24 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const end = this.stats.endurance.total;
     let totalHp = 0;
     let totalMaxHp = 0;
-    for ( let limb of Object.values(this.limbs) ) {
+
+    // 1) Recompute max
+    for (const limb of Object.values(this.limbs)) {
       limb.max = Math.floor(end * limb.mult);
-      // Removed clamp(min:0) to allow negative HP
+    }
+
+    // 2) Use base manual armor (Inventory mechanics disabled for now)
+    for (const [lk, limb] of Object.entries(this.limbs)) {
+      limb.armor = this._source.limbs[lk]?.armor || 0;
+      limb.armorMax = this._source.limbs[lk]?.armorMax || 0;
+      limb.hasEquippedArmor = false;
+
       limb.armor = Math.clamp(limb.armor, 0, 40);
       limb.armorMax = Math.clamp(limb.armorMax, 0, 40);
       totalHp += limb.value;
       totalMaxHp += limb.max;
     }
+
     this.hp.value = totalHp;
     this.hp.max = totalMaxHp;
     this.stamina.max = Math.floor(end * this.stamina.mult);
@@ -105,6 +115,7 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({initial: 0}),
+      equipped: new fields.BooleanField({initial: false}),
       isHeavy: new fields.BooleanField({initial: false}),
       isTwoHanded: new fields.BooleanField({initial: false}),
       isLight: new fields.BooleanField({initial: false}),
@@ -138,6 +149,24 @@ class TAMSSkillData extends foundry.abstract.TypeDataModel {
       familiarity: new fields.NumberField({initial: 0}),
       upgradePoints: new fields.NumberField({initial: 0}),
       stat: new fields.StringField({initial: "strength"}),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      weight: new fields.NumberField({initial: 0, step: 0.1, min: 0}),
+      carried: new fields.BooleanField({initial: true}),
+      equipped: new fields.BooleanField({initial: false}),
+      isArmor: new fields.BooleanField({initial: false}),
+      armorValue: new fields.NumberField({initial: 0, integer: true, min: 0}),
+      armorMax: new fields.NumberField({initial: 0, integer: true, min: 0}),
+      limb: new fields.StringField({initial: "none"}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -366,6 +395,15 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const theme = this.document.system.theme || "default";
     this.element.classList.remove("theme-default", "theme-dark", "theme-parchment");
     this.element.classList.add(`theme-${theme}`);
+
+    // Fix for inline item updates (Familiarity, fire rate, etc on the tab)
+    this.element.querySelectorAll('input[data-action="updateItemField"], select[data-action="updateItemField"]').forEach(el => {
+      el.addEventListener('change', async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await this._onUpdateItemField(ev, ev.currentTarget);
+      });
+    });
   }
 
   async _prepareContext(options) {
@@ -406,32 +444,80 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       "dark": "Dark",
       "parchment": "Parchment"
     };
+    context.limbOptions = {
+      "none": "None",
+      "head": "Head",
+      "thorax": "Thorax",
+      "stomach": "Stomach",
+      "leftArm": "Left Arm",
+      "rightArm": "Right Arm",
+      "leftLeg": "Left Leg",
+      "rightLeg": "Right Leg"
+    };
 
     const weapons = [];
+    const equippedWeapons = [];
     const skills = [];
     const abilities = [];
+    const inventoryArmor = [];
+    const inventoryMisc = [];
+    const inventoryWeapons = [];
+
+    let carryWeight = 0;
 
     for (let i of this.document.items) {
-      if (i.type === 'weapon') weapons.push(i);
+      if (i.type === 'weapon') {
+        weapons.push(i);
+        if (i.system.equipped) equippedWeapons.push(i);
+        else inventoryWeapons.push(i);
+      }
       else if (i.type === 'skill') skills.push(i);
       else if (i.type === 'ability') abilities.push(i);
+      else if (i.type === 'equipment') {
+        if (i.system.isArmor) inventoryArmor.push(i);
+        else inventoryMisc.push(i);
+        
+        const qty = Number(i.system.quantity ?? 1) || 0;
+        const wgt = Number(i.system.weight ?? 0) || 0;
+        const carried = !!i.system.carried;
+        if (carried) carryWeight += qty * wgt;
+      }
     }
 
-    context.weapons = weapons;
+    const end = this.document.system.stats.endurance.total || 0;
+    const carryCapacity = Math.max(0, Math.floor(end * 5));
+
+    context.weapons = weapons; // Revert to show all weapons
+    context.inventoryWeapons = inventoryWeapons;
+    context.inventoryArmor = inventoryArmor;
+    context.inventoryMisc = inventoryMisc;
+    context.allWeapons = weapons;
     context.skills = skills;
     context.abilities = abilities;
+    context.carryWeight = 0; // Disabled
+    context.carryCapacity = carryCapacity;
+    context.encumbered = false; // Disabled
 
     return context;
   }
 
   async _onItemCreate(event, target) {
     const type = target.dataset.type;
+    console.log(`TAMS | Creating item of type: ${type}`);
+    console.log(`TAMS | Valid Item Types:`, this.document.constructor.metadata.types);
+    
     const itemData = {
-      name: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
-      type: type,
-      system: {}
+      name: `New ${type.capitalize()}`,
+      type: type
     };
-    return await this.document.createEmbeddedDocuments("Item", [itemData]);
+    
+    try {
+      return await this.document.createEmbeddedDocuments("Item", [itemData]);
+    } catch (err) {
+      console.error(`TAMS | Failed to create item:`, err);
+      ui.notifications.error(`Failed to create item of type ${type}. See console for details.`);
+      throw err;
+    }
   }
 
   async _onItemEdit(event, target) {
@@ -450,7 +536,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const itemId = target.dataset.itemId;
     const field = target.dataset.field;
     let value = target.value;
-    if (target.type === "number") value = parseInt(value);
+    if (target.type === "number") value = parseFloat(value);
+    if (target.type === "checkbox") value = target.checked;
     const item = this.document.items.get(itemId);
     if (item) await item.update({ [field]: value });
   }
@@ -829,6 +916,16 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       "intelligence": "TAMS.StatIntelligence",
       "bravery": "TAMS.StatBravery"
     };
+    context.limbOptions = {
+      "none": "None",
+      "head": "Head",
+      "thorax": "Thorax",
+      "stomach": "Stomach",
+      "leftArm": "Left Arm",
+      "rightArm": "Right Arm",
+      "leftLeg": "Left Leg",
+      "rightLeg": "Right Leg"
+    };
 
     if (this.document.type === 'ability') {
         const resources = { "stamina": "Stamina" };
@@ -899,6 +996,11 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.weapon = TAMSWeaponData;
   CONFIG.Item.dataModels.skill = TAMSSkillData;
   CONFIG.Item.dataModels.ability = TAMSAbilityData;
+  CONFIG.Item.dataModels.equipment = TAMSEquipmentData;
+
+  // v12: Ensure types are also in systemDataModels if needed
+  CONFIG.Item.systemDataModels = CONFIG.Item.dataModels;
+  CONFIG.Actor.systemDataModels = CONFIG.Actor.dataModels;
 
   CONFIG.Actor.documentClass = TAMSActor;
   CONFIG.Item.documentClass = TAMSItem;
@@ -968,6 +1070,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
         buttons: {
         apply: { label: "Apply All Hits", callback: async (html) => {
               const updates = {};
+              const itemUpdates = {}; // Track armor item updates: { itemId: { _id, "system.armorValue" } }
               const pendingChecks = [];
               const limbDamageReceived = {};
               const originalLimbStatus = {};
@@ -990,9 +1093,20 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                   const limbKey = locationMap[loc];
                   const limb = target.system.limbs[limbKey];
                   
-                  // Use updated armor/HP value if multiple hits to same limb
-                  const currentArmor = updates[`system.limbs.${limbKey}.armor`] ?? limb.armor;
-                  const armor = Math.floor(currentArmor || 0);
+                  // 1) Calculate current armor (considering previous hits in this loop)
+                  let armor = 0;
+                  let armorItems = [];
+                  if (limb.hasEquippedArmor) {
+                      armorItems = target.items.filter(it => it.type === "equipment" && it.system.equipped && it.system.isArmor && it.system.limb === limbKey);
+                      for (const it of armorItems) {
+                          const pending = itemUpdates[it.id]?.["system.armorValue"];
+                          armor += (pending !== undefined ? pending : it.system.armorValue) || 0;
+                      }
+                  } else {
+                      const pending = updates[`system.limbs.${limbKey}.armor`];
+                      armor = pending !== undefined ? pending : (limb.armor || 0);
+                  }
+                  armor = Math.floor(armor);
                   
                   const incoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
                   const effective = Math.max(0, incoming - armor);
@@ -1004,7 +1118,25 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                   limbDamageReceived[limbKey] += effective;
 
                   if (armor > 0 && effective < incoming) {
-                      updates[`system.limbs.${limbKey}.armor`] = Math.max(0, armor - 1);
+                      // Armor lost! 
+                      if (limb.hasEquippedArmor) {
+                          // Find an item to damage (first one with armor remaining)
+                          const itemToDamage = armorItems.find(it => {
+                              const pending = itemUpdates[it.id]?.["system.armorValue"];
+                              const val = pending !== undefined ? pending : it.system.armorValue;
+                              return val > 0;
+                          });
+                          if (itemToDamage) {
+                              const pending = itemUpdates[itemToDamage.id]?.["system.armorValue"];
+                              const currentVal = pending !== undefined ? pending : itemToDamage.system.armorValue;
+                              itemUpdates[itemToDamage.id] = { 
+                                  _id: itemToDamage.id, 
+                                  "system.armorValue": Math.max(0, currentVal - 1) 
+                              };
+                          }
+                      } else {
+                          updates[`system.limbs.${limbKey}.armor`] = Math.max(0, armor - 1);
+                      }
                       report += `• ${loc}: ${effective} damage (${armor} armor blocked, 1 armor point lost)<br>`;
                   } else {
                       report += `• ${loc}: ${effective} damage (${armor} armor blocked)<br>`;
@@ -1016,8 +1148,12 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                   }
               }
 
-              // Apply updates
-              await target.update(updates);
+              // Apply all updates atomically
+              const finalUpdates = { ...updates };
+              if (Object.keys(itemUpdates).length > 0) {
+                  finalUpdates.items = Object.values(itemUpdates);
+              }
+              await target.update(finalUpdates);
               
               // Post-application checks
               for (let [limbKey, damage] of Object.entries(limbDamageReceived)) {
