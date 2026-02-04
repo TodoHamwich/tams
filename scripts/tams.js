@@ -903,7 +903,7 @@ Hooks.once("init", async function() {
 });
 
 Hooks.on("renderChatMessageHTML", (message, html, data) => {
-    html.querySelector(".tams-take-damage")?.addEventListener("click", async ev => {
+    html.querySelectorAll(".tams-take-damage").forEach(el => el.addEventListener("click", async ev => {
       ev.preventDefault();
       const btn = ev.currentTarget;
       const damageBase = parseInt(btn.dataset.damage);
@@ -1073,10 +1073,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
         },
         default: "apply"
       }).render(true);
-    });
+    }));
 
     // Dodge action
-    html.querySelector('.tams-dodge')?.addEventListener("click", async ev => {
+    html.querySelectorAll('.tams-dodge').forEach(el => el.addEventListener("click", async ev => {
       ev.preventDefault();
       const btn = ev.currentTarget;
       const attackerRaw = parseInt(btn.dataset.raw);
@@ -1161,10 +1161,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           </div>
         </div>`;
       ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll] });
-    });
+    }));
 
     // Boost Dodge action
-    html.querySelector('.tams-boost-dodge')?.addEventListener("click", async ev => {
+    html.querySelectorAll('.tams-boost-dodge').forEach(el => el.addEventListener("click", async ev => {
       ev.preventDefault();
       const btn = ev.currentTarget;
       const container = btn.closest(".tams-roll");
@@ -1301,10 +1301,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const messageId = btn.closest(".chat-message").dataset.messageId;
       const message = game.messages.get(messageId);
       if (message) message.update({ content: container.outerHTML });
-    });
+    }));
 
     // Retaliate action
-    html.querySelector('.tams-retaliate')?.addEventListener("click", async ev => {
+    html.querySelectorAll('.tams-retaliate').forEach(el => el.addEventListener("click", async ev => {
       ev.preventDefault();
       const btn = ev.currentTarget;
       const attackerRaw = parseInt(btn.dataset.raw);
@@ -1495,6 +1495,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           <hr>
           
           <div class="roll-row"><b>Damage: ${damage}</b></div>
+          <div class="roll-row"><b>Hits Scored: ${hitsScored} / ${multiVal}</b></div>
           <div class="roll-row"><b>Hit Location: ${retLocations.length > 0 ? retLocations[0] : "-"}</b></div>
           ${retLocations.length > 1 ? `<div class="roll-row"><small>Additional Hits: ${retLocations.slice(1).join(", ")}</small></div>` : ""}
           <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
@@ -1513,10 +1514,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           </div>
         </div>`;
       ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll] });
-    });
+    }));
 
     // Boost Unconscious action
-    html.querySelector('.tams-boost-unconscious')?.addEventListener("click", async ev => {
+    html.querySelectorAll('.tams-boost-unconscious').forEach(el => el.addEventListener("click", async ev => {
         ev.preventDefault();
         const btn = ev.currentTarget;
         const container = btn.closest(".tams-roll");
@@ -1599,10 +1600,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
         const messageId = btn.closest(".chat-message").dataset.messageId;
         const message = game.messages.get(messageId);
         if (message) message.update({ content: container.outerHTML });
-    });
+    }));
 
     // Behind toggle action
-    html.querySelector('.tams-behind-toggle')?.addEventListener("click", async ev => {
+    html.querySelectorAll('.tams-behind-toggle').forEach(el => el.addEventListener("click", async ev => {
         ev.preventDefault();
         const btn = ev.currentTarget;
         const container = btn.closest(".tams-roll");
@@ -1612,10 +1613,10 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
         } else {
             btn.style.background = "#444";
         }
-    });
+    }));
 
     // Unaware toggle action
-    html.querySelector('.tams-unaware-toggle')?.addEventListener("click", async ev => {
+    html.querySelectorAll('.tams-unaware-toggle').forEach(el => el.addEventListener("click", async ev => {
         ev.preventDefault();
         const btn = ev.currentTarget;
         const container = btn.closest(".tams-roll");
@@ -1625,5 +1626,5 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
         } else {
             btn.style.background = "#444";
         }
-    });
+    }));
 });
