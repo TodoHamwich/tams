@@ -681,6 +681,13 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                     <label><b>Crit Check: ${check.loc}</b> (DC ${check.dc})</label>
                     <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px;">Roll Endurance</button>
                 </div>`;
+        } else if (check.type === 'unconscious') {
+            content += `
+                <div class="check-row" style="background: rgba(52, 152, 219, 0.1); padding: 5px; margin-top: 5px; border: 1px solid #3498db; border-radius: 4px;">
+                    <label><b>UNCONSCIOUS CHECK</b> (DC ${check.dc})</label>
+                    <p style="font-size: 0.8em; margin: 2px 0;">${check.reasons.join("<br>")}</p>
+                    <button class="roll-check" data-index="${i}" style="width: 100%; margin-top: 5px; background: #2980b9; color: white; font-size: 12px;">Roll to Stay Awake</button>
+                </div>`;
         } else if (check.type === 'survival') {
             content += `
                 <div class="check-row" style="background: rgba(231, 76, 60, 0.1); padding: 5px; margin-top: 5px; border: 1px solid #e74c3c; border-radius: 4px;">
@@ -703,10 +710,16 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                 const check = pendingChecks[idx];
                 const end = target.system.stats.endurance.total;
                 
+                let bonus = 0;
+                let resourceSpent = null;
+
+                // No pre-roll boost for unconscious anymore, handled after roll
+
                 const roll = await new Roll("1d100").evaluate();
                 const raw = roll.total;
                 const capped = Math.min(raw, end);
-                const success = capped >= check.dc;
+                const total = capped + bonus;
+                const success = total >= check.dc;
 
                 let report = "";
                 if (check.type === 'crit') {
@@ -722,6 +735,21 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                     if (!success) {
                         await target.update({[`system.limbs.${check.limbKey}.criticallyInjured`]: true});
                     }
+                } else if (check.type === 'unconscious') {
+                    report = `
+                        <div class="tams-roll" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}" data-reasons='${JSON.stringify(check.reasons)}'>
+                            <h3 class="roll-label" style="color: #2980b9;">Unconscious Check: ${target.name}</h3>
+                            <div class="roll-row"><span>Dice:</span><span>${raw}</span></div>
+                            <div class="roll-row"><span>Capped (End ${end}):</span><span>${capped}</span></div>
+                            <div class="roll-boost-container"></div>
+                            <div class="roll-total">Total: <b>${capped}</b> vs DC <b>${check.dc}</b></div>
+                            ${success ? '<div class="tams-success" style="font-size:1.1em; font-weight:bold;">REMAINS CONSCIOUS</div>' : '<div class="tams-crit failure" style="font-size:1.1em;">FALLS UNCONSCIOUS</div>'}
+                            <div class="roll-contest-hint"><small>Reasons: ${check.reasons.join(", ")}</small></div>
+                            <div class="roll-row" style="margin-top: 5px;">
+                                <button class="tams-boost-unconscious">Spend Resource to Boost (+5/pt)</button>
+                            </div>
+                        </div>
+                    `;
                 } else {
                     report = `
                         <div class="tams-roll">
@@ -991,22 +1019,30 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
               let survivalDC = 0;
               let reasons = [];
 
-              if (target.system.hp.value < 0) {
+              const totalHp = target.system.hp.value;
+              const maxHp = target.system.hp.max;
+
+              if (totalHp <= -maxHp) {
                   survivalNeeded = true;
-                  const dc = Math.abs(target.system.hp.value);
+                  const dc = Math.abs(totalHp);
                   if (dc > survivalDC) survivalDC = dc;
-                  reasons.push(`Total HP is negative (${target.system.hp.value})`);
+                  reasons.push(`Total HP is below negative max (${totalHp} / ${-maxHp})`);
+              } else if (totalHp < 0) {
+                  pendingChecks.push({
+                      type: 'unconscious',
+                      dc: Math.abs(totalHp),
+                      reasons: [`Total HP is negative (${totalHp})`]
+                  });
               }
 
-              // Head/Thorax checks - ONLY if they ALREADY had a critical injury before this hit
+              // Head/Thorax checks - Trigger whenever below lethal threshold
               const checkLethal = (key) => {
                   const limb = target.system.limbs[key];
-                  const hadCritBefore = originalLimbStatus[key].criticallyInjured;
-                  if (hadCritBefore && limb.value < -limb.max) {
+                  if (limb.value < -limb.max) {
                       survivalNeeded = true;
                       const dc = Math.abs(limb.value);
                       if (dc > survivalDC) survivalDC = dc;
-                      reasons.push(`${limb.label} is beyond negative max (${limb.value}/${-limb.max}) and was already critically injured`);
+                      reasons.push(`${limb.label} is beyond negative max (${limb.value}/${-limb.max})`);
                   }
               };
 
@@ -1379,9 +1415,37 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
       }
 
+      let multiVal = 1;
+      if (weapon.type === 'weapon' && weapon.system.isRanged) {
+          if (weapon.system.fireRate === '3') multiVal = 3;
+          else if (weapon.system.fireRate === 'auto') multiVal = 10;
+          else if (weapon.system.fireRate === 'custom') multiVal = weapon.system.fireRateCustom || 1;
+      } else if (weapon.type === 'ability') {
+          multiVal = weapon.system.multiAttack || 1;
+      }
+
+      const damage = weapon.system.calculatedDamage;
+
+      // Calculate hits scored by defender (retaliation hits)
+      let hitsScored = 0;
+      if (isMutual) {
+          hitsScored = Math.min(1 + Math.floor(Math.max(0, total - attackerTotal) / 5), multiVal);
+      } else if (total > attackerTotal) {
+          hitsScored = Math.min(1 + Math.floor((total - attackerTotal) / 5), multiVal);
+      }
+
+      // Prepare retaliation hit locations
+      let retLocations = [];
+      if (hitsScored > 0) {
+          retLocations.push(await getHitLocation(raw));
+          for (let i = 1; i < hitsScored; i++) {
+              retLocations.push(await getHitLocation());
+          }
+      }
+
       // Check defender success/failure against incoming attack
       if (isMutual) {
-          const hitsTaken = Math.min(1 + Math.floor(Math.abs(diff) / 5), attackerMulti);
+          const hitsTaken = Math.min(1 + Math.floor(Math.max(0, attackerTotal - total) / 5), attackerMulti);
           defenseLocations.push(firstLocation);
           for (let i = 1; i < hitsTaken; i++) {
               defenseLocations.push(await getHitLocation());
@@ -1413,27 +1477,15 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           if (!critInfo) critInfo = `<div class="tams-success">Retaliate Success vs Total ${attackerTotal}</div>`;
       }
 
-      let hitLocation = await getHitLocation(raw);
-      const damage = weapon.system.calculatedDamage;
-
-      let multiVal = 1;
-      if (weapon.type === 'weapon' && weapon.system.isRanged) {
-          if (weapon.system.fireRate === '3') multiVal = 3;
-          else if (weapon.system.fireRate === 'auto') multiVal = 10;
-          else if (weapon.system.fireRate === 'custom') multiVal = weapon.system.fireRateCustom || 1;
-      } else if (weapon.type === 'ability') {
-          multiVal = weapon.system.multiAttack || 1;
-      }
-
       const retButtons = isMutual ? `
-          <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
-      ` : `
-          <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
-          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Dodge</button>
-          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Retaliate</button>
+          <button class="tams-take-damage" data-damage="${damage}" data-locations='${JSON.stringify(retLocations)}'>Apply Damage</button>
+      ` : (hitsScored > 0 ? `
+          <button class="tams-take-damage" data-damage="${damage}" data-locations='${JSON.stringify(retLocations)}'>Apply Damage</button>
+          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Dodge</button>
+          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Retaliate</button>
           <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
           <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
-      `;
+      ` : "");
 
       const msg = `
         <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-is-ranged="${isRanged ? '1' : '0'}">
@@ -1443,7 +1495,8 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           <hr>
           
           <div class="roll-row"><b>Damage: ${damage}</b></div>
-          <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
+          <div class="roll-row"><b>Hit Location: ${retLocations.length > 0 ? retLocations[0] : "-"}</b></div>
+          ${retLocations.length > 1 ? `<div class="roll-row"><small>Additional Hits: ${retLocations.slice(1).join(", ")}</small></div>` : ""}
           <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
           <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
             ${retButtons}
@@ -1460,6 +1513,92 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           </div>
         </div>`;
       ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: msg, rolls: [roll] });
+    });
+
+    // Boost Unconscious action
+    html.querySelector('.tams-boost-unconscious')?.addEventListener("click", async ev => {
+        ev.preventDefault();
+        const btn = ev.currentTarget;
+        const container = btn.closest(".tams-roll");
+        const actorId = container.dataset.actorId;
+        const dc = parseInt(container.dataset.dc);
+        const raw = parseInt(container.dataset.raw);
+        const end = parseInt(container.dataset.end);
+
+        const actor = game.actors.get(actorId);
+        if (!actor) return;
+
+        const capped = Math.min(raw, end);
+        const bonusNeeded = dc - capped;
+        const pointsNeeded = Math.max(0, Math.ceil(bonusNeeded / 5));
+        const pointsCapped = Math.min(pointsNeeded, 10);
+
+        const resources = [{id: "stamina", name: "Stamina", value: actor.system.stamina.value}];
+        actor.system.customResources.forEach((res, idx) => {
+            resources.push({id: idx.toString(), name: res.name, value: res.value});
+        });
+        const options = resources.map(r => `<option value="${r.id}">${r.name} (${r.value} avail)</option>`).join('');
+
+        const spending = await new Promise(resolve => {
+            new Dialog({
+                title: "Boost Unconscious Check",
+                content: `
+                    <div class="form-group"><label>Resource</label><select id="res-type">${options}</select></div>
+                    <div class="form-group">
+                        <label>Points Spent (Max 10)</label>
+                        <input type="number" id="res-points" value="${pointsCapped}" min="0" max="10"/>
+                        <p><small>Each point gives +5 to the check.</small></p>
+                        <p><i>${pointsNeeded > 0 ? `Minimum to stay awake: <b>${pointsNeeded}</b>` : "Already Awake!"}</i></p>
+                    </div>`,
+                buttons: {
+                    go: { label: "Apply Boost", callback: (html) => {
+                        const resId = html.find("#res-type").val();
+                        const res = resources.find(r => r.id === resId);
+                        let pts = Math.clamp(parseInt(html.find("#res-points").val()) || 0, 0, 10);
+                        if (pts > res.value) pts = res.value;
+                        resolve({ resId, pts });
+                    }},
+                    cancel: { label: "Cancel", callback: () => resolve(null) }
+                },
+                default: "go"
+            }).render(true);
+        });
+
+        if (!spending) return;
+        const { resId, pts } = spending;
+        const bonus = pts * 5;
+
+        if (pts > 0) {
+            if (resId === 'stamina') {
+                await actor.update({"system.stamina.value": actor.system.stamina.value - pts});
+            } else {
+                const idx = parseInt(resId);
+                const customResources = foundry.utils.duplicate(actor.system.customResources);
+                customResources[idx].value -= pts;
+                await actor.update({"system.customResources": customResources});
+            }
+        }
+
+        const total = capped + bonus;
+        const success = total >= dc;
+        const resName = resources.find(r => r.id === resId).name;
+
+        const boostHtml = `<div class="roll-row"><span>Boost (${resName}):</span><span>+${bonus}</span></div>`;
+        container.querySelector(".roll-boost-container").innerHTML = boostHtml;
+        container.querySelector(".roll-total b").innerText = total;
+        
+        const statusDiv = container.querySelector(".tams-success, .tams-crit.failure");
+        if (statusDiv) {
+            statusDiv.className = success ? "tams-success" : "tams-crit failure";
+            statusDiv.style.fontSize = "1.1em";
+            statusDiv.style.fontWeight = success ? "bold" : "normal";
+            statusDiv.innerText = success ? "REMAINS CONSCIOUS" : "FALLS UNCONSCIOUS";
+        }
+        btn.remove();
+
+        const messageId = btn.closest(".chat-message").dataset.messageId;
+        const message = game.messages.get(messageId);
+        if (message) message.update({ content: container.outerHTML });
     });
 
     // Behind toggle action
