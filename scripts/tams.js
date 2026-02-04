@@ -667,6 +667,82 @@ async function getHitLocation(rollValue = null) {
     return "Right Leg";
 }
 
+/**
+ * Helper: Show consolidated injury dialog
+ */
+async function showCombinedInjuryDialog(target, pendingChecks) {
+    let content = `<div class="tams-injury-dialog">
+        <p><b>${target.name}</b> must make the following checks:</p>`;
+
+    pendingChecks.forEach((check, i) => {
+        if (check.type === 'crit') {
+            content += `
+                <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
+                    <label><b>Crit Check: ${check.loc}</b> (DC ${check.dc})</label>
+                    <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px;">Roll Endurance</button>
+                </div>`;
+        } else if (check.type === 'survival') {
+            content += `
+                <div class="check-row" style="background: rgba(231, 76, 60, 0.1); padding: 5px; margin-top: 5px; border: 1px solid #e74c3c; border-radius: 4px;">
+                    <label><b>SURVIVAL CHECK</b> (DC ${check.dc})</label>
+                    <p style="font-size: 0.8em; margin: 2px 0;">${check.reasons.join("<br>")}</p>
+                    <button class="roll-check" data-index="${i}" style="width: 100%; margin-top: 5px; background: #4a0000; color: white; font-size: 12px;">Roll for Survival</button>
+                </div>`;
+        }
+    });
+    content += `</div>`;
+
+    new Dialog({
+        title: `Injuries & Survival - ${target.name}`,
+        content: content,
+        buttons: { close: { label: "Close" } },
+        render: (html) => {
+            html.find('.roll-check').click(async ev => {
+                const btn = ev.currentTarget;
+                const idx = parseInt(btn.dataset.index);
+                const check = pendingChecks[idx];
+                const end = target.system.stats.endurance.total;
+                
+                const roll = await new Roll("1d100").evaluate();
+                const raw = roll.total;
+                const capped = Math.min(raw, end);
+                const success = capped >= check.dc;
+
+                let report = "";
+                if (check.type === 'crit') {
+                    report = `
+                        <div class="tams-roll">
+                            <h3 class="roll-label">Endurance Check: ${check.loc}</h3>
+                            <div class="roll-row"><span>Dice:</span><span>${raw}</span></div>
+                            <div class="roll-row"><span>Capped (End ${end}):</span><span>${capped}</span></div>
+                            <div class="roll-total">Total: <b>${capped}</b> vs DC <b>${check.dc}</b></div>
+                            ${success ? '<div class="tams-success">Success!</div>' : '<div class="tams-crit failure">FAILED! Limb Critically Injured</div>'}
+                        </div>
+                    `;
+                    if (!success) {
+                        await target.update({[`system.limbs.${check.limbKey}.criticallyInjured`]: true});
+                    }
+                } else {
+                    report = `
+                        <div class="tams-roll">
+                            <h3 class="roll-label" style="color: #8b0000;">Survival Check: ${target.name}</h3>
+                            <div class="roll-row"><span>Dice:</span><span>${raw}</span></div>
+                            <div class="roll-row"><span>Capped (End ${end}):</span><span>${capped}</span></div>
+                            <div class="roll-total">Total: <b>${capped}</b> vs DC <b>${check.dc}</b></div>
+                            ${success ? '<div class="tams-success" style="font-size:1.2em; font-weight:bold;">SURVIVED!</div>' : '<div class="tams-crit failure" style="font-size:1.2em;">FATAL INJURY / DECEASED</div>'}
+                            <div class="roll-contest-hint"><small>Reasons: ${check.reasons.join(", ")}</small></div>
+                        </div>
+                    `;
+                }
+                ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor: target}), content: report, rolls: [roll] });
+                btn.disabled = true;
+                btn.innerText = success ? "Passed" : "Failed";
+                btn.style.background = success ? "#2e7d32" : "#c62828";
+            });
+        }
+    }).render(true);
+}
+
 class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
   static get DEFAULT_OPTIONS() {
     return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
@@ -837,11 +913,24 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
         title: `Apply Damage to ${target.name}`,
         content: dialogContent,
         buttons: {
-          apply: { label: "Apply All Hits", callback: async (html) => {
+        apply: { label: "Apply All Hits", callback: async (html) => {
               const updates = {};
-              let report = `<b>${target.name}</b> taking damage:<br>`;
+              const pendingChecks = [];
+              const limbDamageReceived = {};
+              const originalLimbStatus = {};
               
+              for (let key of Object.keys(target.system.limbs)) {
+                  originalLimbStatus[key] = {
+                      value: target.system.limbs[key].value,
+                      criticallyInjured: target.system.limbs[key].criticallyInjured,
+                      max: target.system.limbs[key].max
+                  };
+                  limbDamageReceived[key] = 0;
+              }
+
+              let report = `<b>${target.name}</b> taking damage:<br>`;
               const dmgInputs = html.find(".hit-dmg");
+              
               for (let i = 0; i < locations.length; i++) {
                   const loc = locations[i];
                   const limbKey = locationMap[loc];
@@ -858,6 +947,8 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                   const newHp = Math.floor(currentHp) - effective;
                   updates[`system.limbs.${limbKey}.value`] = newHp;
                   
+                  limbDamageReceived[limbKey] += effective;
+
                   if (armor > 0 && effective < incoming) {
                       updates[`system.limbs.${limbKey}.armor`] = Math.max(0, armor - 1);
                       report += `• ${loc}: ${effective} damage (${armor} armor blocked, 1 armor point lost)<br>`;
@@ -865,139 +956,81 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                       report += `• ${loc}: ${effective} damage (${armor} armor blocked)<br>`;
                   }
 
-                  // Negative HP logic
-                  if (newHp < 0) {
-                      const maxLimbHp = limb.max;
-                      if (Math.abs(newHp) > maxLimbHp) {
-                          updates[`system.limbs.${limbKey}.criticallyInjured`] = true;
-                          report += `<b style="color:red;">!!! ${loc} CRITICALLY INJURED (Negative HP > Max HP) !!!</b><br>`;
-                      } else {
-                          // Prompt for Endurance Check
-                          const dc = effective + (currentHp < 0 ? Math.abs(currentHp) : 0);
-                          const end = target.system.stats.endurance.total;
-                          
-                          new Dialog({
-                              title: `Endurance Check - ${loc}`,
-                              content: `
-                                <p><b>${target.name}</b> must roll Endurance to avoid Critical Injury on <b>${loc}</b>.</p>
-                                <p>DC: <b>${dc}</b> (Damage ${effective} + Prev. Negative ${currentHp < 0 ? Math.abs(currentHp) : 0})</p>
-                                <p>Endurance Total: <b>${end}</b></p>
-                              `,
-                              buttons: {
-                                  roll: {
-                                      label: "Roll Endurance",
-                                      callback: async () => {
-                                          const roll = await new Roll("1d100").evaluate();
-                                          const raw = roll.total;
-                                          const capped = Math.min(raw, end);
-                                          const success = capped >= dc;
-                                          
-                                          let endReport = `
-                                            <div class="tams-roll">
-                                                <h3 class="roll-label">Endurance Check: ${loc}</h3>
-                                                <div class="roll-row"><span>Dice:</span><span>${raw}</span></div>
-                                                <div class="roll-row"><span>Capped (End ${end}):</span><span>${capped}</span></div>
-                                                <div class="roll-total">Total: <b>${capped}</b> vs DC <b>${dc}</b></div>
-                                                ${success ? '<div class="tams-success">Success!</div>' : '<div class="tams-crit failure">FAILED! Limb Critically Injured</div>'}
-                                            </div>
-                                          `;
-                                          ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor: target}), content: endReport, rolls: [roll] });
-                                          
-                                          if (!success) {
-                                              await target.update({[`system.limbs.${limbKey}.criticallyInjured`]: true});
-                                          }
-                                      }
-                                  }
-                              },
-                              default: "roll"
-                          }).render(true);
-                      }
+                  // Check automatic crit injury
+                  if (newHp < 0 && Math.abs(newHp) > limb.max) {
+                      updates[`system.limbs.${limbKey}.criticallyInjured`] = true;
                   }
               }
+
+              // Apply updates
               await target.update(updates);
-              ChatMessage.create({ content: report });
+              
+              // Post-application checks
+              for (let [limbKey, damage] of Object.entries(limbDamageReceived)) {
+                  if (damage === 0) continue;
+                  
+                  const original = originalLimbStatus[limbKey];
+                  const limb = target.system.limbs[limbKey];
+                  const currentVal = limb.value;
+                  const isCritNow = limb.criticallyInjured;
+                  
+                  if (currentVal < 0 && !isCritNow) {
+                      const prevNegative = original.value < 0 ? Math.abs(original.value) : 0;
+                      const dc = damage + prevNegative;
+                      pendingChecks.push({
+                          type: 'crit',
+                          loc: limb.label,
+                          dc: dc,
+                          limbKey: limbKey
+                      });
+                  }
+              }
 
               // Survival Checks
               let survivalNeeded = false;
               let survivalDC = 0;
               let reasons = [];
 
-              let newTotalHp = target.system.hp.value;
-              // newTotalHp is already updated because we did await target.update(updates)
-              // Wait, no. target.update(updates) updates the document on the server, 
-              // but the local 'target' object might not have refreshed its derived data yet?
-              // Actually target.system.hp.value is derived.
-              // I should calculate it manually to be safe or refresh target.
-              
-              newTotalHp = 0;
-              for (let [key, limb] of Object.entries(target.system.limbs)) {
-                  const val = updates[`system.limbs.${key}.value`] ?? limb.value;
-                  newTotalHp += val;
+              if (target.system.hp.value < 0) {
+                  survivalNeeded = true;
+                  const dc = Math.abs(target.system.hp.value);
+                  if (dc > survivalDC) survivalDC = dc;
+                  reasons.push(`Total HP is negative (${target.system.hp.value})`);
               }
 
-              if (newTotalHp < 0) {
-                  survivalNeeded = true;
-                  const dc = Math.abs(newTotalHp);
-                  if (dc > survivalDC) survivalDC = dc;
-                  reasons.push(`Total HP is negative (${newTotalHp})`);
-              }
+              // Head/Thorax checks - ONLY if they ALREADY had a critical injury before this hit
+              const checkLethal = (key) => {
+                  const limb = target.system.limbs[key];
+                  const hadCritBefore = originalLimbStatus[key].criticallyInjured;
+                  if (hadCritBefore && limb.value < -limb.max) {
+                      survivalNeeded = true;
+                      const dc = Math.abs(limb.value);
+                      if (dc > survivalDC) survivalDC = dc;
+                      reasons.push(`${limb.label} is beyond negative max (${limb.value}/${-limb.max}) and was already critically injured`);
+                  }
+              };
 
-              const headVal = updates["system.limbs.head.value"] ?? target.system.limbs.head.value;
-              const headMax = target.system.limbs.head.max;
-              if (headVal < -headMax) {
-                  survivalNeeded = true;
-                  const dc = Math.abs(headVal);
-                  if (dc > survivalDC) survivalDC = dc;
-                  reasons.push(`Head is beyond negative max (${headVal}/${-headMax})`);
-              }
-
-              const thoraxVal = updates["system.limbs.thorax.value"] ?? target.system.limbs.thorax.value;
-              const thoraxMax = target.system.limbs.thorax.max;
-              if (thoraxVal < -thoraxMax) {
-                  survivalNeeded = true;
-                  const dc = Math.abs(thoraxVal);
-                  if (dc > survivalDC) survivalDC = dc;
-                  reasons.push(`Thorax is beyond negative max (${thoraxVal}/${-thoraxMax})`);
-              }
+              checkLethal('head');
+              checkLethal('thorax');
 
               if (survivalNeeded) {
-                  const end = target.system.stats.endurance.total;
-                  new Dialog({
-                      title: "SURVIVAL ENDURANCE CHECK",
-                      content: `
-                        <div class="tams-roll">
-                            <p style="color:red; font-weight:bold;">CRITICAL SURVIVAL NEEDED!</p>
-                            <p><b>Reasons:</b><br>${reasons.join("<br>")}</p>
-                            <p><b>Survival DC: ${survivalDC}</b></p>
-                            <p>Endurance Stat: ${end}</p>
-                            <small>Failing this check means the character may succumb to their injuries.</small>
-                        </div>
-                      `,
-                      buttons: {
-                          roll: {
-                              label: "Roll for Survival",
-                              callback: async () => {
-                                  const roll = await new Roll("1d100").evaluate();
-                                  const raw = roll.total;
-                                  const capped = Math.min(raw, end);
-                                  const success = capped >= survivalDC;
-                                  
-                                  let endReport = `
-                                    <div class="tams-roll">
-                                        <h3 class="roll-label" style="color: #8b0000;">Survival Check: ${target.name}</h3>
-                                        <div class="roll-row"><span>Dice:</span><span>${raw}</span></div>
-                                        <div class="roll-row"><span>Capped (End ${end}):</span><span>${capped}</span></div>
-                                        <div class="roll-total">Total: <b>${capped}</b> vs DC <b>${survivalDC}</b></div>
-                                        ${success ? '<div class="tams-success" style="font-size:1.2em; font-weight:bold;">SURVIVED!</div>' : '<div class="tams-crit failure" style="font-size:1.2em;">FATAL INJURY / DECEASED</div>'}
-                                        <div class="roll-contest-hint"><small>Reasons: ${reasons.join(", ")}</small></div>
-                                    </div>
-                                  `;
-                                  ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor: target}), content: endReport, rolls: [roll] });
-                              }
-                          }
-                      },
-                      default: "roll"
-                  }).render(true);
+                  pendingChecks.push({ type: 'survival', dc: survivalDC, reasons });
+              }
+
+              // Report automatic crit injuries
+              for (let [key, val] of Object.entries(updates)) {
+                  if (key.endsWith(".criticallyInjured") && val === true) {
+                      const limbKey = key.split('.')[2];
+                      if (!originalLimbStatus[limbKey].criticallyInjured) {
+                          report += `<b style="color:red;">!!! ${target.system.limbs[limbKey].label} CRITICALLY INJURED (Negative HP > Max HP) !!!</b><br>`;
+                      }
+                  }
+              }
+
+              ChatMessage.create({ content: report });
+
+              if (pendingChecks.length > 0) {
+                  showCombinedInjuryDialog(target, pendingChecks);
               }
             }
           }
