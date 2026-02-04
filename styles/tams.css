@@ -120,6 +120,10 @@
     gap: 15px;
 }
 
+.tams .tab.stats .grid-2col {
+    grid-template-columns: 1fr 330px;
+}
+
 .tams .flexrow {
     display: flex;
     align-items: center;
@@ -177,7 +181,7 @@
 }
 
 .tams .limb-armor {
-    flex: 0 0 130px;
+    flex: 0 0 180px;
     justify-content: flex-end;
     gap: 5px;
 }

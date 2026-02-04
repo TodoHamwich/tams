@@ -25,14 +25,21 @@ if (!(Test-Path $FoundryDataPath)) {
 # Define files and folders to exclude from copying
 $ExcludeList = @(".git", ".idea", ".vscode", "update-local.ps1", ".gitignore", "README.md", "package.json", "package-lock.json", "index.js")
 
-# Copy contents
-Get-ChildItem -Path ".\" -Exclude $ExcludeList | ForEach-Object {
-    $Dest = Join-Path $FoundryDataPath $_.Name
-    if ($_.PSIsContainer) {
-        Copy-Item -Path $_.FullName -Destination $Dest -Recurse -Force
-    } else {
-        Copy-Item -Path $_.FullName -Destination $Dest -Force
+# 1. Cleanup previous botched updates (nested folders like scripts/scripts)
+$Subfolders = @("lang", "scripts", "styles", "templates")
+foreach ($folder in $Subfolders) {
+    $NestedPath = Join-Path $FoundryDataPath $folder
+    $NestedNestedPath = Join-Path $NestedPath $folder
+    if (Test-Path $NestedNestedPath) {
+        Write-Host "Cleaning up nested folder: $NestedNestedPath" -ForegroundColor Yellow
+        Remove-Item -Path $NestedNestedPath -Recurse -Force
     }
+}
+
+# 2. Correct copy logic: Copy items to the root of the system folder
+# We filter manually because -Exclude is unreliable for directories in some PS versions
+Get-ChildItem -Path ".\" | Where-Object { $ExcludeList -notcontains $_.Name } | ForEach-Object {
+    Copy-Item -Path $_.FullName -Destination $FoundryDataPath -Recurse -Force
 }
 
 Write-Host "Local update complete! Restart Foundry VTT or Refresh (F5) to see changes." -ForegroundColor Green

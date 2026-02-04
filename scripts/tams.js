@@ -335,7 +335,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       tag: "form",
       classes: ["tams", "sheet", "actor"],
       position: { width: 600, height: 800 },
-      window: { resizable: false },
+      window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
       actions: {
         itemCreate: TAMSActorSheet.prototype._onItemCreate,
