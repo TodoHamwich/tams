@@ -29,13 +29,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         bravery: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatBravery"}})
       }),
       limbs: new fields.SchemaField({
-        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Thorax"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Stomach"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Arm"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Arm"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Leg"}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}), criticallyInjured: new fields.BooleanField({initial: false}) })
+        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Thorax"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Stomach"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) })
       }),
       hp: new fields.SchemaField({
         value: new fields.NumberField({initial: 0}),
@@ -675,7 +675,13 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
         <p><b>${target.name}</b> must make the following checks:</p>`;
 
     pendingChecks.forEach((check, i) => {
-        if (check.type === 'crit') {
+        if (check.type === 'injured') {
+            content += `
+                <div class="check-row" style="background: rgba(241, 196, 15, 0.1); padding: 5px; margin-top: 5px; border: 1px solid #f39c12; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                    <label><b>INJURY CHECK: ${check.loc}</b> (DC ${check.dc})</label>
+                    <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px; background: #f39c12; color: white;">Roll Endurance</button>
+                </div>`;
+        } else if (check.type === 'crit') {
             content += `
                 <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
                     <label><b>Crit Check: ${check.loc}</b> (DC ${check.dc})</label>
@@ -722,7 +728,20 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                 const success = total >= check.dc;
 
                 let report = "";
-                if (check.type === 'crit') {
+                if (check.type === 'injured') {
+                    report = `
+                        <div class="tams-roll">
+                            <h3 class="roll-label" style="color: #f39c12;">Endurance Check (Injury): ${check.loc}</h3>
+                            <div class="roll-row"><span>Dice:</span><span>${raw}</span></div>
+                            <div class="roll-row"><span>Capped (End ${end}):</span><span>${capped}</span></div>
+                            <div class="roll-total">Total: <b>${capped}</b> vs DC <b>${check.dc}</b></div>
+                            ${success ? '<div class="tams-success">Success! Not Injured</div>' : '<div class="tams-crit failure" style="background:#fff4cc; color:#856404; border-color:#ffeeba;">FAILED! Limb is Injured</div>'}
+                        </div>
+                    `;
+                    if (!success) {
+                        await target.update({[`system.limbs.${check.limbKey}.injured`]: true});
+                    }
+                } else if (check.type === 'crit') {
                     report = `
                         <div class="tams-roll">
                             <h3 class="roll-label">Endurance Check: ${check.loc}</h3>
@@ -896,6 +915,12 @@ Hooks.once("init", async function() {
   Handlebars.registerHelper('or', function (a, b) {
     return a || b;
   });
+  Handlebars.registerHelper('and', function (a, b) {
+    return a && b;
+  });
+  Handlebars.registerHelper('not', function (a) {
+    return !a;
+  });
   Handlebars.registerHelper('capitalize', function (str) {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -950,6 +975,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
               for (let key of Object.keys(target.system.limbs)) {
                   originalLimbStatus[key] = {
                       value: target.system.limbs[key].value,
+                      injured: target.system.limbs[key].injured,
                       criticallyInjured: target.system.limbs[key].criticallyInjured,
                       max: target.system.limbs[key].max
                   };
@@ -984,9 +1010,9 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                       report += `• ${loc}: ${effective} damage (${armor} armor blocked)<br>`;
                   }
 
-                  // Check automatic crit injury
-                  if (newHp < 0 && Math.abs(newHp) > limb.max) {
-                      updates[`system.limbs.${limbKey}.criticallyInjured`] = true;
+                  // Rule 2: Below -Max -> Automatic Injured
+                  if (newHp <= -limb.max) {
+                      updates[`system.limbs.${limbKey}.injured`] = true;
                   }
               }
 
@@ -999,18 +1025,40 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                   
                   const original = originalLimbStatus[limbKey];
                   const limb = target.system.limbs[limbKey];
-                  const currentVal = limb.value;
+                  const currentVal = limb.value; // After update
+                  const isInjuredNow = limb.injured;
                   const isCritNow = limb.criticallyInjured;
                   
-                  if (currentVal < 0 && !isCritNow) {
+                  // Rule 1: Entering [0, -Max] while not Injured -> Check for Injured
+                  if (currentVal <= 0 && currentVal > -limb.max && !original.injured && !isInjuredNow) {
                       const prevNegative = original.value < 0 ? Math.abs(original.value) : 0;
                       const dc = damage + prevNegative;
                       pendingChecks.push({
-                          type: 'crit',
+                          type: 'injured',
                           loc: limb.label,
                           dc: dc,
                           limbKey: limbKey
                       });
+                  }
+
+                  // Rule 2 & 3: Below -Max -> Check for Critical Injury
+                  // Triggers if:
+                  // - It was above -Max and dropped to/below -Max (Rule 2)
+                  // - OR it was positive and dropped below -Max in one hit (Rule 3 - covered by same logic)
+                  if (currentVal <= -limb.max && !original.criticallyInjured) {
+                      // Only trigger if it wasn't already below -Max or if we want it to trigger on every hit while below -Max?
+                      // Usually "Once its below its negative max" implies the moment it enters that state.
+                      // If it was already below -Max, it wouldn't trigger again unless we check if it was previously ABOVE -Max.
+                      if (original.value > -limb.max) {
+                          const prevNegative = original.value < 0 ? Math.abs(original.value) : 0;
+                          const dc = damage + prevNegative;
+                          pendingChecks.push({
+                              type: 'crit',
+                              loc: limb.label,
+                              dc: dc,
+                              limbKey: limbKey
+                          });
+                      }
                   }
               }
 
@@ -1053,12 +1101,12 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                   pendingChecks.push({ type: 'survival', dc: survivalDC, reasons });
               }
 
-              // Report automatic crit injuries
+              // Report automatic injuries
               for (let [key, val] of Object.entries(updates)) {
-                  if (key.endsWith(".criticallyInjured") && val === true) {
+                  if (key.endsWith(".injured") && val === true) {
                       const limbKey = key.split('.')[2];
-                      if (!originalLimbStatus[limbKey].criticallyInjured) {
-                          report += `<b style="color:red;">!!! ${target.system.limbs[limbKey].label} CRITICALLY INJURED (Negative HP > Max HP) !!!</b><br>`;
+                      if (!originalLimbStatus[limbKey].injured) {
+                          report += `<b style="color:#f39c12;">!!! ${target.system.limbs[limbKey].label} INJURED (Below negative Max HP) !!!</b><br>`;
                       }
                   }
               }

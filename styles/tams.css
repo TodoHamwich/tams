@@ -253,8 +253,17 @@
     font-weight: bold;
 }
 
+.tams .injured-limb {
+    background: rgba(241, 196, 15, 0.15);
+}
+
 .tams .crit-injured {
     background: rgba(231, 76, 60, 0.15);
+}
+
+.tams .injured-icon {
+    color: #f39c12;
+    margin-right: 3px;
 }
 
 .tams .crit-icon {

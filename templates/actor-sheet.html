@@ -78,9 +78,9 @@
 
                     <h3 class="small-header">Limbs (HP / Armor)</h3>
                     {{#each system.limbs as |limb id|}}
-                    <div class="limb-row flexrow {{#if limb.criticallyInjured}}crit-injured{{/if}}">
-                        <label class="resource-label limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}">
-                            {{#if limb.criticallyInjured}}<i class="fas fa-skull crit-icon"></i>{{/if}}
+                    <div class="limb-row flexrow {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}}">
+                        <label class="resource-label limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}{{#if (and limb.injured (not limb.criticallyInjured))}}INJURED{{/if}}">
+                            {{#if limb.criticallyInjured}}<i class="fas fa-skull crit-icon"></i>{{else if limb.injured}}<i class="fas fa-exclamation-triangle injured-icon"></i>{{/if}}
                             {{limb.label}}
                         </label>
                         <div class="limb-hp flexrow">
@@ -88,6 +88,7 @@
                             <span>/{{limb.max}}</span>
                         </div>
                         <div class="limb-armor flexrow">
+                            <input type="checkbox" name="system.limbs.{{id}}.injured" {{checked limb.injured}} title="Injured?"/>
                             <input type="checkbox" name="system.limbs.{{id}}.criticallyInjured" {{checked limb.criticallyInjured}} title="Critically Injured?"/>
                             <label>Armour</label>
                             <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input" max="40" min="0"/>

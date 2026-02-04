@@ -11,13 +11,13 @@
         "bravery": { "value": 10, "mod": 0, "label": "TAMS.StatBravery" }
       },
       "limbs": {
-        "head": { "value": 5, "max": 5, "mult": 0.5, "armor": 0, "armorMax": 0, "label": "Head" },
-        "thorax": { "value": 10, "max": 10, "mult": 1.0, "armor": 0, "armorMax": 0, "label": "Thorax" },
-        "stomach": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Stomach" },
-        "leftArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Left Arm" },
-        "rightArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Right Arm" },
-        "leftLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Left Leg" },
-        "rightLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Right Leg" }
+        "head": { "value": 5, "max": 5, "mult": 0.5, "armor": 0, "armorMax": 0, "label": "Head", "injured": false, "criticallyInjured": false },
+        "thorax": { "value": 10, "max": 10, "mult": 1.0, "armor": 0, "armorMax": 0, "label": "Thorax", "injured": false, "criticallyInjured": false },
+        "stomach": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Stomach", "injured": false, "criticallyInjured": false },
+        "leftArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Left Arm", "injured": false, "criticallyInjured": false },
+        "rightArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Right Arm", "injured": false, "criticallyInjured": false },
+        "leftLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Left Leg", "injured": false, "criticallyInjured": false },
+        "rightLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Right Leg", "injured": false, "criticallyInjured": false }
       },
       "stamina": { "value": 10, "max": 10, "mult": 1.0, "color": "#66bb6a" },
       "customResources": [],
