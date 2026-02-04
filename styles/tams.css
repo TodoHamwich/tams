@@ -631,3 +631,11 @@
 .tams-roll .tams-dodge:hover, .tams-roll .tams-retaliate:hover {
     background: #007a00;
 }
+
+.tams-roll .tams-behind-toggle, .tams-roll .tams-unaware-toggle {
+    min-width: 30px;
+}
+
+.tams-roll .tams-behind-toggle i, .tams-roll .tams-unaware-toggle i {
+    pointer-events: none;
+}
