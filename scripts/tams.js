@@ -705,11 +705,13 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       "bravery": "TAMS.StatBravery"
     };
 
-    if (this.document.type === 'ability' && this.document.actor) {
+    if (this.document.type === 'ability') {
         const resources = { "stamina": "Stamina" };
-        this.document.actor.system.customResources.forEach((res, index) => {
-            resources[index.toString()] = res.name;
-        });
+        if (this.document.actor) {
+            this.document.actor.system.customResources.forEach((res, index) => {
+                resources[index.toString()] = res.name;
+            });
+        }
         context.resourceOptions = resources;
 
         context.calculatorOptions = {
