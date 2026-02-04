@@ -92,7 +92,7 @@
             {{else}}
             <div class="flexrow">
                 <label>Cost</label>
-                <input type="number" name="system.cost" value="{{system.cost}}"/>
+                <input type="number" name="system.cost" value="{{system.cost}}" {{#if system.calculator.enabled}}disabled{{/if}}/>
             </div>
             <div class="flexrow">
                 <label>Resource</label>
@@ -100,6 +100,151 @@
                     {{selectOptions resourceOptions selected=system.resource}}
                 </select>
             </div>
+            {{/if}}
+
+            <div class="calculator-toggle flexrow">
+                <label>Use Cost Calculator?</label>
+                <input type="checkbox" name="system.calculator.enabled" {{checked system.calculator.enabled}}/>
+            </div>
+
+            {{#if system.calculator.enabled}}
+            <section class="cost-calculator" style="border: 1px solid #7a7971; padding: 5px; margin-top: 5px; font-size: 0.9em;">
+                <h4 style="margin: 0 0 5px 0; border-bottom: 1px solid #7a7971;">Cost Calculator</h4>
+                
+                <div class="flexrow">
+                    <label>Is Utility? (Different Math)</label>
+                    <input type="checkbox" name="system.calculator.isUtility" {{checked system.calculator.isUtility}}/>
+                </div>
+
+                <div class="flexrow" title="Each effect adds +1 cost.">
+                    <label>Base Effects Count</label>
+                    <input type="number" name="system.calculator.effects" value="{{system.calculator.effects}}"/>
+                </div>
+                <div class="flexrow" title="Guaranteed Max adds +2 instead of +1.">
+                    <label>Guaranteed Max Effects</label>
+                    <input type="number" name="system.calculator.guaranteedMax" value="{{system.calculator.guaranteedMax}}"/>
+                </div>
+                <div class="flexrow" title="Detriments lower cost by -1 (Min cost 1).">
+                    <label>Detriments Count</label>
+                    <input type="number" name="system.calculator.detriments" value="{{system.calculator.detriments}}"/>
+                </div>
+
+                <div class="flexcol" style="background: rgba(0,0,0,0.05); padding: 3px; margin: 3px 0;">
+                    <div class="flexrow">
+                        <label>Double Own Movement (+2)</label>
+                        <input type="checkbox" name="system.calculator.movementDoubleOwn" {{checked system.calculator.movementDoubleOwn}}/>
+                    </div>
+                    <div class="flexrow">
+                        <label>Halve Enemy Movement (+4)</label>
+                        <input type="checkbox" name="system.calculator.movementHalveEnemy" {{checked system.calculator.movementHalveEnemy}}/>
+                    </div>
+                    <div class="flexrow">
+                        <label>Flat Movement Change (+2 per m)</label>
+                        <input type="number" name="system.calculator.movementFlat" value="{{system.calculator.movementFlat}}"/>
+                    </div>
+                </div>
+
+                <div class="flexrow">
+                    <label>Roll Plus (+1 per +5)</label>
+                    <input type="number" name="system.calculator.rollBonus" value="{{system.calculator.rollBonus}}"/>
+                </div>
+                <div class="flexrow">
+                    <label>Ignore Armor (+1 per 5)</label>
+                    <input type="number" name="system.calculator.ignoreArmor" value="{{system.calculator.ignoreArmor}}"/>
+                </div>
+
+                <div class="flexrow">
+                    <label>Target Body Part</label>
+                    <select name="system.calculator.bodyPart">
+                        {{selectOptions calculatorOptions.bodyParts selected=system.calculator.bodyPart}}
+                    </select>
+                </div>
+
+                <div class="flexrow">
+                    <label>Fire Rate</label>
+                    <select name="system.calculator.fireRate">
+                        {{selectOptions calculatorOptions.fireRates selected=system.calculator.fireRate}}
+                    </select>
+                </div>
+
+                <div class="flexrow">
+                    <label>Add. Multi-Attack Hits (+2 each)</label>
+                    <input type="number" name="system.calculator.multiAttackHits" value="{{system.calculator.multiAttackHits}}"/>
+                </div>
+
+                <div class="flexrow">
+                    <label>Damage from Stat</label>
+                    <select name="system.calculator.damageStatFraction">
+                        {{selectOptions calculatorOptions.damageFractions selected=system.calculator.damageStatFraction}}
+                    </select>
+                </div>
+
+                <div class="flexrow">
+                    <label>Stun / Activation Loss</label>
+                    <select name="system.calculator.stun">
+                        {{selectOptions calculatorOptions.stunOptions selected=system.calculator.stun}}
+                    </select>
+                </div>
+
+                <div class="flexrow">
+                    <label>Healing Amount (+1 per 5hp)</label>
+                    <input type="number" name="system.calculator.healing" value="{{system.calculator.healing}}"/>
+                </div>
+
+                <div class="flexcol" style="background: rgba(0,0,0,0.05); padding: 3px; margin: 3px 0;">
+                    <div class="flexrow">
+                        <label>Damage Reduction Type</label>
+                        <select name="system.calculator.drType">
+                            {{selectOptions calculatorOptions.drTypes selected=system.calculator.drType}}
+                        </select>
+                    </div>
+                    <div class="flexrow">
+                        <label>DR Amount</label>
+                        <input type="number" name="system.calculator.drValue" value="{{system.calculator.drValue}}"/>
+                    </div>
+                </div>
+
+                <div class="flexrow">
+                    <label>Bypass Dodge (x2)</label>
+                    <input type="checkbox" name="system.calculator.bypassDodge" {{checked system.calculator.bypassDodge}}/>
+                    <label>Bypass Retal (x2)</label>
+                    <input type="checkbox" name="system.calculator.bypassRetaliation" {{checked system.calculator.bypassRetaliation}}/>
+                </div>
+
+                <div class="flexrow">
+                    <label>Target(s)</label>
+                    <select name="system.calculator.targetType">
+                        {{selectOptions calculatorOptions.targetTypes selected=system.calculator.targetType}}
+                    </select>
+                </div>
+
+                <div class="flexrow">
+                    <label>AoE Radius (m)</label>
+                    <input type="number" name="system.calculator.aoeRadius" value="{{system.calculator.aoeRadius}}"/>
+                </div>
+
+                <div class="flexrow">
+                    <label>Max Range (m)</label>
+                    <input type="number" name="system.calculator.range" value="{{system.calculator.range}}"/>
+                </div>
+
+                <div class="flexrow">
+                    <label>Duration</label>
+                    <select name="system.calculator.duration">
+                        {{selectOptions calculatorOptions.durations selected=system.calculator.duration}}
+                    </select>
+                </div>
+
+                <div class="flexrow">
+                    <label>Stackable with self? (x2)</label>
+                    <input type="checkbox" name="system.calculator.isStackable" {{checked system.calculator.isStackable}}/>
+                </div>
+
+                <div class="flexrow" style="font-weight: bold; border-top: 1px solid #7a7971; margin-top: 5px;">
+                    <label>Calculated Cost:</label>
+                    <span>{{system.calculatedCost}}</span>
+                </div>
+            </section>
             {{/if}}
 
             <div class="flexrow">

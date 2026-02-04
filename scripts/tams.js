@@ -154,7 +154,34 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       damageBonus: new fields.NumberField({initial: 0}),
       multiAttack: new fields.NumberField({initial: 1}),
       tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      description: new fields.HTMLField({initial: ""}),
+      calculator: new fields.SchemaField({
+        enabled: new fields.BooleanField({initial: false}),
+        isUtility: new fields.BooleanField({initial: false}),
+        effects: new fields.NumberField({initial: 0, integer: true}),
+        guaranteedMax: new fields.NumberField({initial: 0, integer: true}),
+        detriments: new fields.NumberField({initial: 0, integer: true}),
+        movementDoubleOwn: new fields.BooleanField({initial: false}),
+        movementHalveEnemy: new fields.BooleanField({initial: false}),
+        movementFlat: new fields.NumberField({initial: 0, integer: true}),
+        rollBonus: new fields.NumberField({initial: 0, integer: true}),
+        ignoreArmor: new fields.NumberField({initial: 0, integer: true}),
+        bodyPart: new fields.StringField({initial: "none"}),
+        fireRate: new fields.StringField({initial: "single"}),
+        multiAttackHits: new fields.NumberField({initial: 0, integer: true}),
+        damageStatFraction: new fields.NumberField({initial: 0, step: 0.25}),
+        stun: new fields.StringField({initial: "none"}),
+        healing: new fields.NumberField({initial: 0, integer: true}),
+        drType: new fields.StringField({initial: "none"}),
+        drValue: new fields.NumberField({initial: 0, integer: true}),
+        bypassDodge: new fields.BooleanField({initial: false}),
+        bypassRetaliation: new fields.BooleanField({initial: false}),
+        targetType: new fields.StringField({initial: "single"}),
+        aoeRadius: new fields.NumberField({initial: 0, integer: true}),
+        range: new fields.NumberField({initial: 0, integer: true}),
+        duration: new fields.StringField({initial: "instant"}),
+        isStackable: new fields.BooleanField({initial: false})
+      })
     };
   }
 
@@ -164,6 +191,121 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     if ( !actor ) return 0;
     const damageStatValue = actor.system.stats[this.damageStat]?.total || 0;
     return Math.floor(damageStatValue * this.damageMult) + this.damageBonus;
+  }
+
+  get calculatedCost() {
+    const c = this.calculator;
+    let cost = 0;
+
+    // Part 1: Effects
+    cost += (c.effects || 0) * 1;
+    cost += (c.guaranteedMax || 0) * 2;
+    cost -= (c.detriments || 0) * 1;
+    // Detriments to a minimum of 1? The rule says "the cost is lowered by 1 (To a minimum of 1)". 
+    // Usually this means the final cost can't be below 1.
+    
+    if (c.movementDoubleOwn) cost += 2;
+    if (c.movementHalveEnemy) cost += 4;
+    cost += (c.movementFlat || 0) * 2;
+
+    cost += Math.floor((c.rollBonus || 0) / 5) * 1;
+    cost += Math.floor((c.ignoreArmor || 0) / 5) * 1;
+
+    if (c.bodyPart === "head") {
+      cost += 2;
+      cost *= 2;
+    } else if (c.bodyPart === "thorax" || c.bodyPart === "stomach") {
+      cost += 3;
+    } else if (c.bodyPart === "arms" || c.bodyPart === "legs") {
+      cost += 2;
+    }
+
+    if (c.fireRate === "burst") cost += 2;
+    else if (c.fireRate === "auto") cost += 4;
+
+    cost += (c.multiAttackHits || 0) * 2;
+
+    if (c.damageStatFraction > 0) {
+      cost += Math.floor(c.damageStatFraction / 0.25);
+    }
+
+    if (c.stun === "crit") cost += 1;
+    else if (c.stun === "guaranteed") cost += 5;
+
+    cost += Math.floor((c.healing || 0) / 5);
+
+    if (c.drType === "flat" && c.drValue > 0) {
+      let drCost = 2;
+      let val = 5;
+      while (val < c.drValue) {
+        drCost *= 2;
+        val += 5;
+      }
+      cost += drCost;
+    } else if (c.drType === "specific" && c.drValue > 0) {
+      let drCost = 0;
+      let increment = 1;
+      let val = 0;
+      while (val < c.drValue) {
+        drCost += increment;
+        val += 5;
+        increment++;
+      }
+      cost += drCost;
+    }
+
+    if (c.bypassDodge) cost *= 2;
+    if (c.bypassRetaliation) cost *= 2;
+
+    // Part 2: Targets
+    if (c.isUtility && c.targetType === "multiple") {
+      cost *= 1.5;
+    } else if (c.targetType === "multiple") {
+      cost *= 2;
+    }
+
+    if (c.aoeRadius >= 1) {
+      cost += 2;
+      if (c.aoeRadius > 3) cost += (c.aoeRadius - 3);
+    }
+
+    // Part 3: Range
+    if (c.isUtility) {
+      if (c.range >= 100 && c.range < 1000) cost += 1;
+      else if (c.range >= 1000 && c.range < 10000) cost += 2;
+      else if (c.range >= 10000) cost += 3;
+    } else {
+      if (c.range > 10 && c.range <= 25) cost += 1;
+      else if (c.range > 25 && c.range <= 50) cost += 2;
+      else if (c.range > 50 && c.range <= 75) cost += 3;
+      else if (c.range > 75 && c.range <= 100) cost += 4;
+      else if (c.range > 100) {
+        cost += 4;
+        cost += Math.floor((c.range - 100) / 50);
+      }
+    }
+
+    // Part 4: Duration
+    if (c.isUtility) {
+      if (c.duration === "utility1") cost += 1;
+      else if (c.duration === "utility2") cost += 2;
+      else if (c.duration === "utility3") cost += 3;
+      else if (c.duration === "utility4") cost += 4;
+    } else {
+      if (c.duration === "1round") cost += 1;
+      else if (c.duration === "2rounds") cost += 2;
+      else if (c.duration === "3rounds") cost += 4;
+    }
+
+    if (c.isStackable) cost *= 2;
+
+    return Math.max(1, Math.floor(cost));
+  }
+
+  prepareDerivedData() {
+    if (this.calculator?.enabled) {
+      this.cost = this.calculatedCost;
+    }
   }
 }
 
@@ -557,6 +699,55 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
             resources[index.toString()] = res.name;
         });
         context.resourceOptions = resources;
+
+        context.calculatorOptions = {
+            bodyParts: {
+                "none": "None",
+                "head": "Head (+2 then x2)",
+                "thorax": "Thorax/Stomach (+3)",
+                "stomach": "Thorax/Stomach (+3)",
+                "arms": "Arms/Legs (+2)",
+                "legs": "Arms/Legs (+2)"
+            },
+            fireRates: {
+                "single": "Single (+0)",
+                "burst": "Burst/Semi (+2)",
+                "auto": "Full Auto (+4)"
+            },
+            stunOptions: {
+                "none": "None",
+                "crit": "On Crit (+1)",
+                "guaranteed": "Guaranteed (+5)"
+            },
+            drTypes: {
+                "none": "None",
+                "flat": "Flat Reduction",
+                "specific": "Specific Limb Reduction"
+            },
+            targetTypes: {
+                "single": "Single Entity (1x)",
+                "multiple": "Multiple Targets (2x/1.5x)"
+            },
+            durations: {
+                "instant": "Instant (+0)",
+                "1round": "1 Round (+1)",
+                "2rounds": "2 Rounds (+2)",
+                "3rounds": "3 Rounds (+4)",
+                "utility1": "Utility: <1h (+1)",
+                "utility2": "Utility: 2-3h (+2)",
+                "utility3": "Utility: 4-6h (+3)",
+                "utility4": "Utility: 6-8h (+4)"
+            },
+            damageFractions: {
+                "0": "None",
+                "0.25": "0.25 Stat (+1)",
+                "0.5": "0.50 Stat (+2)",
+                "0.75": "0.75 Stat (+3)",
+                "1.0": "1.00 Stat (+4)",
+                "1.25": "1.25 Stat (+5)",
+                "1.5": "1.50 Stat (+6)"
+            }
+        };
     }
     return context;
   }
