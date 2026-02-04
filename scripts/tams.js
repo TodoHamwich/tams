@@ -958,9 +958,6 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       let hitsScored = 0;
       let damageInfo = "";
       let locations = [];
-      const threshold = isRanged ? 20 : 10;
-      const diff = attackerTotal - total;
-      const isMutual = Math.abs(diff) <= threshold;
 
       // Narrative crits
       if (raw >= (attackerRaw * 2)) {
@@ -969,25 +966,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
       }
 
-      if (isMutual) {
-          // Both hit
-          hitsScored = 1 + Math.floor(Math.abs(diff) / 5);
-          hitsScored = Math.min(hitsScored, attackerMulti);
-          locations.push(firstLocation);
-          for (let i = 1; i < hitsScored; i++) {
-              locations.push(await getHitLocation());
-          }
-
-          damageInfo = `
-            <div class="roll-row"><b style="color:orange;">Mutual Hit (Within ${threshold})</b></div>
-            <div class="roll-row"><b>Hits from Attacker: ${hitsScored} / ${attackerMulti}</b></div>
-            <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
-            <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}'>Apply Damage</button>
-            </div>
-            <div class="roll-row"><small>Defender also hits back (Narrative/Manual)</small></div>
-          `;
-      } else if (attackerTotal > total) {
+      if (attackerTotal > total) {
           // Attacker wins
           hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
           hitsScored = Math.min(hitsScored, attackerMulti);
@@ -1125,10 +1104,6 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       let hitsScored = 0;
       let damageInfo = "";
       let locations = [];
-      const isRanged = container.dataset.isRanged === '1';
-      const threshold = isRanged ? 20 : 10;
-      const diff = attackerTotal - total;
-      const isMutual = Math.abs(diff) <= threshold;
 
       // Narrative crits
       if (raw >= (attackerRaw * 2)) {
@@ -1137,23 +1112,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           critInfo = `<div class="tams-crit failure">CRITICAL HIT TAKEN! (Attacker Raw ${attackerRaw} >= 2x Raw ${raw})</div>`;
       }
 
-      if (isMutual) {
-          hitsScored = 1 + Math.floor(Math.abs(diff) / 5);
-          hitsScored = Math.min(hitsScored, attackerMulti);
-          locations.push(firstLocation);
-          for (let i = 1; i < hitsScored; i++) {
-              locations.push(await getHitLocation());
-          }
-          damageInfo = `
-            <div class="roll-row"><b style="color:orange;">Mutual Hit (Within ${threshold})</b></div>
-            <div class="roll-row"><b>Hits from Attacker: ${hitsScored} / ${attackerMulti}</b></div>
-            <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
-            <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-locations='${JSON.stringify(locations)}'>Apply Damage</button>
-            </div>
-            <div class="roll-row"><small>Defender also hits back (Narrative/Manual)</small></div>
-          `;
-      } else if (attackerTotal > total) {
+      if (attackerTotal > total) {
           hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
           hitsScored = Math.min(hitsScored, attackerMulti);
           
