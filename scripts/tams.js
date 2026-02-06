@@ -188,6 +188,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({initial: 0})
       }),
       isAttack: new fields.BooleanField({initial: false}),
+      damage: new fields.NumberField({initial: 0}),
       attackStat: new fields.StringField({initial: "strength"}),
       damageStat: new fields.StringField({initial: "strength"}),
       damageMult: new fields.NumberField({initial: 0.5, step: 0.05}),
@@ -230,7 +231,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
     const damageStatValue = actor.system.stats[this.damageStat]?.total || 0;
-    return Math.floor(damageStatValue * this.damageMult) + this.damageBonus;
+    return Math.floor(damageStatValue * this.damageMult) + this.damageBonus + (this.damage || 0);
   }
 
   get calculatedCost() {

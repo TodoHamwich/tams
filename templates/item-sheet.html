@@ -302,6 +302,10 @@
             {{#if system.isAttack}}
             <div class="flexcol" style="border: 1px solid #7a7971; padding: 5px; margin-top: 5px;">
                 <div class="flexrow">
+                    <label>Base Damage</label>
+                    <input type="number" name="system.damage" value="{{system.damage}}" data-dtype="Number"/>
+                </div>
+                <div class="flexrow">
                     <label>Attack Stat</label>
                     <select name="system.attackStat">
                         {{selectOptions statOptions selected=system.attackStat localize=true}}

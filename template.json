@@ -70,6 +70,7 @@
       "isApex": false,
       "uses": { "value": 0, "max": 0 },
       "isAttack": false,
+      "damage": 0,
       "attackStat": "strength",
       "damageStat": "strength",
       "damageMult": 0.5,
