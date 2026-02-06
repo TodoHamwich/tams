@@ -65,6 +65,7 @@
     "ability": {
       "familiarity": 0,
       "upgradePoints": 0,
+      "bonus": 0,
       "cost": "",
       "resource": "stamina",
       "isApex": false,

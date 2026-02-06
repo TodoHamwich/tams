@@ -179,6 +179,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     return {
       familiarity: new fields.NumberField({initial: 0}),
       upgradePoints: new fields.NumberField({initial: 0}),
+      bonus: new fields.NumberField({initial: 0}),
       cost: new fields.NumberField({initial: 0, nullable: true}),
       resource: new fields.StringField({initial: "stamina"}),
       isApex: new fields.BooleanField({initial: false}),
@@ -640,7 +641,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const rawResult = roll.total;
     const effectiveStat = statValue + statMod;
     const cappedResult = Math.min(rawResult, effectiveStat);
-    const finalTotal = cappedResult + familiarity;
+    const bonus = parseInt(item?.system?.bonus) || 0;
+    const finalTotal = cappedResult + familiarity + bonus;
 
     let critInfo = "";
     let success = true;
@@ -648,7 +650,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     let resultClass = "";
 
     if (statId === 'bravery') {
-        const targetValue = effectiveStat + familiarity;
+        const targetValue = effectiveStat + familiarity + bonus;
         success = rawResult <= targetValue;
         resultText = success ? "SUCCESS" : "FAILURE";
         resultClass = success ? "success" : "failure";
@@ -698,12 +700,13 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         ${damageInfo}
         <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${rawResult}</span></div>
         ${statId === 'bravery' ? 
-            `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? ' + ' + familiarity : ''}</span></div>` :
+            `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? ' + ' + familiarity : ''}${bonus ? ' + ' + bonus : ''}</span></div>` :
             `<div class="roll-row"><small>Stat Cap (${statValue}${statMod >= 0 ? '+' : ''}${statMod}):</small><span>${cappedResult}</span></div>
-             ${familiarity > 0 ? `<div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>` : ''}`
+             ${familiarity > 0 ? `<div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>` : ''}
+             ${bonus !== 0 ? `<div class="roll-row"><small>Bonus:</small><span>${bonus >= 0 ? '+' : ''}${bonus}</span></div>` : ''}`
         }
         <hr>
-        <div class="roll-total">${statId === 'bravery' ? 'Target to beat' : 'Total'}: <b>${statId === 'bravery' ? (effectiveStat + familiarity) : finalTotal}</b></div>
+        <div class="roll-total">${statId === 'bravery' ? 'Target to beat' : 'Total'}: <b>${statId === 'bravery' ? (effectiveStat + familiarity + bonus) : finalTotal}</b></div>
         ${critInfo}
         <div class="roll-contest-hint">
             ${statId === 'bravery' ? 
