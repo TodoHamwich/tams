@@ -114,16 +114,16 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      familiarity: new fields.NumberField({initial: 0}),
+      familiarity: new fields.NumberField({initial: 0, nullable: true}),
       equipped: new fields.BooleanField({initial: false}),
       isHeavy: new fields.BooleanField({initial: false}),
       isTwoHanded: new fields.BooleanField({initial: false}),
       isLight: new fields.BooleanField({initial: false}),
       isRanged: new fields.BooleanField({initial: false}),
       isThrown: new fields.BooleanField({initial: false}),
-      rangedDamage: new fields.NumberField({initial: 0}),
+      rangedDamage: new fields.NumberField({initial: 0, nullable: true}),
       fireRate: new fields.StringField({initial: "1"}),
-      fireRateCustom: new fields.NumberField({initial: 1}),
+      fireRateCustom: new fields.NumberField({initial: 1, nullable: true}),
       special: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -146,8 +146,8 @@ class TAMSSkillData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      familiarity: new fields.NumberField({initial: 0}),
-      upgradePoints: new fields.NumberField({initial: 0}),
+      familiarity: new fields.NumberField({initial: 0, nullable: true}),
+      upgradePoints: new fields.NumberField({initial: 0, nullable: true}),
       stat: new fields.StringField({initial: "strength"}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
@@ -159,13 +159,13 @@ class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      weight: new fields.NumberField({initial: 0, step: 0.1, min: 0}),
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0, nullable: true}),
+      weight: new fields.NumberField({initial: 0, step: 0.1, min: 0, nullable: true}),
       carried: new fields.BooleanField({initial: true}),
       equipped: new fields.BooleanField({initial: false}),
       isArmor: new fields.BooleanField({initial: false}),
-      armorValue: new fields.NumberField({initial: 0, integer: true, min: 0}),
-      armorMax: new fields.NumberField({initial: 0, integer: true, min: 0}),
+      armorValue: new fields.NumberField({initial: 0, integer: true, min: 0, nullable: true}),
+      armorMax: new fields.NumberField({initial: 0, integer: true, min: 0, nullable: true}),
       limb: new fields.StringField({initial: "none"}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
@@ -177,9 +177,9 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      familiarity: new fields.NumberField({initial: 0}),
-      upgradePoints: new fields.NumberField({initial: 0}),
-      bonus: new fields.NumberField({initial: 0}),
+      familiarity: new fields.NumberField({initial: 0, nullable: true}),
+      upgradePoints: new fields.NumberField({initial: 0, nullable: true}),
+      bonus: new fields.NumberField({initial: 0, nullable: true}),
       cost: new fields.NumberField({initial: 0, nullable: true}),
       resource: new fields.StringField({initial: "stamina"}),
       isApex: new fields.BooleanField({initial: false}),
@@ -189,38 +189,38 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({initial: 0})
       }),
       isAttack: new fields.BooleanField({initial: false}),
-      damage: new fields.NumberField({initial: 0}),
+      damage: new fields.NumberField({initial: 0, nullable: true}),
       attackStat: new fields.StringField({initial: "strength"}),
       damageStat: new fields.StringField({initial: "strength"}),
-      damageMult: new fields.NumberField({initial: 0.5, step: 0.05}),
-      damageBonus: new fields.NumberField({initial: 0}),
-      multiAttack: new fields.NumberField({initial: 1}),
+      damageMult: new fields.NumberField({initial: 0.5, step: 0.05, nullable: true}),
+      damageBonus: new fields.NumberField({initial: 0, nullable: true}),
+      multiAttack: new fields.NumberField({initial: 1, nullable: true}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""}),
       calculator: new fields.SchemaField({
         enabled: new fields.BooleanField({initial: false}),
         isUtility: new fields.BooleanField({initial: false}),
-        effects: new fields.NumberField({initial: 0, integer: true}),
-        guaranteedMax: new fields.NumberField({initial: 0, integer: true}),
-        detriments: new fields.NumberField({initial: 0, integer: true}),
+        effects: new fields.NumberField({initial: 0, integer: true, nullable: true}),
+        guaranteedMax: new fields.NumberField({initial: 0, integer: true, nullable: true}),
+        detriments: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         movementDoubleOwn: new fields.BooleanField({initial: false}),
         movementHalveEnemy: new fields.BooleanField({initial: false}),
-        movementFlat: new fields.NumberField({initial: 0, integer: true}),
-        rollBonus: new fields.NumberField({initial: 0, integer: true}),
-        ignoreArmor: new fields.NumberField({initial: 0, integer: true}),
+        movementFlat: new fields.NumberField({initial: 0, integer: true, nullable: true}),
+        rollBonus: new fields.NumberField({initial: 0, integer: true, nullable: true}),
+        ignoreArmor: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         bodyPart: new fields.StringField({initial: "none"}),
         fireRate: new fields.StringField({initial: "single"}),
-        multiAttackHits: new fields.NumberField({initial: 0, integer: true}),
-        damageStatFraction: new fields.NumberField({initial: 0, step: 0.25}),
+        multiAttackHits: new fields.NumberField({initial: 0, integer: true, nullable: true}),
+        damageStatFraction: new fields.NumberField({initial: 0, step: 0.25, nullable: true}),
         stun: new fields.StringField({initial: "none"}),
-        healing: new fields.NumberField({initial: 0, integer: true}),
+        healing: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         drType: new fields.StringField({initial: "none"}),
-        drValue: new fields.NumberField({initial: 0, integer: true}),
+        drValue: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         bypassDodge: new fields.BooleanField({initial: false}),
         bypassRetaliation: new fields.BooleanField({initial: false}),
         targetType: new fields.StringField({initial: "single"}),
-        aoeRadius: new fields.NumberField({initial: 0, integer: true}),
-        range: new fields.NumberField({initial: 0, integer: true}),
+        aoeRadius: new fields.NumberField({initial: 0, integer: true, nullable: true}),
+        range: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         duration: new fields.StringField({initial: "instant"}),
         isStackable: new fields.BooleanField({initial: false})
       })
