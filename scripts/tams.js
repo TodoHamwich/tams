@@ -231,6 +231,11 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     if ( !this.isAttack ) return 0;
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
+    
+    if (this.damageStat === "custom") {
+      return (this.damage || 0) + (this.damageBonus || 0);
+    }
+
     const damageStatValue = actor.system.stats[this.damageStat]?.total || 0;
     return Math.floor(damageStatValue * this.damageMult) + this.damageBonus + (this.damage || 0);
   }
@@ -918,7 +923,8 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       "endurance": "TAMS.StatEndurance",
       "wisdom": "TAMS.StatWisdom",
       "intelligence": "TAMS.StatIntelligence",
-      "bravery": "TAMS.StatBravery"
+      "bravery": "TAMS.StatBravery",
+      "custom": "Custom"
     };
     context.limbOptions = {
       "none": "None",

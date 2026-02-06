@@ -310,7 +310,7 @@
                     <input type="number" name="system.bonus" value="{{system.bonus}}" data-dtype="Number"/>
                 </div>
                 <div class="flexrow">
-                    <label>Base Damage</label>
+                    <label>{{#if (eq system.damageStat "custom")}}Custom Damage{{else}}Base Damage{{/if}}</label>
                     <input type="number" name="system.damage" value="{{system.damage}}" data-dtype="Number"/>
                 </div>
                 <div class="flexrow">
@@ -325,10 +325,12 @@
                         {{selectOptions statOptions selected=system.damageStat localize=true}}
                     </select>
                 </div>
+                {{#unless (eq system.damageStat "custom")}}
                 <div class="flexrow">
                     <label>Damage Multiplier</label>
                     <input type="number" name="system.damageMult" value="{{system.damageMult}}" step="0.05"/>
                 </div>
+                {{/unless}}
                 <div class="flexrow">
                     <label>Damage Bonus</label>
                     <input type="number" name="system.damageBonus" value="{{system.damageBonus}}"/>
