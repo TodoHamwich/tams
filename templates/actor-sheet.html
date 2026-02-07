@@ -2,6 +2,7 @@
     <header class="sheet-header">
         <div class="profile-img-container" data-action="editImage" data-edit="img">
             <img class="profile-img" src="{{document.img}}" title="{{document.name}}" height="100" width="100"/>
+            <input type="hidden" name="img" value="{{document.img}}"/>
             <div class="image-edit-overlay">
                 <i class="fas fa-edit"></i>
                 <span>Change Image</span>
