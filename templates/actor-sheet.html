@@ -124,6 +124,8 @@
                 <div class="item-stat">Dmg</div>
                 <div class="item-stat">Fam</div>
                 <div class="item-stat">Rate</div>
+                <div class="item-stat">Ammo</div>
+                <div class="item-stat">Total</div>
                 <div class="item-stat">Equip</div>
                 <div class="item-controls"></div>
             </li>
@@ -146,6 +148,20 @@
                             <option value="auto" {{#if (eq item.system.fireRate "auto")}}selected{{/if}}>A</option>
                             <option value="custom" {{#if (eq item.system.fireRate "custom")}}selected{{/if}}>C</option>
                         </select>
+                        {{else}}
+                        -
+                        {{/if}}
+                    </div>
+                    <div class="item-stat">
+                        {{#if item.system.isRanged}}
+                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.current" value="{{item.system.ammo.current}}"/>
+                        {{else}}
+                        -
+                        {{/if}}
+                    </div>
+                    <div class="item-stat">
+                        {{#if item.system.isRanged}}
+                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.total" value="{{item.system.ammo.total}}"/>
                         {{else}}
                         -
                         {{/if}}

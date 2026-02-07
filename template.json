@@ -53,6 +53,7 @@
       "isRanged": false,
       "isThrown": false,
       "rangedDamage": 0,
+      "ammo": { "current": 0, "total": 0 },
       "fireRate": "1",
       "fireRateCustom": 1,
       "special": "",

@@ -125,6 +125,10 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       isRanged: new fields.BooleanField({initial: false}),
       isThrown: new fields.BooleanField({initial: false}),
       rangedDamage: new fields.NumberField({initial: 0, nullable: true}),
+      ammo: new fields.SchemaField({
+        current: new fields.NumberField({initial: 0, integer: true, min: 0}),
+        total: new fields.NumberField({initial: 0, integer: true, min: 0})
+      }),
       fireRate: new fields.StringField({initial: "1"}),
       fireRateCustom: new fields.NumberField({initial: 1, nullable: true}),
       special: new fields.StringField({initial: ""}),

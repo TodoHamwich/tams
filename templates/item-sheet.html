@@ -57,6 +57,12 @@
                 <label>Ranged Damage</label>
                 <input type="number" name="system.rangedDamage" value="{{system.rangedDamage}}" data-dtype="Number"/>
             </div>
+            <div class="flexrow">
+                <label>Ammo</label>
+                <input type="number" name="system.ammo.current" value="{{system.ammo.current}}" data-dtype="Number"/>
+                <span> / </span>
+                <input type="number" name="system.ammo.total" value="{{system.ammo.total}}" data-dtype="Number"/>
+            </div>
             {{/if}}
             <div class="flexrow">
                 <label>Calculated Damage</label>
