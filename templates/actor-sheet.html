@@ -27,6 +27,7 @@
         <a class="item {{#if (eq activeTab 'abilities')}}active{{/if}}" data-action="setTab" data-tab="abilities">Abilities & Resources</a>
         <a class="item {{#if (eq activeTab 'description')}}active{{/if}}" data-action="setTab" data-tab="description">Traits & Bio</a>
         <a class="item {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-action="setTab" data-tab="modifiers">Modifiers</a>
+        <a class="item {{#if (eq activeTab 'settings')}}active{{/if}}" data-action="setTab" data-tab="settings" title="Settings"><i class="fas fa-cog"></i></a>
     </nav>
 
     <section class="sheet-body">
@@ -434,6 +435,20 @@
                     <input type="color" name="system.customResources.{{index}}.color" value="{{res.color}}" style="width: 30px; padding: 0;"/>
                 </div>
                 {{/each}}
+            </div>
+        </div>
+
+        {{!-- Settings Tab --}}
+        <div class="tab settings {{#if (eq activeTab 'settings')}}active{{/if}}" data-group="primary" data-tab="settings">
+            <h3>Settings</h3>
+            <div class="flexcol">
+                <div class="form-group flexrow" style="margin-bottom: 10px;">
+                    <label>Alternate Armour</label>
+                    <input type="checkbox" name="system.settings.alternateArmour" {{checked system.settings.alternateArmour}}/>
+                </div>
+                <p class="notes" style="font-size: 0.9em; color: #666; font-style: italic; border: 1px solid #ccc; padding: 5px; border-radius: 4px; background: rgba(0,0,0,0.05);">
+                    <b>Alternate Armour:</b> When enabled, Armour value remains constant. Instead, every hit reduces Armour Max (HP) by 1. When Armour Max reaches 0, the armour no longer provides protection.
+                </p>
             </div>
         </div>
     </section>

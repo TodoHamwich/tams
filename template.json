@@ -26,6 +26,9 @@
       "traits": "",
       "description": "",
       "behindMult": 0.5,
+      "settings": {
+        "alternateArmour": false
+      },
       "upgradePoints": {
         "stats": 0,
         "weapons": 0,

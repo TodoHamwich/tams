@@ -447,6 +447,14 @@
     border-bottom: 2px solid red;
 }
 
+.tams .sheet-tabs .item[data-tab="settings"] {
+    flex: 0 0 40px;
+    padding: 0;
+    text-align: center;
+    border-right: none;
+    margin-left: auto;
+}
+
 .tams .items-list {
     list-style: none;
     margin: 0;

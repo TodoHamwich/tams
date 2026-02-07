@@ -61,6 +61,9 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       traits: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""}),
       behindMult: new fields.NumberField({initial: 0.5, min: 0, step: 0.05}),
+      settings: new fields.SchemaField({
+        alternateArmour: new fields.BooleanField({initial: false})
+      }),
       upgradePoints: new fields.SchemaField({
         stats: new fields.NumberField({initial: 0}),
         weapons: new fields.NumberField({initial: 0}),
@@ -1104,17 +1107,35 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                   const limb = target.system.limbs[limbKey];
                   
                   // 1) Calculate current armor (considering previous hits in this loop)
+                  const isAltArmor = target.system.settings?.alternateArmour;
                   let armor = 0;
                   let armorItems = [];
                   if (limb.hasEquippedArmor) {
                       armorItems = target.items.filter(it => it.type === "equipment" && it.system.equipped && it.system.isArmor && it.system.limb === limbKey);
                       for (const it of armorItems) {
-                          const pending = itemUpdates[it.id]?.["system.armorValue"];
-                          armor += (pending !== undefined ? pending : it.system.armorValue) || 0;
+                          const pendingVal = itemUpdates[it.id]?.["system.armorValue"];
+                          const curVal = (pendingVal !== undefined ? pendingVal : it.system.armorValue) || 0;
+                          
+                          if (isAltArmor) {
+                              const pendingMax = itemUpdates[it.id]?.["system.armorMax"];
+                              const curMax = (pendingMax !== undefined ? pendingMax : it.system.armorMax) || 0;
+                              if (curMax > 0) armor += curVal;
+                          } else {
+                              armor += curVal;
+                          }
                       }
                   } else {
-                      const pending = updates[`system.limbs.${limbKey}.armor`];
-                      armor = pending !== undefined ? pending : (limb.armor || 0);
+                      const pendingVal = updates[`system.limbs.${limbKey}.armor`];
+                      const curVal = pendingVal !== undefined ? pendingVal : (limb.armor || 0);
+                      
+                      if (isAltArmor) {
+                          const pendingMax = updates[`system.limbs.${limbKey}.armorMax`];
+                          const curMax = pendingMax !== undefined ? pendingMax : (limb.armorMax || 0);
+                          if (curMax > 0) armor = curVal;
+                          else armor = 0;
+                      } else {
+                          armor = curVal;
+                      }
                   }
                   armor = Math.floor(armor);
                   
@@ -1132,22 +1153,46 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                       if (limb.hasEquippedArmor) {
                           // Find an item to damage (first one with armor remaining)
                           const itemToDamage = armorItems.find(it => {
-                              const pending = itemUpdates[it.id]?.["system.armorValue"];
-                              const val = pending !== undefined ? pending : it.system.armorValue;
-                              return val > 0;
+                              if (isAltArmor) {
+                                  const pending = itemUpdates[it.id]?.["system.armorMax"];
+                                  const val = pending !== undefined ? pending : it.system.armorMax;
+                                  return val > 0;
+                              } else {
+                                  const pending = itemUpdates[it.id]?.["system.armorValue"];
+                                  const val = pending !== undefined ? pending : it.system.armorValue;
+                                  return val > 0;
+                              }
                           });
                           if (itemToDamage) {
-                              const pending = itemUpdates[itemToDamage.id]?.["system.armorValue"];
-                              const currentVal = pending !== undefined ? pending : itemToDamage.system.armorValue;
-                              itemUpdates[itemToDamage.id] = { 
-                                  _id: itemToDamage.id, 
-                                  "system.armorValue": Math.max(0, currentVal - 1) 
-                              };
+                              if (isAltArmor) {
+                                  const pending = itemUpdates[itemToDamage.id]?.["system.armorMax"];
+                                  const currentVal = pending !== undefined ? pending : itemToDamage.system.armorMax;
+                                  itemUpdates[itemToDamage.id] = { 
+                                      ...(itemUpdates[itemToDamage.id] || {}),
+                                      _id: itemToDamage.id, 
+                                      "system.armorMax": Math.max(0, currentVal - 1) 
+                                  };
+                              } else {
+                                  const pending = itemUpdates[itemToDamage.id]?.["system.armorValue"];
+                                  const currentVal = pending !== undefined ? pending : itemToDamage.system.armorValue;
+                                  itemUpdates[itemToDamage.id] = { 
+                                      ...(itemUpdates[itemToDamage.id] || {}),
+                                      _id: itemToDamage.id, 
+                                      "system.armorValue": Math.max(0, currentVal - 1) 
+                                  };
+                              }
                           }
                       } else {
-                          updates[`system.limbs.${limbKey}.armor`] = Math.max(0, armor - 1);
+                          if (isAltArmor) {
+                              const pending = updates[`system.limbs.${limbKey}.armorMax`];
+                              const currentMax = pending !== undefined ? pending : (limb.armorMax || 0);
+                              updates[`system.limbs.${limbKey}.armorMax`] = Math.max(0, currentMax - 1);
+                          } else {
+                              updates[`system.limbs.${limbKey}.armor`] = Math.max(0, armor - 1);
+                          }
                       }
-                      report += `• ${loc}: ${effective} damage (${armor} armor blocked, 1 armor point lost)<br>`;
+                      const lossLabel = isAltArmor ? "1 armor HP lost" : "1 armor point lost";
+                      report += `• ${loc}: ${effective} damage (${armor} armor blocked, ${lossLabel})<br>`;
                   } else {
                       report += `• ${loc}: ${effective} damage (${armor} armor blocked)<br>`;
                   }
