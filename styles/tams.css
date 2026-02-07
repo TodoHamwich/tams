@@ -23,10 +23,66 @@
 }
 
 .tams .profile-img {
-    flex: 0 0 100px;
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
     border: 2px solid #7a7971;
     box-shadow: 0 0 5px rgba(0,0,0,0.5);
     border-radius: 5px;
+    display: block;
+}
+
+.tams .profile-img-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    cursor: pointer;
+}
+
+.tams .profile-img-container:hover .image-edit-overlay {
+    opacity: 1;
+}
+
+.tams .image-edit-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border-radius: 5px;
+    pointer-events: none;
+    font-size: 12px;
+    text-align: center;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+.tams .image-edit-overlay i {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.tams .image-edit-overlay.small i {
+    font-size: 18px;
+    margin-bottom: 0;
+}
+
+.tams-item-form .profile-img-container {
+    width: 64px;
+    height: 64px;
+}
+
+.tams-item-form .profile-img-container img {
+    width: 64px;
+    height: 64px;
 }
 
 .tams .header-details {

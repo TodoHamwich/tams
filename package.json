@@ -1,6 +1,6 @@
 {
   "name": "tams",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "description": "Todo's Advanced Modular System for Foundry VTT",
   "main": "index.js",
   "scripts": {

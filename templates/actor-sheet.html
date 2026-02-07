@@ -1,6 +1,12 @@
 ﻿<section class="tams-actor-form flexcol">
     <header class="sheet-header">
-        <img class="profile-img" src="{{document.img}}" data-edit="img" title="{{document.name}}" height="100" width="100"/>
+        <div class="profile-img-container" data-action="editImage" data-edit="img">
+            <img class="profile-img" src="{{document.img}}" title="{{document.name}}" height="100" width="100"/>
+            <div class="image-edit-overlay">
+                <i class="fas fa-edit"></i>
+                <span>Change Image</span>
+            </div>
+        </div>
         <div class="header-details">
             <h1 class="charname"><input name="name" type="text" value="{{document.name}}" placeholder="Name"/></h1>
             <div class="header-row">

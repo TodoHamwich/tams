@@ -384,7 +384,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         resourceAdd: TAMSActorSheet.prototype._onResourceAdd,
         resourceDelete: TAMSActorSheet.prototype._onResourceDelete,
         setTab: TAMSActorSheet.prototype._onSetTab,
-        updateItemField: TAMSActorSheet.prototype._onUpdateItemField
+        updateItemField: TAMSActorSheet.prototype._onUpdateItemField,
+        editImage: TAMSActorSheet.prototype._onEditImage
       }
     }, { inplace: false });
   }
@@ -550,6 +551,21 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     if (target.type === "checkbox") value = target.checked;
     const item = this.document.items.get(itemId);
     if (item) await item.update({ [field]: value });
+  }
+
+  async _onEditImage(event, target) {
+    const attr = target.dataset.edit || "img";
+    const current = foundry.utils.getProperty(this.document, attr);
+    const fp = new FilePicker({
+      type: "image",
+      current: current,
+      callback: path => {
+        this.document.update({ [attr]: path });
+      },
+      top: this.position.top + 40,
+      left: this.position.left + 10
+    });
+    return fp.browse();
   }
 
   async _onRoll(event, target) {
@@ -897,7 +913,9 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       position: { width: 500, height: 700 },
       window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
-      actions: { }
+      actions: {
+        editImage: TAMSItemSheet.prototype._onEditImage
+      }
     }, { inplace: false });
   }
 
@@ -999,6 +1017,21 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
         };
     }
     return context;
+  }
+
+  async _onEditImage(event, target) {
+    const attr = target.dataset.edit || "img";
+    const current = foundry.utils.getProperty(this.document, attr);
+    const fp = new FilePicker({
+      type: "image",
+      current: current,
+      callback: path => {
+        this.document.update({ [attr]: path });
+      },
+      top: this.position.top + 40,
+      left: this.position.left + 10
+    });
+    return fp.browse();
   }
 }
 
