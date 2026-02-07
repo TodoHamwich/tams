@@ -212,6 +212,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         rollBonus: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         ignoreArmor: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         bodyPart: new fields.StringField({initial: "none"}),
+        targetLimb: new fields.StringField({initial: "none"}),
         fireRate: new fields.StringField({initial: "single"}),
         multiAttackHits: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         damageStatFraction: new fields.NumberField({initial: 0, step: 0.25, nullable: true}),
@@ -702,16 +703,33 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             multiVal = item.system.multiAttack || 1;
         }
 
-        const hitLocation = await getHitLocation(rawResult);
+        let hitLocation;
+        if (item.type === 'ability' && item.system.calculator?.enabled && item.system.calculator?.targetLimb && item.system.calculator.targetLimb !== 'none') {
+            const limbKey = item.system.calculator.targetLimb;
+            const limbOptions = {
+                "head": "Head",
+                "thorax": "Thorax",
+                "stomach": "Stomach",
+                "leftArm": "Left Arm",
+                "rightArm": "Right Arm",
+                "leftLeg": "Left Leg",
+                "rightLeg": "Right Leg"
+            };
+            hitLocation = limbOptions[limbKey] || "Thorax";
+        } else {
+            hitLocation = await getHitLocation(rawResult);
+        }
+
+        const targetLimb = (item.type === 'ability' && item.system.calculator?.enabled) ? item.system.calculator.targetLimb : 'none';
 
         damageInfo = `
             <div class="roll-row"><b>Damage: ${damage}</b></div>
             <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
             <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
             <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
-              <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}">Apply Damage</button>
-              <button class="tams-dodge" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Dodge</button>
-              <button class="tams-retaliate" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Retaliate</button>
+              <button class="tams-take-damage" data-damage="${damage}" data-location="${hitLocation}" data-target-limb="${targetLimb}">Apply Damage</button>
+              <button class="tams-dodge" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}">Dodge</button>
+              <button class="tams-retaliate" data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}">Retaliate</button>
               <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
               <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
             </div>
@@ -1357,6 +1375,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const attackerDamage = parseInt(btn.dataset.damage) || 0;
       const isRanged = btn.dataset.isRanged === '1';
       const firstLocation = btn.dataset.location;
+      const targetLimb = btn.dataset.targetLimb;
       const container = btn.closest(".tams-roll");
       const isBehind = container?.classList.contains("behind-attack") || false;
       const isUnaware = container?.classList.contains("unaware-defender") || false;
@@ -1396,8 +1415,19 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           hitsScored = Math.min(hitsScored, attackerMulti);
 
           locations.push(firstLocation);
+          const limbOptions = {
+              "head": "Head", "thorax": "Thorax", "stomach": "Stomach",
+              "leftArm": "Left Arm", "rightArm": "Right Arm",
+              "leftLeg": "Left Leg", "rightLeg": "Right Leg"
+          };
           for (let i = 1; i < hitsScored; i++) {
-              locations.push(await getHitLocation());
+              let loc;
+              if (targetLimb && targetLimb !== 'none') {
+                  loc = limbOptions[targetLimb] || "Thorax";
+              } else {
+                  loc = await getHitLocation();
+              }
+              locations.push(loc);
           }
 
           damageInfo = `
@@ -1415,7 +1445,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       }
 
       const msg = `
-        <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}" data-behind="${isBehind ? '1' : '0'}" data-unaware="${isUnaware ? '1' : '0'}" data-first-location="${firstLocation}" data-is-ranged="${isRanged ? '1' : '0'}">
+        <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}" data-behind="${isBehind ? '1' : '0'}" data-unaware="${isUnaware ? '1' : '0'}" data-first-location="${firstLocation}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}">
           <h3 class="roll-label">Dodge — ${actor.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>Stat Cap (Dex ${dexVal}):</small><span>${capped}</span></div>
@@ -1445,6 +1475,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const attackerMulti = parseInt(container.dataset.attackerMulti) || 1;
       const attackerDamage = parseInt(container.dataset.attackerDamage) || 0;
       const firstLocation = container.dataset.firstLocation;
+      const targetLimb = container.dataset.targetLimb;
       const actorId = container.dataset.actorId;
       const raw = parseInt(container.dataset.raw);
       const capped = parseInt(container.dataset.capped);
@@ -1539,10 +1570,21 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       if (attackerTotal > total) {
           hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
           hitsScored = Math.min(hitsScored, attackerMulti);
-          
+              
           locations.push(firstLocation);
+          const limbOptions = {
+              "head": "Head", "thorax": "Thorax", "stomach": "Stomach",
+              "leftArm": "Left Arm", "rightArm": "Right Arm",
+              "leftLeg": "Left Leg", "rightLeg": "Right Leg"
+          };
           for (let i = 1; i < hitsScored; i++) {
-              locations.push(await getHitLocation());
+              let loc;
+              if (targetLimb && targetLimb !== 'none') {
+                  loc = limbOptions[targetLimb] || "Thorax";
+              } else {
+                  loc = await getHitLocation();
+              }
+              locations.push(loc);
           }
 
           damageInfo = `
@@ -1585,6 +1627,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       const attackerDamage = parseInt(btn.dataset.damage) || 0;
       const isRanged = btn.dataset.isRanged === '1';
       const firstLocation = btn.dataset.location;
+      const attackerTargetLimb = btn.dataset.targetLimb;
       const container = btn.closest(".tams-roll");
       const isBehind = container?.classList.contains("behind-attack") || false;
       const isUnaware = container?.classList.contains("unaware-defender") || false;
@@ -1697,6 +1740,7 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
       }
 
       const damage = weapon.system.calculatedDamage;
+      const defenderTargetLimb = (weapon.type === 'ability' && weapon.system.calculator?.enabled) ? weapon.system.calculator.targetLimb : 'none';
 
       // Calculate hits scored by defender (retaliation hits)
       let hitsScored = 0;
@@ -1708,10 +1752,28 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
 
       // Prepare retaliation hit locations
       let retLocations = [];
+      const limbOptions = {
+          "head": "Head", "thorax": "Thorax", "stomach": "Stomach",
+          "leftArm": "Left Arm", "rightArm": "Right Arm",
+          "leftLeg": "Left Leg", "rightLeg": "Right Leg"
+      };
       if (hitsScored > 0) {
-          retLocations.push(await getHitLocation(raw));
+          let firstRetLoc;
+          if (defenderTargetLimb && defenderTargetLimb !== 'none') {
+              firstRetLoc = limbOptions[defenderTargetLimb] || "Thorax";
+          } else {
+              firstRetLoc = await getHitLocation(raw);
+          }
+          retLocations.push(firstRetLoc);
           for (let i = 1; i < hitsScored; i++) {
-              retLocations.push(await getHitLocation());
+              let loc;
+              if (defenderTargetLimb && defenderTargetLimb !== 'none') {
+                  loc = limbOptions[defenderTargetLimb] || "Thorax";
+              } else {
+                  loc = await getHitLocation();
+              }
+              locations.push(loc);
+              retLocations.push(loc);
           }
       }
 
@@ -1720,7 +1782,13 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           const hitsTaken = Math.min(1 + Math.floor(Math.max(0, attackerTotal - total) / 5), attackerMulti);
           defenseLocations.push(firstLocation);
           for (let i = 1; i < hitsTaken; i++) {
-              defenseLocations.push(await getHitLocation());
+              let loc;
+              if (attackerTargetLimb && attackerTargetLimb !== 'none') {
+                  loc = limbOptions[attackerTargetLimb] || "Thorax";
+              } else {
+                  loc = await getHitLocation();
+              }
+              defenseLocations.push(loc);
           }
           defenseDamageInfo = `
             <div class="roll-row"><b style="color:orange;">Mutual Hit (Within ${threshold})</b></div>
@@ -1734,7 +1802,13 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           const hitsTaken = Math.min(1 + Math.floor((attackerTotal - total) / 5), attackerMulti);
           defenseLocations.push(firstLocation);
           for (let i = 1; i < hitsTaken; i++) {
-              defenseLocations.push(await getHitLocation());
+              let loc;
+              if (attackerTargetLimb && attackerTargetLimb !== 'none') {
+                  loc = limbOptions[attackerTargetLimb] || "Thorax";
+              } else {
+                  loc = await getHitLocation();
+              }
+              defenseLocations.push(loc);
           }
           defenseDamageInfo = `
             <div class="roll-row"><b style="color:red;">Failed to beat Attack!</b></div>
@@ -1753,14 +1827,14 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
           <button class="tams-take-damage" data-damage="${damage}" data-locations='${JSON.stringify(retLocations)}'>Apply Damage</button>
       ` : (hitsScored > 0 ? `
           <button class="tams-take-damage" data-damage="${damage}" data-locations='${JSON.stringify(retLocations)}'>Apply Damage</button>
-          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Dodge</button>
-          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}">Retaliate</button>
+          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">Dodge</button>
+          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">Retaliate</button>
           <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
           <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
       ` : "");
 
       const msg = `
-        <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-is-ranged="${isRanged ? '1' : '0'}">
+        <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}">
           <h3 class="roll-label">Retaliation — ${actor.name} with ${weapon.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           
           ${defenseDamageInfo}

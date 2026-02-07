@@ -213,6 +213,15 @@
                     </select>
                 </div>
 
+                {{#if (not (eq system.calculator.bodyPart "none"))}}
+                <div class="flexrow">
+                    <label>Targeted Limb</label>
+                    <select name="system.calculator.targetLimb">
+                        {{selectOptions limbOptions selected=system.calculator.targetLimb}}
+                    </select>
+                </div>
+                {{/if}}
+
                 <div class="flexrow">
                     <label>Fire Rate</label>
                     <select name="system.calculator.fireRate">

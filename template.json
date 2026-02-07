@@ -92,6 +92,7 @@
         "rollBonus": 0,
         "ignoreArmor": 0,
         "bodyPart": "none",
+        "targetLimb": "none",
         "fireRate": "single",
         "multiAttackHits": 0,
         "damageStatFraction": 0,
