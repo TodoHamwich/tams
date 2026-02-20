@@ -69,6 +69,14 @@
                 <span>{{system.calculatedDamage}}</span>
             </div>
             <div class="flexrow">
+                <label>Armour Penetration?</label>
+                <input type="checkbox" name="system.hasArmourPen" {{checked system.hasArmourPen}}/>
+                {{#if system.hasArmourPen}}
+                <label>Value</label>
+                <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>
+                {{/if}}
+            </div>
+            <div class="flexrow">
                 <label>Special</label>
                 <input type="text" name="system.special" value="{{system.special}}"/>
             </div>
@@ -329,6 +337,10 @@
                 <div class="flexrow">
                     <label>{{#if (eq system.damageStat "custom")}}Custom Damage{{else}}Base Damage{{/if}}</label>
                     <input type="number" name="system.damage" value="{{system.damage}}" data-dtype="Number"/>
+                </div>
+                <div class="flexrow">
+                    <label>Armour Penetration</label>
+                    <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>
                 </div>
                 <div class="flexrow">
                     <label>Attack Stat</label>

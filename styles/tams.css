@@ -603,6 +603,15 @@
     padding-bottom: 3px;
 }
 
+.tams-roll .roll-description {
+    font-size: 0.9em;
+    font-style: italic;
+    color: #555;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px dashed rgba(0,0,0,0.1);
+}
+
 .tams-roll .roll-row {
     display: flex;
     justify-content: space-between;
