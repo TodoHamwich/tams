@@ -28,12 +28,12 @@
     </header>
 
     <nav class="sheet-tabs tabs" data-group="primary">
-        <a class="item {{#if (eq activeTab 'stats')}}active{{/if}}" data-action="setTab" data-tab="stats">Stats & Limbs</a>
-        <a class="item {{#if (eq activeTab 'items')}}active{{/if}}" data-action="setTab" data-tab="items">Weapons & Skills</a>
-        {{!-- <a class="item {{#if (eq activeTab 'inventory')}}active{{/if}}" data-action="setTab" data-tab="inventory">Inventory</a> --}}
-        <a class="item {{#if (eq activeTab 'abilities')}}active{{/if}}" data-action="setTab" data-tab="abilities">Abilities & Resources</a>
-        <a class="item {{#if (eq activeTab 'description')}}active{{/if}}" data-action="setTab" data-tab="description">Traits & Bio</a>
-        <a class="item {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-action="setTab" data-tab="modifiers">Modifiers</a>
+        <a class="item {{#if (eq activeTab 'stats')}}active{{/if}}" data-action="setTab" data-tab="stats" title="Stats & Limbs"><i class="fas fa-user"></i></a>
+        <a class="item {{#if (eq activeTab 'items')}}active{{/if}}" data-action="setTab" data-tab="items" title="Weapons & Skills"><i class="fas fa-shield-alt"></i></a>
+        <a class="item {{#if (eq activeTab 'abilities')}}active{{/if}}" data-action="setTab" data-tab="abilities" title="Abilities & Resources"><i class="fas fa-bolt"></i></a>
+        <a class="item {{#if (eq activeTab 'inventory')}}active{{/if}}" data-action="setTab" data-tab="inventory" title="Inventory"><i class="fas fa-boxes"></i></a>
+        <a class="item {{#if (eq activeTab 'description')}}active{{/if}}" data-action="setTab" data-tab="description" title="Traits & Bio"><i class="fas fa-scroll"></i></a>
+        <a class="item {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-action="setTab" data-tab="modifiers" title="Modifiers"><i class="fas fa-sliders-h"></i></a>
         <a class="item {{#if (eq activeTab 'settings')}}active{{/if}}" data-action="setTab" data-tab="settings" title="Settings"><i class="fas fa-cog"></i></a>
     </nav>
 
@@ -100,6 +100,9 @@
                             <input type="checkbox" name="system.limbs.{{id}}.injured" {{checked limb.injured}} title="Injured?"/>
                             <input type="checkbox" name="system.limbs.{{id}}.criticallyInjured" {{checked limb.criticallyInjured}} title="Critically Injured?"/>
                             <label>Armour</label>
+                            <select name="system.limbs.{{id}}.equippedArmorId" style="max-width: 80px;" title="Equipped Armor Item">
+                                {{selectOptions (lookup ../limbArmorOptions id) selected=limb.equippedArmorId}}
+                            </select>
                             <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input" max="40" min="0" {{#if limb.hasEquippedArmor}}disabled{{/if}}/>
                             <span>/</span>
                             <input type="number" name="system.limbs.{{id}}.armorMax" value="{{limb.armorMax}}" class="small-input" max="40" min="0" {{#if limb.hasEquippedArmor}}disabled{{/if}}/>
@@ -207,132 +210,6 @@
             </ol>
         </div>
 
-        {{!-- Inventory Tab --}}
-        {{#if false}}
-        <div class="tab inventory {{#if (eq activeTab 'inventory')}}active{{/if}}" data-group="primary" data-tab="inventory">
-            <div class="flexrow" style="align-items: center; margin-bottom: 5px;">
-                <h3 style="margin: 0;">Inventory</h3>
-                <a data-action="itemCreate" data-type="equipment"><i class="fas fa-plus"></i> Add Equipment</a>
-            </div>
-            <div class="carry-weight" style="margin-bottom: 10px; padding: 5px; background: rgba(0,0,0,0.1); border-radius: 4px;">
-                Carry Weight: <b>{{carryWeight}}</b> / <b>{{carryCapacity}}</b>
-                {{#if encumbered}} <span class="encumbered" style="color:#c62828; font-weight:bold; margin-left: 10px;">(Encumbered)</span>{{/if}}
-            </div>
-
-            {{!-- Weapons Section --}}
-            <h4 class="inventory-section-header">Weapons</h4>
-            <li class="item flexrow item-header">
-                <div class="item-name">Name</div>
-                <div class="item-stat">Qty</div>
-                <div class="item-stat">Wgt</div>
-                <div class="item-stat">Limb/Armor</div>
-                <div class="item-stat">Carried</div>
-                <div class="item-stat">Equip</div>
-                <div class="item-controls"></div>
-            </li>
-            <ol class="items-list">
-                {{#each inventoryWeapons as |item id|}}
-                <li class="item flexrow" data-item-id="{{item.id}}">
-                    <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                    <h4 class="item-name">{{item.name}}</h4>
-                    <div class="item-stat">1</div>
-                    <div class="item-stat">-</div>
-                    <div class="item-stat">-</div>
-                    <div class="item-stat">
-                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.carried" checked disabled/>
-                    </div>
-                    <div class="item-stat">
-                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}}/>
-                    </div>
-                    <div class="item-controls">
-                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                    </div>
-                </li>
-                {{/each}}
-            </ol>
-
-            {{!-- Armor Section --}}
-            <h4 class="inventory-section-header">Armor</h4>
-            <li class="item flexrow item-header">
-                <div class="item-name">Name</div>
-                <div class="item-stat">Qty</div>
-                <div class="item-stat">Wgt</div>
-                <div class="item-stat">Limb/Armor</div>
-                <div class="item-stat">Carried</div>
-                <div class="item-stat">Equip</div>
-                <div class="item-controls"></div>
-            </li>
-            <ol class="items-list">
-                {{#each inventoryArmor as |item id|}}
-                <li class="item flexrow" data-item-id="{{item.id}}">
-                    <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                    <h4 class="item-name">{{item.name}}</h4>
-                    <div class="item-stat">
-                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
-                    </div>
-                    <div class="item-stat">
-                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.weight" value="{{item.system.weight}}"/>
-                    </div>
-                    <div class="item-stat">
-                        <div class="flexcol" style="font-size: 0.8em; line-height: 1;">
-                            <span>{{capitalize item.system.limb}}</span>
-                            <span>{{item.system.armorValue}}/{{item.system.armorMax}}</span>
-                        </div>
-                    </div>
-                    <div class="item-stat">
-                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.carried" {{checked item.system.carried}}/>
-                    </div>
-                    <div class="item-stat">
-                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}}/>
-                    </div>
-                    <div class="item-controls">
-                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                    </div>
-                </li>
-                {{/each}}
-            </ol>
-
-            {{!-- Misc Equipment Section --}}
-            <h4 class="inventory-section-header">General Items</h4>
-            <li class="item flexrow item-header">
-                <div class="item-name">Name</div>
-                <div class="item-stat">Qty</div>
-                <div class="item-stat">Wgt</div>
-                <div class="item-stat">Limb/Armor</div>
-                <div class="item-stat">Carried</div>
-                <div class="item-stat">Equip</div>
-                <div class="item-controls"></div>
-            </li>
-            <ol class="items-list">
-                {{#each inventoryMisc as |item id|}}
-                <li class="item flexrow" data-item-id="{{item.id}}">
-                    <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                    <h4 class="item-name">{{item.name}}</h4>
-                    <div class="item-stat">
-                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
-                    </div>
-                    <div class="item-stat">
-                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.weight" value="{{item.system.weight}}"/>
-                    </div>
-                    <div class="item-stat">-</div>
-                    <div class="item-stat">
-                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.carried" {{checked item.system.carried}}/>
-                    </div>
-                    <div class="item-stat">
-                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}}/>
-                    </div>
-                    <div class="item-controls">
-                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                    </div>
-                </li>
-                {{/each}}
-            </ol>
-        </div>
-        {{/if}}
-
         {{!-- Abilities & Resources Tab --}}
         <div class="tab abilities {{#if (eq activeTab 'abilities')}}active{{/if}}" data-group="primary" data-tab="abilities">
             <div class="flexrow">
@@ -402,6 +279,284 @@
             </ol>
         </div>
 
+        {{!-- Inventory Tab --}}
+        <div class="tab inventory {{#if (eq activeTab 'inventory')}}active{{/if}}" data-group="primary" data-tab="inventory">
+            <div class="carry-weight flexcol">
+                <div class="flexrow">
+                    <span>Carry Capacity: <b>{{inventory.usedMedium}}</b> / <b>{{inventory.maxMedium}}</b> Medium Items</span>
+                    {{#if inventory.isEncumbered}} <span class="encumbered">(Encumbered - Speed Halved)</span>{{/if}}
+                </div>
+                <div class="bar-container" style="height: 8px; margin-top: 2px;">
+                    <div class="bar">
+                        <div class="fill" style="width: {{capacityPercentage}}%; background: {{#if inventory.isEncumbered}}#e74c3c{{else}}#3498db{{/if}};"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="backpack-slot-container" style="border-bottom: 2px solid #7a7971; margin-bottom: 5px; padding-bottom: 5px; flex: 0 0 auto;">
+                <h4 class="inventory-section-header" style="margin-top: 0; background: #5c3b1e;">
+                    <span>Containers / Backpacks</span>
+                    <div class="inventory-controls">
+                        <a data-action="itemCreate" data-type="backpack" title="Add Backpack"><i class="fas fa-plus"></i> Add</a>
+                    </div>
+                </h4>
+                {{#if inventoryBackpacks.length}}
+                <ol class="items-list">
+                    {{#each inventoryBackpacks as |item id|}}
+                    <li class="item flexrow {{#if item.system.equipped}}equipped-backpack{{/if}}" data-item-id="{{item.id}}" style="border-bottom: 1px solid #ccc; padding: 4px;">
+                        <img src="{{item.img}}" title="{{item.name}}" width="32" height="32" style="border: 1px solid #7a7971; border-radius: 3px;"/>
+                        <div class="item-name-details flexcol" style="flex: 1; padding-left: 10px;">
+                            <h4 class="item-name" style="margin: 0; font-family: 'MedievalSharp', serif; font-size: 1.1em;">{{item.name}}</h4>
+                            <div class="item-properties" style="font-size: 0.8em; color: #666;">
+                                <span>Cap: {{item.system.capacity}} Med</span> | <span>Mod: {{item.system.modifier}}x</span>
+                                {{#if item.system.penalties.active}} | <span style="color: #c62828;"><i class="fas fa-exclamation-circle"></i> Penalties Active</span>{{/if}}
+                            </div>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 100px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                            <label style="font-size: 10px; text-transform: uppercase;">Equip</label>
+                            <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}}/>
+                        </div>
+                        <div class="item-controls" style="flex: 0 0 60px; display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
+                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </li>
+                    {{/each}}
+                </ol>
+                {{else}}
+                <div class="no-backpacks" style="font-size: 0.85em; font-style: italic; color: #888; text-align: center; padding: 8px;">
+                    No backpack equipped. Items in "Backpack" location will be inaccessible.
+                </div>
+                {{/if}}
+            </div>
+
+            <div class="inventory-scroll">
+                <li class="item flexrow item-header">
+                    <div class="item-name">Name</div>
+                    <div class="item-stat" style="flex: 0 0 50px; text-align: center;">Qty</div>
+                    <div class="item-stat" style="flex: 0 0 70px; text-align: center;">Size</div>
+                    <div class="item-stat" style="flex: 0 0 90px; text-align: center;">Location</div>
+                    <div class="item-controls" style="flex: 0 0 50px;"></div>
+                </li>
+
+                <h4 class="inventory-section-header">
+                    <span>Weapons</span>
+                    <div class="inventory-controls">
+                        <a data-action="itemCreate" data-type="weapon" title="Add Weapon"><i class="fas fa-plus"></i> Add</a>
+                    </div>
+                </h4>
+                {{#if weapons.length}}
+                <ol class="items-list">
+                    {{#each weapons as |item id|}}
+                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}">
+                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" style="margin-right: 5px;"/>
+                        <h4 class="item-name">{{item.name}} {{#if item.system.equipped}}(Equipped){{/if}}</h4>
+                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
+                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../sizeOptions selected=item.system.size}}
+                            </select>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../locationOptions selected=item.system.location}}
+                            </select>
+                        </div>
+                        <div class="item-controls" style="flex: 0 0 50px;">
+                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </li>
+                    {{/each}}
+                </ol>
+                {{/if}}
+
+                <h4 class="inventory-section-header">
+                    <span>Armor</span>
+                    <div class="inventory-controls">
+                        <a data-action="itemCreate" data-type="armor" title="Add Armor"><i class="fas fa-plus"></i> Add</a>
+                    </div>
+                </h4>
+                {{#if inventoryArmor.length}}
+                <ol class="items-list">
+                    {{#each inventoryArmor as |item id|}}
+                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}">
+                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
+                        <h4 class="item-name">{{item.name}}</h4>
+                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">{{item.system.quantity}}</div>
+                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../sizeOptions selected=item.system.size}}
+                            </select>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../locationOptions selected=item.system.location}}
+                            </select>
+                        </div>
+                        <div class="item-controls" style="flex: 0 0 50px;">
+                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </li>
+                    {{/each}}
+                </ol>
+                {{/if}}
+
+                <h4 class="inventory-section-header">
+                    <span>Consumables</span>
+                    <div class="inventory-controls">
+                        <a data-action="itemCreate" data-type="consumable" title="Add Consumable"><i class="fas fa-plus"></i> Add</a>
+                    </div>
+                </h4>
+                {{#if inventoryConsumables.length}}
+                <ol class="items-list">
+                    {{#each inventoryConsumables as |item id|}}
+                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}">
+                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
+                        <h4 class="item-name">{{item.name}} ({{item.system.uses.value}}/{{item.system.uses.max}})</h4>
+                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
+                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../sizeOptions selected=item.system.size}}
+                            </select>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../locationOptions selected=item.system.location}}
+                            </select>
+                        </div>
+                        <div class="item-controls" style="flex: 0 0 50px;">
+                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </li>
+                    {{/each}}
+                </ol>
+                {{/if}}
+
+                <h4 class="inventory-section-header">
+                    <span>Tools</span>
+                    <div class="inventory-controls">
+                        <a data-action="itemCreate" data-type="tool" title="Add Tool"><i class="fas fa-plus"></i> Add</a>
+                    </div>
+                </h4>
+                {{#if inventoryTools.length}}
+                <ol class="items-list">
+                    {{#each inventoryTools as |item id|}}
+                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}">
+                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
+                        <h4 class="item-name">{{item.name}}</h4>
+                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
+                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../sizeOptions selected=item.system.size}}
+                            </select>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../locationOptions selected=item.system.location}}
+                            </select>
+                        </div>
+                        <div class="item-controls" style="flex: 0 0 50px;">
+                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </li>
+                    {{/each}}
+                </ol>
+                {{/if}}
+
+                <h4 class="inventory-section-header">
+                    <span>Quest Items</span>
+                    <div class="inventory-controls">
+                        <a data-action="itemCreate" data-type="questItem" title="Add Quest Item"><i class="fas fa-plus"></i> Add</a>
+                    </div>
+                </h4>
+                {{#if inventoryQuestItems.length}}
+                <ol class="items-list">
+                    {{#each inventoryQuestItems as |item id|}}
+                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}">
+                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
+                        <h4 class="item-name">{{item.name}}</h4>
+                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
+                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../sizeOptions selected=item.system.size}}
+                            </select>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../locationOptions selected=item.system.location}}
+                            </select>
+                        </div>
+                        <div class="item-controls" style="flex: 0 0 50px;">
+                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </li>
+                    {{/each}}
+                </ol>
+                {{/if}}
+
+                <h4 class="inventory-section-header">
+                    <span>Misc Equipment</span>
+                    <div class="inventory-controls">
+                        <a data-action="itemCreate" data-type="equipment" title="Add Misc"><i class="fas fa-plus"></i> Add</a>
+                    </div>
+                </h4>
+                {{#if inventoryMisc.length}}
+                <ol class="items-list">
+                    {{#each inventoryMisc as |item id|}}
+                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}">
+                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
+                        <h4 class="item-name">{{item.name}}</h4>
+                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
+                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../sizeOptions selected=item.system.size}}
+                            </select>
+                        </div>
+                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
+                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
+                                {{selectOptions ../locationOptions selected=item.system.location}}
+                            </select>
+                        </div>
+                        <div class="item-controls" style="flex: 0 0 50px;">
+                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </li>
+                    {{/each}}
+                </ol>
+                {{/if}}
+            </div>
+
+            <div class="currency-footer">
+                <h4 class="inventory-section-header">Currencies</h4>
+                <div class="flexrow currency-list" style="flex-wrap: wrap; gap: 5px; margin-bottom: 8px;">
+                    {{#each currencies as |cur|}}
+                    {{#if cur.enabled}}
+                    <div class="currency-item flexrow" style="align-items: center; background: rgba(0,0,0,0.05); padding: 2px 5px; border-radius: 3px; flex: 0 0 120px;">
+                        <label style="font-size: 0.9em; flex: 1;">{{cur.name}}</label>
+                        <input type="number" name="system.currencies.{{cur.name}}" value="{{cur.value}}" style="width: 50px; height: 20px; text-align: right;"/>
+                    </div>
+                    {{/if}}
+                    {{/each}}
+                </div>
+            </div>
+        </div>
+
 
         {{!-- Description Tab --}}
         <div class="tab {{#if (eq activeTab 'description')}}active{{/if}}" data-group="primary" data-tab="description">
@@ -469,9 +624,20 @@
                     <label>Alternate Armour</label>
                     <input type="checkbox" name="system.settings.alternateArmour" {{checked system.settings.alternateArmour}}/>
                 </div>
-                <p class="notes" style="font-size: 0.9em; color: #666; font-style: italic; border: 1px solid #ccc; padding: 5px; border-radius: 4px; background: rgba(0,0,0,0.05);">
+                <p class="notes" style="margin-bottom: 15px; font-size: 0.9em; color: #666; font-style: italic; border: 1px solid #ccc; padding: 5px; border-radius: 4px; background: rgba(0,0,0,0.05);">
                     <b>Alternate Armour:</b> When enabled, Armour value remains constant. Instead, every hit reduces Armour Max (HP) by 1. When Armour Max reaches 0, the armour no longer provides protection.
                 </p>
+
+                <hr>
+                
+                <h3>Currency Visibility</h3>
+                <div class="currency-toggles flexrow" style="flex-wrap: wrap; gap: 10px; padding: 5px; background: rgba(0,0,0,0.05); border-radius: 4px;">
+                    {{#each currencies as |cur|}}
+                    <label style="font-size: 0.9em; white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.5); padding: 2px 8px; border-radius: 10px; border: 1px solid #ccc;">
+                        <input type="checkbox" name="system.settings.enabledCurrencies.{{cur.name}}" {{checked cur.enabled}} style="width: 14px; height: 14px; margin: 0;"/> {{cur.name}}
+                    </label>
+                    {{/each}}
+                </div>
             </div>
         </div>
     </section>

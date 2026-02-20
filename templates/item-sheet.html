@@ -12,6 +12,23 @@
 
     <section class="sheet-body">
         <div class="flexcol">
+            {{!-- Common Physical Fields --}}
+            {{#if (or (eq item.type 'weapon') (eq item.type 'equipment') (eq item.type 'armor') (eq item.type 'consumable') (eq item.type 'tool') (eq item.type 'questItem') (eq item.type 'backpack'))}}
+            <div class="flexrow">
+                <label>Quantity</label>
+                <input type="number" name="system.quantity" value="{{system.quantity}}"/>
+                <label>Size</label>
+                <select name="system.size">
+                    {{selectOptions sizeOptions selected=system.size}}
+                </select>
+                <label>Location</label>
+                <select name="system.location">
+                    {{selectOptions locationOptions selected=system.location}}
+                </select>
+            </div>
+            <hr>
+            {{/if}}
+
             <div class="flexrow">
                 <label>Familiarity</label>
                 <input type="number" name="system.familiarity" value="{{system.familiarity}}" data-dtype="Number"/>
@@ -30,7 +47,7 @@
                     <option value="auto" {{#if (eq system.fireRate "auto")}}selected{{/if}}>Full Auto (10)</option>
                     <option value="custom" {{#if (eq system.fireRate "custom")}}selected{{/if}}>Custom</option>
                 </select>
-                {{#if (eq system.fireRate "custom")}}
+                {{#if (eq system.fireRate 'custom')}}
                 <input type="number" name="system.fireRateCustom" value="{{system.fireRateCustom}}" style="width: 50px;"/>
                 {{/if}}
             </div>
@@ -82,37 +99,67 @@
             </div>
             {{/if}}
 
-            {{#if (eq item.type "equipment")}}
+            {{#if (eq item.type "armor")}}
             <div class="flexrow">
-                <label>Quantity</label>
-                <input type="number" name="system.quantity" value="{{system.quantity}}" data-dtype="Number"/>
-                <label>Weight</label>
-                <input type="number" name="system.weight" value="{{system.weight}}" data-dtype="Number" step="0.1"/>
+                <label>Equipped?</label>
+                <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
             </div>
+            <h4 style="border-bottom: 1px solid #7a7971; margin-top: 10px;">Limb Protection</h4>
+            <div class="grid grid-2col">
+                {{#each system.limbs as |limb id|}}
+                <div class="flexcol" style="border: 1px solid #ccc; padding: 3px; margin: 2px;">
+                    <label><b>{{capitalize id}}</b></label>
+                    <div class="flexrow">
+                        <span>Val:</span><input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}"/>
+                        <span>Max:</span><input type="number" name="system.limbs.{{id}}.max" value="{{limb.max}}"/>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+            {{/if}}
+
+            {{#if (eq item.type "backpack")}}
             <div class="flexrow">
-                <label>Carried?</label>
-                <input type="checkbox" name="system.carried" {{checked system.carried}}/>
                 <label>Equipped?</label>
                 <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
             </div>
             <div class="flexrow">
-                <label>Is Armour?</label>
-                <input type="checkbox" name="system.isArmor" {{checked system.isArmor}}/>
-            </div>
-            {{#if system.isArmor}}
-            <div class="flexrow">
-                <label>Protecting Limb</label>
-                <select name="system.limb">
-                    {{selectOptions limbOptions selected=system.limb}}
-                </select>
+                <label title="How much extra capacity this backpack adds, in Medium Item units (10 Small = 1 Medium).">Capacity (Medium Items)</label>
+                <input type="number" name="system.capacity" value="{{system.capacity}}"/>
             </div>
             <div class="flexrow">
-                <label>Armor Value</label>
-                <input type="number" name="system.armorValue" value="{{system.armorValue}}"/>
-                <label>Max Armor</label>
-                <input type="number" name="system.armorMax" value="{{system.armorMax}}"/>
+                <label title="Multiplier applied to items placed inside this backpack. 0.5 halves their effective size.">Carrying Modifier</label>
+                <input type="number" name="system.modifier" value="{{system.modifier}}" step="0.1"/>
+            </div>
+            <p class="notes" style="font-size: 0.85em; color: #666; font-style: italic; margin-top: 5px; border-left: 3px solid #7a7971; padding-left: 5px;">
+                <b>Carrying Modifier:</b> This multiplier is applied to the size of items placed in the 'Backpack' location. For example, 0.5 means items only take up 50% of their normal size units.
+            </p>
+            <h4 style="border-bottom: 1px solid #7a7971; margin-top: 10px;">Penalties</h4>
+            <div class="flexrow">
+                <label>Active?</label>
+                <input type="checkbox" name="system.penalties.active" {{checked system.penalties.active}}/>
+            </div>
+            {{#if system.penalties.active}}
+            <div class="grid grid-2col">
+                <div class="flexrow"><label>Strength</label><input type="number" name="system.penalties.strength" value="{{system.penalties.strength}}"/></div>
+                <div class="flexrow"><label>Dexterity</label><input type="number" name="system.penalties.dexterity" value="{{system.penalties.dexterity}}"/></div>
+                <div class="flexrow"><label>Dodge</label><input type="number" name="system.penalties.dodge" value="{{system.penalties.dodge}}"/></div>
+                <div class="flexrow"><label>Attack</label><input type="number" name="system.penalties.attack" value="{{system.penalties.attack}}"/></div>
+                <div class="flexrow"><label>Movement</label><input type="number" name="system.penalties.movement" value="{{system.penalties.movement}}"/></div>
             </div>
             {{/if}}
+            {{/if}}
+
+            {{#if (eq item.type "consumable")}}
+            <div class="flexrow">
+                <label>Uses</label>
+                <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
+                <span> / </span>
+                <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
+            </div>
+            {{/if}}
+
+            {{#if (or (eq item.type "equipment") (eq item.type "tool") (eq item.type "questItem") (eq item.type "consumable") (eq item.type "armor") (eq item.type "backpack"))}}
             <div class="flexrow">
                 <label>Tags</label>
                 <input type="text" name="system.tags" value="{{system.tags}}"/>
@@ -159,7 +206,7 @@
             {{else}}
             <div class="flexrow">
                 <label>Cost</label>
-                <input type="number" name="system.cost" value="{{system.cost}}" {{#if system.calculator.enabled}}disabled{{/if}}/>
+                <input type="number" name="system.cost" value="{{system.cost}}" {{#if system.calculator.enabled}}disabled="disabled"{{/if}}/>
             </div>
             <div class="flexrow">
                 <label>Resource</label>

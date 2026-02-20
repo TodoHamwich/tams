@@ -27,7 +27,8 @@
       "description": "",
       "behindMult": 0.5,
       "settings": {
-        "alternateArmour": false
+        "alternateArmour": false,
+        "enabledCurrencies": {}
       },
       "upgradePoints": {
         "stats": 0,
@@ -39,14 +40,17 @@
         "dodge": { "value": 0 },
         "retaliation": { "value": 0 },
         "perception": { "value": 0 }
-      }
+      },
+      "currencies": {}
     }
   },
   "Item": {
-    "types": ["weapon", "skill", "ability", "equipment"],
+    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "questItem", "backpack"],
     "weapon": {
       "familiarity": 0,
       "equipped": false,
+      "size": "medium",
+      "location": "hand",
       "isHeavy": false,
       "isTwoHanded": false,
       "isLight": false,
@@ -117,13 +121,62 @@
     },
     "equipment": {
       "quantity": 1,
-      "weight": 0,
-      "carried": true,
+      "size": "small",
+      "location": "stowed",
+      "tags": "",
+      "description": ""
+    },
+    "armor": {
+      "quantity": 1,
+      "size": "large",
+      "location": "stowed",
       "equipped": false,
-      "isArmor": false,
-      "armorValue": 0,
-      "armorMax": 0,
-      "limb": "none",
+      "limbs": {
+        "head": { "value": 0, "max": 0 },
+        "thorax": { "value": 0, "max": 0 },
+        "stomach": { "value": 0, "max": 0 },
+        "leftArm": { "value": 0, "max": 0 },
+        "rightArm": { "value": 0, "max": 0 },
+        "leftLeg": { "value": 0, "max": 0 },
+        "rightLeg": { "value": 0, "max": 0 }
+      },
+      "tags": "",
+      "description": ""
+    },
+    "consumable": {
+      "quantity": 1,
+      "size": "small",
+      "location": "stowed",
+      "uses": { "value": 0, "max": 0 },
+      "tags": "",
+      "description": ""
+    },
+    "tool": {
+      "quantity": 1,
+      "size": "medium",
+      "location": "stowed",
+      "tags": "",
+      "description": ""
+    },
+    "questItem": {
+      "quantity": 1,
+      "size": "small",
+      "location": "stowed",
+      "tags": "",
+      "description": ""
+    },
+    "backpack": {
+      "equipped": false,
+      "capacity": 100,
+      "modifier": 0.5,
+      "penalties": {
+        "active": false,
+        "strength": 0,
+        "dexterity": 0,
+        "dodge": 0,
+        "attack": 0,
+        "movement": 0
+      },
       "tags": "",
       "description": ""
     }

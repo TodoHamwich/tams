@@ -29,13 +29,19 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         bravery: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatBravery"}})
       }),
       limbs: new fields.SchemaField({
-        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Thorax"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Stomach"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) }),
-        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}) })
+        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Thorax"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Stomach"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) })
+      }),
+      inventory: new fields.SchemaField({
+        usedCapacity: new fields.NumberField({initial: 0}),
+        maxCapacity: new fields.NumberField({initial: 0}),
+        isEncumbered: new fields.BooleanField({initial: false}),
+        equippedBackpackId: new fields.StringField({initial: ""})
       }),
       hp: new fields.SchemaField({
         value: new fields.NumberField({initial: 0}),
@@ -62,7 +68,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       description: new fields.HTMLField({initial: ""}),
       behindMult: new fields.NumberField({initial: 0.5, min: 0, step: 0.05}),
       settings: new fields.SchemaField({
-        alternateArmour: new fields.BooleanField({initial: false})
+        alternateArmour: new fields.BooleanField({initial: false}),
+        enabledCurrencies: new fields.ObjectField({initial: {}})
       }),
       upgradePoints: new fields.SchemaField({
         stats: new fields.NumberField({initial: 0}),
@@ -74,7 +81,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         dodge: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
         retaliation: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
         perception: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) })
-      })
+      }),
+      currencies: new fields.ObjectField({initial: {}})
     };
   }
 
@@ -88,11 +96,25 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       limb.max = Math.floor(end * limb.mult);
     }
 
-    // 2) Use base manual armor (Inventory mechanics disabled for now)
+    // 2) Armor Application from items
+    const actor = this.parent;
     for (const [lk, limb] of Object.entries(this.limbs)) {
-      limb.armor = this._source.limbs[lk]?.armor || 0;
-      limb.armorMax = this._source.limbs[lk]?.armorMax || 0;
       limb.hasEquippedArmor = false;
+      if (limb.equippedArmorId && actor) {
+        const item = actor.items.get(limb.equippedArmorId);
+        if (item && item.type === 'armor') {
+          limb.armor = item.system.limbs[lk]?.value || 0;
+          limb.armorMax = item.system.limbs[lk]?.max || 0;
+          limb.hasEquippedArmor = true;
+        } else {
+            // Fallback to manual if item missing or wrong type
+            limb.armor = this._source.limbs[lk]?.armor || 0;
+            limb.armorMax = this._source.limbs[lk]?.armorMax || 0;
+        }
+      } else {
+          limb.armor = this._source.limbs[lk]?.armor || 0;
+          limb.armorMax = this._source.limbs[lk]?.armorMax || 0;
+      }
 
       limb.armor = Math.clamp(limb.armor, 0, 40);
       limb.armorMax = Math.clamp(limb.armorMax, 0, 40);
@@ -110,6 +132,88 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       res.max = Math.floor((statValue * res.mult) + res.bonus);
       res.value = Math.clamp(res.value, 0, res.max);
     }
+
+    // 3) Capacity Calculation & Backpack Penalties
+    const sizeMap = { "small": 1, "medium": 10, "large": 100 };
+    let backpackEfficiency = 0.5; 
+    let hasBackpack = false;
+    let backpackItem = null;
+
+    if (actor && actor.items) {
+      backpackItem = actor.items.find(i => i.type === 'backpack' && i.system.equipped);
+      if (backpackItem) {
+          hasBackpack = true;
+          backpackEfficiency = backpackItem.system.modifier ?? 0.5;
+          
+          // Apply Penalties if active
+          if (backpackItem.system.penalties?.active) {
+              const p = backpackItem.system.penalties;
+              this.stats.strength.mod += (p.strength || 0);
+              this.stats.dexterity.mod += (p.dexterity || 0);
+              // Dodge and Attack penalties will need to be handled in the roll logic or as generic mods if we had them.
+              // For now we can store them on the actor for the roll logic to find.
+              this.backpackPenalties = {
+                  dodge: p.dodge || 0,
+                  attack: p.attack || 0,
+                  movement: p.movement || 0
+              };
+          }
+      }
+    }
+    this.inventory.hasBackpack = hasBackpack;
+
+    let usedUnits = 0;
+
+    // Currency Weight
+    if (typeof game !== "undefined" && game.settings) {
+        try {
+            const currencySettingsRaw = game.settings.get("tams", "currencies") || "";
+            let currencyNames = [];
+            if (currencySettingsRaw.trim().startsWith("[")) {
+                try {
+                    const old = JSON.parse(currencySettingsRaw);
+                    currencyNames = old.map(c => c.name);
+                } catch(e) {
+                    currencyNames = currencySettingsRaw.split(",").map(s => s.trim()).filter(s => s);
+                }
+            } else {
+                currencyNames = currencySettingsRaw.split(",").map(s => s.trim()).filter(s => s);
+            }
+
+            const enabled = this.settings.enabledCurrencies || {};
+            for (const name of currencyNames) {
+                if (enabled[name] === false) continue;
+                const amount = this.currencies[name] || 0;
+                const weightUnitsPerSmall = 100;
+                usedUnits += (amount / weightUnitsPerSmall);
+            }
+        } catch (e) {
+            console.warn("TAMS | Failed to calculate currency weight", e);
+        }
+    }
+
+    if (actor && actor.items) {
+      for (const item of actor.items) {
+        if (!["weapon", "equipment", "armor", "consumable", "tool", "questItem", "backpack"].includes(item.type)) continue;
+        
+        const system = item.system;
+        if (system.location === "hand") continue; // Held in hand doesn't count
+
+        let itemSize = sizeMap[system.size] || 10; // Default Medium
+        if (system.location === "backpack") {
+            if (hasBackpack) itemSize *= backpackEfficiency;
+            else itemSize = 0; // Not carried if backpack is removed
+        }
+
+        usedUnits += (itemSize * (system.quantity || 1));
+      }
+    }
+
+    this.inventory.usedCapacity = usedUnits;
+    const baseCapacity = Math.max(0, Math.floor(end / 10)) * 100;
+    const backpackExtra = (hasBackpack && backpackItem) ? ((backpackItem.system.capacity || 0) * 10) : 0;
+    this.inventory.maxCapacity = baseCapacity + backpackExtra;
+    this.inventory.isEncumbered = this.inventory.usedCapacity > this.inventory.maxCapacity;
   }
 }
 
@@ -118,6 +222,9 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({initial: 0, nullable: true}),
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      size: new fields.StringField({initial: "medium"}),
+      location: new fields.StringField({initial: "hand"}),
       equipped: new fields.BooleanField({initial: false}),
       isHeavy: new fields.BooleanField({initial: false}),
       isTwoHanded: new fields.BooleanField({initial: false}),
@@ -168,14 +275,99 @@ class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0, nullable: true}),
-      weight: new fields.NumberField({initial: 0, step: 0.1, min: 0, nullable: true}),
-      carried: new fields.BooleanField({initial: true}),
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      size: new fields.StringField({initial: "small"}),
+      location: new fields.StringField({initial: "stowed"}),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+class TAMSArmorData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      size: new fields.StringField({initial: "large"}),
+      location: new fields.StringField({initial: "stowed"}),
       equipped: new fields.BooleanField({initial: false}),
-      isArmor: new fields.BooleanField({initial: false}),
-      armorValue: new fields.NumberField({initial: 0, integer: true, min: 0, nullable: true}),
-      armorMax: new fields.NumberField({initial: 0, integer: true, min: 0, nullable: true}),
-      limb: new fields.StringField({initial: "none"}),
+      limbs: new fields.SchemaField({
+        head: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) })
+      }),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+class TAMSConsumableData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      size: new fields.StringField({initial: "small"}),
+      location: new fields.StringField({initial: "stowed"}),
+      uses: new fields.SchemaField({
+        value: new fields.NumberField({initial: 0}),
+        max: new fields.NumberField({initial: 0})
+      }),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+class TAMSToolData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      size: new fields.StringField({initial: "medium"}),
+      location: new fields.StringField({initial: "stowed"}),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+class TAMSQuestItemData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      size: new fields.StringField({initial: "small"}),
+      location: new fields.StringField({initial: "stowed"}),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+class TAMSBackpackData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      size: new fields.StringField({initial: "medium"}),
+      location: new fields.StringField({initial: "stowed"}),
+      equipped: new fields.BooleanField({initial: false}),
+      capacity: new fields.NumberField({initial: 10, integer: true, min: 0}),
+      modifier: new fields.NumberField({initial: 0.5, step: 0.1, min: 0}),
+      penalties: new fields.SchemaField({
+        active: new fields.BooleanField({initial: false}),
+        strength: new fields.NumberField({initial: 0, integer: true}),
+        dexterity: new fields.NumberField({initial: 0, integer: true}),
+        dodge: new fields.NumberField({initial: 0, integer: true}),
+        attack: new fields.NumberField({initial: 0, integer: true}),
+        movement: new fields.NumberField({initial: 0, integer: true})
+      }),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -371,7 +563,13 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
  * Documents
  */
 class TAMSActor extends Actor {}
-class TAMSItem extends Item {}
+class TAMSItem extends Item {
+  static get metadata() {
+    return foundry.utils.mergeObject(super.metadata, {
+      types: ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "questItem", "backpack"]
+    }, {inplace: false});
+  }
+}
 
 /**
  * Sheets
@@ -479,43 +677,101 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const skills = [];
     const abilities = [];
     const inventoryArmor = [];
+    const inventoryConsumables = [];
+    const inventoryTools = [];
+    const inventoryQuestItems = [];
     const inventoryMisc = [];
     const inventoryWeapons = [];
-
-    let carryWeight = 0;
+    const inventoryBackpacks = [];
+    
+    const hasBackpack = !!this.document.system.inventory.hasBackpack;
 
     for (let i of this.document.items) {
+      const isGreyedOut = (i.system.location === 'backpack' && !hasBackpack);
+      const itemData = {
+          id: i.id,
+          name: i.name,
+          img: i.img,
+          system: i.system,
+          type: i.type,
+          isGreyedOut: isGreyedOut
+      };
+
       if (i.type === 'weapon') {
-        weapons.push(i);
-        if (i.system.equipped) equippedWeapons.push(i);
-        else inventoryWeapons.push(i);
+        weapons.push(itemData);
+        if (i.system.equipped) equippedWeapons.push(itemData);
+        else inventoryWeapons.push(itemData);
       }
-      else if (i.type === 'skill') skills.push(i);
-      else if (i.type === 'ability') abilities.push(i);
-      else if (i.type === 'equipment') {
-        if (i.system.isArmor) inventoryArmor.push(i);
-        else inventoryMisc.push(i);
-        
-        const qty = Number(i.system.quantity ?? 1) || 0;
-        const wgt = Number(i.system.weight ?? 0) || 0;
-        const carried = !!i.system.carried;
-        if (carried) carryWeight += qty * wgt;
-      }
+      else if (i.type === 'skill') skills.push(itemData);
+      else if (i.type === 'ability') abilities.push(itemData);
+      else if (i.type === 'armor') inventoryArmor.push(itemData);
+      else if (i.type === 'consumable') inventoryConsumables.push(itemData);
+      else if (i.type === 'tool') inventoryTools.push(itemData);
+      else if (i.type === 'questItem') inventoryQuestItems.push(itemData);
+      else if (i.type === 'backpack') inventoryBackpacks.push(itemData);
+      else if (i.type === 'equipment') inventoryMisc.push(itemData);
     }
 
-    const end = this.document.system.stats.endurance.total || 0;
-    const carryCapacity = Math.max(0, Math.floor(end * 5));
-
-    context.weapons = weapons; // Revert to show all weapons
+    context.weapons = weapons;
     context.inventoryWeapons = inventoryWeapons;
     context.inventoryArmor = inventoryArmor;
+    context.inventoryConsumables = inventoryConsumables;
+    context.inventoryTools = inventoryTools;
+    context.inventoryQuestItems = inventoryQuestItems;
+    context.inventoryBackpacks = inventoryBackpacks;
     context.inventoryMisc = inventoryMisc;
     context.allWeapons = weapons;
     context.skills = skills;
     context.abilities = abilities;
-    context.carryWeight = 0; // Disabled
-    context.carryCapacity = carryCapacity;
-    context.encumbered = false; // Disabled
+    
+    context.inventory = {
+        ...this.document.system.inventory,
+        usedMedium: (this.document.system.inventory.usedCapacity / 10).toFixed(1).replace(/\.0$/, ""),
+        maxMedium: (this.document.system.inventory.maxCapacity / 10).toFixed(1).replace(/\.0$/, "")
+    };
+    context.capacityPercentage = Math.clamp((this.document.system.inventory.usedCapacity / (this.document.system.inventory.maxCapacity || 1)) * 100, 0, 100);
+
+    // Options for selects
+    context.sizeOptions = { "small": "Small", "medium": "Medium", "large": "Large" };
+    context.locationOptions = { "stowed": "Stowed", "backpack": "Backpack", "hand": "In Hand" };
+    
+    // Currencies
+    const currencySettingsRaw = game.settings.get("tams", "currencies") || "";
+    let currencyNames = [];
+    if (currencySettingsRaw.trim().startsWith("[")) {
+        try {
+            const old = JSON.parse(currencySettingsRaw);
+            currencyNames = old.map(c => c.name);
+        } catch(e) {
+            currencyNames = currencySettingsRaw.split(",").map(s => s.trim()).filter(s => s);
+        }
+    } else {
+        currencyNames = currencySettingsRaw.split(",").map(s => s.trim()).filter(s => s);
+    }
+
+    const enabledCurrencies = this.document.system.settings.enabledCurrencies || {};
+    
+    context.allCurrencyNames = currencyNames;
+    context.currencies = currencyNames.map(name => {
+        return {
+            name: name,
+            value: this.document.system.currencies[name] || 0,
+            enabled: enabledCurrencies[name] !== false
+        };
+    });
+
+    // Armor options per limb
+    const allArmorItems = inventoryArmor.map(a => ({ id: a.id, name: a.name, limbs: a.system.limbs }));
+    context.limbArmorOptions = {};
+    for (const limbKey of Object.keys(this.document.system.limbs)) {
+        context.limbArmorOptions[limbKey] = { "": "None" };
+        for (const armor of allArmorItems) {
+            if (armor.limbs[limbKey]?.max > 0) {
+                context.limbArmorOptions[limbKey][armor.id] = armor.name;
+            }
+        }
+    }
+
 
     return context;
   }
@@ -682,7 +938,19 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const rawResult = roll.total;
     const effectiveStat = statValue + statMod;
     const cappedResult = Math.min(rawResult, effectiveStat);
-    const bonus = parseInt(item?.system?.bonus) || 0;
+    let bonus = parseInt(item?.system?.bonus) || 0;
+    
+    // Apply Backpack penalties
+    const backpackPen = this.document.system.backpackPenalties;
+    if (backpackPen) {
+        if (item && (item.type === 'weapon' || item.system.isAttack)) {
+            bonus += (backpackPen.attack || 0);
+        }
+        if (dataset.statId === 'dodge') {
+            bonus += (backpackPen.dodge || 0);
+        }
+    }
+
     const finalTotal = cappedResult + familiarity + bonus;
 
     let critInfo = "";
@@ -1030,6 +1298,8 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       "leftLeg": "Left Leg",
       "rightLeg": "Right Leg"
     };
+    context.sizeOptions = { "small": "Small", "medium": "Medium", "large": "Large" };
+    context.locationOptions = { "stowed": "Stowed", "backpack": "Backpack", "hand": "In Hand" };
 
     if (this.document.type === 'ability') {
         const resources = { "stamina": "Stamina" };
@@ -1111,11 +1381,26 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
 Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
 
+  // Register System Settings
+  game.settings.register("tams", "currencies", {
+    name: "Currencies",
+    hint: "Define currencies (comma-separated list, e.g. Gold, Silver, Copper).",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "Gold, Silver, Copper"
+  });
+
   CONFIG.Actor.dataModels.character = TAMSCharacterData;
   CONFIG.Item.dataModels.weapon = TAMSWeaponData;
   CONFIG.Item.dataModels.skill = TAMSSkillData;
   CONFIG.Item.dataModels.ability = TAMSAbilityData;
   CONFIG.Item.dataModels.equipment = TAMSEquipmentData;
+  CONFIG.Item.dataModels.armor = TAMSArmorData;
+  CONFIG.Item.dataModels.consumable = TAMSConsumableData;
+  CONFIG.Item.dataModels.tool = TAMSToolData;
+  CONFIG.Item.dataModels.questItem = TAMSQuestItemData;
+  CONFIG.Item.dataModels.backpack = TAMSBackpackData;
 
   // v12: Ensure types are also in systemDataModels if needed
   CONFIG.Item.systemDataModels = CONFIG.Item.dataModels;

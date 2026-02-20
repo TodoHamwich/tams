@@ -476,7 +476,7 @@
 }
 
 .tams .sheet-tabs {
-    flex: 0 0 32px;
+    flex: 0 0 36px;
     border-top: 1px solid #AAA;
     border-bottom: 1px solid #AAA;
     margin: 5px 0;
@@ -485,11 +485,17 @@
 }
 
 .tams .sheet-tabs .item {
-    line-height: 32px;
-    padding: 0 10px;
+    flex: 1;
+    line-height: 36px;
+    padding: 0;
     border-right: 1px solid #AAA;
-    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
     transition: all 0.2s ease;
+}
+
+.tams .sheet-tabs .item:last-child {
+    border-right: none;
 }
 
 .tams .sheet-tabs .item:hover {
@@ -501,14 +507,6 @@
     background: rgba(255,0,0,0.2);
     text-shadow: 0 0 10px red;
     border-bottom: 2px solid red;
-}
-
-.tams .sheet-tabs .item[data-tab="settings"] {
-    flex: 0 0 40px;
-    padding: 0;
-    text-align: center;
-    border-right: none;
-    margin-left: auto;
 }
 
 .tams .items-list {
@@ -529,6 +527,22 @@
 
 .tams .item:hover {
     background: rgba(255,0,0,0.05);
+}
+
+.tams .item.greyed-out {
+    opacity: 0.5;
+    background: rgba(0,0,0,0.1);
+    pointer-events: none;
+    filter: grayscale(100%);
+}
+
+.tams .item.greyed-out:hover {
+    background: rgba(0,0,0,0.1);
+}
+
+.tams .item.greyed-out select, 
+.tams .item.greyed-out input {
+    cursor: not-allowed;
 }
 
 .tams .item-name {
@@ -571,6 +585,146 @@
 .tams .item-controls {
     flex: 0 0 60px;
     text-align: right;
+}
+
+/* Inventory Styles */
+.tams .inventory-section-header {
+    background: #4a0000;
+    color: white;
+    padding: 2px 8px;
+    margin: 10px 0 5px 0;
+    font-family: 'MedievalSharp', serif;
+    font-size: 1.1em;
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tams .inventory-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.tams .inventory-controls a,
+.tams [data-action="resourceAdd"],
+.tams .tab.abilities [data-action="itemCreate"] {
+    font-size: 0.8em;
+    background: #7a7971;
+    color: white !important;
+    padding: 2px 8px;
+    border-radius: 3px;
+    text-decoration: none !important;
+    border: 1px solid #555;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.tams .inventory-controls a:hover,
+.tams [data-action="resourceAdd"]:hover,
+.tams .tab.abilities [data-action="itemCreate"]:hover {
+    background: #8b0000;
+    color: white !important;
+}
+
+.tams .tab.inventory.active {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.tams .inventory-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+    margin-bottom: 5px;
+    position: relative;
+}
+
+.tams .inventory-scroll .item-header {
+    font-weight: bold;
+    border-bottom: 1px solid #7a7971;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #e0e0e0;
+}
+
+.tams.theme-dark .inventory-scroll .item-header {
+    background: #2b2b2b;
+}
+
+.tams.theme-parchment .inventory-scroll .item-header {
+    background: #f4e1d2;
+}
+
+.tams .carry-weight {
+    flex: 0 0 auto;
+    padding: 5px;
+    background: rgba(0,0,0,0.05);
+    border-bottom: 1px solid #7a7971;
+    margin-bottom: 5px;
+}
+
+.tams .carry-weight .encumbered {
+    color: #c62828;
+    font-weight: bold;
+    font-size: 0.8em;
+    margin-left: 10px;
+}
+
+.tams .currency-footer {
+    flex: 0 0 auto;
+    border-top: 2px solid #7a7971;
+    padding: 5px;
+    background: rgba(0,0,0,0.05);
+}
+
+.tams .backpack-slot-container {
+    background: rgba(0,0,0,0.02);
+}
+
+.tams .equipped-backpack {
+    background: rgba(46, 125, 50, 0.05) !important;
+    border-left: 4px solid #2e7d32 !important;
+}
+
+.tams .no-backpacks {
+    background: rgba(198, 40, 40, 0.05);
+    border: 1px dashed #c62828;
+    border-radius: 4px;
+    margin: 5px;
+}
+
+.tams select {
+    background: #fff;
+    color: #000;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 2px;
+    padding: 1px 3px;
+}
+
+.tams.theme-dark select {
+    background: #444;
+    color: #fff;
+    border-color: #666;
+}
+
+.tams.theme-dark select option {
+    background: #2b2b2b;
+    color: #fff;
+}
+
+.tams.theme-parchment select {
+    background: #fdf6e3;
+    color: #5c3b1e;
+    border-color: #d4a373;
+}
+
+.tams.theme-parchment select option {
+    background: #fdf6e3;
+    color: #5c3b1e;
 }
 
 .tams textarea {

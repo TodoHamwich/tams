@@ -14,5 +14,10 @@
   "TYPES.Item.weapon": "Weapon",
   "TYPES.Item.skill": "Skill",
   "TYPES.Item.ability": "Ability",
-  "TYPES.Item.equipment": "Equipment"
+  "TYPES.Item.equipment": "Equipment",
+  "TYPES.Item.armor": "Armor",
+  "TYPES.Item.consumable": "Consumable",
+  "TYPES.Item.tool": "Tool",
+  "TYPES.Item.questItem": "Quest Item",
+  "TYPES.Item.backpack": "Backpack"
 }
