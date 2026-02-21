@@ -911,10 +911,37 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
                 const idx = parseInt(resourceKey);
                 const res = this.document.system.customResources[idx];
                 if (res) {
-                    if (res.value < cost) return ui.notifications.warn(`Not enough ${res.name}!`);
-                    const resources = foundry.utils.duplicate(this.document.system.customResources);
-                    resources[idx].value -= cost;
-                    await this.document.update({"system.customResources": resources});
+                    if (res.value < cost) {
+                        const remaining = cost - res.value;
+                        const stamina = this.document.system.stamina.value;
+                        if (stamina < remaining) return ui.notifications.warn(`Not enough ${res.name} or Stamina to cover the cost!`);
+                        
+                        const useBoth = await new Promise(resolve => {
+                            new Dialog({
+                                title: "Insufficient Resources",
+                                content: `<p>You only have ${res.value} ${res.name}. Spend ${res.value} ${res.name} and ${remaining} Stamina to use this ability?</p>`,
+                                buttons: {
+                                    yes: { label: "Yes", callback: () => resolve(true) },
+                                    no: { label: "No", callback: () => resolve(false) }
+                                },
+                                default: "yes",
+                                close: () => resolve(false)
+                            }).render(true);
+                        });
+                        
+                        if (!useBoth) return;
+
+                        const resources = foundry.utils.duplicate(this.document.system.customResources);
+                        resources[idx].value = 0;
+                        await this.document.update({
+                            "system.customResources": resources,
+                            "system.stamina.value": stamina - remaining
+                        });
+                    } else {
+                        const resources = foundry.utils.duplicate(this.document.system.customResources);
+                        resources[idx].value -= cost;
+                        await this.document.update({"system.customResources": resources});
+                    }
                 }
             }
         }
@@ -2034,10 +2061,37 @@ Hooks.on("renderChatMessageHTML", (message, html, data) => {
                 const idx = parseInt(resourceKey);
                 const res = actor.system.customResources[idx];
                 if (res) {
-                    if (res.value < cost) return ui.notifications.warn(`Not enough ${res.name}!`);
-                    const resources = foundry.utils.duplicate(actor.system.customResources);
-                    resources[idx].value -= cost;
-                    await actor.update({"system.customResources": resources});
+                    if (res.value < cost) {
+                        const remaining = cost - res.value;
+                        const stamina = actor.system.stamina.value;
+                        if (stamina < remaining) return ui.notifications.warn(`Not enough ${res.name} or Stamina to cover the cost!`);
+                        
+                        const useBoth = await new Promise(resolve => {
+                            new Dialog({
+                                title: "Insufficient Resources",
+                                content: `<p>You only have ${res.value} ${res.name}. Spend ${res.value} ${res.name} and ${remaining} Stamina to use this ability?</p>`,
+                                buttons: {
+                                    yes: { label: "Yes", callback: () => resolve(true) },
+                                    no: { label: "No", callback: () => resolve(false) }
+                                },
+                                default: "yes",
+                                close: () => resolve(false)
+                            }).render(true);
+                        });
+                        
+                        if (!useBoth) return;
+
+                        const resources = foundry.utils.duplicate(actor.system.customResources);
+                        resources[idx].value = 0;
+                        await actor.update({
+                            "system.customResources": resources,
+                            "system.stamina.value": stamina - remaining
+                        });
+                    } else {
+                        const resources = foundry.utils.duplicate(actor.system.customResources);
+                        resources[idx].value -= cost;
+                        await actor.update({"system.customResources": resources});
+                    }
                 }
             }
         }
