@@ -598,7 +598,9 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
   /** @override */
   get title() {
-    return this.document.name;
+    const actor = this.document;
+    const isUnlinkedToken = actor.isToken && !actor.token?.actorLink;
+    return isUnlinkedToken ? `[Token] ${actor.name}` : actor.name;
   }
 
   static PARTS = {
