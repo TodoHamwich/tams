@@ -28,6 +28,7 @@
       "behindMult": 0.5,
       "settings": {
         "alternateArmour": false,
+        "isNPC": false,
         "enabledCurrencies": {}
       },
       "upgradePoints": {

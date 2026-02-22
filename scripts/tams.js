@@ -69,6 +69,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       behindMult: new fields.NumberField({initial: 0.5, min: 0, step: 0.05}),
       settings: new fields.SchemaField({
         alternateArmour: new fields.BooleanField({initial: false}),
+        isNPC: new fields.BooleanField({initial: false}),
         enabledCurrencies: new fields.ObjectField({initial: {}})
       }),
       upgradePoints: new fields.SchemaField({
@@ -1146,29 +1147,34 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         const targets = isAoE ? [...game.user.targets] : (tToken ? [tToken] : []);
 
         if (targets.length > 0) {
+            let hitLocation;
+            if (item.type === 'ability' && item.system.calculator?.enabled && item.system.calculator?.targetLimb && item.system.calculator.targetLimb !== 'none') {
+                const limbKey = item.system.calculator.targetLimb;
+                const limbOptions = {
+                    "head": "Head",
+                    "thorax": "Thorax",
+                    "stomach": "Stomach",
+                    "leftArm": "Left Arm",
+                    "rightArm": "Right Arm",
+                    "leftLeg": "Left Leg",
+                    "rightLeg": "Right Leg"
+                };
+                hitLocation = limbOptions[limbKey] || "Thorax";
+            } else {
+                hitLocation = await getHitLocation(rawResult);
+            }
+
+            const pcs = targets.filter(t => !t.actor?.system?.settings?.isNPC);
+            const npcs = targets.filter(t => !!t.actor?.system?.settings?.isNPC);
+
             damageInfo = `<div class="tams-targets-container">`;
-            for (const targetToken of targets) {
+
+            // Process PCs
+            for (const targetToken of pcs) {
                 const targetActor = targetToken.actor;
                 const targetName = targetToken.name;
                 const targetTokenId = targetToken.id;
                 const targetActorId = targetActor?.id;
-
-                let hitLocation;
-                if (item.type === 'ability' && item.system.calculator?.enabled && item.system.calculator?.targetLimb && item.system.calculator.targetLimb !== 'none') {
-                    const limbKey = item.system.calculator.targetLimb;
-                    const limbOptions = {
-                        "head": "Head",
-                        "thorax": "Thorax",
-                        "stomach": "Stomach",
-                        "leftArm": "Left Arm",
-                        "rightArm": "Right Arm",
-                        "leftLeg": "Left Leg",
-                        "rightLeg": "Right Leg"
-                    };
-                    hitLocation = limbOptions[limbKey] || "Thorax";
-                } else {
-                    hitLocation = await getHitLocation(rawResult);
-                }
 
                 damageInfo += `
                     <div class="tams-target-block" style="border: 1px solid #7a7971; padding: 5px; margin-bottom: 5px; background: rgba(0,0,0,0.05);">
@@ -1212,6 +1218,45 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
                     </div>
                 `;
             }
+
+            // Process NPCs grouped
+            if (npcs.length > 0) {
+                damageInfo += `
+                    <div class="tams-npc-group" style="border: 1px solid #7a7971; padding: 5px; margin-top: 5px; background: rgba(0,0,0,0.1);">
+                        <div class="roll-row" style="border-bottom: 1px solid #7a7971; margin-bottom: 3px;"><b>--- NPCs ---</b></div>
+                        <div class="roll-row" style="font-size: 0.9em;"><b>Dmg: ${damage} | Loc: ${hitLocation} | Hits: ${multiVal}</b></div>
+                        <div class="tams-npc-list" style="display: flex; flex-direction: column; gap: 2px; margin-top: 4px;">
+                `;
+                for (const targetToken of npcs) {
+                    const targetActor = targetToken.actor;
+                    const targetName = targetToken.name;
+                    const targetTokenId = targetToken.id;
+                    const targetActorId = targetActor?.id;
+                    damageInfo += `
+                        <div class="tams-npc-row" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.2); padding: 1px 4px; border-radius: 2px;">
+                            <span style="font-weight: bold; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;" title="${targetName}">${targetName}</span>
+                            <div class="tams-npc-buttons" style="display: flex; gap: 2px;">
+                                <button class="tams-take-damage" title="Apply Damage"
+                                        data-damage="${damage}" data-armour-pen="${armourPen}" data-location="${hitLocation}" data-target-limb="${targetLimb}"
+                                        data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}" 
+                                        style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
+                                <button class="tams-dodge" title="Dodge"
+                                        data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                        data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
+                                        style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">D</button>
+                                <button class="tams-retaliate" title="Retaliate"
+                                        data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                        data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
+                                        style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
+                                <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
+                                <button class="tams-unaware-toggle" title="Unaware" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">U</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                damageInfo += `</div></div>`;
+            }
+
             damageInfo += `</div>`;
         } else {
             // No tokens targeted, just show damage info without buttons or with generic ones if possible
@@ -1646,14 +1691,12 @@ Hooks.on("renderChatMessage", (message, html, data) => {
     
     // Style toggle buttons based on current container state
     root.querySelectorAll('.tams-roll').forEach(container => {
-        const behindBtn = container.querySelector('.tams-behind-toggle');
-        if (behindBtn) {
-            behindBtn.style.background = container.classList.contains("behind-attack") ? "#2e7d32" : "#444";
-        }
-        const unawareBtn = container.querySelector('.tams-unaware-toggle');
-        if (unawareBtn) {
-            unawareBtn.style.background = container.classList.contains("unaware-defender") ? "#2e7d32" : "#444";
-        }
+        container.querySelectorAll('.tams-behind-toggle').forEach(btn => {
+            btn.style.background = container.classList.contains("behind-attack") ? "#2e7d32" : "#444";
+        });
+        container.querySelectorAll('.tams-unaware-toggle').forEach(btn => {
+            btn.style.background = container.classList.contains("unaware-defender") ? "#2e7d32" : "#444";
+        });
     });
 
     root.querySelectorAll(".tams-take-damage").forEach(el => el.addEventListener("click", async ev => {

@@ -9,7 +9,10 @@
             </div>
         </div>
         <div class="header-details">
-            <h1 class="charname"><input name="name" type="text" value="{{document.name}}" placeholder="Name"/></h1>
+            <h1 class="charname">
+                {{#if system.settings.isNPC}}<span class="npc-tag" style="background: #444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.5em; vertical-align: middle; margin-right: 5px;">NPC</span>{{/if}}
+                <input name="name" type="text" value="{{document.name}}" placeholder="Name"/>
+            </h1>
             <div class="header-row">
                 <div class="physical-notes">
                     <label>Physical Notes</label>
@@ -627,6 +630,10 @@
                 <div class="form-group flexrow" style="margin-bottom: 10px;">
                     <label>Alternate Armour</label>
                     <input type="checkbox" name="system.settings.alternateArmour" {{checked system.settings.alternateArmour}}/>
+                </div>
+                <div class="form-group flexrow" style="margin-bottom: 10px;">
+                    <label>Is NPC?</label>
+                    <input type="checkbox" name="system.settings.isNPC" {{checked system.settings.isNPC}}/>
                 </div>
                 <p class="notes" style="margin-bottom: 15px; font-size: 0.9em; color: #666; font-style: italic; border: 1px solid #ccc; padding: 5px; border-radius: 4px; background: rgba(0,0,0,0.05);">
                     <b>Alternate Armour:</b> When enabled, Armour value remains constant. Instead, every hit reduces Armour Max (HP) by 1. When Armour Max reaches 0, the armour no longer provides protection.
