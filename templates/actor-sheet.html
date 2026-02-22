@@ -81,7 +81,7 @@
                     {{!-- Total HP Resource --}}
                     <div class="resource-item hp flexcol" style="border-bottom: 2px solid #7a7971; margin-bottom: 10px; padding-bottom: 5px;">
                         <div class="flexrow">
-                            <label class="resource-label">Total HP</label>
+                            <label class="resource-label">Total HP {{#if (or (eq system.settings.npcType 'squad') (eq system.settings.npcType 'horde'))}}(Size: {{system.settings.squadSize}}){{/if}}</label>
                             <div class="bar-container">
                                 <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled/>
                                 <div class="bar">

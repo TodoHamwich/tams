@@ -95,8 +95,14 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     let totalMaxHp = 0;
 
     // 1) Recompute max
+    const settings = this.settings;
+    const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
+    const squadSize = settings.squadSize || 1;
+
     for (const limb of Object.values(this.limbs)) {
-      limb.max = Math.floor(end * limb.mult);
+      const individualMax = Math.floor(end * limb.mult);
+      limb.max = isSquadOrHorde ? (individualMax * squadSize) : individualMax;
+      limb.individualMax = individualMax;
     }
 
     // 2) Armor Application from items
@@ -121,6 +127,11 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
 
       limb.armor = Math.clamp(limb.armor, 0, 40);
       limb.armorMax = Math.clamp(limb.armorMax, 0, 40);
+
+      if (isSquadOrHorde) {
+        limb.value = Math.min(limb.value, limb.max);
+      }
+
       totalHp += limb.value;
       totalMaxHp += limb.max;
     }
@@ -1222,6 +1233,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
                                   data-armour-pen="${armourPen}" 
                                   data-location="${hitLocation}" 
                                   data-target-limb="${targetLimb}"
+                                  data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-target-token-id="${targetTokenId || ''}"
                                   data-target-actor-id="${targetActorId || ''}">Apply Damage</button>
                           <button class="tams-dodge" 
@@ -1272,6 +1284,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
                             <div class="tams-npc-buttons" style="display: flex; gap: 2px;">
                                 <button class="tams-take-damage" title="Apply Damage"
                                         data-damage="${damage}" data-armour-pen="${armourPen}" data-location="${hitLocation}" data-target-limb="${targetLimb}"
+                                        data-is-aoe="${isAoE ? '1' : '0'}"
                                         data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}" 
                                         style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
                                 <button class="tams-dodge" title="Dodge"
@@ -1770,7 +1783,17 @@ Hooks.on("renderChatMessage", (message, html, data) => {
         "Left Leg": "leftLeg", "Right Leg": "rightLeg"
       };
 
-      let dialogContent = `<p>Applying <b>${locations.length}</b> hits to <b>${target.name}</b>:</p>`;
+      const isAoEHit = btn.dataset.isAoe === '1';
+      const isSquadOrHorde = target.system.settings?.isNPC && (target.system.settings.npcType === "squad" || target.system.settings.npcType === "horde");
+      let aoeMultiplier = 1;
+      let squadNote = "";
+      if (isAoEHit && isSquadOrHorde) {
+          aoeMultiplier = target.system.settings.npcType === "squad" ? 2 : 4;
+          squadNote = `<p style="color: #d35400; font-size: 0.9em;"><i>AoE vs ${target.system.settings.npcType.toUpperCase()}: Damage x${aoeMultiplier}</i></p>`;
+      }
+      const defaultDmg = damageBase * aoeMultiplier;
+
+      let dialogContent = `<p>Applying <b>${locations.length}</b> hits to <b>${target.name}</b>:</p>${squadNote}`;
       locations.forEach((loc, i) => {
           const limbKey = locationMap[loc];
           const limb = target.system.limbs[limbKey];
@@ -1780,7 +1803,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
             <div class="form-group" style="margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
                 <label>Hit ${i+1}: ${loc}</label>
                 <div class="flexrow">
-                    <span>Dmg: </span><input type="number" class="hit-dmg" data-index="${i}" value="${damageBase}" style="width: 50px;"/>
+                    <span>Dmg: </span><input type="number" class="hit-dmg" data-index="${i}" value="${defaultDmg}" style="width: 50px;"/>
                     <span>Armor: ${armor}/${armorMax}</span>
                 </div>
             </div>`;
@@ -1810,6 +1833,9 @@ Hooks.on("renderChatMessage", (message, html, data) => {
               let report = `<b>${target.name}</b> taking damage:<br>`;
               const dmgInputs = html.find(".hit-dmg");
               
+              const isSquadOrHorde = target.system.settings?.isNPC && (target.system.settings.npcType === "squad" || target.system.settings.npcType === "horde");
+              const currentSquadSize = target.system.settings.squadSize || 1;
+
               for (let i = 0; i < locations.length; i++) {
                   const loc = locations[i];
                   const limbKey = locationMap[loc];
@@ -1916,6 +1942,24 @@ Hooks.on("renderChatMessage", (message, html, data) => {
                   }
               }
 
+              // Squad/Horde size reduction logic
+              if (isSquadOrHorde) {
+                  let finalSquadSize = currentSquadSize;
+                  for (let [lk, limb] of Object.entries(target.system.limbs)) {
+                      const newLimbVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
+                      const indMax = limb.individualMax || Math.floor(target.system.stats.endurance.total * limb.mult);
+                      const potentialSize = Math.max(0, Math.ceil(newLimbVal / indMax));
+                      if (potentialSize < finalSquadSize) finalSquadSize = potentialSize;
+                  }
+                  if (finalSquadSize < currentSquadSize) {
+                      updates["system.settings.squadSize"] = finalSquadSize;
+                      report += `<b style="color:#c0392b;">!!! ${target.name} lost ${currentSquadSize - finalSquadSize} members! Remaining size: ${finalSquadSize} !!!</b><br>`;
+                      if (finalSquadSize === 0) {
+                          report += `<b style="color:#c0392b;">!!! ${target.name} HAS BEEN DESTROYED !!!</b><br>`;
+                      }
+                  }
+              }
+
               // Apply all updates atomically
               const finalUpdates = { ...updates };
               if (Object.keys(itemUpdates).length > 0) {
@@ -1932,6 +1976,9 @@ Hooks.on("renderChatMessage", (message, html, data) => {
                   const currentVal = limb.value; // After update
                   const isInjuredNow = limb.injured;
                   const isCritNow = limb.criticallyInjured;
+
+                  // Squads skip checks as they just lose size/members
+                  if (isSquadOrHorde) continue;
                   
                   // Rule 1: Entering [0, -Max] while not Injured -> Check for Injured
                   if (currentVal <= 0 && currentVal > -limb.max && !original.injured && !isInjuredNow) {
