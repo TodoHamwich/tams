@@ -2835,12 +2835,25 @@ Hooks.on("renderChatMessage", (message, html, data) => {
         if (dc === null) return;
 
         let rollResults = [];
+        let successCount = 0;
         for (let i = 0; i < count; i++) {
             const roll = await new Roll("1d100").evaluate();
             const raw = roll.total;
             const capped = Math.min(raw, end);
             const success = capped >= dc;
+            if (success) successCount++;
             rollResults.push({ raw, capped, success });
+        }
+
+        if (successCount > 0) {
+            const updates = {
+                "system.settings.squadSize": actor.system.settings.squadSize + successCount
+            };
+            for (let [key, limb] of Object.entries(actor.system.limbs)) {
+                const indMax = Math.floor(end * limb.mult);
+                updates[`system.limbs.${key}.value`] = limb.value + (successCount * indMax);
+            }
+            await actor.update(updates);
         }
 
         let resultsHtml = `<div class="tams-roll">
@@ -2861,7 +2874,11 @@ Hooks.on("renderChatMessage", (message, html, data) => {
             `;
         });
 
-        resultsHtml += `</div></div>`;
+        resultsHtml += `</div>
+            ${successCount > 0 ? `<div class="roll-row" style="color: #2e7d32; font-weight: bold; margin-top: 5px; border-top: 1px solid #2e7d32; padding-top: 3px;">
+                ${successCount} member(s) restored to the squad!
+            </div>` : ''}
+        </div>`;
 
         ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor }),
