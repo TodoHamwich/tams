@@ -92,7 +92,7 @@
                         </div>
                     </div>
 
-                    <h3 class="small-header">Limbs (HP / Armor)</h3>
+                    <h3 class="small-header">Limbs (HP / Armor) <a class="full-heal" data-action="fullHeal" title="Full Heal All Limbs"><i class="fas fa-heartbeat"></i></a></h3>
                     {{#each system.limbs as |limb id|}}
                     <div class="limb-row flexrow {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}}">
                         <label class="resource-label limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}{{#if (and limb.injured (not limb.criticallyInjured))}}INJURED{{/if}}">

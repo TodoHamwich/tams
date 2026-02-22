@@ -475,6 +475,19 @@
     margin-top: 5px;
 }
 
+.tams .full-heal {
+    float: right;
+    color: #c0392b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.tams .full-heal:hover {
+    color: #e74c3c;
+    text-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
+}
+
 .tams .sheet-tabs {
     flex: 0 0 36px;
     border-top: 1px solid #AAA;

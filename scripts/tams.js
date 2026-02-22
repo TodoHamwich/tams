@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Data Models
  */
 class StatModifier extends foundry.abstract.DataModel {
@@ -650,7 +650,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         resourceDelete: TAMSActorSheet.prototype._onResourceDelete,
         setTab: TAMSActorSheet.prototype._onSetTab,
         updateItemField: TAMSActorSheet.prototype._onUpdateItemField,
-        editImage: TAMSActorSheet.prototype._onEditImage
+        editImage: TAMSActorSheet.prototype._onEditImage,
+        fullHeal: TAMSActorSheet.prototype._onFullHeal
       }
     }, { inplace: false });
   }
@@ -896,6 +897,17 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       left: this.position.left + 10
     });
     return fp.browse();
+  }
+
+  async _onFullHeal(event, target) {
+    const updates = {};
+    for (const [id, limb] of Object.entries(this.document.system.limbs)) {
+      updates[`system.limbs.${id}.value`] = limb.max;
+      updates[`system.limbs.${id}.injured`] = false;
+      updates[`system.limbs.${id}.criticallyInjured`] = false;
+    }
+    await this.document.update(updates);
+    ui.notifications.info(`${this.document.name} fully healed.`);
   }
 
   async _onRoll(event, target) {
@@ -1852,6 +1864,8 @@ Hooks.on("renderChatMessage", (message, html, data) => {
               
               const isSquadOrHorde = target.system.settings?.isNPC && (target.system.settings.npcType === "squad" || target.system.settings.npcType === "horde");
               const currentSquadSize = target.system.settings.squadSize || 1;
+              const multiplier = (isAoEHit && isSquadOrHorde) ? (parseInt(html.find("#aoe-targets-hit").val()) || 1) : 1;
+              const accumulatedLimbDamage = {};
 
               for (let i = 0; i < locations.length; i++) {
                   const loc = locations[i];
@@ -1893,16 +1907,31 @@ Hooks.on("renderChatMessage", (message, html, data) => {
                   const effectiveArmor = Math.max(0, armor - armourPen);
                   
                   const incoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
-                  const effective = Math.max(0, incoming - effectiveArmor);
+                  let effective = Math.max(0, incoming - (effectiveArmor * multiplier));
+                  const blocked = Math.min(incoming, effectiveArmor * multiplier);
+                  let overflow = 0;
+
+                  // Apply cap ONLY for squads/hordes to prevent damage overflow beyond individuals hit
+                  if (isSquadOrHorde) {
+                      const indMax = limb.individualMax || Math.floor(target.system.stats.endurance.total * limb.mult);
+                      const limbCap = multiplier * indMax;
+                      if (!accumulatedLimbDamage[limbKey]) accumulatedLimbDamage[limbKey] = 0;
+
+                      const remainingCap = Math.max(0, limbCap - accumulatedLimbDamage[limbKey]);
+                      const cappedEffective = Math.min(effective, remainingCap);
+                      
+                      overflow = effective - cappedEffective;
+                      effective = cappedEffective;
+                      accumulatedLimbDamage[limbKey] += effective;
+                  }
                   
                   const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
                   const newHp = Math.floor(currentHp) - effective;
                   updates[`system.limbs.${limbKey}.value`] = newHp;
                   
                   limbDamageReceived[limbKey] += effective;
-                  const blocked = Math.min(incoming, effectiveArmor);
 
-                  if (armor > 0 && effective < incoming) {
+                  if (armor > 0 && (effective + overflow) < incoming) {
                       // Armor lost! 
                       if (limb.hasEquippedArmor) {
                           // Find an item to damage (first one with armor remaining)
@@ -1924,7 +1953,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
                                   itemUpdates[itemToDamage.id] = { 
                                       ...(itemUpdates[itemToDamage.id] || {}),
                                       _id: itemToDamage.id, 
-                                      "system.armorMax": Math.max(0, currentVal - 1) 
+                                      "system.armorMax": Math.max(0, currentVal - multiplier) 
                                   };
                               } else {
                                   const pending = itemUpdates[itemToDamage.id]?.["system.armorValue"];
@@ -1932,7 +1961,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
                                   itemUpdates[itemToDamage.id] = { 
                                       ...(itemUpdates[itemToDamage.id] || {}),
                                       _id: itemToDamage.id, 
-                                      "system.armorValue": Math.max(0, currentVal - 1) 
+                                      "system.armorValue": Math.max(0, currentVal - multiplier) 
                                   };
                               }
                           }
@@ -1940,17 +1969,19 @@ Hooks.on("renderChatMessage", (message, html, data) => {
                           if (isAltArmor) {
                               const pending = updates[`system.limbs.${limbKey}.armorMax`];
                               const currentMax = pending !== undefined ? pending : (limb.armorMax || 0);
-                              updates[`system.limbs.${limbKey}.armorMax`] = Math.max(0, currentMax - 1);
+                              updates[`system.limbs.${limbKey}.armorMax`] = Math.max(0, currentMax - multiplier);
                           } else {
-                              updates[`system.limbs.${limbKey}.armor`] = Math.max(0, armor - 1);
+                              updates[`system.limbs.${limbKey}.armor`] = Math.max(0, armor - multiplier);
                           }
                       }
-                      const lossLabel = isAltArmor ? "1 armor HP lost" : "1 armor point lost";
+                      const lossLabel = isAltArmor ? `${multiplier} armor HP lost` : `${multiplier} armor point lost`;
                       const penLabel = armourPen > 0 ? ` (Penetrated ${armourPen})` : "";
-                      report += `�E ${loc}: ${effective} damage (${blocked} armor blocked${penLabel}, ${lossLabel})<br>`;
+                      const overflowLabel = overflow > 0 ? ` <span style="color: #666;">[Capped: ${overflow} ignored]</span>` : "";
+                      report += `• ${loc}: ${effective} damage (${blocked} armor blocked${penLabel}, ${lossLabel})${overflowLabel}<br>`;
                   } else {
                       const penLabel = armourPen > 0 ? ` (Penetrated ${armourPen})` : "";
-                      report += `�E ${loc}: ${effective} damage (${blocked} armor blocked${penLabel})<br>`;
+                      const overflowLabel = overflow > 0 ? ` <span style="color: #666;">[Capped: ${overflow} ignored]</span>` : "";
+                      report += `• ${loc}: ${effective} damage (${blocked} armor blocked${penLabel})${overflowLabel}<br>`;
                   }
 
                   // Rule 2: Below -Max -> Automatic Injured
