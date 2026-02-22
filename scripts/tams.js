@@ -2000,8 +2000,10 @@ Hooks.on("renderChatMessage", (message, html, data) => {
                       if (potentialSize < finalSquadSize) finalSquadSize = potentialSize;
                   }
                   if (finalSquadSize < currentSquadSize) {
+                      const lostCount = currentSquadSize - finalSquadSize;
                       updates["system.settings.squadSize"] = finalSquadSize;
-                      report += `<b style="color:#c0392b;">!!! ${target.name} lost ${currentSquadSize - finalSquadSize} members! Remaining size: ${finalSquadSize} !!!</b><br>`;
+                      report += `<b style="color:#c0392b;">!!! ${target.name} lost ${lostCount} members! Remaining size: ${finalSquadSize} !!!</b><br>`;
+                      report += `<button class="tams-squad-crit-roll" data-actor-id="${target.id}" data-count="${lostCount}" data-name="${target.name}">Roll for Critical Wounds (${lostCount})</button><br>`;
                       if (finalSquadSize === 0) {
                           report += `<b style="color:#c0392b;">!!! ${target.name} HAS BEEN DESTROYED !!!</b><br>`;
                       }
@@ -2804,5 +2806,70 @@ Hooks.on("renderChatMessage", (message, html, data) => {
         const messageId = btn.closest(".chat-message")?.dataset.messageId;
         const message = game.messages.get(messageId);
         if (message) await tamsUpdateMessage(message, { content: container.outerHTML });
+    }));
+
+    // Squad Crit Roll action
+    root.querySelectorAll('.tams-squad-crit-roll').forEach(el => el.addEventListener("click", async ev => {
+        ev.preventDefault();
+        const btn = ev.currentTarget;
+        const actorId = btn.dataset.actorId;
+        const count = parseInt(btn.dataset.count);
+        const name = btn.dataset.name;
+        const actor = game.actors.get(actorId);
+        if (!actor) return;
+
+        const end = actor.system.stats.endurance.total;
+
+        const dc = await new Promise(resolve => {
+            new Dialog({
+                title: "Critical Wound DC",
+                content: `<div class="form-group"><label>Enter DC for these checks:</label><input type="number" id="dc" value="0"/></div>`,
+                buttons: {
+                    roll: { label: "Roll", callback: (html) => resolve(parseInt(html.find("#dc").val()) || 0) },
+                    cancel: { label: "Cancel", callback: () => resolve(null) }
+                },
+                default: "roll"
+            }).render(true);
+        });
+
+        if (dc === null) return;
+
+        let rollResults = [];
+        for (let i = 0; i < count; i++) {
+            const roll = await new Roll("1d100").evaluate();
+            const raw = roll.total;
+            const capped = Math.min(raw, end);
+            const success = capped >= dc;
+            rollResults.push({ raw, capped, success });
+        }
+
+        let resultsHtml = `<div class="tams-roll">
+            <h3 class="roll-label">Squad Crit Checks: ${name}</h3>
+            <div class="roll-row"><span>Checks:</span><span>${count}</span></div>
+            <div class="roll-row"><span>Endurance:</span><span>${end}</span></div>
+            <div class="roll-row"><span>Target DC:</span><span>${dc}</span></div>
+            <hr>
+            <div class="squad-crit-list" style="max-height: 200px; overflow-y: auto;">
+        `;
+
+        rollResults.forEach((r, i) => {
+            resultsHtml += `
+                <div class="roll-row" style="border-bottom: 1px solid #eee; font-size: 0.9em; padding: 2px 0;">
+                    <span style="flex: 1;">Check #${i+1}: Roll ${r.raw} -> <b>${r.capped}</b></span>
+                    <span style="color: ${r.success ? '#2e7d32' : '#c0392b'}; font-weight: bold; min-width: 50px; text-align: right;">${r.success ? 'PASS' : 'FAIL'}</span>
+                </div>
+            `;
+        });
+
+        resultsHtml += `</div></div>`;
+
+        ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            content: resultsHtml,
+            rolls: [] // We don't necessarily need to attach all 1d100 rolls as full dice results, but we could if we wanted.
+        });
+        
+        btn.disabled = true;
+        btn.innerText = "Checks Rolled";
     }));
 });
