@@ -264,10 +264,14 @@
                         {{#if item.system.isAttack}}
                         (Dmg: {{item.system.calculatedDamage}})
                         {{/if}}
-                        {{#if item.system.isApex}}
-                        (Apex: {{item.system.uses.value}}/{{item.system.uses.max}})
+                        {{#if (gt item.system.uses.max 0)}}
+                        (Uses: {{item.system.uses.value}}/{{item.system.uses.max}})
                         {{else}}
-                        (Cost: {{item.system.cost}})
+                            {{#if item.system.isApex}}
+                            (Apex: {{item.system.uses.value}}/{{item.system.uses.max}})
+                            {{else}}
+                            (Cost: {{item.system.cost}})
+                            {{/if}}
                         {{/if}}
                     </h4>
                     <div class="item-controls">

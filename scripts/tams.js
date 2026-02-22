@@ -1,4 +1,4 @@
-ï»¿/**
+/**
  * Data Models
  */
 class StatModifier extends foundry.abstract.DataModel {
@@ -563,7 +563,49 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
 /**
  * Documents
  */
-class TAMSActor extends Actor {}
+class TAMSActor extends Actor {
+  /** @override */
+  async _preUpdate(updateData, options, user) {
+    const res = await super._preUpdate(updateData, options, user);
+    if ( res === false ) return false;
+
+    // Check if endurance changed
+    const hasValue = foundry.utils.hasProperty(updateData, "system.stats.endurance.value");
+    const hasMod = foundry.utils.hasProperty(updateData, "system.stats.endurance.mod");
+
+    if (hasValue || hasMod) {
+      const stats = this.system.stats;
+      const oldVal = stats.endurance.value;
+      const oldMod = stats.endurance.mod;
+      const oldEnd = oldVal + (oldMod || 0);
+
+      const newVal = hasValue ? foundry.utils.getProperty(updateData, "system.stats.endurance.value") : oldVal;
+      const newMod = hasMod ? foundry.utils.getProperty(updateData, "system.stats.endurance.mod") : (oldMod || 0);
+      const newEnd = newVal + newMod;
+
+      if (newEnd !== oldEnd) {
+        const deltaEnd = newEnd - oldEnd;
+        const limbs = this.system.limbs;
+        for (const [key, limb] of Object.entries(limbs)) {
+          // Calculate the delta in max HP for this limb
+          const oldMax = Math.floor(oldEnd * limb.mult);
+          const newMax = Math.floor(newEnd * limb.mult);
+          const deltaMax = newMax - oldMax;
+
+          if (deltaMax !== 0) {
+            const currentPath = `system.limbs.${key}.value`;
+            const currentVal = foundry.utils.hasProperty(updateData, currentPath) 
+                ? foundry.utils.getProperty(updateData, currentPath) 
+                : limb.value;
+            
+            foundry.utils.setProperty(updateData, currentPath, currentVal + deltaMax);
+          }
+        }
+      }
+    }
+    return res;
+  }
+}
 class TAMSItem extends Item {
   static get metadata() {
     return foundry.utils.mergeObject(super.metadata, {
@@ -847,12 +889,18 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
     let label = dataset.label || '';
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
-        if (tName) label = `${label} â†’ ${tName}`;
+        if (tName) label = `${label} ¡÷ ${tName}`;
     }
     let statValue = parseInt(dataset.statValue) || 100;
     let statMod = parseInt(dataset.statMod) || 0;
     let familiarity = parseInt(dataset.familiarity) || 0;
     let statId = dataset.statId;
+
+    if (!item && statId === 'dodge') {
+        const dex = this.document.system.stats.dexterity;
+        statValue = dex.value;
+        statMod = dex.mod;
+    }
 
     if (!item) familiarity = 0; // Pure stat rolls don't include familiarity
 
@@ -908,8 +956,69 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             statValue = stat ? stat.value : 100;
             statMod = stat ? (stat.mod || 0) : 0;
         }
-        const cost = parseInt(item.system.cost) || 0;
-        if (!item.system.isApex && cost > 0) {
+        const cost = item.system.calculator?.enabled ? item.system.calculatedCost : (parseInt(item.system.cost) || 0);
+        const usesMax = parseInt(item.system.uses.max) || 0;
+        const usesVal = parseInt(item.system.uses.value) || 0;
+        const isLimited = usesMax > 0;
+
+        if (event.shiftKey && isLimited) {
+            const missing = usesMax - usesVal;
+            const actor = this.document;
+            const resources = [{id: "stamina", name: "Stamina", value: actor.system.stamina.value}];
+            actor.system.customResources.forEach((res, idx) => {
+                resources.push({id: idx.toString(), name: res.name, value: res.value});
+            });
+            const resourceKey = item.system.resource;
+            const options = resources.map(r => `<option value="${r.id}" ${r.id === resourceKey ? 'selected' : ''}>${r.name} (${r.value} avail)</option>`).join('');
+
+            new Dialog({
+                title: `Refill ${item.name}`,
+                content: `
+                    <div class="form-group">
+                        <label>Amount to refill (Max ${missing})</label>
+                        <input type="number" id="refill-amount" value="${missing}" min="1" max="${missing}"/>
+                    </div>
+                    <div class="form-group">
+                        <label>Resource to spend</label>
+                        <select id="refill-resource">${options}</select>
+                    </div>
+                    <p>Cost per use: <b>${cost}</b></p>
+                    <p><i>Selecting an amount will multiply the cost.</i></p>
+                `,
+                buttons: {
+                    refill: {
+                        label: "Refill",
+                        callback: async (html) => {
+                            const amount = parseInt(html.find("#refill-amount").val()) || 0;
+                            const resId = html.find("#refill-resource").val();
+                            if (amount <= 0) return;
+                            const totalCost = amount * cost;
+                            const res = resources.find(r => r.id === resId);
+                            if (res.value < totalCost) return ui.notifications.warn("Not enough resource!");
+                            
+                            if (resId === 'stamina') {
+                                await actor.update({"system.stamina.value": res.value - totalCost});
+                            } else {
+                                const idx = parseInt(resId);
+                                const customResources = foundry.utils.duplicate(actor.system.customResources);
+                                customResources[idx].value -= totalCost;
+                                await actor.update({"system.customResources": customResources});
+                            }
+                            await item.update({"system.uses.value": usesVal + amount});
+                            ui.notifications.info(`Refilled ${amount} uses for ${item.name}.`);
+                        }
+                    },
+                    cancel: { label: "Cancel" }
+                },
+                default: "refill"
+            }).render(true);
+            return;
+        }
+
+        if (isLimited) {
+            if (usesVal <= 0) return ui.notifications.warn("No uses left! Shift-click to refill.");
+            await item.update({"system.uses.value": usesVal - 1});
+        } else if (!item.system.isApex && cost > 0) {
             const resourceKey = item.system.resource;
             if (resourceKey === 'stamina') {
                 const current = this.document.system.stamina.value;
@@ -1464,6 +1573,18 @@ Hooks.once("init", async function() {
   Handlebars.registerHelper('eq', function (a, b) {
     return a === b;
   });
+  Handlebars.registerHelper('gt', function (a, b) {
+    return a > b;
+  });
+  Handlebars.registerHelper('lt', function (a, b) {
+    return a < b;
+  });
+  Handlebars.registerHelper('gte', function (a, b) {
+    return a >= b;
+  });
+  Handlebars.registerHelper('lte', function (a, b) {
+    return a <= b;
+  });
   Handlebars.registerHelper('or', function (a, b) {
     return a || b;
   });
@@ -1673,10 +1794,10 @@ Hooks.on("renderChatMessage", (message, html, data) => {
                       }
                       const lossLabel = isAltArmor ? "1 armor HP lost" : "1 armor point lost";
                       const penLabel = armourPen > 0 ? ` (Penetrated ${armourPen})` : "";
-                      report += `â€¢ ${loc}: ${effective} damage (${blocked} armor blocked${penLabel}, ${lossLabel})<br>`;
+                      report += `¡E ${loc}: ${effective} damage (${blocked} armor blocked${penLabel}, ${lossLabel})<br>`;
                   } else {
                       const penLabel = armourPen > 0 ? ` (Penetrated ${armourPen})` : "";
-                      report += `â€¢ ${loc}: ${effective} damage (${blocked} armor blocked${penLabel})<br>`;
+                      report += `¡E ${loc}: ${effective} damage (${blocked} armor blocked${penLabel})<br>`;
                   }
 
                   // Rule 2: Below -Max -> Automatic Injured
@@ -1883,7 +2004,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
       const msg = `
         <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}" data-behind="${isBehind ? '1' : '0'}" data-unaware="${isUnaware ? '1' : '0'}" data-first-location="${firstLocation}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}">
-          <h3 class="roll-label">Dodge â€” ${actor.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
+          <h3 class="roll-label">Dodge ¡X ${actor.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>Stat Cap (Dex ${dexVal}):</small><span>${capped}</span></div>
           <div class="roll-boost-container"></div>
@@ -2315,7 +2436,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
       const msg = `
         <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}">
-          <h3 class="roll-label">Retaliation â€” ${actor.name} with ${weapon.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
+          <h3 class="roll-label">Retaliation ¡X ${actor.name} with ${weapon.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           ${retDescriptionHtml}
           
           ${defenseDamageInfo}

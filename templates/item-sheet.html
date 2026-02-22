@@ -196,14 +196,13 @@
                 <label>Bonus</label>
                 <input type="number" name="system.bonus" value="{{system.bonus}}" data-dtype="Number"/>
             </div>
-            {{#if system.isApex}}
             <div class="flexrow">
                 <label>Uses</label>
                 <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
                 <span> / </span>
                 <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
             </div>
-            {{else}}
+            {{#unless system.isApex}}
             <div class="flexrow">
                 <label>Cost</label>
                 <input type="number" name="system.cost" value="{{system.cost}}" {{#if system.calculator.enabled}}disabled="disabled"{{/if}}/>
@@ -214,7 +213,7 @@
                     {{selectOptions resourceOptions selected=system.resource}}
                 </select>
             </div>
-            {{/if}}
+            {{/unless}}
 
             <div class="calculator-toggle flexrow">
                 <label>Use Cost Calculator?</label>
