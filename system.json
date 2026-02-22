@@ -2,7 +2,7 @@
   "id": "tams",
   "title": "Todo's Advanced Modular System",
   "description": "A custom system for Foundry VTT",
-  "version": "1.0.40",
+  "version": "1.0.41",
   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
   "authors": [
