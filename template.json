@@ -62,6 +62,7 @@
       "ammo": { "current": 0, "total": 0 },
       "fireRate": "1",
       "fireRateCustom": 1,
+      "isAoE": false,
       "special": "",
       "description": ""
     },
@@ -89,6 +90,7 @@
       "damageMult": 0.5,
       "damageBonus": 0,
       "multiAttack": 1,
+      "isAoE": false,
       "calculator": {
         "enabled": false,
         "isUtility": false,

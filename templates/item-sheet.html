@@ -94,6 +94,10 @@
                 {{/if}}
             </div>
             <div class="flexrow">
+                <label>AoE Attack?</label>
+                <input type="checkbox" name="system.isAoE" {{checked system.isAoE}}/>
+            </div>
+            <div class="flexrow">
                 <label>Special</label>
                 <input type="text" name="system.special" value="{{system.special}}"/>
             </div>
@@ -372,6 +376,8 @@
             <div class="flexrow">
                 <label>Multi-Attack</label>
                 <input type="number" name="system.multiAttack" value="{{system.multiAttack}}"/>
+                <label>AoE Attack?</label>
+                <input type="checkbox" name="system.isAoE" {{checked system.isAoE}}/>
             </div>
             <hr>
             <div class="flexrow">
