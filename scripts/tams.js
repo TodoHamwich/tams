@@ -1143,7 +1143,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         }
 
         const isAoE = !!item.system.isAoE;
-        const targets = isAoE ? [...canvas.tokens.controlled] : (tToken ? [tToken] : []);
+        const targets = isAoE ? [...game.user.targets] : (tToken ? [tToken] : []);
 
         if (targets.length > 0) {
             damageInfo = `<div class="tams-targets-container">`;
@@ -1214,11 +1214,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             }
             damageInfo += `</div>`;
         } else {
-            // No targets selected, just show damage info without buttons or with generic ones if possible
+            // No tokens targeted, just show damage info without buttons or with generic ones if possible
             damageInfo = `
                 <div class="roll-row"><b>Damage: ${damage}</b></div>
                 <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
-                <p><small>No tokens targeted or selected.</small></p>
+                <p><small>No tokens targeted.</small></p>
             `;
         }
     }
