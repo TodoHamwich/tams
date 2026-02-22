@@ -1244,6 +1244,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
                                   data-damage="${damage}" 
                                   data-armour-pen="${armourPen}" 
                                   data-is-ranged="${isRanged ? '1' : '0'}" 
+                                  data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-target-limb="${targetLimb}"
                                   data-target-token-id="${targetTokenId || ''}"
                                   data-target-actor-id="${targetActorId || ''}">Dodge</button>
@@ -1255,6 +1256,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
                                   data-damage="${damage}" 
                                   data-armour-pen="${armourPen}" 
                                   data-is-ranged="${isRanged ? '1' : '0'}" 
+                                  data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-target-limb="${targetLimb}"
                                   data-target-token-id="${targetTokenId || ''}"
                                   data-target-actor-id="${targetActorId || ''}">Retaliate</button>
@@ -1288,11 +1290,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
                                         data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}" 
                                         style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
                                 <button class="tams-dodge" title="Dodge"
-                                        data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                        data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
                                         data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                         style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">D</button>
                                 <button class="tams-retaliate" title="Retaliate"
-                                        data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                        data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
                                         data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                         style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
                                 <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
@@ -1785,15 +1787,23 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
       const isAoEHit = btn.dataset.isAoe === '1';
       const isSquadOrHorde = target.system.settings?.isNPC && (target.system.settings.npcType === "squad" || target.system.settings.npcType === "horde");
-      let aoeMultiplier = 1;
-      let squadNote = "";
+      let initialMultiplier = 1;
+      let squadHtml = "";
       if (isAoEHit && isSquadOrHorde) {
-          aoeMultiplier = target.system.settings.npcType === "squad" ? 2 : 4;
-          squadNote = `<p style="color: #d35400; font-size: 0.9em;"><i>AoE vs ${target.system.settings.npcType.toUpperCase()}: Damage x${aoeMultiplier}</i></p>`;
+          const typeLabel = target.system.settings.npcType.toUpperCase();
+          const currentSize = target.system.settings.squadSize || 1;
+          initialMultiplier = target.system.settings.npcType === "squad" ? Math.min(2, currentSize) : Math.min(4, currentSize);
+          squadHtml = `
+            <div class="form-group" style="margin-bottom: 10px;">
+                <label>Targets Hit in ${typeLabel} (1-${currentSize})</label>
+                <input type="number" id="aoe-targets-hit" value="${initialMultiplier}" min="1" max="${currentSize}"/>
+                <p style="color: #d35400; font-size: 0.85em;"><i>Each hit is multiplied by this number.</i></p>
+            </div>
+          `;
       }
-      const defaultDmg = damageBase * aoeMultiplier;
+      const defaultDmg = damageBase * initialMultiplier;
 
-      let dialogContent = `<p>Applying <b>${locations.length}</b> hits to <b>${target.name}</b>:</p>${squadNote}`;
+      let dialogContent = `<p>Applying <b>${locations.length}</b> hits to <b>${target.name}</b>:</p>${squadHtml}`;
       locations.forEach((loc, i) => {
           const limbKey = locationMap[loc];
           const limb = target.system.limbs[limbKey];
@@ -1812,6 +1822,13 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       new Dialog({
         title: `Apply Damage to ${target.name}`,
         content: dialogContent,
+        render: (html) => {
+            html.find("#aoe-targets-hit").on("input", (ev) => {
+                const multiplier = parseInt(ev.currentTarget.value) || 0;
+                const newDmg = damageBase * multiplier;
+                html.find(".hit-dmg").val(newDmg);
+            });
+        },
         buttons: {
         apply: { label: "Apply All Hits", callback: async (html) => {
               const updates = {};
@@ -2086,6 +2103,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       const isRanged = btn.dataset.isRanged === '1';
       const firstLocation = btn.dataset.location;
       const targetLimb = btn.dataset.targetLimb;
+      const isAoEFromData = btn.dataset.isAoe === '1';
       const container = btn.closest(".tams-roll");
       const isBehind = container?.classList.contains("behind-attack") || false;
       const isUnaware = container?.classList.contains("unaware-defender") || false;
@@ -2156,7 +2174,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
             <div class="roll-row"><b>Hits: ${hitsScored} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
             <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-locations='${JSON.stringify(locations)}'>Apply Damage</button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-locations='${JSON.stringify(locations)}' data-is-aoe="${isAoEFromData ? '1' : '0'}">Apply Damage</button>
             </div>
           `;
           if (!critInfo) critInfo = `<div class="tams-failure">Dodge Failed vs Total ${attackerTotal}</div>`;
@@ -2167,7 +2185,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       }
 
       const msg = `
-        <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}" data-behind="${isBehind ? '1' : '0'}" data-unaware="${isUnaware ? '1' : '0'}" data-first-location="${firstLocation}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}">
+        <div class="tams-roll" data-attacker-raw="${attackerRaw}" data-attacker-total="${attackerTotal}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-actor-id="${actor.id}" data-raw="${raw}" data-capped="${capped}" data-behind="${isBehind ? '1' : '0'}" data-unaware="${isUnaware ? '1' : '0'}" data-first-location="${firstLocation}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${targetLimb}" data-is-aoe="${isAoEFromData ? '1' : '0'}">
           <h3 class="roll-label">Dodge �X ${actor.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>Stat Cap (Dex ${dexVal}):</small><span>${capped}</span></div>
@@ -2199,6 +2217,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       const attackerArmourPen = parseInt(container.dataset.attackerArmourPen) || 0;
       const firstLocation = container.dataset.firstLocation;
       const targetLimb = container.dataset.targetLimb;
+      const isAoEFromData = container.dataset.isAoe === '1';
       const actorId = container.dataset.actorId;
       const raw = parseInt(container.dataset.raw);
       const capped = parseInt(container.dataset.capped);
@@ -2314,7 +2333,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
             <div class="roll-row"><b>Hits: ${hitsScored} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${locations.join(", ")}</small></div>
             <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-locations='${JSON.stringify(locations)}'>Apply Damage</button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-locations='${JSON.stringify(locations)}' data-is-aoe="${isAoEFromData ? '1' : '0'}">Apply Damage</button>
             </div>
           `;
 
@@ -2351,6 +2370,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       const isRanged = btn.dataset.isRanged === '1';
       const firstLocation = btn.dataset.location;
       const attackerTargetLimb = btn.dataset.targetLimb;
+      const isAoEFromData = btn.dataset.isAoe === '1';
       const container = btn.closest(".tams-roll");
       const isBehind = container?.classList.contains("behind-attack") || false;
       const isUnaware = container?.classList.contains("unaware-defender") || false;
@@ -2563,7 +2583,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
             <div class="roll-row"><b>Hits Taken: ${hitsTaken} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${defenseLocations.join(", ")}</small></div>
             <div class="roll-row" style="margin-bottom: 10px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-locations='${JSON.stringify(defenseLocations)}'>Apply Hits to Defender</button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-locations='${JSON.stringify(defenseLocations)}' data-is-aoe="${isAoEFromData ? '1' : '0'}">Apply Hits to Defender</button>
             </div>
           `;
       } else if (attackerTotal > total) {
@@ -2583,7 +2603,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
             <div class="roll-row"><b>Hits Taken: ${hitsTaken} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>Locations: ${defenseLocations.join(", ")}</small></div>
             <div class="roll-row" style="margin-bottom: 10px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-locations='${JSON.stringify(defenseLocations)}'>Apply Hits to Defender</button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-locations='${JSON.stringify(defenseLocations)}' data-is-aoe="${isAoEFromData ? '1' : '0'}">Apply Hits to Defender</button>
             </div>
           `;
           if (!critInfo) critInfo = `<div class="tams-failure">Retaliate Failed vs Total ${attackerTotal}</div>`;
@@ -2591,14 +2611,15 @@ Hooks.on("renderChatMessage", (message, html, data) => {
           if (!critInfo) critInfo = `<div class="tams-success">Retaliate Success vs Total ${attackerTotal}</div>`;
       }
 
+      const isRetAoE = !!weapon.system.isAoE;
       const retButtons = isMutual ? `
-          <button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-locations='${JSON.stringify(retLocations)}'>Apply Damage</button>
+          <button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? '1' : '0'}">Apply Damage</button>
       ` : (hitsScored > 0 ? `
-          <button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-locations='${JSON.stringify(retLocations)}'>Apply Damage</button>
-          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">Dodge</button>
-          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">Retaliate</button>
-          <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
-          <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
+          <button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? '1' : '0'}">Apply Damage</button>
+          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">Dodge</button>
+          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">Retaliate</button>
+          <button class="tams-behind-toggle" style="background: #444; color: white;">B</button>
+          <button class="tams-unaware-toggle" style="background: #444; color: white;">U</button>
       ` : "");
 
       const retDescriptionHtml = (weapon.type === 'ability' && weapon.system.description)
@@ -2606,7 +2627,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
         : "";
 
       const msg = `
-        <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}">
+        <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? '1' : '0'}">
           <h3 class="roll-label">Retaliation �X ${actor.name} with ${weapon.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           ${retDescriptionHtml}
           
