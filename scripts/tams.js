@@ -70,6 +70,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       settings: new fields.SchemaField({
         alternateArmour: new fields.BooleanField({initial: false}),
         isNPC: new fields.BooleanField({initial: false}),
+        npcType: new fields.StringField({initial: "individual"}),
+        squadSize: new fields.NumberField({initial: 1, integer: true, min: 1}),
         enabledCurrencies: new fields.ObjectField({initial: {}})
       }),
       upgradePoints: new fields.SchemaField({
@@ -709,6 +711,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       "dark": "Dark",
       "parchment": "Parchment"
     };
+    context.npcTypeOptions = {
+      "individual": "Individual",
+      "squad": "Squad",
+      "horde": "Horde"
+    };
     context.limbOptions = {
       "none": "None",
       "head": "Head",
@@ -1098,7 +1105,29 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         }
     }
 
-    const finalTotal = cappedResult + familiarity + bonus;
+    // --- Squad / Horde Logic ---
+    const settings = this.document.system.settings;
+    const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
+    const squadSize = settings.squadSize || 1;
+    let squadBonus = 0;
+    let maxSquadTargets = 1;
+
+    if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
+        const isRangedAttack = item.type === 'weapon' ? !!item.system.isRanged : (item.system.calculator?.range > 10);
+        if (isSquadOrHorde) {
+            maxSquadTargets = isRangedAttack ? Math.floor(squadSize / 2) : squadSize;
+            maxSquadTargets = Math.max(1, maxSquadTargets);
+
+            const actualTargets = [...game.user.targets].slice(0, maxSquadTargets);
+            const numTargetsCount = actualTargets.length > 0 ? actualTargets.length : (tToken ? 1 : 0);
+            if (numTargetsCount > 0 && numTargetsCount < maxSquadTargets) {
+                squadBonus = (maxSquadTargets - numTargetsCount) * 5;
+            }
+        }
+    }
+    // ----------------------------
+
+    const finalTotal = cappedResult + familiarity + bonus + squadBonus;
 
     let critInfo = "";
     let success = true;
@@ -1144,7 +1173,12 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         }
 
         const isAoE = !!item.system.isAoE;
-        const targets = isAoE ? [...game.user.targets] : (tToken ? [tToken] : []);
+        let targets = isAoE ? [...game.user.targets] : (tToken ? [tToken] : []);
+
+        if (isSquadOrHorde) {
+            targets = [...game.user.targets].slice(0, maxSquadTargets);
+            if (targets.length === 0 && tToken) targets = [tToken];
+        }
 
         if (targets.length > 0) {
             let hitLocation;
@@ -1282,7 +1316,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? ' + ' + familiarity : ''}${bonus ? ' + ' + bonus : ''}</span></div>` :
             `<div class="roll-row"><small>Stat Cap (${statValue}${statMod >= 0 ? '+' : ''}${statMod}):</small><span>${cappedResult}</span></div>
              ${familiarity > 0 ? `<div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>` : ''}
-             ${bonus !== 0 ? `<div class="roll-row"><small>Bonus:</small><span>${bonus >= 0 ? '+' : ''}${bonus}</span></div>` : ''}`
+             ${bonus !== 0 ? `<div class="roll-row"><small>Bonus:</small><span>${bonus >= 0 ? '+' : ''}${bonus}</span></div>` : ''}
+             ${squadBonus > 0 ? `<div class="roll-row"><small>Squad Bonus:</small><span>+${squadBonus}</span></div>` : ''}`
         }
         <hr>
         <div class="roll-total">${statId === 'bravery' ? 'Target to beat' : 'Total'}: <b>${statId === 'bravery' ? (effectiveStat + familiarity + bonus) : finalTotal}</b></div>

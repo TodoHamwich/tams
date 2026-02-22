@@ -29,6 +29,8 @@
       "settings": {
         "alternateArmour": false,
         "isNPC": false,
+        "npcType": "individual",
+        "squadSize": 1,
         "enabledCurrencies": {}
       },
       "upgradePoints": {

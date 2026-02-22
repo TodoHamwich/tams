@@ -10,7 +10,11 @@
         </div>
         <div class="header-details">
             <h1 class="charname">
-                {{#if system.settings.isNPC}}<span class="npc-tag" style="background: #444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.5em; vertical-align: middle; margin-right: 5px;">NPC</span>{{/if}}
+                {{#if system.settings.isNPC}}
+                <span class="npc-tag" style="background: #444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.5em; vertical-align: middle; margin-right: 5px;">
+                    {{#if (eq system.settings.npcType "squad")}}SQUAD{{else if (eq system.settings.npcType "horde")}}HORDE{{else}}NPC{{/if}}
+                </span>
+                {{/if}}
                 <input name="name" type="text" value="{{document.name}}" placeholder="Name"/>
             </h1>
             <div class="header-row">
@@ -635,6 +639,20 @@
                     <label>Is NPC?</label>
                     <input type="checkbox" name="system.settings.isNPC" {{checked system.settings.isNPC}}/>
                 </div>
+                {{#if system.settings.isNPC}}
+                <div class="form-group flexrow" style="margin-bottom: 10px;">
+                    <label>NPC Type</label>
+                    <select name="system.settings.npcType">
+                        {{selectOptions npcTypeOptions selected=system.settings.npcType}}
+                    </select>
+                </div>
+                {{#if (or (eq system.settings.npcType "squad") (eq system.settings.npcType "horde"))}}
+                <div class="form-group flexrow" style="margin-bottom: 10px;">
+                    <label>Size</label>
+                    <input type="number" name="system.settings.squadSize" value="{{system.settings.squadSize}}"/>
+                </div>
+                {{/if}}
+                {{/if}}
                 <p class="notes" style="margin-bottom: 15px; font-size: 0.9em; color: #666; font-style: italic; border: 1px solid #ccc; padding: 5px; border-radius: 4px; background: rgba(0,0,0,0.05);">
                     <b>Alternate Armour:</b> When enabled, Armour value remains constant. Instead, every hit reduces Armour Max (HP) by 1. When Armour Max reaches 0, the armour no longer provides protection.
                 </p>
