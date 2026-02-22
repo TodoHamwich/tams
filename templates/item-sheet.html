@@ -417,6 +417,14 @@
                 </div>
             </div>
             {{/if}}
+            {{#unless system.isAttack}}
+            <div class="flexrow">
+                <label>Stat Cap</label>
+                <select name="system.capStat">
+                    {{selectOptions statOptionsNoCustom selected=system.capStat localize=true}}
+                </select>
+            </div>
+            {{/unless}}
             {{/if}}
 
             <hr>

@@ -393,6 +393,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       damage: new fields.NumberField({initial: 0, nullable: true}),
       armourPenetration: new fields.NumberField({initial: 0, integer: true, min: 0, nullable: true}),
       attackStat: new fields.StringField({initial: "strength"}),
+      capStat: new fields.StringField({initial: "strength"}),
       damageStat: new fields.StringField({initial: "strength"}),
       damageMult: new fields.NumberField({initial: 0.5, step: 0.05, nullable: true}),
       damageBonus: new fields.NumberField({initial: 0, nullable: true}),
@@ -901,6 +902,11 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             statValue = stat ? stat.value : 100;
             statMod = stat ? (stat.mod || 0) : 0;
             label = `Using Ability: ${item.name}`;
+        } else {
+            statId = item.system.capStat || "strength";
+            const stat = this.document.system.stats[statId];
+            statValue = stat ? stat.value : 100;
+            statMod = stat ? (stat.mod || 0) : 0;
         }
         const cost = parseInt(item.system.cost) || 0;
         if (!item.system.isApex && cost > 0) {
@@ -1317,6 +1323,9 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       "bravery": "TAMS.StatBravery",
       "custom": "Custom"
     };
+    const statOptionsNoCustom = foundry.utils.duplicate(context.statOptions);
+    delete statOptionsNoCustom["custom"];
+    context.statOptionsNoCustom = statOptionsNoCustom;
     context.limbOptions = {
       "none": "None",
       "head": "Head",

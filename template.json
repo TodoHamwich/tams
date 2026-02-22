@@ -84,6 +84,7 @@
       "damage": 0,
       "armourPenetration": 0,
       "attackStat": "strength",
+      "capStat": "strength",
       "damageStat": "strength",
       "damageMult": 0.5,
       "damageBonus": 0,
