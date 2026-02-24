@@ -710,6 +710,27 @@
     margin: 5px;
 }
 
+/* Loot Sheet */
+.tams.loot {
+    min-width: 300px;
+    min-height: 200px;
+}
+
+.tams.loot .sheet-header {
+    border-bottom: 1px solid #7a7971;
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+}
+
+.tams.loot .charname input {
+    font-size: 20px;
+    height: 30px;
+}
+
+.tams.loot .items-list .item:hover {
+    background: rgba(0,0,0,0.05);
+}
+
 .tams select {
     background: #fff;
     color: #000;

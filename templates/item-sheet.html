@@ -29,10 +29,12 @@
             <hr>
             {{/if}}
 
+            {{#if (or (eq item.type 'weapon') (eq item.type 'skill') (eq item.type 'ability'))}}
             <div class="flexrow">
                 <label>Familiarity</label>
                 <input type="number" name="system.familiarity" value="{{system.familiarity}}" data-dtype="Number"/>
             </div>
+            {{/if}}
 
             {{#if (eq item.type "weapon")}}
             <div class="flexrow">
@@ -164,10 +166,7 @@
             {{/if}}
 
             {{#if (or (eq item.type "equipment") (eq item.type "tool") (eq item.type "questItem") (eq item.type "consumable") (eq item.type "armor") (eq item.type "backpack"))}}
-            <div class="flexrow">
-                <label>Tags</label>
-                <input type="text" name="system.tags" value="{{system.tags}}"/>
-            </div>
+            {{!-- Physical item fields already shown above --}}
             {{/if}}
 
             {{#if (or (eq item.type "skill") (eq item.type "ability"))}}
@@ -183,10 +182,6 @@
                 </select>
             </div>
             {{/if}}
-            <div class="flexrow">
-                <label>Tags</label>
-                <input type="text" name="system.tags" value="{{system.tags}}"/>
-            </div>
             {{/if}}
 
             {{#if (eq item.type "ability")}}
@@ -432,6 +427,11 @@
             {{/unless}}
             {{/if}}
 
+            <hr>
+            <div class="flexrow">
+                <label>Tags</label>
+                <input type="text" name="system.tags" value="{{system.tags}}"/>
+            </div>
             <hr>
             <label>Description</label>
             <textarea name="system.description" rows="10">{{system.description}}</textarea>

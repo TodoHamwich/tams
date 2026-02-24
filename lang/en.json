@@ -15,7 +15,8 @@
     "Recharge": "Recharge",
     "RechargeTitle": "Recharge {name}",
     "RechargeContent": "How many uses to recharge?",
-    "Loot": "Loot"
+    "Loot": "Loot",
+    "LootSheet": "Loot Sheet"
   },
   "TYPES.Actor.character": "Character",
   "TYPES.Item.weapon": "Weapon",

@@ -641,7 +641,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       position: { width: 600, height: 800 },
       window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
-      dragDrop: [{ dragSelector: ".item", dropSelector: null }],
+      dragDrop: [{ dragSelector: ".item", dropSelector: "form" }],
       actions: {
         itemCreate: TAMSActorSheet.prototype._onItemCreate,
         itemEdit: TAMSActorSheet.prototype._onItemEdit,
@@ -1031,6 +1031,21 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
   }
 
   /** @override */
+  async _onDrop(event) {
+    const data = TextEditor.getDragEventData(event);
+    if ( data.type !== "Item" ) return super._onDrop(event);
+    
+    const item = await Item.fromDropData(data);
+    if ( !item ) return;
+    
+    // If dropping on the same actor, don't create a copy
+    if ( this.document.uuid === item.parent?.uuid ) return;
+    
+    const itemData = item.toObject();
+    return this.document.createEmbeddedDocuments("Item", [itemData]);
+  }
+
+  /** @override */
   _onDragStart(event) {
     const li = event.currentTarget;
     if ( event.target.classList.contains("content-link") ) return;
@@ -1046,7 +1061,9 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     if ( !dragData ) return;
 
     // Set data transfer
-    event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+    const jsonData = JSON.stringify(dragData);
+    event.dataTransfer.setData("text/plain", jsonData);
+    event.dataTransfer.setData("application/json", jsonData);
   }
 
   async _onRoll(event, target) {
@@ -1061,7 +1078,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
     let label = dataset.label || '';
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
-        if (tName) label = `${label} �� ${tName}`;
+        if (tName) label = `${label} -> ${tName}`;
     }
     let statValue = parseInt(dataset.statValue) || 100;
     let statMod = parseInt(dataset.statMod) || 0;
@@ -1661,6 +1678,21 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
     }).render(true);
 }
 
+class TAMSLootSheet extends TAMSActorSheet {
+  static get DEFAULT_OPTIONS() {
+    return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
+      classes: ["tams", "sheet", "actor", "loot"],
+      position: { width: 500, height: 400 }
+    }, { inplace: false });
+  }
+
+  static PARTS = {
+    form: {
+      template: "systems/tams/templates/loot-sheet.html"
+    }
+  };
+}
+
 class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
   static get DEFAULT_OPTIONS() {
     return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
@@ -1837,6 +1869,11 @@ Hooks.once("init", async function() {
 
   foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
   foundry.documents.collections.Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
+  foundry.documents.collections.Actors.registerSheet("tams", TAMSLootSheet, { 
+    types: ["character"],
+    makeDefault: false,
+    label: "TAMS.LootSheet" 
+  });
   foundry.documents.collections.Items.unregisterSheet("core", foundry.appv1.sheets.ItemSheet);
   foundry.documents.collections.Items.registerSheet("tams", TAMSItemSheet, { makeDefault: true });
 
@@ -1919,6 +1956,11 @@ Hooks.on("dropCanvasData", async (canvas, data) => {
       settings: {
         isNPC: true,
         npcType: "individual"
+      }
+    },
+    flags: {
+      core: {
+        sheetClass: "tams.TAMSLootSheet"
       }
     }
   };
