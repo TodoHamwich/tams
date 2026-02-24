@@ -8,7 +8,14 @@
     "StatBravery": "Bravery",
     "ArmourPenetration": "Armour Penetration",
     "HasArmourPen": "Has Armour Pen?",
-    "Value": "AP Value"
+    "Value": "AP Value",
+    "DeleteConfirmTitle": "Delete Item",
+    "DeleteConfirmContent": "Are you sure you want to delete {name}?",
+    "UseCharge": "Use Charge",
+    "Recharge": "Recharge",
+    "RechargeTitle": "Recharge {name}",
+    "RechargeContent": "How many uses to recharge?",
+    "Loot": "Loot"
   },
   "TYPES.Actor.character": "Character",
   "TYPES.Item.weapon": "Weapon",

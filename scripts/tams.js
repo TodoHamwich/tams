@@ -641,6 +641,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       position: { width: 600, height: 800 },
       window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
+      dragDrop: [{ dragSelector: ".item", dropSelector: null }],
       actions: {
         itemCreate: TAMSActorSheet.prototype._onItemCreate,
         itemEdit: TAMSActorSheet.prototype._onItemEdit,
@@ -648,6 +649,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         roll: TAMSActorSheet.prototype._onRoll,
         resourceAdd: TAMSActorSheet.prototype._onResourceAdd,
         resourceDelete: TAMSActorSheet.prototype._onResourceDelete,
+        itemUseCharge: TAMSActorSheet.prototype._onItemUseCharge,
+        itemRecharge: TAMSActorSheet.prototype._onItemRecharge,
         setTab: TAMSActorSheet.prototype._onSetTab,
         updateItemField: TAMSActorSheet.prototype._onUpdateItemField,
         editImage: TAMSActorSheet.prototype._onEditImage,
@@ -871,7 +874,124 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
   async _onItemDelete(event, target) {
     const li = target.closest(".item");
     const item = this.document.items.get(li.dataset.itemId);
-    if (item) item.delete();
+    if (!item) return;
+
+    if (event.shiftKey) {
+      return item.delete();
+    }
+
+    const confirmed = await Dialog.confirm({
+      title: game.i18n.localize("TAMS.DeleteConfirmTitle"),
+      content: game.i18n.format("TAMS.DeleteConfirmContent", {name: item.name}),
+      yes: () => true,
+      no: () => false,
+      defaultYes: false
+    });
+
+    if (confirmed) {
+      item.delete();
+    }
+  }
+
+  async _onItemUseCharge(event, target) {
+    const li = target.closest(".item");
+    const item = this.document.items.get(li.dataset.itemId);
+    if (!item) return;
+
+    let { value, max } = item.system.uses || { value: 0, max: 0 };
+    let quantity = item.system.quantity;
+
+    if (value > 0) {
+      value -= 1;
+    } else if (quantity > 0) {
+      quantity -= 1;
+      value = Math.max(0, max - 1);
+    } else {
+      ui.notifications.warn(`No charges or quantity remaining for ${item.name}`);
+      return;
+    }
+
+    await item.update({
+      "system.uses.value": value,
+      "system.quantity": quantity
+    });
+  }
+
+  async _onItemRecharge(event, target) {
+    const li = target.closest(".item");
+    const item = this.document.items.get(li.dataset.itemId);
+    if (!item) return;
+
+    const { value, max } = item.system.uses || { value: 0, max: 0 };
+    const cost = item.system.cost || 0;
+    const resourceId = item.system.resource;
+    const isApex = item.system.isApex;
+
+    const doRecharge = async (amount) => {
+      amount = parseInt(amount) || 0;
+      if (amount <= 0) return;
+      const actualAmount = Math.min(amount, max - value);
+      if (actualAmount <= 0) return;
+
+      if (!isApex && cost > 0) {
+        const totalCost = actualAmount * cost;
+        const actor = this.document;
+        
+        if (resourceId === "stamina") {
+          if (actor.system.stamina.value < totalCost) {
+            ui.notifications.warn(`Not enough stamina to recharge ${item.name}. Needs ${totalCost}, has ${actor.system.stamina.value}.`);
+            return;
+          }
+          await actor.update({ "system.stamina.value": actor.system.stamina.value - totalCost });
+        } else {
+          const resIndex = parseInt(resourceId);
+          if (!isNaN(resIndex) && actor.system.customResources[resIndex]) {
+            const res = actor.system.customResources[resIndex];
+            if (res.value < totalCost) {
+              ui.notifications.warn(`Not enough ${res.name} to recharge ${item.name}. Needs ${totalCost}, has ${res.value}.`);
+              return;
+            }
+            await actor.update({ [`system.customResources.${resIndex}.value`]: res.value - totalCost });
+          }
+        }
+      }
+      
+      await item.update({ "system.uses.value": value + actualAmount });
+    };
+
+    if (event.shiftKey) {
+      return doRecharge(max - value);
+    }
+
+    const resourceName = resourceId === "stamina" ? "Stamina" : (this.document.system.customResources[parseInt(resourceId)]?.name || "Resource");
+    const costInfo = (!isApex && cost > 0) ? `<p style="margin: 5px 0;">Cost: <b>${cost} ${resourceName}</b> per charge</p>` : "";
+    const content = `
+      <div class="form-group">
+        <label>${game.i18n.localize("TAMS.RechargeContent")}</label>
+        <input type="number" name="amount" value="${max - value}" min="0" max="${max - value}"/>
+      </div>
+      ${costInfo}
+    `;
+
+    new Dialog({
+      title: game.i18n.format("TAMS.RechargeTitle", {name: item.name}),
+      content: content,
+      buttons: {
+        recharge: {
+          icon: '<i class="fas fa-bolt"></i>',
+          label: game.i18n.localize("TAMS.Recharge"),
+          callback: (html) => {
+            const amount = html.find('[name="amount"]').val();
+            doRecharge(amount);
+          }
+        },
+        cancel: {
+          icon: '<i class="fas fa-times"></i>',
+          label: "Cancel"
+        }
+      },
+      default: "recharge"
+    }).render(true);
   }
 
   async _onUpdateItemField(event, target) {
@@ -908,6 +1028,25 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     }
     await this.document.update(updates);
     ui.notifications.info(`${this.document.name} fully healed.`);
+  }
+
+  /** @override */
+  _onDragStart(event) {
+    const li = event.currentTarget;
+    if ( event.target.classList.contains("content-link") ) return;
+
+    // Create drag data
+    let dragData;
+
+    // Case 1 - Item
+    const itemId = li.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if ( item ) dragData = item.toDragData();
+
+    if ( !dragData ) return;
+
+    // Set data transfer
+    event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
   }
 
   async _onRoll(event, target) {
@@ -1747,6 +1886,74 @@ async function tamsUpdateMessage(message, updateData) {
     updateData: updateData
   });
 }
+
+/**
+ * Global Hooks
+ */
+Hooks.on("dropCanvasData", async (canvas, data) => {
+  if (data.type !== "Item") return;
+  
+  let item;
+  if (data.uuid) item = await fromUuid(data.uuid);
+  else if (data.data) item = data.data;
+  
+  if (!item) return;
+
+  // We only care about items dropped on the canvas
+  const x = data.x;
+  const y = data.y;
+
+  // Create a new actor for the loot
+  const actorData = {
+    name: `${game.i18n.localize("TAMS.Loot")}: ${item.name}`,
+    type: "character",
+    img: item.img || "icons/svg/item-bag.svg",
+    prototypeToken: {
+        name: `${game.i18n.localize("TAMS.Loot")}: ${item.name}`,
+        texture: { src: item.img || "icons/svg/item-bag.svg" },
+        width: 0.5,
+        height: 0.5,
+        actorLink: false
+    },
+    system: {
+      settings: {
+        isNPC: true,
+        npcType: "individual"
+      }
+    }
+  };
+
+  const actor = await Actor.create(actorData);
+  
+  // Items to move
+  const itemsToCreate = [];
+  const itemsToDelete = [];
+
+  // Add the main item
+  itemsToCreate.push(item.toObject());
+  if (item.actor) itemsToDelete.push(item);
+
+  // If it's an EQUIPPED backpack, move all items in it too
+  if (item.type === "backpack" && item.actor && item.system.equipped) {
+    const sourceActor = item.actor;
+    const backpackContents = sourceActor.items.filter(i => i.system.location === "backpack");
+    for (let i of backpackContents) {
+      itemsToCreate.push(i.toObject());
+      itemsToDelete.push(i);
+    }
+  }
+
+  await actor.createEmbeddedDocuments("Item", itemsToCreate);
+  
+  // Delete from source
+  for (let i of itemsToDelete) {
+    await i.delete();
+  }
+
+  // Create token
+  const tokenData = await actor.getTokenDocument({ x, y });
+  return canvas.scene.createEmbeddedDocuments("Token", [tokenData]);
+});
 
 Hooks.on("renderChatMessage", (message, html, data) => {
     const root = (html instanceof jQuery) ? html[0] : html;
