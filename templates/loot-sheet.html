@@ -1,0 +1,40 @@
+<section class="tams-actor-form flexcol loot-sheet">
+    <header class="sheet-header">
+        <h1 class="charname">
+            <input name="name" type="text" value="{{document.name}}" placeholder="Name"/>
+        </h1>
+    </header>
+
+    <section class="sheet-body">
+        <div class="inventory-scroll" style="margin-top: 5px;">
+            <li class="item flexrow item-header" style="background: rgba(0,0,0,0.1); font-weight: bold; border-bottom: 2px solid #7a7971;">
+                <div class="item-name" style="padding-left: 5px;">Loot Item</div>
+                <div class="item-stat" style="flex: 0 0 50px; text-align: center;">Qty</div>
+                <div class="item-controls" style="flex: 0 0 50px;"></div>
+            </li>
+            
+            <ol class="items-list">
+                {{#each actor.items as |item id|}}
+                <li class="item flexrow" data-item-id="{{item.id}}" draggable="true" style="border-bottom: 1px solid #ccc; padding: 4px 0;">
+                    {{#if item.img}}<img src="{{item.img}}" title="{{item.name}}" width="32" height="32" style="border: 1px solid #7a7971; border-radius: 3px; margin: 0 5px;"/>{{/if}}
+                    <h4 class="item-name" style="margin: 0; font-family: 'MedievalSharp', serif; align-self: center;">{{item.name}}</h4>
+                    <div class="item-stat" style="flex: 0 0 50px; text-align: center; align-self: center;">
+                        {{#if (or (eq item.type 'weapon') (eq item.type 'equipment') (eq item.type 'armor') (eq item.type 'consumable') (eq item.type 'tool') (eq item.type 'questItem') (eq item.type 'backpack'))}}
+                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}" style="width: 35px;"/>
+                        {{/if}}
+                    </div>
+                    <div class="item-controls" style="flex: 0 0 50px; align-self: center;">
+                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                    </div>
+                </li>
+                {{/each}}
+                {{#unless actor.items.size}}
+                <li class="item flexrow" style="justify-content: center; font-style: italic; color: #888; padding: 20px;">
+                    This loot pile is empty.
+                </li>
+                {{/unless}}
+            </ol>
+        </div>
+    </section>
+</section>

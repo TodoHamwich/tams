@@ -641,7 +641,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       position: { width: 600, height: 800 },
       window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
-      dragDrop: [{ dragSelector: ".item", dropSelector: "form" }],
+      dragDrop: [{ dragSelector: ".item", dropSelector: ".tams-actor-form" }],
       actions: {
         itemCreate: TAMSActorSheet.prototype._onItemCreate,
         itemEdit: TAMSActorSheet.prototype._onItemEdit,
@@ -1038,8 +1038,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const item = await Item.fromDropData(data);
     if ( !item ) return;
     
-    // If dropping on the same actor, don't create a copy
-    if ( this.document.uuid === item.parent?.uuid ) return;
+    // If dropping on the same actor, let the super handle it (e.g. reordering)
+    if ( this.document.uuid === item.parent?.uuid ) return super._onDrop(event);
     
     const itemData = item.toObject();
     return this.document.createEmbeddedDocuments("Item", [itemData]);
@@ -1047,8 +1047,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
   /** @override */
   _onDragStart(event) {
-    const li = event.currentTarget;
-    if ( event.target.classList.contains("content-link") ) return;
+    const li = event.target.closest(".item");
+    if ( !li || event.target.classList.contains("content-link") ) return;
 
     // Create drag data
     let dragData;
