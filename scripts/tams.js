@@ -1037,11 +1037,34 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     
     const item = await Item.fromDropData(data);
     if ( !item ) return;
+
+    // 1. Handle dropping ON a backpack to store it
+    const targetLi = event.target.closest(".item[data-item-id]");
+    if ( targetLi ) {
+        const targetItem = this.document.items.get(targetLi.dataset.itemId);
+        if ( targetItem?.type === "backpack" && item.uuid !== targetItem.uuid ) {
+            // If it's already on this actor, just update location
+            if ( item.parent?.uuid === this.document.uuid ) {
+                await item.update({"system.location": "backpack"});
+                ui.notifications.info(`Moved ${item.name} into ${targetItem.name}.`);
+                return;
+            }
+            // If from another actor, create it with backpack location
+            const itemData = item.toObject();
+            itemData.system.location = "backpack";
+            const created = await this.document.createEmbeddedDocuments("Item", [itemData]);
+            if ( created.length && item.parent && item.parent.isOwner ) {
+                try { await item.delete(); } catch(e) {}
+            }
+            ui.notifications.info(`Moved ${item.name} into ${targetItem.name}.`);
+            return created;
+        }
+    }
     
-    // If dropping on the same actor, let the super handle it (e.g. reordering)
+    // 2. If dropping on the same actor generally, let the super handle it (e.g. reordering)
     if ( this.document.uuid === item.parent?.uuid ) return super._onDrop(event);
     
-    // Create the item on the target actor
+    // 3. Create the item on the target actor (General drop)
     const itemData = item.toObject();
     const created = await this.document.createEmbeddedDocuments("Item", [itemData]);
     
@@ -1058,23 +1081,17 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
   /** @override */
   _onDragStart(event) {
-    const li = event.target.closest(".item[data-item-id]");
-    if ( !li || event.target.classList.contains("content-link") ) return;
+    const li = event.currentTarget;
+    if ( event.target.classList.contains("content-link") ) return;
 
-    // Create drag data
-    let dragData;
-
-    // Case 1 - Item
     const itemId = li.dataset.itemId;
     const item = this.document.items.get(itemId);
-    if ( item ) dragData = item.toDragData();
+    if ( !item ) return;
 
+    const dragData = item.toDragData();
     if ( !dragData ) return;
 
-    // Set data transfer
-    const jsonData = JSON.stringify(dragData);
-    event.dataTransfer.setData("text/plain", jsonData);
-    event.dataTransfer.setData("application/json", jsonData);
+    event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
   }
 
   async _onRoll(event, target) {
@@ -1847,6 +1864,8 @@ Hooks.once("init", async function() {
     if (data.type === "updateMessage" && game.user.isGM) {
       const message = game.messages.get(data.messageId);
       if (message) message.update(data.updateData);
+    } else if (data.type === "createLoot" && game.user.isGM) {
+        tamsHandleLootDrop(data.lootData, data.x, data.y);
     }
   });
 
@@ -1938,27 +1957,21 @@ async function tamsUpdateMessage(message, updateData) {
 /**
  * Global Hooks
  */
-Hooks.on("dropCanvasData", async (canvas, data) => {
-  if (data.type !== "Item") return;
-  
+async function tamsHandleLootDrop(data, x, y) {
   let item;
   if (data.uuid) item = await fromUuid(data.uuid);
   else if (data.data) item = data.data;
   
   if (!item) return;
 
-  // We only care about items dropped on the canvas
-  const x = data.x;
-  const y = data.y;
-
   // Create a new actor for the loot
   const actorData = {
-    name: `${game.i18n.localize("TAMS.Loot")}: ${item.name}`,
+    name: `${game.i18n.localize("TAMS.Loot")}: ${item.name || item.data?.name}`,
     type: "character",
-    img: item.img || "icons/svg/item-bag.svg",
+    img: item.img || item.data?.img || "icons/svg/item-bag.svg",
     prototypeToken: {
-        name: `${game.i18n.localize("TAMS.Loot")}: ${item.name}`,
-        texture: { src: item.img || "icons/svg/item-bag.svg" },
+        name: `${game.i18n.localize("TAMS.Loot")}: ${item.name || item.data?.name}`,
+        texture: { src: item.img || item.data?.img || "icons/svg/item-bag.svg" },
         width: 0.5,
         height: 0.5,
         actorLink: false
@@ -1987,11 +2000,14 @@ Hooks.on("dropCanvasData", async (canvas, data) => {
   const itemsToDelete = [];
 
   // Add the main item
-  itemsToCreate.push(item.toObject());
-  if (item.actor) itemsToDelete.push(item);
+  const mainItemData = (typeof item.toObject === 'function') ? item.toObject() : item;
+  itemsToCreate.push(mainItemData);
+  
+  // If it's a Document, we might want to delete it from its parent
+  if (item instanceof Item && item.actor) itemsToDelete.push(item);
 
   // If it's an EQUIPPED backpack, move all items in it too
-  if (item.type === "backpack" && item.actor && item.system.equipped) {
+  if (item instanceof Item && item.type === "backpack" && item.actor && item.system.equipped) {
     const sourceActor = item.actor;
     const backpackContents = sourceActor.items.filter(i => i.system.location === "backpack");
     for (let i of backpackContents) {
@@ -2014,6 +2030,24 @@ Hooks.on("dropCanvasData", async (canvas, data) => {
   // Create token
   const tokenDocument = await actor.getTokenDocument({ x, y });
   return canvas.scene.createEmbeddedDocuments("Token", [tokenDocument.toObject()]);
+}
+
+Hooks.on("dropCanvasData", async (canvas, data) => {
+  if (data.type !== "Item") return;
+  
+  if (!game.user.isGM) {
+      // Send to GM via socket
+      game.socket.emit("system.tams", {
+          type: "createLoot",
+          lootData: data,
+          x: data.x,
+          y: data.y
+      });
+      ui.notifications.info("Requesting GM to create loot pile...");
+      return;
+  }
+
+  return tamsHandleLootDrop(data, data.x, data.y);
 });
 
 Hooks.on("renderChatMessage", (message, html, data) => {
