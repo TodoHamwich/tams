@@ -641,7 +641,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       position: { width: 600, height: 800 },
       window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
-      dragDrop: [{ dragSelector: ".item[data-item-id]", dropSelector: null }],
+      dragDrop: [{ dragSelector: ".item[data-item-id]", dropSelector: ".tams-actor-form" }],
       actions: {
         itemCreate: TAMSActorSheet.prototype._onItemCreate,
         itemEdit: TAMSActorSheet.prototype._onItemEdit,
@@ -1081,8 +1081,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
   /** @override */
   _onDragStart(event) {
-    const li = event.currentTarget;
-    if ( event.target.classList.contains("content-link") ) return;
+    const li = event.target.closest(".item[data-item-id]");
+    if ( !li || event.target.classList.contains("content-link") ) return;
 
     const itemId = li.dataset.itemId;
     const item = this.document.items.get(itemId);
@@ -1988,7 +1988,7 @@ async function tamsHandleLootDrop(data, x, y) {
       }
     },
     ownership: {
-      default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER
+      default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
     }
   };
 
