@@ -641,7 +641,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       position: { width: 600, height: 800 },
       window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
-      dragDrop: [{ dragSelector: ".item", dropSelector: ".tams-actor-form" }],
+      dragDrop: [{ dragSelector: ".item[data-item-id]", dropSelector: null }],
       actions: {
         itemCreate: TAMSActorSheet.prototype._onItemCreate,
         itemEdit: TAMSActorSheet.prototype._onItemEdit,
@@ -1041,13 +1041,24 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     // If dropping on the same actor, let the super handle it (e.g. reordering)
     if ( this.document.uuid === item.parent?.uuid ) return super._onDrop(event);
     
+    // Create the item on the target actor
     const itemData = item.toObject();
-    return this.document.createEmbeddedDocuments("Item", [itemData]);
+    const created = await this.document.createEmbeddedDocuments("Item", [itemData]);
+    
+    // Handle "moving" - delete from source if successful and user has permission
+    if ( created.length && item.parent && item.parent.isOwner ) {
+        try {
+            await item.delete();
+        } catch (err) {
+            console.warn("TAMS | Failed to delete source item after move", err);
+        }
+    }
+    return created;
   }
 
   /** @override */
   _onDragStart(event) {
-    const li = event.target.closest(".item");
+    const li = event.target.closest(".item[data-item-id]");
     if ( !li || event.target.classList.contains("content-link") ) return;
 
     // Create drag data
@@ -1962,10 +1973,14 @@ Hooks.on("dropCanvasData", async (canvas, data) => {
       core: {
         sheetClass: "tams.TAMSLootSheet"
       }
+    },
+    ownership: {
+      default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER
     }
   };
 
   const actor = await Actor.create(actorData);
+  if ( !actor ) return console.error("TAMS | Failed to create loot actor.");
   
   // Items to move
   const itemsToCreate = [];
@@ -1989,12 +2004,16 @@ Hooks.on("dropCanvasData", async (canvas, data) => {
   
   // Delete from source
   for (let i of itemsToDelete) {
-    await i.delete();
+    try {
+        await i.delete();
+    } catch (err) {
+        console.warn(`TAMS | Failed to delete source item ${i.name} after drop on map.`, err);
+    }
   }
 
   // Create token
-  const tokenData = await actor.getTokenDocument({ x, y });
-  return canvas.scene.createEmbeddedDocuments("Token", [tokenData]);
+  const tokenDocument = await actor.getTokenDocument({ x, y });
+  return canvas.scene.createEmbeddedDocuments("Token", [tokenDocument.toObject()]);
 });
 
 Hooks.on("renderChatMessage", (message, html, data) => {
@@ -2911,7 +2930,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
       const msg = `
         <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? '1' : '0'}">
-          <h3 class="roll-label">Retaliation �X ${actor.name} with ${weapon.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
+          <h3 class="roll-label">Retaliation — ${actor.name} with ${weapon.name} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           ${retDescriptionHtml}
           
           ${defenseDamageInfo}
