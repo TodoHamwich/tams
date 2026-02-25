@@ -641,7 +641,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       position: { width: 600, height: 800 },
       window: { resizable: true },
       form: { submitOnChange: true, closeOnSubmit: false },
-      dragDrop: [{ dragSelector: ".item[data-item-id]", dropSelector: ".tams-actor-form" }],
+      dragDrop: [{ dragSelector: ".item[data-item-id]", dropSelector: null }],
       actions: {
         itemCreate: TAMSActorSheet.prototype._onItemCreate,
         itemEdit: TAMSActorSheet.prototype._onItemEdit,
@@ -1082,7 +1082,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
   /** @override */
   _onDragStart(event) {
     const li = event.target.closest(".item[data-item-id]");
-    if ( !li || event.target.classList.contains("content-link") ) return;
+    if ( !li ) return super._onDragStart(event);
+    if ( event.target.classList.contains("content-link") ) return;
 
     const itemId = li.dataset.itemId;
     const item = this.document.items.get(itemId);
@@ -1091,7 +1092,9 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const dragData = item.toDragData();
     if ( !dragData ) return;
 
-    event.dataTransfer.setData("text/plain", JSON.stringify(dragData));
+    const jsonData = JSON.stringify(dragData);
+    event.dataTransfer.setData("text/plain", jsonData);
+    event.dataTransfer.setData("application/json", jsonData);
   }
 
   async _onRoll(event, target) {
