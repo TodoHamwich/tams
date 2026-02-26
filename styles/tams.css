@@ -596,22 +596,117 @@
 }
 
 .tams .item-controls {
-    flex: 0 0 60px;
+    flex: 0 0 100px;
     text-align: right;
 }
 
 /* Inventory Styles */
+.tams .inventory-section {
+    margin-bottom: 10px;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
 .tams .inventory-section-header {
     background: #4a0000;
     color: white;
-    padding: 2px 8px;
-    margin: 10px 0 5px 0;
+    padding: 4px 8px;
+    margin: 0;
     font-family: 'MedievalSharp', serif;
     font-size: 1.1em;
-    border-radius: 3px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.tams .inventory-section-header.container-header {
+    background: #5c3b1e; /* Brown for containers */
+}
+
+.tams .inventory-section-header.equipped {
+    border-left: 5px solid #2e7d32;
+}
+
+.tams .inventory-category-header {
+    background: #8b0000;
+    color: #fff;
+    padding: 2px 10px;
+    font-size: 0.85em;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    font-family: 'Roboto Condensed', sans-serif;
+}
+
+.tams.theme-dark .inventory-category-header {
+    background: #8b0000;
+    color: #fff;
+    border-bottom-color: rgba(255,255,255,0.1);
+}
+
+.tams.theme-parchment .inventory-category-header {
+    background: #8b0000;
+    color: #fff;
+}
+
+.tams .inventory-section-header .header-main {
+    display: flex;
+    align-items: center;
+}
+
+.tams .inventory-section-header .capacity-tag {
+    font-size: 0.7em;
+    margin-left: 10px;
+    opacity: 0.8;
+    font-family: 'Signika', sans-serif;
+}
+
+.tams .inventory-controls-global {
+    background: rgba(0,0,0,0.05);
+    padding: 5px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    justify-content: center;
+}
+
+.tams .item-name-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.tams .item-sub-props {
+    display: flex;
+    gap: 5px;
+}
+
+.tams .prop-tag {
+    font-size: 9px;
+    text-transform: uppercase;
+    background: rgba(0,0,0,0.1);
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #666;
+}
+
+.tams.theme-dark .prop-tag {
+    background: rgba(255,255,255,0.1);
+    color: #aaa;
+}
+
+.tams .nested-item {
+    padding-left: 15px;
+    border-left: 2px solid rgba(0,0,0,0.05);
+}
+
+.tams .empty-notice {
+    padding: 8px;
+    text-align: center;
+    font-style: italic;
+    color: #888;
+    font-size: 0.9em;
 }
 
 .tams .inventory-controls {
@@ -620,6 +715,7 @@
 }
 
 .tams .inventory-controls a,
+.tams .inventory-controls-global a,
 .tams [data-action="resourceAdd"],
 .tams .tab.abilities [data-action="itemCreate"] {
     font-size: 0.8em;
@@ -634,6 +730,7 @@
 }
 
 .tams .inventory-controls a:hover,
+.tams .inventory-controls-global a:hover,
 .tams [data-action="resourceAdd"]:hover,
 .tams .tab.abilities [data-action="itemCreate"]:hover {
     background: #8b0000;

@@ -85,7 +85,7 @@
                             <div class="bar-container">
                                 <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled/>
                                 <div class="bar">
-                                    <div class="fill" style="width: {{hpPercentage}}%; background: #e74c3c;"></div>
+                                    <div class="fill" style="width: {{hpPercentage}}%"></div>
                                 </div>
                                 <span class="max-label"> / {{system.hp.max}} </span>
                             </div>
@@ -141,7 +141,7 @@
             </li>
             <ol class="items-list">
                 {{#each weapons as |item id|}}
-                <li class="item flexrow" data-item-id="{{item.id}}" draggable="true">
+                <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
@@ -180,6 +180,8 @@
                         <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}}/>
                     </div>
                     <div class="item-controls">
+                        <a class="item-control" data-action="itemGive" title="Give Item"><i class="fas fa-gift"></i></a>
+                        <a class="item-control" data-action="itemExport" title="Export to Items Tab"><i class="fas fa-file-export"></i></a>
                         <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
                         <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
                     </div>
@@ -196,7 +198,7 @@
             </li>
             <ol class="items-list">
                 {{#each skills as |item id|}}
-                <li class="item flexrow" data-item-id="{{item.id}}" draggable="true">
+                <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
                     </h4>
@@ -209,6 +211,8 @@
                         </select>
                     </div>
                     <div class="item-controls">
+                        <a class="item-control" data-action="itemGive" title="Give Item"><i class="fas fa-gift"></i></a>
+                        <a class="item-control" data-action="itemExport" title="Export to Items Tab"><i class="fas fa-file-export"></i></a>
                         <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
                         <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
                     </div>
@@ -231,7 +235,7 @@
                         <div class="bar-container">
                             <input type="number" name="system.stamina.value" value="{{system.stamina.value}}" max="{{system.stamina.max}}" min="0"/>
                             <div class="bar">
-                                <div class="fill" style="width: {{staminaPercentage}}%; background: {{system.stamina.color}};"></div>
+                                <div class="fill" style="width: {{staminaPercentage}}%"></div>
                             </div>
                             <span class="max-label"> / {{system.stamina.max}} </span>
                         </div>
@@ -246,7 +250,7 @@
                         <div class="bar-container">
                             <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}" max="{{res.max}}" min="0"/>
                             <div class="bar">
-                                <div class="fill" style="width: {{res.percentage}}%; background: {{res.color}};"></div>
+                                <div class="fill" style="width: {{res.percentage}}%"></div>
                             </div>
                             <span class="max-label"> / {{res.max}} </span>
                             <a data-action="resourceDelete" data-index="{{index}}" class="delete-resource"><i class="fas fa-trash"></i></a>
@@ -265,7 +269,7 @@
             <h3>Abilities <a data-action="itemCreate" data-type="ability"><i class="fas fa-plus"></i> Add</a></h3>
             <ol class="items-list">
                 {{#each abilities as |item id|}}
-                <li class="item flexrow" data-item-id="{{item.id}}" draggable="true">
+                <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} 
                         {{#if item.system.isAttack}}
@@ -282,6 +286,8 @@
                         {{/if}}
                     </h4>
                     <div class="item-controls">
+                        <a class="item-control" data-action="itemGive" title="Give Item"><i class="fas fa-gift"></i></a>
+                        <a class="item-control" data-action="itemExport" title="Export to Items Tab"><i class="fas fa-file-export"></i></a>
                         {{#if (or item.system.isApex (gt item.system.uses.max 0))}}
                         <a class="item-control" data-action="itemRecharge" title="Recharge Uses"><i class="fas fa-bolt"></i></a>
                         {{/if}}
@@ -302,259 +308,83 @@
                 </div>
                 <div class="bar-container" style="height: 8px; margin-top: 2px;">
                     <div class="bar">
-                        <div class="fill" style="width: {{capacityPercentage}}%; background: {{#if inventory.isEncumbered}}#e74c3c{{else}}#3498db{{/if}};"></div>
+                        <div class="fill" style="width: {{capacityPercentage}}%"></div>
                     </div>
                 </div>
-            </div>
-
-            <div class="backpack-slot-container" style="border-bottom: 2px solid #7a7971; margin-bottom: 5px; padding-bottom: 5px; flex: 0 0 auto;">
-                <h4 class="inventory-section-header" style="margin-top: 0; background: #5c3b1e;">
-                    <span>Containers / Backpacks</span>
-                    <div class="inventory-controls">
-                        <a data-action="itemCreate" data-type="backpack" title="Add Backpack"><i class="fas fa-plus"></i> Add</a>
-                    </div>
-                </h4>
-                {{#if inventoryBackpacks.length}}
-                <ol class="items-list">
-                    {{#each inventoryBackpacks as |item id|}}
-                    <li class="item flexrow {{#if item.system.equipped}}equipped-backpack{{/if}}" data-item-id="{{item.id}}" draggable="true" style="border-bottom: 1px solid #ccc; padding: 4px;">
-                        <img src="{{item.img}}" title="{{item.name}}" width="32" height="32" style="border: 1px solid #7a7971; border-radius: 3px;"/>
-                        <div class="item-name-details flexcol" style="flex: 1; padding-left: 10px;">
-                            <h4 class="item-name" style="margin: 0; font-family: 'MedievalSharp', serif; font-size: 1.1em;">{{item.name}}</h4>
-                            <div class="item-properties" style="font-size: 0.8em; color: #666;">
-                                <span>Cap: {{item.system.capacity}} Med</span> | <span>Mod: {{item.system.modifier}}x</span>
-                                {{#if item.system.penalties.active}} | <span style="color: #c62828;"><i class="fas fa-exclamation-circle"></i> Penalties Active</span>{{/if}}
-                            </div>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 100px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                            <label style="font-size: 10px; text-transform: uppercase;">Equip</label>
-                            <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}}/>
-                        </div>
-                        <div class="item-controls" style="flex: 0 0 60px; display: flex; align-items: center; justify-content: flex-end; gap: 5px;">
-                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                        </div>
-                    </li>
-                    {{/each}}
-                </ol>
-                {{else}}
-                <div class="no-backpacks" style="font-size: 0.85em; font-style: italic; color: #888; text-align: center; padding: 8px;">
-                    No backpack equipped. Items in "Backpack" location will be inaccessible.
-                </div>
-                {{/if}}
             </div>
 
             <div class="inventory-scroll">
-                <li class="item flexrow item-header">
-                    <div class="item-name">Name</div>
-                    <div class="item-stat" style="flex: 0 0 50px; text-align: center;">Qty</div>
-                    <div class="item-stat" style="flex: 0 0 70px; text-align: center;">Size</div>
-                    <div class="item-stat" style="flex: 0 0 90px; text-align: center;">Location</div>
-                    <div class="item-controls" style="flex: 0 0 50px;"></div>
-                </li>
+                <div class="inventory-controls-global flexrow">
+                    <a data-action="itemCreate" data-type="weapon" title="Add Weapon"><i class="fas fa-plus"></i> Weapon</a>
+                    <a data-action="itemCreate" data-type="armor" title="Add Armor"><i class="fas fa-plus"></i> Armor</a>
+                    <a data-action="itemCreate" data-type="consumable" title="Add Consumable"><i class="fas fa-plus"></i> Consumable</a>
+                    <a data-action="itemCreate" data-type="equipment" title="Add Misc"><i class="fas fa-plus"></i> Misc</a>
+                    <a data-action="itemCreate" data-type="backpack" title="Add Backpack"><i class="fas fa-plus"></i> Container</a>
+                </div>
 
-                <h4 class="inventory-section-header">
-                    <span>Weapons</span>
-                    <div class="inventory-controls">
-                        <a data-action="itemCreate" data-type="weapon" title="Add Weapon"><i class="fas fa-plus"></i> Add</a>
-                    </div>
-                </h4>
-                {{#if weapons.length}}
-                <ol class="items-list">
-                    {{#each weapons as |item id|}}
-                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" draggable="true">
-                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24" style="margin-right: 5px;"/>
-                        <h4 class="item-name">{{item.name}} {{#if item.system.equipped}}(Equipped){{/if}}</h4>
-                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
-                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
+                {{#each inventorySections as |section|}}
+                <div class="inventory-section" data-section-id="{{section.id}}">
+                    <h4 class="inventory-section-header {{#if (eq section.type 'container')}}container-header{{/if}} {{#if section.isEquipped}}equipped{{/if}}">
+                        <div class="header-main">
+                            {{#if (eq section.type 'container')}}
+                            <img src="{{section.item.img}}" width="20" height="20" style="margin-right: 5px;"/>
+                            {{/if}}
+                            <span>{{section.label}}</span>
+                            {{#if (eq section.type 'container')}}
+                            <small class="capacity-tag">({{section.capacity}} Med Units | {{section.modifier}}x)</small>
+                            {{/if}}
                         </div>
-                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../sizeOptions selected=item.system.size}}
-                            </select>
+                        <div class="header-controls">
+                            {{#if (eq section.type 'container')}}
+                            <label style="font-size: 10px; text-transform: uppercase; color: white;">Equip</label>
+                            <input type="checkbox" data-action="updateItemField" data-item-id="{{section.id}}" data-field="system.equipped" {{checked section.isEquipped}}/>
+                            <a class="item-control" data-action="itemEdit" data-item-id="{{section.id}}" title="Edit Container" style="color: white; margin-left: 5px;"><i class="fas fa-edit"></i></a>
+                            <a class="item-control" data-action="itemDelete" data-item-id="{{section.id}}" title="Delete Container" style="color: white; margin-left: 5px;"><i class="fas fa-trash"></i></a>
+                            {{/if}}
                         </div>
-                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../locationOptions selected=item.system.location}}
-                            </select>
-                        </div>
-                        <div class="item-controls" style="flex: 0 0 50px;">
-                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                        </div>
-                    </li>
-                    {{/each}}
-                </ol>
-                {{/if}}
-
-                <h4 class="inventory-section-header">
-                    <span>Armor</span>
-                    <div class="inventory-controls">
-                        <a data-action="itemCreate" data-type="armor" title="Add Armor"><i class="fas fa-plus"></i> Add</a>
-                    </div>
-                </h4>
-                {{#if inventoryArmor.length}}
-                <ol class="items-list">
-                    {{#each inventoryArmor as |item id|}}
-                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" draggable="true">
-                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                        <h4 class="item-name">{{item.name}}</h4>
-                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">{{item.system.quantity}}</div>
-                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../sizeOptions selected=item.system.size}}
-                            </select>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../locationOptions selected=item.system.location}}
-                            </select>
-                        </div>
-                        <div class="item-controls" style="flex: 0 0 50px;">
-                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                        </div>
-                    </li>
-                    {{/each}}
-                </ol>
-                {{/if}}
-
-                <h4 class="inventory-section-header">
-                    <span>Consumables</span>
-                    <div class="inventory-controls">
-                        <a data-action="itemCreate" data-type="consumable" title="Add Consumable"><i class="fas fa-plus"></i> Add</a>
-                    </div>
-                </h4>
-                {{#if inventoryConsumables.length}}
-                <ol class="items-list">
-                    {{#each inventoryConsumables as |item id|}}
-                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" draggable="true">
-                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                        <h4 class="item-name">{{item.name}} ({{item.system.uses.value}}/{{item.system.uses.max}})</h4>
-                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
-                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../sizeOptions selected=item.system.size}}
-                            </select>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../locationOptions selected=item.system.location}}
-                            </select>
-                        </div>
-                        <div class="item-controls" style="flex: 0 0 75px;">
-                            <a class="item-control" data-action="itemUseCharge" title="Use Charge"><i class="fas fa-flask"></i></a>
-                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                        </div>
-                    </li>
-                    {{/each}}
-                </ol>
-                {{/if}}
-
-                <h4 class="inventory-section-header">
-                    <span>Tools</span>
-                    <div class="inventory-controls">
-                        <a data-action="itemCreate" data-type="tool" title="Add Tool"><i class="fas fa-plus"></i> Add</a>
-                    </div>
-                </h4>
-                {{#if inventoryTools.length}}
-                <ol class="items-list">
-                    {{#each inventoryTools as |item id|}}
-                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" draggable="true">
-                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                        <h4 class="item-name">{{item.name}}</h4>
-                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
-                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../sizeOptions selected=item.system.size}}
-                            </select>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../locationOptions selected=item.system.location}}
-                            </select>
-                        </div>
-                        <div class="item-controls" style="flex: 0 0 50px;">
-                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                        </div>
-                    </li>
-                    {{/each}}
-                </ol>
-                {{/if}}
-
-                <h4 class="inventory-section-header">
-                    <span>Quest Items</span>
-                    <div class="inventory-controls">
-                        <a data-action="itemCreate" data-type="questItem" title="Add Quest Item"><i class="fas fa-plus"></i> Add</a>
-                    </div>
-                </h4>
-                {{#if inventoryQuestItems.length}}
-                <ol class="items-list">
-                    {{#each inventoryQuestItems as |item id|}}
-                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" draggable="true">
-                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                        <h4 class="item-name">{{item.name}}</h4>
-                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
-                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../sizeOptions selected=item.system.size}}
-                            </select>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../locationOptions selected=item.system.location}}
-                            </select>
-                        </div>
-                        <div class="item-controls" style="flex: 0 0 50px;">
-                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                        </div>
-                    </li>
-                    {{/each}}
-                </ol>
-                {{/if}}
-
-                <h4 class="inventory-section-header">
-                    <span>Misc Equipment</span>
-                    <div class="inventory-controls">
-                        <a data-action="itemCreate" data-type="equipment" title="Add Misc"><i class="fas fa-plus"></i> Add</a>
-                    </div>
-                </h4>
-                {{#if inventoryMisc.length}}
-                <ol class="items-list">
-                    {{#each inventoryMisc as |item id|}}
-                    <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" draggable="true">
-                        <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
-                        <h4 class="item-name">{{item.name}}</h4>
-                        <div class="item-stat" style="flex: 0 0 50px; text-align: center;">
-                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 70px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.size" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../sizeOptions selected=item.system.size}}
-                            </select>
-                        </div>
-                        <div class="item-stat" style="flex: 0 0 90px; text-align: center;">
-                            <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em;">
-                                {{selectOptions ../locationOptions selected=item.system.location}}
-                            </select>
-                        </div>
-                        <div class="item-controls" style="flex: 0 0 50px;">
-                            <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                            <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
-                        </div>
-                    </li>
-                    {{/each}}
-                </ol>
-                {{/if}}
+                    </h4>
+                    
+                    <ol class="items-list">
+                        {{#each section.categories as |category|}}
+                        <li class="inventory-category-header">{{category.label}}</li>
+                        {{#each category.items as |item|}}
+                        <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}} {{#if (eq section.type 'container')}}nested-item{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
+                            <img src="{{item.img}}" title="{{item.name}}" width="32" height="32" style="border-radius: 3px; border: 1px solid #7a7971;"/>
+                            <div class="item-name-col" style="padding-left: 10px;">
+                                <h4 class="item-name" style="font-family: 'MedievalSharp', serif; margin: 0;">{{item.name}}</h4>
+                                <div class="item-sub-props">
+                                    <span class="prop-tag">{{capitalize item.type}}</span>
+                                    <span class="prop-tag">{{item.system.size}}</span>
+                                </div>
+                            </div>
+                            <div class="item-stat" style="flex: 0 0 50px;">
+                                <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
+                            </div>
+                            <div class="item-stat" style="flex: 0 0 100px;">
+                                <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em; width: 100%;">
+                                    {{selectOptions ../../../locationOptions selected=item.system.location}}
+                                </select>
+                            </div>
+                            <div class="item-controls">
+                                <a class="item-control" data-action="itemGive" title="Give Item"><i class="fas fa-gift"></i></a>
+                                <a class="item-control" data-action="itemExport" title="Export to Items Tab"><i class="fas fa-file-export"></i></a>
+                                {{#if (eq item.type 'consumable')}}
+                                <a class="item-control" data-action="itemUseCharge" title="Use Charge"><i class="fas fa-flask"></i></a>
+                                {{/if}}
+                                <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
+                                <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                            </div>
+                        </li>
+                        {{/each}}
+                        {{/each}}
+                        {{#unless section.categories.length}}
+                        {{#if (eq section.type 'container')}}
+                        <li class="item empty-notice">Empty</li>
+                        {{/if}}
+                        {{/unless}}
+                    </ol>
+                </div>
+                {{/each}}
             </div>
 
             <div class="currency-footer">

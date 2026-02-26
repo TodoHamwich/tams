@@ -214,9 +214,20 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         if (system.location === "hand") continue; // Held in hand doesn't count
 
         let itemSize = sizeMap[system.size] || 10; // Default Medium
+
+        // 1. Check for legacy "backpack" string
         if (system.location === "backpack") {
             if (hasBackpack) itemSize *= backpackEfficiency;
             else itemSize = 0; // Not carried if backpack is removed
+        }
+        // 2. Check for ID-based container
+        else if (system.location && system.location !== "stowed") {
+            const container = actor.items.get(system.location);
+            if (container && container.type === "backpack" && container.system.equipped) {
+                itemSize *= (container.system.modifier ?? 0.5);
+            } else if (container && container.type === "backpack") {
+                itemSize = 0; // Not carried if backpack is not equipped
+            }
         }
 
         usedUnits += (itemSize * (system.quantity || 1));
@@ -639,7 +650,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       tag: "form",
       classes: ["tams", "sheet", "actor"],
       position: { width: 600, height: 800 },
-      window: { resizable: true },
+      window: { resizable: true, scrollable: [".sheet-body", ".inventory-scroll"] },
       form: { submitOnChange: true, closeOnSubmit: false },
       dragDrop: [{ dragSelector: ".item[data-item-id]", dropSelector: null }],
       actions: {
@@ -654,7 +665,9 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         setTab: TAMSActorSheet.prototype._onSetTab,
         updateItemField: TAMSActorSheet.prototype._onUpdateItemField,
         editImage: TAMSActorSheet.prototype._onEditImage,
-        fullHeal: TAMSActorSheet.prototype._onFullHeal
+        fullHeal: TAMSActorSheet.prototype._onFullHeal,
+        itemGive: TAMSActorSheet.prototype._onItemGive,
+        itemExport: TAMSActorSheet.prototype._onItemExport
       }
     }, { inplace: false });
   }
@@ -703,6 +716,38 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     context.owner = this.document.isOwner;
     context.staminaPercentage = Math.clamp((this.document.system.stamina.value / (this.document.system.stamina.max || 1)) * 100, 0, 100);
     context.hpPercentage = Math.clamp((this.document.system.hp.value / (this.document.system.hp.max || 1)) * 100, 0, 100);
+    context.capacityPercentage = Math.clamp((this.document.system.inventory.usedCapacity / (this.document.system.inventory.maxCapacity || 1)) * 100, 0, 100);
+    
+    // Inventory data for the template
+    context.inventory = {
+        usedCapacity: this.document.system.inventory.usedCapacity,
+        maxCapacity: this.document.system.inventory.maxCapacity,
+        usedMedium: Math.floor(this.document.system.inventory.usedCapacity / 10),
+        maxMedium: Math.floor(this.document.system.inventory.maxCapacity / 10),
+        isEncumbered: this.document.system.inventory.isEncumbered
+    };
+    
+    // Prepare limb armor options
+    const armorItems = this.document.items.filter(i => i.type === "armor");
+    const limbArmorOptions = {
+        head: { "": "None" },
+        thorax: { "": "None" },
+        stomach: { "": "None" },
+        leftArm: { "": "None" },
+        rightArm: { "": "None" },
+        leftLeg: { "": "None" },
+        rightLeg: { "": "None" }
+    };
+    
+    for ( const a of armorItems ) {
+        for ( const [lk, limb] of Object.entries(a.system.limbs || {}) ) {
+            if ( limb.max > 0 ) {
+                if ( !limbArmorOptions[lk] ) limbArmorOptions[lk] = { "": "None" };
+                limbArmorOptions[lk][a.id] = a.name;
+            }
+        }
+    }
+    context.limbArmorOptions = limbArmorOptions;
     
     // Calculate percentages for custom resources
     context.customResourceData = this.document.system.customResources.map(res => {
@@ -753,19 +798,33 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const inventoryMisc = [];
     const inventoryWeapons = [];
     const inventoryBackpacks = [];
+    const allItems = [];
     
     const hasBackpack = !!this.document.system.inventory.hasBackpack;
 
     for (let i of this.document.items) {
-      const isGreyedOut = (i.system.location === 'backpack' && !hasBackpack);
+      let isGreyedOut = false;
+      if (i.system.location === "backpack") {
+          isGreyedOut = !hasBackpack;
+      } else if (i.system.location && i.system.location !== "stowed" && i.system.location !== "hand") {
+          const container = this.document.items.get(i.system.location);
+          if (container && container.type === "backpack") {
+              isGreyedOut = !container.system.equipped;
+          }
+      }
+
       const itemData = {
           id: i.id,
+          uuid: i.uuid,
           name: i.name,
           img: i.img,
           system: i.system,
           type: i.type,
-          isGreyedOut: isGreyedOut
+          isGreyedOut: isGreyedOut,
+          isEquipped: (i.type === 'weapon' && i.system.location === 'hand') || (['armor', 'backpack'].includes(i.type) && i.system.equipped)
       };
+      
+      allItems.push(itemData);
 
       if (i.type === 'weapon') {
         weapons.push(itemData);
@@ -781,6 +840,94 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
       else if (i.type === 'backpack') inventoryBackpacks.push(itemData);
       else if (i.type === 'equipment') inventoryMisc.push(itemData);
     }
+
+    // --- Unified Inventory Grouping ---
+    const inventorySections = [];
+    
+    // 1. Equipped Section
+    const equippedSection = { id: "hand", label: "Equipped / In Hand", items: [], type: "status" };
+    
+    // 2. Container Sections
+    const containerSectionMap = {};
+    for (const bp of inventoryBackpacks) {
+        const section = {
+            id: bp.id,
+            label: bp.name,
+            items: [],
+            type: "container",
+            item: bp,
+            isEquipped: bp.system.equipped,
+            capacity: bp.system.capacity,
+            modifier: bp.system.modifier
+        };
+        containerSectionMap[bp.id] = section;
+    }
+    
+    // 3. Stowed Section
+    const stowedSection = { id: "stowed", label: "Loose / Stowed", items: [], type: "status" };
+    
+    // Distribute all items (except skills/abilities)
+    for (const item of allItems) {
+        if (["skill", "ability"].includes(item.type)) continue;
+        
+        if (item.isEquipped && item.type !== 'backpack') {
+            equippedSection.items.push(item);
+        } else if (item.system.location && item.system.location !== "stowed" && item.system.location !== "hand") {
+            let loc = item.system.location;
+            if (loc === "backpack") {
+                // Legacy fallback: find first equipped backpack or stowed
+                const firstBP = inventoryBackpacks.find(bp => bp.system.equipped);
+                if (firstBP && containerSectionMap[firstBP.id]) containerSectionMap[firstBP.id].items.push(item);
+                else stowedSection.items.push(item);
+            } else if (containerSectionMap[loc]) {
+                containerSectionMap[loc].items.push(item);
+            } else {
+                stowedSection.items.push(item);
+            }
+        } else {
+            // It's stowed or root level backpack
+            if (item.type === 'backpack') {
+                // Root level backpacks are headers, don't add to stowed items
+            } else {
+                stowedSection.items.push(item);
+            }
+        }
+    }
+    
+    const rawSections = [
+        equippedSection,
+        ...Object.values(containerSectionMap),
+        stowedSection
+    ];
+
+    const typeLabels = {
+        weapon: "Weapons",
+        armor: "Armor",
+        consumable: "Consumables",
+        tool: "Tools",
+        questItem: "Quest Items",
+        equipment: "Miscellaneous"
+    };
+    const typeOrder = ["Weapons", "Armor", "Consumables", "Tools", "Quest Items", "Miscellaneous"];
+
+    for (const s of rawSections) {
+        const groups = {};
+        for (const item of s.items) {
+            const label = typeLabels[item.type] || "Other";
+            if (!groups[label]) groups[label] = { label, items: [] };
+            groups[label].items.push(item);
+        }
+        s.categories = Object.values(groups).sort((a, b) => {
+            let indexA = typeOrder.indexOf(a.label);
+            let indexB = typeOrder.indexOf(b.label);
+            if (indexA === -1) indexA = 999;
+            if (indexB === -1) indexB = 999;
+            return indexA - indexB;
+        });
+    }
+
+    context.inventorySections = rawSections.filter(s => s.items.length > 0 || s.type === "container");
+    // ---------------------------------
 
     context.weapons = weapons;
     context.inventoryWeapons = inventoryWeapons;
@@ -803,7 +950,20 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
     // Options for selects
     context.sizeOptions = { "small": "Small", "medium": "Medium", "large": "Large" };
-    context.locationOptions = { "stowed": "Stowed", "backpack": "Backpack", "hand": "In Hand" };
+    
+    // Dynamic location options including backpacks
+    const locationOptions = { 
+        "hand": "In Hand", 
+        "stowed": "Stowed"
+    };
+    
+    // Fallback for old "backpack" location
+    locationOptions["backpack"] = "Backpack (Legacy)";
+
+    for (const bp of inventoryBackpacks) {
+        locationOptions[bp.id] = `In ${bp.name}`;
+    }
+    context.locationOptions = locationOptions;
     
     // Currencies
     const currencySettingsRaw = game.settings.get("tams", "currencies") || "";
@@ -866,14 +1026,14 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
   }
 
   async _onItemEdit(event, target) {
-    const li = target.closest(".item");
-    const item = this.document.items.get(li.dataset.itemId);
+    const itemId = target.dataset.itemId || target.closest(".item")?.dataset.itemId;
+    const item = this.document.items.get(itemId);
     if (item) item.sheet.render(true);
   }
 
   async _onItemDelete(event, target) {
-    const li = target.closest(".item");
-    const item = this.document.items.get(li.dataset.itemId);
+    const itemId = target.dataset.itemId || target.closest(".item")?.dataset.itemId;
+    const item = this.document.items.get(itemId);
     if (!item) return;
 
     if (event.shiftKey) {
@@ -893,9 +1053,107 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     }
   }
 
+  async _onItemGive(event, target) {
+    const itemId = target.dataset.itemId || target.closest(".item")?.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+
+    // Find potential recipients (characters on current scene)
+    const tokens = canvas.tokens.placeables.filter(t => t.actor && t.actor.id !== this.document.id && t.actor.type === "character");
+    
+    if (tokens.length === 0) {
+        return ui.notifications.warn("No characters found on this scene to give this item to.");
+    }
+
+    // Sort tokens by distance to this actor's token if possible
+    const myToken = this.document.token?.object || canvas.tokens.controlled.find(t => t.actor?.id === this.document.id);
+    if (myToken) {
+        tokens.sort((a, b) => {
+            const distA = canvas.grid.measureDistance(myToken.center, a.center);
+            const distB = canvas.grid.measureDistance(myToken.center, b.center);
+            return distA - distB;
+        });
+    }
+
+    const options = tokens.map(t => `<option value="${t.actor.uuid}">${t.name}${t.actor.isToken ? " (Token)" : ""}</option>`).join("");
+    const content = `
+        <div class="form-group">
+            <p>Give <b>${item.name}</b> to:</p>
+            <select name="recipientUuid" style="width: 100%; margin-bottom: 10px;">
+                ${options}
+            </select>
+        </div>
+    `;
+
+    new Dialog({
+        title: `Give Item: ${item.name}`,
+        content: content,
+        buttons: {
+            give: {
+                icon: '<i class="fas fa-gift"></i>',
+                label: "Give",
+                callback: async (html) => {
+                    const recipientUuid = html.find('[name="recipientUuid"]').val();
+                    const targetActor = await fromUuid(recipientUuid);
+                    if (!targetActor) return;
+
+                    if (targetActor.isOwner) {
+                         tamsHandleItemTransfer({
+                            itemData: item.toObject(),
+                            sourceActorUuid: this.document.uuid,
+                            targetActorUuid: recipientUuid,
+                            newLocation: "stowed"
+                        });
+                    } else {
+                        game.socket.emit("system.tams", {
+                            type: "transferItem",
+                            itemData: item.toObject(),
+                            sourceActorUuid: this.document.uuid,
+                            targetActorUuid: recipientUuid,
+                            newLocation: "stowed"
+                        });
+                        ui.notifications.info(`Giving ${item.name} to ${targetActor.name}...`);
+                    }
+                }
+            },
+            cancel: {
+                icon: '<i class="fas fa-times"></i>',
+                label: "Cancel"
+            }
+        },
+        default: "give"
+    }).render(true);
+  }
+
+  async _onItemExport(event, target) {
+    const itemId = target.dataset.itemId || target.closest(".item")?.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+
+    if (!game.user.can("ITEM_CREATE")) {
+      return ui.notifications.warn("You do not have permission to create items in the Sidebar.");
+    }
+
+    const itemData = item.toObject();
+    delete itemData._id;
+    delete itemData.folder;
+    
+    // Reset state for world-level item
+    if (itemData.system.location) itemData.system.location = "stowed";
+    if (itemData.system.equipped !== undefined) itemData.system.equipped = false;
+
+    try {
+      await Item.create(itemData);
+      ui.notifications.info(`Exported ${item.name} to the Items Sidebar.`);
+    } catch (err) {
+      console.error("TAMS | Export failed", err);
+      ui.notifications.error(`Failed to export ${item.name}.`);
+    }
+  }
+
   async _onItemUseCharge(event, target) {
-    const li = target.closest(".item");
-    const item = this.document.items.get(li.dataset.itemId);
+    const itemId = target.dataset.itemId || target.closest(".item")?.dataset.itemId;
+    const item = this.document.items.get(itemId);
     if (!item) return;
 
     let { value, max } = item.system.uses || { value: 0, max: 0 };
@@ -918,8 +1176,8 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
   }
 
   async _onItemRecharge(event, target) {
-    const li = target.closest(".item");
-    const item = this.document.items.get(li.dataset.itemId);
+    const itemId = target.dataset.itemId || target.closest(".item")?.dataset.itemId;
+    const item = this.document.items.get(itemId);
     if (!item) return;
 
     const { value, max } = item.system.uses || { value: 0, max: 0 };
@@ -1038,63 +1296,75 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const item = await Item.fromDropData(data);
     if ( !item ) return;
 
-    // 1. Handle dropping ON a backpack to store it
-    const targetLi = event.target.closest(".item[data-item-id]");
-    if ( targetLi ) {
-        const targetItem = this.document.items.get(targetLi.dataset.itemId);
-        if ( targetItem?.type === "backpack" && item.uuid !== targetItem.uuid ) {
-            // If it's already on this actor, just update location
-            if ( item.parent?.uuid === this.document.uuid ) {
-                await item.update({"system.location": "backpack"});
-                ui.notifications.info(`Moved ${item.name} into ${targetItem.name}.`);
-                return;
+    // 1. Handle dropping ON a specific item or section
+    const targetEl = event.target.closest(".item[data-item-id], .inventory-section[data-section-id]");
+    let newLocation = "";
+
+    if ( targetEl ) {
+        const targetSectionId = targetEl.dataset.sectionId;
+        const targetItemId = targetEl.dataset.itemId;
+
+        if ( targetSectionId ) {
+            if ( targetSectionId === "hand" ) newLocation = "hand";
+            else if ( targetSectionId === "stowed" ) newLocation = "stowed";
+            else newLocation = targetSectionId; // Backpack ID
+        } else if ( targetItemId ) {
+            const targetItem = this.document.items.get(targetItemId);
+            if ( targetItem?.type === "backpack" && item.id !== targetItem.id ) {
+                newLocation = targetItem.id;
+            } else if ( targetItem ) {
+                newLocation = targetItem.system.location || "stowed";
             }
-            // If from another actor, create it with backpack location
-            const itemData = item.toObject();
-            itemData.system.location = "backpack";
-            const created = await this.document.createEmbeddedDocuments("Item", [itemData]);
-            if ( created.length && item.parent && item.parent.isOwner ) {
-                try { await item.delete(); } catch(e) {}
-            }
-            ui.notifications.info(`Moved ${item.name} into ${targetItem.name}.`);
-            return created;
         }
     }
     
-    // 2. If dropping on the same actor generally, let the super handle it (e.g. reordering)
-    if ( this.document.uuid === item.parent?.uuid ) return super._onDrop(event);
-    
-    // 3. Create the item on the target actor (General drop)
-    const itemData = item.toObject();
-    const created = await this.document.createEmbeddedDocuments("Item", [itemData]);
-    
-    // Handle "moving" - delete from source if successful and user has permission
-    if ( created.length && item.parent && item.parent.isOwner ) {
-        try {
-            await item.delete();
-        } catch (err) {
-            console.warn("TAMS | Failed to delete source item after move", err);
-        }
+    // 2. Determine if it's the same actor
+    const isSameActor = item.parent?.uuid === this.document.uuid;
+
+    if ( isSameActor ) {
+        await item.update({"system.location": newLocation});
+        return; 
     }
-    return created;
+    
+    // 3. Create the item on the target actor (Cross-actor move)
+    if ( !this.document.isOwner ) {
+        game.socket.emit("system.tams", {
+            type: "transferItem",
+            itemData: item.toObject(),
+            sourceActorUuid: item.parent?.uuid,
+            targetActorUuid: this.document.uuid,
+            newLocation: newLocation
+        });
+        ui.notifications.info(`Requesting transfer of ${item.name} to ${this.document.name}...`);
+        return;
+    }
+
+    return tamsHandleItemTransfer({
+        itemData: item.toObject(),
+        sourceActorUuid: item.parent?.uuid,
+        targetActorUuid: this.document.uuid,
+        newLocation: newLocation
+    });
   }
 
   /** @override */
   _onDragStart(event) {
-    const li = event.target.closest(".item[data-item-id]");
-    if ( !li ) return super._onDragStart(event);
+    const li = event.currentTarget;
     if ( event.target.classList.contains("content-link") ) return;
 
     const itemId = li.dataset.itemId;
     const item = this.document.items.get(itemId);
-    if ( !item ) return;
+    if ( item ) {
+        const dragData = item.toDragData();
+        if ( dragData ) {
+            const jsonData = JSON.stringify(dragData);
+            event.dataTransfer.setData("text/plain", jsonData);
+            event.dataTransfer.setData("application/json", jsonData);
+            return; // STOP! Do not call super for items.
+        }
+    }
 
-    const dragData = item.toDragData();
-    if ( !dragData ) return;
-
-    const jsonData = JSON.stringify(dragData);
-    event.dataTransfer.setData("text/plain", jsonData);
-    event.dataTransfer.setData("application/json", jsonData);
+    return super._onDragStart(event);
   }
 
   async _onRoll(event, target) {
@@ -1730,7 +2000,7 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       tag: "form",
       classes: ["tams", "sheet", "item"],
       position: { width: 500, height: 700 },
-      window: { resizable: true },
+      window: { resizable: true, scrollable: [".sheet-body"] },
       form: { submitOnChange: true, closeOnSubmit: false },
       actions: {
         editImage: TAMSItemSheet.prototype._onEditImage
@@ -1780,7 +2050,15 @@ class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(
       "rightLeg": "Right Leg"
     };
     context.sizeOptions = { "small": "Small", "medium": "Medium", "large": "Large" };
-    context.locationOptions = { "stowed": "Stowed", "backpack": "Backpack", "hand": "In Hand" };
+    
+    const locationOptions = { "stowed": "Stowed", "backpack": "Backpack (Legacy)", "hand": "In Hand" };
+    if (this.document.actor) {
+        const backpacks = this.document.actor.items.filter(i => i.type === "backpack");
+        for (const bp of backpacks) {
+            locationOptions[bp.id] = `In ${bp.name}`;
+        }
+    }
+    context.locationOptions = locationOptions;
 
     if (this.document.type === 'ability') {
         const resources = { "stamina": "Stamina" };
@@ -1869,6 +2147,8 @@ Hooks.once("init", async function() {
       if (message) message.update(data.updateData);
     } else if (data.type === "createLoot" && game.user.isGM) {
         tamsHandleLootDrop(data.lootData, data.x, data.y);
+    } else if (data.type === "transferItem" && game.user.isGM) {
+        tamsHandleItemTransfer(data);
     }
   });
 
@@ -1958,6 +2238,62 @@ async function tamsUpdateMessage(message, updateData) {
 }
 
 /**
+ * Handle item transfer between actors (used by GM via socket or directly if owner)
+ */
+async function tamsHandleItemTransfer({itemData, sourceActorUuid, targetActorUuid, newLocation}) {
+  let target = await fromUuid(targetActorUuid);
+  if (!target) return;
+  const targetActor = (target instanceof foundry.documents.BaseActor) ? target : target.actor;
+  if (!targetActor) return;
+
+  const sourceActor = sourceActorUuid ? await fromUuid(sourceActorUuid) : null;
+  const itemsToCreate = [];
+  const itemsToDelete = [];
+
+  // Main item
+  const mainItemData = foundry.utils.duplicate(itemData);
+  mainItemData.system.location = newLocation;
+  if (mainItemData.system.equipped !== undefined) mainItemData.system.equipped = false;
+  
+  // Identify original ID for deletion
+  const originalId = mainItemData._id;
+  // If moving cross-actor, we want a new ID on the target, but createEmbeddedDocuments handles this if we don't provide it 
+  // or it just overwrites. Better to delete it to be safe if it's a new actor.
+  delete mainItemData._id; 
+  
+  itemsToCreate.push(mainItemData);
+
+  // Source item for backpack contents
+  let sourceItem = null;
+  if (sourceActor && originalId) {
+      sourceItem = sourceActor.items.get(originalId);
+      if (sourceItem) itemsToDelete.push(sourceItem);
+  }
+
+  // Backpack contents: If it's an EQUIPPED backpack, move all items in it too
+  if (sourceItem && sourceItem.type === "backpack" && sourceItem.system.equipped) {
+      const contents = sourceActor.items.filter(i => i.system.location === "backpack" || i.system.location === sourceItem.id);
+      for (let i of contents) {
+          const contentData = i.toObject();
+          delete contentData._id;
+          contentData.system.location = "stowed"; // Reset to stowed on target
+          itemsToCreate.push(contentData);
+          itemsToDelete.push(i);
+      }
+  }
+
+  const created = await targetActor.createEmbeddedDocuments("Item", itemsToCreate);
+  if (created.length && itemsToDelete.length) {
+      // Only delete if we have ownership of source
+      const canDelete = sourceActor && sourceActor.isOwner;
+      if (canDelete || game.user.isGM) {
+          await sourceActor.deleteEmbeddedDocuments("Item", itemsToDelete.map(i => i.id));
+      }
+  }
+  return created;
+}
+
+/**
  * Global Hooks
  */
 async function tamsHandleLootDrop(data, x, y) {
@@ -2012,9 +2348,14 @@ async function tamsHandleLootDrop(data, x, y) {
   // If it's an EQUIPPED backpack, move all items in it too
   if (item instanceof Item && item.type === "backpack" && item.actor && item.system.equipped) {
     const sourceActor = item.actor;
-    const backpackContents = sourceActor.items.filter(i => i.system.location === "backpack");
+    // Find items in legacy "backpack" location OR items pointing to this specific backpack ID
+    const backpackContents = sourceActor.items.filter(i => i.system.location === "backpack" || i.system.location === item.id);
     for (let i of backpackContents) {
-      itemsToCreate.push(i.toObject());
+      const contentData = i.toObject();
+      // Reset location to legacy "backpack" or stowed so they appear correctly on the new loot actor
+      // (Since IDs will change on the new actor, we can't easily preserve the specific container link without multiple steps)
+      contentData.system.location = "stowed"; 
+      itemsToCreate.push(contentData);
       itemsToDelete.push(i);
     }
   }
@@ -2038,6 +2379,34 @@ async function tamsHandleLootDrop(data, x, y) {
 Hooks.on("dropCanvasData", async (canvas, data) => {
   if (data.type !== "Item") return;
   
+  const item = await Item.fromDropData(data);
+  if (!item) return;
+
+  // Find if dropped on a token
+  const tokens = canvas.tokens.getObjectsAt({x: data.x, y: data.y});
+  const targetToken = tokens.find(t => t.actor && t.actor.uuid !== item.parent?.uuid);
+
+  if (targetToken) {
+    if (targetToken.actor.isOwner) {
+        return tamsHandleItemTransfer({
+            itemData: item.toObject(),
+            sourceActorUuid: item.parent?.uuid,
+            targetActorUuid: targetToken.actor.uuid,
+            newLocation: "stowed"
+        });
+    } else {
+        game.socket.emit("system.tams", {
+            type: "transferItem",
+            itemData: item.toObject(),
+            sourceActorUuid: item.parent?.uuid,
+            targetActorUuid: targetToken.actor.uuid,
+            newLocation: "stowed"
+        });
+        ui.notifications.info(`Giving ${item.name} to ${targetToken.name}...`);
+        return false;
+    }
+  }
+
   if (!game.user.isGM) {
       // Send to GM via socket
       game.socket.emit("system.tams", {
