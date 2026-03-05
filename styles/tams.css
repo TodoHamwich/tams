@@ -161,9 +161,26 @@
 
 .tams .bar .fill {
     height: 100%;
+    background: #3498db; /* Default blue */
     transition: width 0.4s cubic-bezier(0.47, 0, 0.745, 0.715);
     border-right: 1px solid rgba(255,255,255,0.3);
     box-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+
+.tams .resource-item .fill {
+    background: linear-gradient(to right, #8e44ad, #9b59b6);
+}
+
+.tams .hp .fill {
+    background: linear-gradient(to right, #c0392b, #e74c3c) !important;
+}
+
+.tams .stamina .fill {
+    background: linear-gradient(to right, #2980b9, #3498db) !important;
+}
+
+.tams .carry-weight .fill {
+    background: linear-gradient(to right, #f39c12, #f1c40f) !important;
 }
 
 .tams .max-label {
