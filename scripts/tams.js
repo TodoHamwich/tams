@@ -1605,7 +1605,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     const rawResult = roll.total;
     const effectiveStat = statValue + statMod;
     const cappedResult = Math.min(rawResult, effectiveStat);
-    let bonus = parseInt(item?.system?.bonus) || 0;
+    bonus = parseInt(item?.system?.bonus) || 0;
     
     // Apply Backpack penalties
     const backpackPen = this.document.system.backpackPenalties;
