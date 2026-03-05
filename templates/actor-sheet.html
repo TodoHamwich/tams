@@ -405,6 +405,10 @@
 
         {{!-- Description Tab --}}
         <div class="tab {{#if (eq activeTab 'description')}}active{{/if}}" data-group="primary" data-tab="description">
+            <div class="upgrade-pool flexrow">
+                <label>Traits Upgrade Points:</label>
+                <input type="number" name="system.upgradePoints.traits" value="{{system.upgradePoints.traits}}"/>
+            </div>
             <h3>Traits</h3>
             <textarea name="system.traits" rows="5">{{system.traits}}</textarea>
             <hr>

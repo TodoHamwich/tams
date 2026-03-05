@@ -37,7 +37,8 @@
         "stats": 0,
         "weapons": 0,
         "skills": 0,
-        "abilities": 0
+        "abilities": 0,
+        "traits": 0
       },
       "specialSkills": {
         "dodge": { "value": 0 },
@@ -72,6 +73,7 @@
     "skill": {
       "familiarity": 0,
       "upgradePoints": 0,
+      "bonus": 0,
       "stat": "strength",
       "tags": "",
       "description": ""

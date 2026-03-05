@@ -1408,6 +1408,17 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         statMod = stat.mod;
         statId = usesDex ? 'dexterity' : 'strength';
         label = `Attacking with ${item.name}`;
+
+        // Two-Handed: If equipped with one hand, halve stat.
+        if (item.system.isTwoHanded && !item.system.equippedTwoHanded) {
+            statValue = Math.floor(statValue / 2);
+            statMod = Math.floor(statMod / 2);
+        }
+        // Heavy: If Strength < 40, halve stat.
+        if (item.system.isHeavy && str.value < 40) {
+            statValue = Math.floor(statValue / 2);
+            statMod = Math.floor(statMod / 2);
+        }
     }
 
     if (item && item.type === 'skill') {
@@ -1434,12 +1445,28 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     }
 
     if (item && item.type === 'ability') {
+        familiarity = parseInt(item.system.familiarity) || 0;
         if (item.system.isAttack) {
             statId = item.system.attackStat;
             const stat = this.document.system.stats[statId];
             statValue = stat ? stat.value : 100;
             statMod = stat ? (stat.mod || 0) : 0;
             label = `Using Ability: ${item.name}`;
+
+            const weapon = this.document.items.find(i => i.type === 'weapon' && i.system.equipped);
+            if (weapon) {
+                const str = this.document.system.stats.strength;
+                // Two-Handed: If equipped with one hand, halve stat.
+                if (weapon.system.isTwoHanded && !weapon.system.equippedTwoHanded) {
+                    statValue = Math.floor(statValue / 2);
+                    statMod = Math.floor(statMod / 2);
+                }
+                // Heavy: If Strength < 40, halve stat.
+                if (weapon.system.isHeavy && str.value < 40) {
+                    statValue = Math.floor(statValue / 2);
+                    statMod = Math.floor(statMod / 2);
+                }
+            }
         } else {
             statId = item.system.capStat || "strength";
             const stat = this.document.system.stats[statId];
@@ -1621,10 +1648,71 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         resultClass = success ? "success" : "failure";
         critInfo = `<div class="tams-crit ${resultClass}">${resultText}</div>`;
     } else if (difficulty > 0) {
-        if (finalTotal >= (difficulty * 2)) {
-            critInfo = `<div class="tams-crit success">CRITICAL SUCCESS! (Total ${finalTotal} >= 2x Diff ${difficulty})</div>`;
-        } else if (finalTotal >= difficulty) {
-            critInfo = `<div class="tams-success">Success vs Diff ${difficulty}</div>`;
+        let dcTotal = finalTotal;
+        const actor = this.document;
+        const canBoost = actor.type === 'character'; // Or any other criteria
+
+        if (dcTotal < difficulty && canBoost) {
+            const resources = [{id: "stamina", name: "Stamina", value: actor.system.stamina.value}];
+            actor.system.customResources.forEach((res, idx) => {
+                resources.push({id: idx.toString(), name: res.name, value: res.value});
+            });
+
+            const boostConfirmed = await new Promise(resolve => {
+                const options = resources.map(r => `<option value="${r.id}">${r.name} (${r.value} avail)</option>`).join('');
+                new Dialog({
+                    title: "Boost Roll?",
+                    content: `
+                        <p>Total <b>${dcTotal}</b> fails to beat DC <b>${difficulty}</b>.</p>
+                        <div class="form-group">
+                            <label>Resource to spend (1 point = +1 to roll)</label>
+                            <select id="boost-resource">${options}</select>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount to spend</label>
+                            <input type="number" id="boost-amount" value="${difficulty - dcTotal}" min="1"/>
+                        </div>
+                    `,
+                    buttons: {
+                        boost: {
+                            label: "Boost",
+                            callback: (html) => {
+                                resolve({
+                                    amount: parseInt(html.find("#boost-amount").val()) || 0,
+                                    resId: html.find("#boost-resource").val()
+                                });
+                            }
+                        },
+                        cancel: { label: "No Boost", callback: () => resolve(null) }
+                    },
+                    default: "boost"
+                }).render(true);
+            });
+
+            if (boostConfirmed) {
+                const { amount, resId } = boostConfirmed;
+                const res = resources.find(r => r.id === resId);
+                if (res && res.value >= amount) {
+                    if (resId === 'stamina') {
+                        await actor.update({"system.stamina.value": res.value - amount});
+                    } else {
+                        const idx = parseInt(resId);
+                        const custom = [...actor.system.customResources];
+                        custom[idx].value -= amount;
+                        await actor.update({"system.customResources": custom});
+                    }
+                    dcTotal += amount;
+                    critInfo = `<div class="tams-success">Success vs Diff ${difficulty} (Boosted by ${amount})</div>`;
+                } else {
+                    ui.notifications.warn("Not enough resource to boost!");
+                }
+            }
+        }
+
+        if (dcTotal >= (difficulty * 2)) {
+            critInfo = `<div class="tams-crit success">CRITICAL SUCCESS! (Total ${dcTotal} >= 2x Diff ${difficulty})</div>`;
+        } else if (dcTotal >= difficulty) {
+            if (!critInfo) critInfo = `<div class="tams-success">Success vs Diff ${difficulty}</div>`;
         } else {
             critInfo = `<div class="tams-failure">Failure vs Diff ${difficulty}</div>`;
         }
@@ -1690,17 +1778,22 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
                 const targetTokenId = targetToken.id;
                 const targetActorId = targetActor?.id;
 
+                const tHits = [];
+                for (let i = 0; i < multiVal; i++) {
+                    tHits.push(i === 0 ? hitLocation : await getHitLocation());
+                }
+
                 damageInfo += `
                     <div class="tams-target-block" style="border: 1px solid #7a7971; padding: 5px; margin-bottom: 5px; background: rgba(0,0,0,0.05);">
                         <div class="roll-row"><span>Target:</span><span class="roll-value">${targetName}</span></div>
                         <div class="roll-row"><b>Damage: ${damage}</b></div>
-                        <div class="roll-row"><b>Hit Location: ${hitLocation}</b></div>
+                        <div class="roll-row"><b>Hit Locations: ${tHits.join(", ")}</b></div>
                         <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
                         <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
                           <button class="tams-take-damage" 
                                   data-damage="${damage}" 
                                   data-armour-pen="${armourPen}" 
-                                  data-location="${hitLocation}" 
+                                  data-locations='${JSON.stringify(tHits)}' 
                                   data-target-limb="${targetLimb}"
                                   data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-target-token-id="${targetTokenId || ''}"
@@ -1736,44 +1829,52 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
                 `;
             }
 
-            // Process NPCs grouped
-            if (npcs.length > 0) {
-                damageInfo += `
-                    <div class="tams-npc-group" style="border: 1px solid #7a7971; padding: 5px; margin-top: 5px; background: rgba(0,0,0,0.1);">
-                        <div class="roll-row" style="border-bottom: 1px solid #7a7971; margin-bottom: 3px;"><b>--- NPCs ---</b></div>
-                        <div class="roll-row" style="font-size: 0.9em;"><b>Dmg: ${damage} | Loc: ${hitLocation} | Hits: ${multiVal}</b></div>
-                        <div class="tams-npc-list" style="display: flex; flex-direction: column; gap: 2px; margin-top: 4px;">
-                `;
-                for (const targetToken of npcs) {
-                    const targetActor = targetToken.actor;
-                    const targetName = targetToken.name;
-                    const targetTokenId = targetToken.id;
-                    const targetActorId = targetActor?.id;
-                    damageInfo += `
-                        <div class="tams-npc-row" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.2); padding: 1px 4px; border-radius: 2px;">
-                            <span style="font-weight: bold; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;" title="${targetName}">${targetName}</span>
-                            <div class="tams-npc-buttons" style="display: flex; gap: 2px;">
-                                <button class="tams-take-damage" title="Apply Damage"
-                                        data-damage="${damage}" data-armour-pen="${armourPen}" data-location="${hitLocation}" data-target-limb="${targetLimb}"
-                                        data-is-aoe="${isAoE ? '1' : '0'}"
-                                        data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}" 
-                                        style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
-                                <button class="tams-dodge" title="Dodge"
-                                        data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
-                                        data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
-                                        style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">D</button>
-                                <button class="tams-retaliate" title="Retaliate"
-                                        data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-location="${hitLocation}" data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
-                                        data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
-                                        style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
-                                <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
-                                <button class="tams-unaware-toggle" title="Unaware" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">U</button>
-                            </div>
-                        </div>
-                    `;
-                }
-                damageInfo += `</div></div>`;
+    // Process NPCs grouped
+    if (npcs.length > 0) {
+        damageInfo += `
+            <div class="tams-npc-group" style="border: 1px solid #7a7971; padding: 5px; margin-top: 5px; background: rgba(0,0,0,0.1);">
+                <div class="roll-row" style="border-bottom: 1px solid #7a7971; margin-bottom: 3px;"><b>--- NPCs ---</b></div>
+                <div class="tams-npc-list" style="display: flex; flex-direction: column; gap: 2px; margin-top: 4px;">
+        `;
+        for (const targetToken of npcs) {
+            const targetActor = targetToken.actor;
+            const targetName = targetToken.name;
+            const targetTokenId = targetToken.id;
+            const targetActorId = targetActor?.id;
+
+            const tHits = [];
+            for (let i = 0; i < multiVal; i++) {
+                tHits.push(i === 0 ? hitLocation : await getHitLocation());
             }
+
+            damageInfo += `
+                <div class="tams-npc-row" style="display: flex; flex-direction: column; background: rgba(255,255,255,0.2); padding: 2px 4px; border-radius: 2px; margin-bottom: 2px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: bold; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;" title="${targetName}">${targetName}</span>
+                        <div class="tams-npc-buttons" style="display: flex; gap: 2px;">
+                            <button class="tams-take-damage" title="Apply Damage"
+                                    data-damage="${damage}" data-armour-pen="${armourPen}" data-locations='${JSON.stringify(tHits)}' data-target-limb="${targetLimb}"
+                                    data-is-aoe="${isAoE ? '1' : '0'}"
+                                    data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}" 
+                                    style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
+                            <button class="tams-dodge" title="Dodge"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                    data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
+                                    style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">D</button>
+                            <button class="tams-retaliate" title="Retaliate"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                    data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
+                                    style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
+                            <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
+                            <button class="tams-unaware-toggle" title="Unaware" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">U</button>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.75em; color: #555;">Locs: ${tHits.join(", ")}</div>
+                </div>
+            `;
+        }
+        damageInfo += `</div></div>`;
+    }
 
             damageInfo += `</div>`;
         } else {
@@ -2457,6 +2558,10 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       
       if (!target && targetActorId) target = game.actors.get(targetActorId);
 
+      // 1) First, try to use target-specific IDs from dataset
+      if (btn.dataset.targetActorId) target = game.actors.get(btn.dataset.targetActorId);
+      if (!target && btn.dataset.targetTokenId) target = canvas.tokens.get(btn.dataset.targetTokenId)?.actor;
+
       // 2) Otherwise, use the user's current target (first)
       if (!target) target = [...(game?.user?.targets ?? [])][0]?.actor ?? null;
 
@@ -2464,6 +2569,13 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       if (!target) target = canvas.tokens.controlled[0]?.actor ?? null;
 
       if (!target) return ui.notifications.warn("Please select (or target) a token to apply damage to.");
+
+      let locations = [];
+      if (btn.dataset.locations) {
+          locations = JSON.parse(btn.dataset.locations);
+      } else if (btn.dataset.location) {
+          locations = [btn.dataset.location];
+      }
 
       const locationMap = {
         "Head": "head", "Thorax": "thorax", "Stomach": "stomach",
@@ -2810,6 +2922,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       const attackerArmourPen = parseInt(btn.dataset.armourPen) || 0;
       const isRanged = btn.dataset.isRanged === '1';
       const firstLocation = btn.dataset.location;
+      const attackerLocations = btn.dataset.locations ? JSON.parse(btn.dataset.locations) : (firstLocation ? [firstLocation] : []);
       const targetLimb = btn.dataset.targetLimb;
       const isAoEFromData = btn.dataset.isAoe === '1';
       const container = btn.closest(".tams-roll");
@@ -2862,15 +2975,16 @@ Hooks.on("renderChatMessage", (message, html, data) => {
           hitsScored = 1 + Math.floor((attackerTotal - total) / 5);
           hitsScored = Math.min(hitsScored, attackerMulti);
 
-          locations.push(firstLocation);
           const limbOptions = {
               "head": "Head", "thorax": "Thorax", "stomach": "Stomach",
               "leftArm": "Left Arm", "rightArm": "Right Arm",
               "leftLeg": "Left Leg", "rightLeg": "Right Leg"
           };
-          for (let i = 1; i < hitsScored; i++) {
+          for (let i = 0; i < hitsScored; i++) {
               let loc;
-              if (targetLimb && targetLimb !== 'none') {
+              if (attackerLocations[i]) {
+                  loc = attackerLocations[i];
+              } else if (targetLimb && targetLimb !== 'none') {
                   loc = limbOptions[targetLimb] || "Thorax";
               } else {
                   loc = await getHitLocation();
@@ -3077,6 +3191,7 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       const attackerArmourPen = parseInt(btn.dataset.armourPen) || 0;
       const isRanged = btn.dataset.isRanged === '1';
       const firstLocation = btn.dataset.location;
+      const attackerLocations = btn.dataset.locations ? JSON.parse(btn.dataset.locations) : (firstLocation ? [firstLocation] : []);
       const attackerTargetLimb = btn.dataset.targetLimb;
       const isAoEFromData = btn.dataset.isAoe === '1';
       const container = btn.closest(".tams-roll");
@@ -3213,6 +3328,11 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       const diff = attackerTotal - total;
       const isMutual = Math.abs(diff) <= threshold;
 
+      // Retaliation doesn't check for AOE #4
+      if (isAoEFromData) {
+          return ui.notifications.warn("Retaliation is not possible against AOE attacks.");
+      }
+
       // Narrative crits
       if (raw >= (attackerRaw * 2)) {
           critInfo = `<div class="tams-crit success">CRITICAL RETALIATION! (Raw ${raw} >= 2x Attacker ${attackerRaw})</div>`;
@@ -3276,10 +3396,11 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       // Check defender success/failure against incoming attack
       if (isMutual) {
           const hitsTaken = Math.min(1 + Math.floor(Math.max(0, attackerTotal - total) / 5), attackerMulti);
-          defenseLocations.push(firstLocation);
-          for (let i = 1; i < hitsTaken; i++) {
+          for (let i = 0; i < hitsTaken; i++) {
               let loc;
-              if (attackerTargetLimb && attackerTargetLimb !== 'none') {
+              if (attackerLocations[i]) {
+                  loc = attackerLocations[i];
+              } else if (attackerTargetLimb && attackerTargetLimb !== 'none') {
                   loc = limbOptions[attackerTargetLimb] || "Thorax";
               } else {
                   loc = await getHitLocation();
