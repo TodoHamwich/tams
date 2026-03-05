@@ -1748,7 +1748,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
             armourPen = item.system.armourPenetration || 0;
         }
 
-        const isAoE = !!item.system.isAoE;
+        const isAoE = !!item.system.isAoE || (item.system.calculator?.enabled && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === 'aoe'));
         let targets = isAoE ? [...game.user.targets] : (tToken ? [tToken] : []);
 
         if (isSquadOrHorde) {
@@ -1788,7 +1788,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
                 const tHits = [];
                 for (let i = 0; i < multiVal; i++) {
-                    tHits.push(i === 0 ? hitLocation : await getHitLocation());
+                    tHits.push((i === 0 && !isAoE) ? hitLocation : await getHitLocation());
                 }
 
                 damageInfo += `
@@ -1852,7 +1852,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
             const tHits = [];
             for (let i = 0; i < multiVal; i++) {
-                tHits.push(i === 0 ? hitLocation : await getHitLocation());
+                tHits.push((i === 0 && !isAoE) ? hitLocation : await getHitLocation());
             }
 
             damageInfo += `
