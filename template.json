@@ -20,6 +20,8 @@
         "rightLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Right Leg", "injured": false, "criticallyInjured": false }
       },
       "stamina": { "value": 10, "max": 10, "mult": 1.0, "color": "#66bb6a" },
+      "hp": { "value": 0, "max": 0, "color": "#e74c3c" },
+      "inventory": { "usedCapacity": 0, "maxCapacity": 0, "hasBackpack": false, "isEncumbered": false, "equippedBackpackId": "", "color": "#f1c40f" },
       "customResources": [],
       "theme": "default",
       "physicalNotes": "",

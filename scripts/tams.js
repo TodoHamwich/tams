@@ -42,11 +42,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         maxCapacity: new fields.NumberField({initial: 0}),
         hasBackpack: new fields.BooleanField({initial: false}),
         isEncumbered: new fields.BooleanField({initial: false}),
-        equippedBackpackId: new fields.StringField({initial: ""})
+        equippedBackpackId: new fields.StringField({initial: ""}),
+        color: new fields.StringField({initial: "#f1c40f"})
       }),
       hp: new fields.SchemaField({
         value: new fields.NumberField({initial: 0}),
-        max: new fields.NumberField({initial: 0})
+        max: new fields.NumberField({initial: 0}),
+        color: new fields.StringField({initial: "#e74c3c"})
       }),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({initial: 10, min: 0}),

@@ -85,7 +85,7 @@
                             <div class="bar-container">
                                 <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled/>
                                 <div class="bar">
-                                    <div class="fill" style="width: {{hpPercentage}}%"></div>
+                                    <div class="fill" style="width: {{hpPercentage}}%; background: {{system.hp.color}} !important;"></div>
                                 </div>
                                 <span class="max-label"> / {{system.hp.max}} </span>
                             </div>
@@ -235,7 +235,7 @@
                         <div class="bar-container">
                             <input type="number" name="system.stamina.value" value="{{system.stamina.value}}" max="{{system.stamina.max}}" min="0"/>
                             <div class="bar">
-                                <div class="fill" style="width: {{staminaPercentage}}%"></div>
+                                <div class="fill" style="width: {{staminaPercentage}}%; background: {{system.stamina.color}} !important;"></div>
                             </div>
                             <span class="max-label"> / {{system.stamina.max}} </span>
                         </div>
@@ -250,7 +250,7 @@
                         <div class="bar-container">
                             <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}" max="{{res.max}}" min="0"/>
                             <div class="bar">
-                                <div class="fill" style="width: {{res.percentage}}%"></div>
+                                <div class="fill" style="width: {{res.percentage}}%; background: {{res.color}} !important;"></div>
                             </div>
                             <span class="max-label"> / {{res.max}} </span>
                             <a data-action="resourceDelete" data-index="{{index}}" class="delete-resource"><i class="fas fa-trash"></i></a>
@@ -308,7 +308,7 @@
                 </div>
                 <div class="bar-container" style="height: 8px; margin-top: 2px;">
                     <div class="bar">
-                        <div class="fill" style="width: {{capacityPercentage}}%"></div>
+                        <div class="fill" style="width: {{capacityPercentage}}%; background: {{system.inventory.color}} !important;"></div>
                     </div>
                 </div>
             </div>
@@ -427,6 +427,20 @@
                             <input type="number" name="system.stamina.mult" value="{{system.stamina.mult}}" step="0.25" style="width: 50px;"/>
                             <label>Color</label>
                             <input type="color" name="system.stamina.color" value="{{system.stamina.color}}" style="width: 30px; padding: 0;"/>
+                        </div>
+                    </div>
+                    <div class="modifier-group">
+                        <h3>HP</h3>
+                        <div class="flexrow">
+                            <label>Color</label>
+                            <input type="color" name="system.hp.color" value="{{system.hp.color}}" style="width: 30px; padding: 0;"/>
+                        </div>
+                    </div>
+                    <div class="modifier-group">
+                        <h3>Inventory</h3>
+                        <div class="flexrow">
+                            <label>Capacity Color</label>
+                            <input type="color" name="system.inventory.color" value="{{system.inventory.color}}" style="width: 30px; padding: 0;"/>
                         </div>
                     </div>
                     <div class="modifier-group">
