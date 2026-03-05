@@ -2549,10 +2549,9 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       const btn = ev.currentTarget;
       const damageBase = parseInt(btn.dataset.damage);
       const armourPen = parseInt(btn.dataset.armourPen) || 0;
-      const singleLocation = btn.dataset.location;
-      const multiLocations = btn.dataset.locations ? JSON.parse(btn.dataset.locations) : null;
       
-      const locations = multiLocations || [singleLocation];
+      const multiLocations = btn.dataset.locations ? JSON.parse(btn.dataset.locations) : null;
+      const locations = multiLocations || (btn.dataset.location ? [btn.dataset.location] : []);
       
       let target = null;
       // 1) Prefer the specific target associated with this button (important for AoE)
@@ -2563,12 +2562,9 @@ Hooks.on("renderChatMessage", (message, html, data) => {
           const token = canvas.tokens.get(targetTokenId);
           if (token) target = token.actor;
       }
-      
-      if (!target && targetActorId) target = game.actors.get(targetActorId);
-
-      // 1) First, try to use target-specific IDs from dataset
-      if (btn.dataset.targetActorId) target = game.actors.get(btn.dataset.targetActorId);
-      if (!target && btn.dataset.targetTokenId) target = canvas.tokens.get(btn.dataset.targetTokenId)?.actor;
+      if (!target && targetActorId) {
+          target = game.actors.get(targetActorId);
+      }
 
       // 2) Otherwise, use the user's current target (first)
       if (!target) target = [...(game?.user?.targets ?? [])][0]?.actor ?? null;
@@ -2577,13 +2573,6 @@ Hooks.on("renderChatMessage", (message, html, data) => {
       if (!target) target = canvas.tokens.controlled[0]?.actor ?? null;
 
       if (!target) return ui.notifications.warn("Please select (or target) a token to apply damage to.");
-
-      let locations = [];
-      if (btn.dataset.locations) {
-          locations = JSON.parse(btn.dataset.locations);
-      } else if (btn.dataset.location) {
-          locations = [btn.dataset.location];
-      }
 
       const locationMap = {
         "Head": "head", "Thorax": "thorax", "Stomach": "stomach",
