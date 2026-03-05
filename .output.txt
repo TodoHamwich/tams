@@ -1,0 +1,1147 @@
+commit 955a81c96845fbe68357c9550d5b5ff55d5d2b6d (HEAD -> main, origin/main, origin/HEAD)
+Author: Benjamin Mikalsen <benjamin@ewb-solutions.as>
+Date:   Thu Mar 5 20:17:32 2026 +0100
+    - Add handling for two-handed and heavy weapon effects on attack rolls.
+    - Implement resource-based roll boosting in case of failure.
+    - Refactor damage application to support multiple hit locations.
+    - Enhance NPC damage grouping and add location handling.
+    - Fix redundant "bonus" field display in skill templates.
+    - Introduce trait upgrades and version bump to 1.0.68.
+
+    Signed-off-by: Todo Hamwich <benjamin@ewb-solutions.as>
+diff --git a/system.json b/system.json
+index 3d1d7ad..a479fe1 100644
+--- a/system.json
++++ b/system.json
+@@ -1,33 +1,33 @@
+-{
+-  "id": "tams",
+-  "title": "Todo's Advanced Modular System",
+-  "description": "A custom system for Foundry VTT",
+-  "version": "1.0.67",
+-  "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+-  "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+-  "authors": [
+-    {
+-      "name": "TodoHamwich",
+-      "url": "https://github.com/TodoHamwich"
+-    }
+-  ],
+-  "esmodules": [
+-    "scripts/tams.js"
+-  ],
+-  "styles": [
+-    "styles/tams.css"
+-  ],
+-  "packs": [],
+-  "languages": [
+-    {
+-      "lang": "en",
+-      "name": "English",
+-      "path": "lang/en.json"
+-    }
+-  ],
+-  "grid": 50,
+-  "compatibility": {
+-    "minimum": "12",
+-    "verified": "13"
+-  }
+-}
++{
++  "id": "tams",
++  "title": "Todo's Advanced Modular System",
++  "description": "A custom system for Foundry VTT",
++  "version": "1.0.68",
++  "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
++  "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
++  "authors": [
++    {
++      "name": "TodoHamwich",
++      "url": "https://github.com/TodoHamwich"
++    }
++  ],
++  "esmodules": [
++    "scripts/tams.js"
++  ],
++  "styles": [
++    "styles/tams.css"
++  ],
++  "packs": [],
++  "languages": [
++    {
++      "lang": "en",
++      "name": "English",
++      "path": "lang/en.json"
++    }
++  ],
++  "grid": 50,
++  "compatibility": {
++    "minimum": "12",
++    "verified": "13"
++  }
++}
+commit 51d97068fce8ed1448f8285ff634fe03202c43ad
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Thu Feb 26 01:09:55 2026 +0100
+    feat: add Loot Sheet support and improve drag-and-drop functionality
+diff --git a/system.json b/system.json
+index 1e8d01a..3d1d7ad 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.64",
++  "version": "1.0.67",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit eca360886a65fd6626b2ba5e565e2cfe0b2fe416
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 25 01:56:45 2026 +0100
+    fix: restore application/json drag data, fallback to super drag start, and improve drop selector
+diff --git a/system.json b/system.json
+index ae58a8d..1e8d01a 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.63",
++  "version": "1.0.64",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 462ce9a111f72ba8af9c307a95555badbda94fce
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 25 01:47:37 2026 +0100
+    fix: final fixes for drag-and-drop delegation and player looting permissions
+diff --git a/system.json b/system.json
+index a2935f5..ae58a8d 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.62",
++  "version": "1.0.63",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 8ddbbe607933353ca776bc6c283d5facc4e22c05
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 25 01:29:33 2026 +0100
+    fix: robust drag-and-drop, player loot dropping via socket, and backpack drop support
+diff --git a/system.json b/system.json
+index de98559..a2935f5 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.61",
++  "version": "1.0.62",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 23ee2e567ebc36eae9cc0cf0d934eb7e46912fa1
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 25 01:20:12 2026 +0100
+    fix: comprehensive fixes for drag-and-drop, map looting, and UI labels
+diff --git a/system.json b/system.json
+index cc2a715..de98559 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.60",
++  "version": "1.0.61",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 5f94801a282f34753306c14ba0366ca0946865de
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 25 01:09:00 2026 +0100
+    feat: implemented loot system, drag-and-drop improvements, recharge costs, and delete confirmation
+diff --git a/system.json b/system.json
+index f49a685..cc2a715 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.59",
++  "version": "1.0.60",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 28b02af53160682d4d08b3a8f15367fcd9fea3ba
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 25 00:54:25 2026 +0100
+    feat: add Loot Sheet support and improve drag-and-drop functionality
+diff --git a/system.json b/system.json
+index 6dc1b92..f49a685 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.58",
++  "version": "1.0.59",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit c8bc8102162ccb40bc2482be599ccd395b837bdd
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 25 00:40:54 2026 +0100
+    Lots of Thigns
+diff --git a/system.json b/system.json
+index 8dce6f3..6dc1b92 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.57",
++  "version": "1.0.58",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 38297f16f33b323c1d31fa3dc539613cb78c92c7
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 22:51:52 2026 +0100
+    Equipped Armour Fix
+diff --git a/system.json b/system.json
+index 5889d4f..8dce6f3 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.56",
++  "version": "1.0.57",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 0548f62b23e461a24fbe4f72510594e74f0b95f6
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 22:45:58 2026 +0100
+    Attacks vs Squads and Hordes update.
+diff --git a/system.json b/system.json
+index 3d738c9..5889d4f 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.55",
++  "version": "1.0.56",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 04574f76c06febdce0b0edfbe4f383a795afa734
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 22:39:14 2026 +0100
+    AoE Attacks vs Squads and Hordes update.
+diff --git a/system.json b/system.json
+index 9f1ff57..3d738c9 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.54",
++  "version": "1.0.55",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 527cc70e45c1c65f023007de82706d255b8803c1
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 22:31:10 2026 +0100
+    AoE Attacks vs Squads and Hordes update.
+    + Full Heal Button Added
+diff --git a/system.json b/system.json
+index f7d2ec3..9f1ff57 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.51",
++  "version": "1.0.54",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit e3a503da7e2c953de6c6b2d3ff499927d5a508f8
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 21:59:10 2026 +0100
+    AoE Attacks vs Squads and Hordes update.
+diff --git a/system.json b/system.json
+index f4c9ea0..f7d2ec3 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.50",
++  "version": "1.0.51",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit c2183ba0424d5b5e782b82f04b2a11eb24052222
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 21:48:38 2026 +0100
+    AoE Attacks vs Squads and Hordes
+diff --git a/system.json b/system.json
+index b0509f2..f4c9ea0 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.49",
++  "version": "1.0.50",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit aec367e849ceb5bcf449467bc1123603bdf1665e
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 21:30:44 2026 +0100
+    feat: implement NPC Squad and Horde attack rules
+diff --git a/system.json b/system.json
+index 175c7ea..b0509f2 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.48",
++  "version": "1.0.49",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 64cd82bd2ea16e89e7389018725f6f5d80c056f2
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 21:13:30 2026 +0100
+    AoE Attacks vs players and Npc
+diff --git a/system.json b/system.json
+index ff1d03d..175c7ea 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.47",
++  "version": "1.0.48",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit a47e2104de449ed4774bf78bd8bbf8e6aa17fd1e
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 21:01:24 2026 +0100
+    feat: change AoE targeting from selected to targeted tokens
+diff --git a/system.json b/system.json
+index ec5c2a7..ff1d03d 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.46",
++  "version": "1.0.47",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit ce4bdfeb82eeacfe766446aa35870b6d498a3bf8
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 20:54:58 2026 +0100
+    feat: implement AoE toggle for weapons and abilities
+diff --git a/system.json b/system.json
+index 141506d..ec5c2a7 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.45",
++  "version": "1.0.46",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit ac6da69cce8fc7abb70c84b94bf10960487b4c93 (tag: v1.0.45)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 20:42:29 2026 +0100
+    Bump version to 1.0.45
+diff --git a/system.json b/system.json
+index f84cce0..141506d 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.44",
++  "version": "1.0.45",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 55aca7e1e27ff2c8e641dc8496c08315bc877690
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 20:41:58 2026 +0100
+    Update system with recent features and fixes (v1.0.45)
+diff --git a/system.json b/system.json
+index 001b046..f84cce0 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.42",
++  "version": "1.0.44",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 76b639b15a144f955f0f257f09f90807c3ef4e29 (tag: v1.0.42)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 16:07:21 2026 +0100
+    Add Stat Cap selector for non-attack abilities (v1.0.42)
+diff --git a/system.json b/system.json
+index 9ab9fca..001b046 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.41",
++  "version": "1.0.42",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 67dbbfb360abb8338b6a30ac9c748b6c193ed3fd (tag: v1.0.41)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sun Feb 22 15:20:48 2026 +0100
+    Fix chat message synchronization for Dodge boost and toggles (v1.0.41)
+diff --git a/system.json b/system.json
+index d1bef40..9ab9fca 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.40",
++  "version": "1.0.41",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 2b1b4c8141c4e4682502bd5643f5855bafca51d3
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sat Feb 21 01:59:47 2026 +0100
+    Refine actor sheet title: only show [Token] prefix for unlinked tokens
+diff --git a/system.json b/system.json
+index 6aeac50..d1bef40 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.39",
++  "version": "1.0.40",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 487bf7d1627d12384a2f71321356a40d62e695e8
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sat Feb 21 01:45:36 2026 +0100
+    Update version to 1.0.39 and add resource spending logic for abilities
+diff --git a/system.json b/system.json
+index dd8a304..6aeac50 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.38",
++  "version": "1.0.39",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 0fae54eb06dc8f260a6d5082211c25750c174f1a (tag: v1.0.38)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Fri Feb 20 23:43:21 2026 +0100
+    chore(release): bump version to 1.0.38\n\n- Inventory: functional inventory tab, categories, currency footer\n- Backpacks: new item type with capacity, modifier, penalties; equipped handling\n- Targeting: show targeted token in attack cards; smarter Apply Damage\n- UI: sticky inventory headers, improved buttons, icon tabs\n- Settings: plain-text currencies + visibility toggles\n- Data models: armor per limb, capacity math, currency weight\n\nRelease: v1.0.38
+diff --git a/system.json b/system.json
+index 6eca34c..dd8a304 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.36",
++  "version": "1.0.38",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 384eefdd451120e4927c69c33dc7623c29bc295f
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Fri Feb 20 18:13:23 2026 +0100
+    Updated Attacks to use the Targeted Token.
+diff --git a/system.json b/system.json
+index 4467ffa..6eca34c 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.35",
++  "version": "1.0.36",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 7a7592a3cae1b598de58cad14a7bb3168723ae70
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sat Feb 7 07:21:31 2026 +0100
+    Added Weapon Ammo and Total fields to weapons tab.
+    Using Codex for the first time
+    Updated version
+diff --git a/system.json b/system.json
+index 6a7b86b..4467ffa 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.34",
++  "version": "1.0.35",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 806c32882b1e8dde41bb0076df766324749a7539
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sat Feb 7 06:15:49 2026 +0100
+    Added support for target selection in Ability Attacks.
+diff --git a/system.json b/system.json
+index eef48ea..6a7b86b 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.33",
++  "version": "1.0.34",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 3d4bb41e63ba6e9f9c181c64cba581302d9cab38
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sat Feb 7 03:28:58 2026 +0100
+    Fix Images breaking weapons.
+diff --git a/system.json b/system.json
+index fb4ebb2..eef48ea 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.32",
++  "version": "1.0.33",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 1bef238b37a480ae35870aa8b52d1a0200f84e98
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sat Feb 7 01:52:00 2026 +0100
+    Updated with Editiable Images.
+diff --git a/system.json b/system.json
+index a84b01e..fb4ebb2 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.31",
++  "version": "1.0.32",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 6904aa4962c076646cd875fee8e3c3b7f5d968d1
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Sat Feb 7 01:39:45 2026 +0100
+    Updated With Alternate Armour settings
+diff --git a/system.json b/system.json
+index ca2c1e0..a84b01e 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.30",
++  "version": "1.0.31",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit d5522dd0db3d9e4d99c440ac425ab10b7ac9d7bb
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Fri Feb 6 04:40:30 2026 +0100
+    Fix DataModelValidationError for Ability bonus and improve numeric field stability
+diff --git a/system.json b/system.json
+index e24fd5b..ca2c1e0 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.29",
++  "version": "1.0.30",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit a3afc6908917379c9ccdfba7804ebe5f0531552b
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Fri Feb 6 04:36:55 2026 +0100
+    Add 'Custom' Damage stat option for Abilities
+diff --git a/system.json b/system.json
+index d88de09..e24fd5b 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.28",
++  "version": "1.0.29",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 9cfe5ecc1d3429e933069aef1e06447d9c7bcc07
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Thu Feb 5 00:00:01 2026 +0100
+    Implement advanced inventory system (Weapons, Armor, Misc) and limb-based armor tracking. Feature is currently hidden/disabled for further refinement.
+diff --git a/system.json b/system.json
+index 5ce67ed..d88de09 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.24",
++  "version": "1.0.28",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit dd42cd6fb940f844c9e44d3456f4852ec7f0ce7b (tag: v1.0.24)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 04:52:30 2026 +0100
+    Increase limb section width to accommodate checkboxes and keep single-line layout (v1.0.24)
+diff --git a/system.json b/system.json
+index e2029e1..5ce67ed 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.23",
++  "version": "1.0.24",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 23a7d522476dfa10ee91b3ee1bb4a57316b627cd (tag: v1.0.23)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 04:51:29 2026 +0100
+    Update limb injury system with Injured status and refined check triggers (v1.0.23)
+diff --git a/system.json b/system.json
+index 1cd3c1f..e2029e1 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.22",
++  "version": "1.0.23",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 17582b5487bbd63d1faeab83425f32162f798ffc (tag: v1.0.22)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 04:45:23 2026 +0100
+    Fix duplicate button listeners and add hits scored display to retaliation (v1.0.22)
+diff --git a/system.json b/system.json
+index 166fe50..1cd3c1f 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.21",
++  "version": "1.0.22",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 45a354a0954217363ecedf946079fcad1aed5eda (tag: v1.0.21)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 04:37:38 2026 +0100
+    Fix mutual hit scaling and resolve hitLocation reference error (v1.0.21)
+diff --git a/system.json b/system.json
+index c9904c2..166fe50 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.17",
++  "version": "1.0.21",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 2ea4c5c780eb19f4bf2a3b237eea4d6e4ff16868 (tag: v1.0.17)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 04:16:58 2026 +0100
+    Consolidate injury popups and adjust survival check triggers (v1.0.17)
+diff --git a/system.json b/system.json
+index c45a0d1..c9904c2 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.16",
++  "version": "1.0.17",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 38f5c27289fb3c505214d01258594f00bb97002f (tag: v1.0.16)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 04:10:07 2026 +0100
+    Fix Total HP bar stretching and resource label layout (v1.0.16)
+diff --git a/system.json b/system.json
+index 300c20c..c45a0d1 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.14",
++  "version": "1.0.16",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit f00582ef974b103a34d6b64c0032e20ef1418f81 (tag: v1.0.14)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 04:03:43 2026 +0100
+    Fix limb section layout and re-enable sheet resizability (v1.0.14)
+diff --git a/system.json b/system.json
+index 8233f81..300c20c 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.12",
++  "version": "1.0.14",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit c17bcafb485d49eaf075289a468325b886938d0c (tag: v1.0.12)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 03:57:08 2026 +0100
+    Move Total HP bar, implement survival checks, and fix sheet sizing (v1.0.12)
+diff --git a/system.json b/system.json
+index 28eea7e..8233f81 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.11",
++  "version": "1.0.12",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 5d50dda24767736481af72a4b765e9ae577855d9 (tag: v1.0.11)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 03:47:19 2026 +0100
+    Disable mutual hits for dodge rolls (v1.0.11)
+diff --git a/system.json b/system.json
+index ee6ccc2..28eea7e 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.10",
++  "version": "1.0.11",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 3cdbfd8a3c57629ea4a14e1776555d7fe42ca60e (tag: v1.0.10)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 03:40:48 2026 +0100
+    Fix sheet header icons and revert chat buttons to text (v1.0.10)
+diff --git a/system.json b/system.json
+index 6280473..ee6ccc2 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.9",
++  "version": "1.0.10",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 2ae4a84f49b8ed218b43722ed0bdbdbca8e7794d (tag: v1.0.9)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 03:33:32 2026 +0100
+    Implement mutual hits, narrative crits, unaware toggle, and icon buttons (v1.0.9)
+diff --git a/system.json b/system.json
+index 9f4cd48..6280473 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.8",
++  "version": "1.0.9",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit aa37eb69d789b970e8dddc891178c6b00f2d46d2 (tag: v1.0.8)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 02:53:09 2026 +0100
+    Fix Ability Cost Calculator availability for unowned items and update template schema (v1.0.8)
+diff --git a/system.json b/system.json
+index fb775e0..9f4cd48 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.7",
++  "version": "1.0.8",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 914b097db6011883c7b7fad3774f73cf3601bf1e (tag: v1.0.7)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 02:48:33 2026 +0100
+    Implement Dodge crits and Negative HP/Injury system (v1.0.7)
+diff --git a/system.json b/system.json
+index 0af54bd..fb775e0 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.3",
++  "version": "1.0.7",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit b279847e8c21bc2551ec56f03175f954908bcb16 (tag: v1.0.3)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 02:22:55 2026 +0100
+    Implement Ability Cost Calculator
+diff --git a/system.json b/system.json
+index f330f68..0af54bd 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.2",
++  "version": "1.0.3",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit b4ae00809775dd9677601fabdf379f66509b15e4 (tag: v1.0.2)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 02:03:20 2026 +0100
+    Add StatModifier class, update roll logic and chat messages
+diff --git a/system.json b/system.json
+index f0c8509..f330f68 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.1",
++  "version": "1.0.2",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit 1667ab9fea25b1315af5ed46d9dcdd8af40073ba (tag: v1.0.1)
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 01:56:30 2026 +0100
+    Bump version to 1.0.1 for Forge compatibility
+diff --git a/system.json b/system.json
+index 9150a9b..f0c8509 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.0.1",
++  "version": "1.0.1",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit adcb15a6193a8926c05bd13de97df72736f3b51b
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 01:54:45 2026 +0100
+    Bump version to 1.0.0.1
+diff --git a/system.json b/system.json
+index 1b44f88..9150a9b 100644
+--- a/system.json
++++ b/system.json
+@@ -2,7 +2,7 @@
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+-  "version": "1.0.0",
++  "version": "1.0.0.1",
+   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
+   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+commit bdfa6ab542984123eaba8c8330c84ba7739f06f6
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Wed Feb 4 00:51:36 2026 +0100
+    Switch to branch-based manifest/download URLs for easier installation
+diff --git a/system.json b/system.json
+index 9ae5690..1b44f88 100644
+--- a/system.json
++++ b/system.json
+@@ -3,8 +3,8 @@
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+   "version": "1.0.0",
+-  "manifest": "https://github.com/TodoHamwich/tams/releases/latest/download/system.json",
+-  "download": "https://github.com/TodoHamwich/tams/releases/latest/download/tams.zip",
++  "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
++  "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
+   "authors": [
+     {
+       "name": "TodoHamwich",
+commit 6a645ea6ff4882ae5585843ff29e2ddea201cf64
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Tue Feb 3 22:02:52 2026 +0100
+    Migrate to ApplicationV2 (ActorSheetV2/ItemSheetV2) for Foundry v13 compatibility
+diff --git a/system.json b/system.json
+index 6ac85c5..9ae5690 100644
+--- a/system.json
++++ b/system.json
+@@ -27,7 +27,7 @@
+   ],
+   "grid": 50,
+   "compatibility": {
+-    "minimum": "11",
++    "minimum": "12",
+     "verified": "13"
+   }
+ }
+commit 020a8063cd811896f88d35c7e4ba831c7354f1a4
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Tue Feb 3 20:50:03 2026 +0100
+    Update verified version to v13
+diff --git a/system.json b/system.json
+index 0069392..6ac85c5 100644
+--- a/system.json
++++ b/system.json
+@@ -28,6 +28,6 @@
+   "grid": 50,
+   "compatibility": {
+     "minimum": "11",
+-    "verified": "11"
++    "verified": "13"
+   }
+ }
+commit 5247ce4742cbf88852ed76cb05cf58ac5557e510
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Tue Feb 3 20:41:14 2026 +0100
+    Fix system validation errors and clean up manifest
+diff --git a/system.json b/system.json
+index 0835519..0069392 100644
+--- a/system.json
++++ b/system.json
+@@ -3,7 +3,6 @@
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+   "version": "1.0.0",
+-  "library": false,
+   "manifest": "https://github.com/TodoHamwich/tams/releases/latest/download/system.json",
+   "download": "https://github.com/TodoHamwich/tams/releases/latest/download/tams.zip",
+   "authors": [
+@@ -12,13 +11,12 @@
+       "url": "https://github.com/TodoHamwich"
+     }
+   ],
+-  "scripts": [
++  "esmodules": [
+     "scripts/tams.js"
+   ],
+   "styles": [
+     "styles/tams.css"
+   ],
+-  "template": "template.json",
+   "packs": [],
+   "languages": [
+     {
+@@ -28,8 +26,6 @@
+     }
+   ],
+   "grid": 50,
+-  "gridDistance": 5,
+-  "gridUnits": "ft",
+   "compatibility": {
+     "minimum": "11",
+     "verified": "11"
+commit b900d1d74058e7d3400dd52712115358e5f570f4
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Tue Feb 3 20:38:59 2026 +0100
+    Fix UTF-8 BOM in JSON files
+diff --git a/system.json b/system.json
+index 050dc18..0835519 100644
+--- a/system.json
++++ b/system.json
+@@ -1,9 +1,9 @@
+-﻿{
++{
+   "id": "tams",
+   "title": "Todo's Advanced Modular System",
+   "description": "A custom system for Foundry VTT",
+   "version": "1.0.0",
+-  "library": "false",
++  "library": false,
+   "manifest": "https://github.com/TodoHamwich/tams/releases/latest/download/system.json",
+   "download": "https://github.com/TodoHamwich/tams/releases/latest/download/tams.zip",
+   "authors": [
+@@ -30,8 +30,6 @@
+   "grid": 50,
+   "gridDistance": 5,
+   "gridUnits": "ft",
+-  "primaryTokenAttribute": "health",
+-  "secondaryTokenAttribute": "power",
+   "compatibility": {
+     "minimum": "11",
+     "verified": "11"
+commit 9ab915262a122f5659b8e021838e3a65f5e82eab
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Tue Feb 3 20:08:55 2026 +0100
+    Configure GitHub URLs and add README
+diff --git a/system.json b/system.json
+index 9768548..050dc18 100644
+--- a/system.json
++++ b/system.json
+@@ -4,12 +4,12 @@
+   "description": "A custom system for Foundry VTT",
+   "version": "1.0.0",
+   "library": "false",
+-  "manifest": "https://github.com/USERNAME/tams/releases/latest/download/system.json",
+-  "download": "https://github.com/USERNAME/tams/releases/latest/download/tams.zip",
++  "manifest": "https://github.com/TodoHamwich/tams/releases/latest/download/system.json",
++  "download": "https://github.com/TodoHamwich/tams/releases/latest/download/tams.zip",
+   "authors": [
+     {
+-      "name": "Your Name",
+-      "url": ""
++      "name": "TodoHamwich",
++      "url": "https://github.com/TodoHamwich"
+     }
+   ],
+   "scripts": [
+commit 862b78b1427ecee154cb71fef8953e5576b66eff
+Author: Benjamin Mikalsen <Benjamin@ewb-solutions.as>
+Date:   Tue Feb 3 20:07:12 2026 +0100
+    Initial commit of TAMS system boilerplate
+diff --git a/system.json b/system.json
+new file mode 100644
+index 0000000..9768548
+--- /dev/null
++++ b/system.json
+@@ -0,0 +1,39 @@
++﻿{
++  "id": "tams",
++  "title": "Todo's Advanced Modular System",
++  "description": "A custom system for Foundry VTT",
++  "version": "1.0.0",
++  "library": "false",
++  "manifest": "https://github.com/USERNAME/tams/releases/latest/download/system.json",
++  "download": "https://github.com/USERNAME/tams/releases/latest/download/tams.zip",
++  "authors": [
++    {
++      "name": "Your Name",
++      "url": ""
++    }
++  ],
++  "scripts": [
++    "scripts/tams.js"
++  ],
++  "styles": [
++    "styles/tams.css"
++  ],
++  "template": "template.json",
++  "packs": [],
++  "languages": [
++    {
++      "lang": "en",
++      "name": "English",
++      "path": "lang/en.json"
++    }
++  ],
++  "grid": 50,
++  "gridDistance": 5,
++  "gridUnits": "ft",
++  "primaryTokenAttribute": "health",
++  "secondaryTokenAttribute": "power",
++  "compatibility": {
++    "minimum": "11",
++    "verified": "11"
++  }
++}

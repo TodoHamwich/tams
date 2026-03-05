@@ -40,6 +40,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       inventory: new fields.SchemaField({
         usedCapacity: new fields.NumberField({initial: 0}),
         maxCapacity: new fields.NumberField({initial: 0}),
+        hasBackpack: new fields.BooleanField({initial: false}),
         isEncumbered: new fields.BooleanField({initial: false}),
         equippedBackpackId: new fields.StringField({initial: ""})
       }),
@@ -78,7 +79,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         stats: new fields.NumberField({initial: 0}),
         weapons: new fields.NumberField({initial: 0}),
         skills: new fields.NumberField({initial: 0}),
-        abilities: new fields.NumberField({initial: 0})
+        abilities: new fields.NumberField({initial: 0}),
+        traits: new fields.NumberField({initial: 0})
       }),
       specialSkills: new fields.SchemaField({
         dodge: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
@@ -290,6 +292,7 @@ class TAMSSkillData extends foundry.abstract.TypeDataModel {
     return {
       familiarity: new fields.NumberField({initial: 0, nullable: true}),
       upgradePoints: new fields.NumberField({initial: 0, nullable: true}),
+      bonus: new fields.NumberField({initial: 0, nullable: true}),
       stat: new fields.StringField({initial: "strength"}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
@@ -1384,6 +1387,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
     let statValue = parseInt(dataset.statValue) || 100;
     let statMod = parseInt(dataset.statMod) || 0;
     let familiarity = parseInt(dataset.familiarity) || 0;
+    let bonus = 0;
     let statId = dataset.statId;
 
     if (!item && statId === 'dodge') {
@@ -1425,6 +1429,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
         const name = item.name;
         label = name;
         statId = item.system.stat;
+        bonus = parseInt(item.system.bonus) || 0;
         const stat = this.document.system.stats[statId];
         statValue = stat ? stat.value : 100;
         statMod = stat ? (stat.mod || 0) : 0;
@@ -1446,6 +1451,7 @@ class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin
 
     if (item && item.type === 'ability') {
         familiarity = parseInt(item.system.familiarity) || 0;
+        bonus = parseInt(item.system.bonus) || 0;
         if (item.system.isAttack) {
             statId = item.system.attackStat;
             const stat = this.document.system.stats[statId];
@@ -2307,11 +2313,13 @@ Hooks.once("init", async function() {
   Handlebars.registerHelper('lte', function (a, b) {
     return a <= b;
   });
-  Handlebars.registerHelper('or', function (a, b) {
-    return a || b;
+  Handlebars.registerHelper('or', function (...args) {
+    args.pop();
+    return args.some(v => !!v);
   });
-  Handlebars.registerHelper('and', function (a, b) {
-    return a && b;
+  Handlebars.registerHelper('and', function (...args) {
+    args.pop();
+    return args.every(v => !!v);
   });
   Handlebars.registerHelper('not', function (a) {
     return !a;
