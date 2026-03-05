@@ -2652,127 +2652,110 @@ Hooks.on("renderChatMessage", (message, html, data) => {
               const multiplier = (isAoEHit && isSquadOrHorde) ? (parseInt(html.find("#aoe-targets-hit").val()) || 1) : 1;
               const accumulatedLimbDamage = {};
 
+              const isAoESquad = isAoEHit && isSquadOrHorde;
               for (let i = 0; i < locations.length; i++) {
-                  const loc = locations[i];
-                  const limbKey = locationMap[loc];
-                  const limb = target.system.limbs[limbKey];
-                  
-                  // 1) Calculate current armor (considering previous hits in this loop)
-                  const isAltArmor = target.system.settings?.alternateArmour;
-                  let armor = 0;
-                  let armorItems = [];
-                  if (limb.hasEquippedArmor) {
-                      const it = target.items.get(limb.equippedArmorId);
-                      if (it && it.type === 'armor') {
-                          armorItems = [it];
-                          const pendingVal = itemUpdates[it.id]?.[`system.limbs.${limbKey}.value`];
-                          const curVal = (pendingVal !== undefined ? pendingVal : (it.system.limbs[limbKey]?.value || 0));
-                          
+                  const totalIncoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
+                  const subHits = isAoESquad ? multiplier : 1;
+                  let remainingDmg = totalIncoming;
+
+                  for (let m = 0; m < subHits; m++) {
+                      const incoming = Math.floor(remainingDmg / (subHits - m));
+                      remainingDmg -= incoming;
+                      if (incoming <= 0 && m > 0) continue; 
+
+                      const loc = (isAoESquad && (m > 0 || i > 0)) ? await getHitLocation() : locations[i];
+                      const limbKey = locationMap[loc];
+                      if (!limbKey) continue;
+                      const limb = target.system.limbs[limbKey];
+                      
+                      const isAltArmor = target.system.settings?.alternateArmour;
+                      let armor = 0;
+                      let armorItems = [];
+                      if (limb.hasEquippedArmor) {
+                          const it = target.items.get(limb.equippedArmorId);
+                          if (it && it.type === 'armor') {
+                              armorItems = [it];
+                              const pendingVal = itemUpdates[it.id]?.[`system.limbs.${limbKey}.value`];
+                              const curVal = (pendingVal !== undefined ? pendingVal : (it.system.limbs[limbKey]?.value || 0));
+                              if (isAltArmor) {
+                                  const pendingMax = itemUpdates[it.id]?.[`system.limbs.${limbKey}.max`];
+                                  const curMax = (pendingMax !== undefined ? pendingMax : (it.system.limbs[limbKey]?.max || 0));
+                                  if (curMax > 0) armor = curVal;
+                              } else {
+                                  armor = curVal;
+                              }
+                          }
+                      } else {
+                          const pendingVal = updates[`system.limbs.${limbKey}.armor`];
+                          const curVal = pendingVal !== undefined ? pendingVal : (limb.armor || 0);
                           if (isAltArmor) {
-                              const pendingMax = itemUpdates[it.id]?.[`system.limbs.${limbKey}.max`];
-                              const curMax = (pendingMax !== undefined ? pendingMax : (it.system.limbs[limbKey]?.max || 0));
+                              const pendingMax = updates[`system.limbs.${limbKey}.armorMax`];
+                              const curMax = pendingMax !== undefined ? pendingMax : (limb.armorMax || 0);
                               if (curMax > 0) armor = curVal;
                           } else {
                               armor = curVal;
                           }
                       }
-                  } else {
-                      const pendingVal = updates[`system.limbs.${limbKey}.armor`];
-                      const curVal = pendingVal !== undefined ? pendingVal : (limb.armor || 0);
+                      armor = Math.floor(armor);
+                      const effectiveArmor = Math.max(0, armor - armourPen);
                       
-                      if (isAltArmor) {
-                          const pendingMax = updates[`system.limbs.${limbKey}.armorMax`];
-                          const curMax = pendingMax !== undefined ? pendingMax : (limb.armorMax || 0);
-                          if (curMax > 0) armor = curVal;
-                          else armor = 0;
-                      } else {
-                          armor = curVal;
+                      let effective = Math.max(0, incoming - effectiveArmor);
+                      const blocked = Math.min(incoming, effectiveArmor);
+                      let overflow = 0;
+
+                      if (isSquadOrHorde) {
+                          const indMax = limb.individualMax || Math.floor(target.system.stats.endurance.total * limb.mult);
+                          const limbCap = (isAoEHit ? multiplier : 1) * indMax;
+                          if (!accumulatedLimbDamage[limbKey]) accumulatedLimbDamage[limbKey] = 0;
+
+                          const remainingCap = Math.max(0, limbCap - accumulatedLimbDamage[limbKey]);
+                          const cappedEffective = Math.min(effective, remainingCap);
+                          
+                          overflow = effective - cappedEffective;
+                          effective = cappedEffective;
+                          accumulatedLimbDamage[limbKey] += effective;
                       }
-                  }
-                  armor = Math.floor(armor);
-                  const effectiveArmor = Math.max(0, armor - armourPen);
-                  
-                  const incoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
-                  let effective = Math.max(0, incoming - (effectiveArmor * multiplier));
-                  const blocked = Math.min(incoming, effectiveArmor * multiplier);
-                  let overflow = 0;
-
-                  // Apply cap ONLY for squads/hordes to prevent damage overflow beyond individuals hit
-                  if (isSquadOrHorde) {
-                      const indMax = limb.individualMax || Math.floor(target.system.stats.endurance.total * limb.mult);
-                      const limbCap = multiplier * indMax;
-                      if (!accumulatedLimbDamage[limbKey]) accumulatedLimbDamage[limbKey] = 0;
-
-                      const remainingCap = Math.max(0, limbCap - accumulatedLimbDamage[limbKey]);
-                      const cappedEffective = Math.min(effective, remainingCap);
                       
-                      overflow = effective - cappedEffective;
-                      effective = cappedEffective;
-                      accumulatedLimbDamage[limbKey] += effective;
-                  }
-                  
-                  const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
-                  const newHp = Math.floor(currentHp) - effective;
-                  updates[`system.limbs.${limbKey}.value`] = newHp;
-                  
-                  limbDamageReceived[limbKey] += effective;
+                      const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
+                      const newHp = Math.floor(currentHp) - effective;
+                      updates[`system.limbs.${limbKey}.value`] = newHp;
+                      
+                      limbDamageReceived[limbKey] += effective;
 
-                  if (armor > 0 && (effective + overflow) < incoming) {
-                      // Armor lost! 
-                      if (limb.hasEquippedArmor) {
-                          // Find an item to damage (first one with armor remaining)
-                          const itemToDamage = armorItems.find(it => {
-                              if (isAltArmor) {
-                                  const pending = itemUpdates[it.id]?.[`system.limbs.${limbKey}.max`];
-                                  const val = pending !== undefined ? pending : (it.system.limbs[limbKey]?.max || 0);
-                                  return val > 0;
-                              } else {
-                                  const pending = itemUpdates[it.id]?.[`system.limbs.${limbKey}.value`];
-                                  const val = pending !== undefined ? pending : (it.system.limbs[limbKey]?.value || 0);
-                                  return val > 0;
-                              }
-                          });
-                          if (itemToDamage) {
-                              if (isAltArmor) {
-                                  const pending = itemUpdates[itemToDamage.id]?.[`system.limbs.${limbKey}.max`];
-                                  const currentVal = pending !== undefined ? pending : (itemToDamage.system.limbs[limbKey]?.max || 0);
+                      let lossLabel = "";
+                      if (armor > 0 && (effective + overflow) < incoming) {
+                          if (limb.hasEquippedArmor) {
+                              const itemToDamage = armorItems.find(it => {
+                                  const pending = isAltArmor ? itemUpdates[it.id]?.[`system.limbs.${limbKey}.max`] : itemUpdates[it.id]?.[`system.limbs.${limbKey}.value`];
+                                  const val = pending !== undefined ? pending : (isAltArmor ? it.system.limbs[limbKey]?.max : it.system.limbs[limbKey]?.value);
+                                  return (val || 0) > 0;
+                              });
+                              if (itemToDamage) {
+                                  const key = isAltArmor ? `system.limbs.${limbKey}.max` : `system.limbs.${limbKey}.value`;
+                                  const pending = itemUpdates[itemToDamage.id]?.[key];
+                                  const currentVal = pending !== undefined ? pending : (isAltArmor ? itemToDamage.system.limbs[limbKey]?.max : itemToDamage.system.limbs[limbKey]?.value);
                                   itemUpdates[itemToDamage.id] = { 
                                       ...(itemUpdates[itemToDamage.id] || {}),
                                       _id: itemToDamage.id, 
-                                      [`system.limbs.${limbKey}.max`]: Math.max(0, currentVal - multiplier) 
-                                  };
-                              } else {
-                                  const pending = itemUpdates[itemToDamage.id]?.[`system.limbs.${limbKey}.value`];
-                                  const currentVal = pending !== undefined ? pending : (itemToDamage.system.limbs[limbKey]?.value || 0);
-                                  itemUpdates[itemToDamage.id] = { 
-                                      ...(itemUpdates[itemToDamage.id] || {}),
-                                      _id: itemToDamage.id, 
-                                      [`system.limbs.${limbKey}.value`]: Math.max(0, currentVal - multiplier) 
+                                      [key]: Math.max(0, currentVal - 1) 
                                   };
                               }
-                          }
-                      } else {
-                          if (isAltArmor) {
-                              const pending = updates[`system.limbs.${limbKey}.armorMax`];
-                              const currentMax = pending !== undefined ? pending : (limb.armorMax || 0);
-                              updates[`system.limbs.${limbKey}.armorMax`] = Math.max(0, currentMax - multiplier);
                           } else {
-                              updates[`system.limbs.${limbKey}.armor`] = Math.max(0, armor - multiplier);
+                              const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
+                              const pending = updates[key];
+                              const currentVal = pending !== undefined ? pending : (isAltArmor ? limb.armorMax : limb.armor);
+                              updates[key] = Math.max(0, (currentVal || 0) - 1);
                           }
+                          lossLabel = isAltArmor ? "1 armor HP lost" : "1 armor point lost";
                       }
-                      const lossLabel = isAltArmor ? `${multiplier} armor HP lost` : `${multiplier} armor point lost`;
-                      const penLabel = armourPen > 0 ? ` (Penetrated ${armourPen})` : "";
-                      const overflowLabel = overflow > 0 ? ` <span style="color: #666;">[Capped: ${overflow} ignored]</span>` : "";
-                      report += `• ${loc}: ${effective} damage (${blocked} armor blocked${penLabel}, ${lossLabel})${overflowLabel}<br>`;
-                  } else {
-                      const penLabel = armourPen > 0 ? ` (Penetrated ${armourPen})` : "";
-                      const overflowLabel = overflow > 0 ? ` <span style="color: #666;">[Capped: ${overflow} ignored]</span>` : "";
-                      report += `• ${loc}: ${effective} damage (${blocked} armor blocked${penLabel})${overflowLabel}<br>`;
-                  }
 
-                  // Rule 2: Below -Max -> Automatic Injured
-                  if (newHp <= -limb.max) {
-                      updates[`system.limbs.${limbKey}.injured`] = true;
+                      const penLabel = armourPen > 0 ? ` (Penetrated ${armourPen})` : "";
+                      const overflowLabel = overflow > 0 ? ` <span style="color: #666;">[Capped: ${overflow} ignored]</span>` : "";
+                      report += `• ${loc}: ${effective} damage (${blocked} armor blocked${penLabel}${lossLabel ? ', ' + lossLabel : ''})${overflowLabel}<br>`;
+
+                      if (newHp <= -limb.max) {
+                          updates[`system.limbs.${limbKey}.injured`] = true;
+                      }
                   }
               }
 
