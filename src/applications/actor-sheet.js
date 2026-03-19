@@ -11,7 +11,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       tag: "form",
       classes: ["tams", "sheet", "actor"],
       position: { width: 600, height: 800 },
-      window: { resizable: true, scrollable: [".sheet-body", ".inventory-scroll"] },
+      window: { resizable: true, scrollable: [".tab", ".inventory-scroll"] },
       form: { submitOnChange: true, closeOnSubmit: false },
       dragDrop: [{ dragSelector: ".item[data-item-id]", dropSelector: null }],
       actions: {
@@ -828,6 +828,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     if (!item && statId === 'dodge') {
         const dex = this.document.system.stats.dexterity;
+        familiarity = statValue; // The special skill value from dataset.statValue
         statValue = dex.value;
         statMod = dex.mod;
         addStatModSources('dexterity');
@@ -835,7 +836,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         addStatModSources(statId);
     }
 
-    if (!item) familiarity = 0; // Pure stat rolls don't include familiarity
+    if (!item) {
+        if (statId !== 'dodge') familiarity = 0; // Pure stat rolls don't include familiarity
+    }
 
     if (item && item.type === 'weapon') {
         const str = this.document.system.stats.strength;
@@ -1144,71 +1147,27 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         critInfo = `<div class="tams-crit ${resultClass}">${resultText}</div>`;
     } else if (difficulty > 0) {
         const actor = this.document;
-        const canBoost = actor.type === 'character'; // Or any other criteria
-
-        if (dcTotal < difficulty && canBoost) {
-            const resources = [{id: "stamina", name: "Stamina", value: actor.system.stamina.value}];
-            actor.system.customResources.forEach((res, idx) => {
-                resources.push({id: idx.toString(), name: res.name, value: res.value});
-            });
-
-            const boostConfirmed = await new Promise(resolve => {
-                const options = resources.map(r => `<option value="${r.id}">${r.name} (${r.value} avail)</option>`).join('');
-                new Dialog({
-                    title: game.i18n.localize("TAMS.BoostRollTitle"),
-                    content: `
-                        <p>${game.i18n.format("TAMS.BoostRollLine1", {total: dcTotal, dc: difficulty})}</p>
-                        <div class="form-group">
-                            <label>${game.i18n.localize("TAMS.ResourceToSpend")}</label>
-                            <select id="boost-resource">${options}</select>
-                        </div>
-                        <div class="form-group">
-                            <label>${game.i18n.localize("TAMS.AmountToSpend")}</label>
-                            <input type="number" id="boost-amount" value="${difficulty - dcTotal}" min="1"/>
-                        </div>
-                    `,
-                    buttons: {
-                        boost: {
-                            label: game.i18n.localize("TAMS.Boost"),
-                            callback: (html) => {
-                                resolve({
-                                    amount: parseInt(html.find("#boost-amount").val()) || 0,
-                                    resId: html.find("#boost-resource").val()
-                                });
-                            }
-                        },
-                        cancel: { label: game.i18n.localize("TAMS.NoBoost"), callback: () => resolve(null) }
-                    },
-                    default: "boost"
-                }).render(true);
-            });
-
-            if (boostConfirmed) {
-                const { amount, resId } = boostConfirmed;
-                const res = resources.find(r => r.id === resId);
-                if (res && res.value >= amount) {
-                    if (resId === 'stamina') {
-                        await actor.update({"system.stamina.value": res.value - amount});
-                    } else {
-                        const idx = parseInt(resId);
-                        const custom = [...actor.system.customResources];
-                        custom[idx].value -= amount;
-                        await actor.update({"system.customResources": custom});
-                    }
-                    dcTotal += amount;
-                    critInfo = `<div class="tams-success">${game.i18n.format('TAMS.SuccessVsDiffBoosted', {difficulty, amount})}</div>`;
-                } else {
-                    ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughToBoost"));
-                }
-            }
-        }
+        const canBoost = actor.type === 'character';
 
         if (dcTotal >= (difficulty * 2)) {
-            critInfo = `<div class=\"tams-crit success\">${game.i18n.format('TAMS.CritSuccess', {total: dcTotal, difficulty})}</div>`;
+            critInfo = `<div class="tams-crit success">${game.i18n.format('TAMS.CritSuccess', {total: dcTotal, difficulty})}</div>`;
         } else if (dcTotal >= difficulty) {
-            if (!critInfo) critInfo = `<div class=\"tams-success\">${game.i18n.format('TAMS.SuccessVsDiff', {difficulty})}</div>`;
+            critInfo = `<div class="tams-success">${game.i18n.format('TAMS.SuccessVsDiff', {difficulty})}</div>`;
         } else {
-            critInfo = `<div class=\"tams-failure\">${game.i18n.format('TAMS.FailureVsDiff', {difficulty})}</div>`;
+            critInfo = `
+                <div class="tams-failure">${game.i18n.format('TAMS.FailureVsDiff', {difficulty})}</div>
+                <div class="roll-boost-container"></div>
+                ${canBoost ? `
+                    <div class="roll-row">
+                        <button class="tams-boost-roll" 
+                                data-difficulty="${difficulty}" 
+                                data-total="${dcTotal}" 
+                                data-actor-id="${actor.id}">
+                            ${game.i18n.localize("TAMS.Checks.SpendResourceToBoost")}
+                        </button>
+                    </div>
+                ` : ''}
+            `;
         }
     }
 

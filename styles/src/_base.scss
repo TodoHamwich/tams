@@ -36,6 +36,13 @@
     overflow-y: auto;
     padding: 0 10px 10px 10px;
     box-sizing: border-box;
+
+    &.has-tabs {
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+    }
 }
 
 .tams .grid-2col {

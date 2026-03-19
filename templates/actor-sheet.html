@@ -44,9 +44,9 @@
         <a class="item {{#if (eq activeTab 'settings')}}active{{/if}}" data-action="setTab" data-tab="settings" title="{{localize 'TAMS.Tabs.Settings'}}"><i class="fas fa-cog"></i></a>
     </nav>
 
-    <section class="sheet-body" data-scrollable>
+    <section class="sheet-body has-tabs">
         {{!-- Stats Tab --}}
-        <div class="tab stats {{#if (eq activeTab 'stats')}}active{{/if}}" data-group="primary" data-tab="stats">
+        <div class="tab stats {{#if (eq activeTab 'stats')}}active{{/if}}" data-group="primary" data-tab="stats" data-scrollable data-scroll-id="tab-stats">
             <div class="upgrade-pool flexrow">
                 <label>{{localize 'TAMS.StatUpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints.stats" value="{{system.upgradePoints.stats}}"/>
@@ -121,7 +121,7 @@
         </div>
 
         {{!-- Items Tab --}}
-        <div class="tab items {{#if (eq activeTab 'items')}}active{{/if}}" data-group="primary" data-tab="items">
+        <div class="tab items {{#if (eq activeTab 'items')}}active{{/if}}" data-group="primary" data-tab="items" data-scrollable data-scroll-id="tab-items">
             <div class="upgrade-pool flexrow">
                 <label>{{localize 'TAMS.WeaponUpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints.weapons" value="{{system.upgradePoints.weapons}}"/>
@@ -222,7 +222,7 @@
         </div>
 
         {{!-- Abilities & Resources Tab --}}
-        <div class="tab abilities {{#if (eq activeTab 'abilities')}}active{{/if}}" data-group="primary" data-tab="abilities">
+        <div class="tab abilities {{#if (eq activeTab 'abilities')}}active{{/if}}" data-group="primary" data-tab="abilities" data-scrollable data-scroll-id="tab-abilities">
             <h3>{{localize 'TAMS.Resources'}}</h3>
             <ol class="resources-list">
                 {{!-- Main Stamina Resource --}}
@@ -309,7 +309,7 @@
                 </div>
             </div>
 
-            <div class="inventory-scroll" data-scrollable>
+            <div class="inventory-scroll" data-scrollable data-scroll-id="tab-inventory-scroll">
                 <div class="inventory-controls-global flexrow">
                     <a data-action="itemCreate" data-type="weapon" title="{{localize 'TAMS.AddWeapon'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Weapon'}}</a>
                     <a data-action="itemCreate" data-type="armor" title="{{localize 'TAMS.AddArmor'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Armor'}}</a>
@@ -400,7 +400,7 @@
 
 
         {{!-- Description Tab --}}
-        <div class="tab {{#if (eq activeTab 'description')}}active{{/if}}" data-group="primary" data-tab="description">
+        <div class="tab description {{#if (eq activeTab 'description')}}active{{/if}}" data-group="primary" data-tab="description" data-scrollable data-scroll-id="tab-description">
             <div class="upgrade-pool flexrow">
                 <label>{{localize 'TAMS.TraitsUpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints.traits" value="{{system.upgradePoints.traits}}"/>
@@ -437,7 +437,7 @@
         </div>
 
         {{!-- Modifiers Tab --}}
-        <div class="tab modifiers {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-group="primary" data-tab="modifiers">
+        <div class="tab modifiers {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-group="primary" data-tab="modifiers" data-scrollable data-scroll-id="tab-modifiers">
             <div class="flexcol">
                 <div class="grid grid-2col">
                     <div class="modifier-group">
@@ -549,7 +549,7 @@
         </div>
 
         {{!-- Settings Tab --}}
-        <div class="tab settings {{#if (eq activeTab 'settings')}}active{{/if}}" data-group="primary" data-tab="settings">
+        <div class="tab settings {{#if (eq activeTab 'settings')}}active{{/if}}" data-group="primary" data-tab="settings" data-scrollable data-scroll-id="tab-settings">
             <h3>{{localize 'TAMS.Settings'}}</h3>
             <div class="flexcol">
                 <div class="form-group flexrow" style="margin-bottom: 10px;">

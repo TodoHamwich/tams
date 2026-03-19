@@ -10,7 +10,7 @@
         <h1 class="charname"><input name="name" type="text" value="{{document.name}}" placeholder="Name"/></h1>
     </header>
 
-    <section class="sheet-body" data-scrollable>
+    <section class="sheet-body" data-scrollable data-scroll-id="item-body">
         <div class="flexcol">
             {{!-- Common Physical Fields --}}
             {{#if (or (eq item.type 'weapon') (eq item.type 'equipment') (eq item.type 'armor') (eq item.type 'consumable') (eq item.type 'tool') (eq item.type 'questItem') (eq item.type 'backpack'))}}

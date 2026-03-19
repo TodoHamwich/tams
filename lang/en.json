@@ -287,6 +287,8 @@
       "MinToDodge": "Minimum to dodge: {points}",
       "AlreadyDodged": "Already Dodged!",
       "UnawareCheckbox": "Unaware? (Dex halved again)",
+      "Resource": "Resource",
+      "PointsSpent": "Points Spent",
       "ApplyBoost": "Apply Boost",
       "BoostLabel": "Boost (+5/pt):",
       "ChooseWeaponRetaliate": "Choose Weapon for Retaliation",

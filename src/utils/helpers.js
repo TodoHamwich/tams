@@ -1,28 +1,6 @@
 
-import { showCombinedInjuryDialog, getHitLocation } from './combat.js';
-export { showCombinedInjuryDialog, getHitLocation };
-
-/**
- * Update a message in the chat log.
- * @param {ChatMessage} message The message document.
- * @param {object} updateData Data to update.
- * @returns {Promise<ChatMessage>}
- */
-export async function tamsUpdateMessage(message, updateData) {
-  if (game.user.isGM || message.isAuthor) {
-    try {
-      return await message.update(updateData);
-    } catch (err) {
-      console.error("TAMS | Failed to update message", err);
-    }
-  }
-  
-  game.socket.emit("system.tams", {
-    type: "updateMessage",
-    messageId: message.id,
-    updateData: updateData
-  });
-}
+import { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage } from './combat.js';
+export { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage };
 
 /**
  * Handle item transfer between actors.
