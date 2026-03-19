@@ -51,9 +51,10 @@
     }
   },
   "Item": {
-    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "questItem", "backpack"],
+    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "questItem", "backpack", "trait"],
     "weapon": {
       "familiarity": 0,
+      "quantity": 1,
       "equipped": false,
       "size": "medium",
       "location": "hand",
@@ -68,8 +69,11 @@
       "ammo": { "current": 0, "total": 0 },
       "fireRate": "1",
       "fireRateCustom": 1,
+      "attackStat": "default",
+      "consumeAmmo": false,
       "isAoE": false,
       "special": "",
+      "tags": "",
       "description": ""
     },
     "skill": {
@@ -177,6 +181,9 @@
       "description": ""
     },
     "backpack": {
+      "quantity": 1,
+      "size": "medium",
+      "location": "stowed",
       "equipped": false,
       "capacity": 100,
       "modifier": 0.5,
@@ -188,6 +195,14 @@
         "attack": 0,
         "movement": 0
       },
+      "tags": "",
+      "description": ""
+    },
+    "trait": {
+      "upgradePoints": 0,
+      "isProfession": false,
+      "profession": "",
+      "modifiers": [],
       "tags": "",
       "description": ""
     }

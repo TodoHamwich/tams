@@ -1,0 +1,329 @@
+@import 'variables';
+
+.tams .sheet-header {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    border-bottom: 2px solid $color-border;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.tams .profile-img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border: 2px solid $color-border;
+    box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    border-radius: 5px;
+    display: block;
+}
+
+.tams .profile-img-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    cursor: pointer;
+
+    &:hover .image-edit-overlay {
+        opacity: 1;
+    }
+}
+
+.tams .image-edit-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border-radius: 5px;
+    pointer-events: none;
+    font-size: 12px;
+    text-align: center;
+    padding: 5px;
+    box-sizing: border-box;
+
+    i {
+        font-size: 24px;
+        margin-bottom: 5px;
+    }
+
+    &.small i {
+        font-size: 18px;
+        margin-bottom: 0;
+    }
+}
+
+.tams-item-form .profile-img-container {
+    width: 64px;
+    height: 64px;
+
+    img {
+        width: 64px;
+        height: 64px;
+    }
+}
+
+.tams .header-details {
+    flex: 1;
+
+    .npc-tag {
+        background: #444;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.5em;
+        vertical-align: middle;
+        margin-right: 5px;
+    }
+}
+
+.tams .physical-notes {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    input { flex: 1; }
+}
+
+.tams .theme-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tams .charname {
+    margin: 0;
+    padding: 0;
+    border-bottom: none;
+
+    input {
+        font-family: $font-header;
+        font-size: 28px;
+        height: 40px;
+        width: 100%;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid $color-border;
+    }
+}
+
+.tams .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+}
+
+// Progress Bars
+.tams .bar-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid $color-border;
+
+    input {
+        width: 50px;
+        text-align: center;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid $color-border;
+        height: 24px;
+    }
+}
+
+.tams .bar {
+    flex: 1;
+    height: 16px;
+    background: #333;
+    border: 1px solid #000;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+
+    .fill {
+        height: 100%;
+        background: #3498db;
+        transition: width 0.4s cubic-bezier(0.47, 0, 0.745, 0.715);
+        border-right: 1px solid rgba(255,255,255,0.3);
+        box-shadow: 0 0 10px rgba(255,255,255,0.2);
+    }
+
+    &.opposed {
+        .fill {
+            position: absolute;
+            right: 0;
+            border-right: none;
+            border-left: 1px solid rgba(255,255,255,0.3);
+        }
+    }
+}
+
+.tams .max-label {
+    min-width: 50px;
+    font-weight: bold;
+}
+
+// Tabs
+.tams .sheet-tabs {
+    flex: 0 0 36px;
+    border-top: 1px solid #AAA;
+    border-bottom: 1px solid #AAA;
+    margin: 5px 0;
+    background: rgba(0,0,0,0.05);
+    display: flex;
+
+    .item {
+        flex: 1;
+        line-height: 36px;
+        padding: 0;
+        border-right: 1px solid #AAA;
+        font-size: 16px;
+        text-align: center;
+        transition: all 0.2s ease;
+        font-weight: normal;
+        text-transform: none;
+        font-family: inherit;
+
+        &:last-child { border-right: none; }
+        &:hover {
+            background: rgba(255,0,0,0.1);
+            text-shadow: 0 0 5px rgba(255,0,0,0.5);
+        }
+        &.active {
+            background: rgba(255,0,0,0.2);
+            text-shadow: 0 0 10px red;
+            border-bottom: 2px solid red;
+            color: inherit;
+        }
+    }
+}
+
+// Rollable elements
+.tams .rollable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+        color: $color-active;
+        text-shadow: 0 0 8px rgba(255,0,0,0.4);
+        transform: translateX(3px);
+
+        i { color: $color-active; }
+    }
+
+    i {
+        margin-right: 5px;
+        color: $color-border;
+        transition: color 0.2s ease;
+    }
+}
+
+// Lists
+.tams .items-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tams .item {
+    border-bottom: 1px solid #CCC;
+    padding: 5px;
+    transition: background 0.2s ease;
+
+    &:nth-child(even) { background: rgba(0,0,0,0.03); }
+    &:hover { background: rgba(255,0,0,0.05); }
+
+    &.greyed-out {
+        opacity: 0.5;
+        background: rgba(0,0,0,0.1);
+        pointer-events: none;
+        filter: grayscale(100%);
+        &:hover { background: rgba(0,0,0,0.1); }
+        select, input { cursor: not-allowed; }
+    }
+}
+
+.tams .item-name {
+    flex: 1;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.tams .item-stat {
+    flex: 0 0 60px;
+    text-align: center;
+    font-size: 13px;
+}
+
+.tams .item-header {
+    font-weight: bold;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #666;
+    border-bottom: 2px solid $color-border;
+}
+
+.tams .item-controls {
+    flex: 0 0 100px;
+    text-align: right;
+
+    a { cursor: pointer; }
+}
+
+// Upgrade points
+.tams .upgrade-pool {
+    justify-content: flex-start;
+    gap: 10px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+
+    label { flex: 0 0 auto; font-weight: bold; }
+    input { width: 55px !important; flex: 0 0 auto; text-align: center; }
+}
+
+.tams .tag-button {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid $color-border;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    text-align: center;
+    color: $color-text;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.1);
+        text-shadow: none;
+        color: #000;
+    }
+
+    &.active {
+        background: $color-border;
+        color: #fff;
+
+        &:hover {
+            background: darken($color-border, 10%);
+        }
+    }
+}

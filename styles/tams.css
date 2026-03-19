@@ -1,1015 +1,923 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Signika:wght@300;400;600&family=MedievalSharp&family=Roboto+Condensed:wght@400;700&display=swap');
-
+@import url("https://fonts.googleapis.com/css2?family=Signika:wght@300;400;600&family=MedievalSharp&family=Roboto+Condensed:wght@400;700&display=swap");
 .tams {
-    font-family: 'Signika', sans-serif;
-    letter-spacing: 0.02em;
-    line-height: 1.4;
+  font-family: "Signika", sans-serif;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.tams.sheet {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .tams-actor-form, .tams-item-form {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.tams .sheet-header {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: row;
-    gap: 15px;
-    border-bottom: 2px solid #7a7971;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-}
-
-.tams .profile-img {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    border: 2px solid #7a7971;
-    box-shadow: 0 0 5px rgba(0,0,0,0.5);
-    border-radius: 5px;
-    display: block;
-}
-
-.tams .profile-img-container {
-    position: relative;
-    width: 100px;
-    height: 100px;
-    cursor: pointer;
-}
-
-.tams .profile-img-container:hover .image-edit-overlay {
-    opacity: 1;
-}
-
-.tams .image-edit-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    border-radius: 5px;
-    pointer-events: none;
-    font-size: 12px;
-    text-align: center;
-    padding: 5px;
-    box-sizing: border-box;
-}
-
-.tams .image-edit-overlay i {
-    font-size: 24px;
-    margin-bottom: 5px;
-}
-
-.tams .image-edit-overlay.small i {
-    font-size: 18px;
-    margin-bottom: 0;
-}
-
-.tams-item-form .profile-img-container {
-    width: 64px;
-    height: 64px;
-}
-
-.tams-item-form .profile-img-container img {
-    width: 64px;
-    height: 64px;
-}
-
-.tams .header-details {
-    flex: 1;
-}
-
-.tams .charname {
-    margin: 0;
-    padding: 0;
-    border-bottom: none;
-}
-
-.tams .charname input {
-    font-family: 'MedievalSharp', serif;
-    font-size: 28px;
-    height: 40px;
-    width: 100%;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid #7a7971;
-}
-
-.tams .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 5px;
-}
-
-.tams .physical-notes {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.tams .physical-notes input {
-    flex: 1;
-}
-
-.tams .resource.stamina {
-    flex: 1;
-}
-
-.tams .bar-container {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(0, 0, 0, 0.15);
-    padding: 4px 10px;
-    border-radius: 8px;
-    border: 1px solid #7a7971;
-}
-
-.tams .bar-container input {
-    width: 50px;
-    text-align: center;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid #7a7971;
-    height: 24px;
-}
-
-/* Progress Bars */
-.tams .bar {
-    flex: 1;
-    height: 16px;
-    background: #333;
-    border: 1px solid #000;
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
-}
-
-.tams .bar .fill {
-    height: 100%;
-    background: #3498db; /* Default blue */
-    transition: width 0.4s cubic-bezier(0.47, 0, 0.745, 0.715);
-    border-right: 1px solid rgba(255,255,255,0.3);
-    box-shadow: 0 0 10px rgba(255,255,255,0.2);
-}
-
-
-.tams .max-label {
-    min-width: 50px;
-    font-weight: bold;
-}
-
-.tams .grid-2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
-
-.tams .tab.stats .grid-2col {
-    grid-template-columns: 1fr 350px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .tams .flexrow {
-    display: flex;
-    align-items: center;
-    gap: 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
 }
 
 .tams .flexcol {
-    display: flex;
-    flex-direction: column;
-}
-
-.tams .stat label, .tams .limb label {
-    flex: 1;
-    font-weight: bold;
-}
-
-.tams .stat-inputs {
-    flex: 0 0 auto;
-    gap: 2px;
-}
-
-.tams .mod-sep {
-    font-weight: bold;
-    font-size: 14px;
-    color: #7a7971;
-}
-
-.tams .stat input {
-    width: 35px;
-    text-align: center;
-}
-
-.tams .limb-row {
-    border-bottom: 1px solid #7a7971;
-    padding: 5px 0;
-}
-
-.tams .special-skill label {
-    font-size: 13px;
-}
-
-.tams .limb-label {
-    flex: 0 0 70px;
-    font-size: 13px;
-}
-
-.tams .limb-hp {
-    flex: 0 0 60px;
-    gap: 2px;
-    justify-content: flex-start;
-}
-
-.tams .limb-hp span {
-    font-size: 13px;
-}
-
-.tams .limb-armor {
-    flex: 0 0 200px;
-    justify-content: flex-end;
-    gap: 5px;
-}
-
-.tams .limb-armor label {
-    font-size: 11px;
-    font-weight: normal;
-    text-transform: uppercase;
-    color: #666;
-}
-
-.tams .small-input {
-    width: 35px !important;
-    text-align: center;
-    height: 20px;
-    font-size: 13px;
-}
-
-.tams .limb-armor input {
-    width: 30px !important;
-}
-
-.tams .limb-values {
-    flex: 0 0 auto;
-    gap: 5px;
-}
-
-.tams .limb-values span, .tams .limb-values small {
-    white-space: nowrap;
-}
-
-/* Rollable elements */
-.tams .rollable {
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.tams .rollable:hover {
-    color: #ff0000;
-    text-shadow: 0 0 8px rgba(255,0,0,0.4);
-    transform: translateX(3px);
-}
-
-.tams .rollable i {
-    margin-right: 5px;
-    color: #7a7971;
-    transition: color 0.2s ease;
-}
-
-.tams .rollable:hover i {
-    color: #ff0000;
-}
-
-.tams .resources-list {
-    list-style: none;
-    padding: 0;
-}
-
-.tams .resource-item {
-    width: 100%;
-    border-bottom: 1px solid #CCC;
-    padding: 10px 0;
-    gap: 5px;
-}
-
-.tams .negative-hp {
-    color: #e74c3c;
-    font-weight: bold;
-}
-
-.tams .injured-limb {
-    background: rgba(241, 196, 15, 0.15);
-}
-
-.tams .crit-injured {
-    background: rgba(231, 76, 60, 0.15);
-}
-
-.tams .injured-icon {
-    color: #f39c12;
-    margin-right: 3px;
-}
-
-.tams .crit-icon {
-    color: #e74c3c;
-    margin-right: 3px;
-}
-
-.tams .resource-item .resource-label {
-    flex: 0 0 70px;
-}
-
-.tams .delete-resource {
-    margin-left: 5px;
-    color: #666;
-}
-
-.tams .delete-resource:hover {
-    color: #ff0000;
-}
-
-.tams .upgrade-pool {
-    justify-content: flex-start;
-    gap: 10px;
-    margin-bottom: 5px;
-}
-
-.tams .upgrade-pool label {
-    flex: 0 0 auto;
-    font-weight: bold;
-}
-
-.tams .upgrade-pool input {
-    width: 55px !important;
-    flex: 0 0 auto;
-    text-align: center;
-}
-
-.tams .modifier-row {
-    margin-bottom: 2px;
-}
-
-.tams .modifiers h3 {
-    margin-top: 5px;
-    margin-bottom: 2px;
-}
-
-.tams .modifiers hr {
-    margin: 5px 0;
-}
-
-/* Themes */
-.tams.theme-dark {
-    background: #1a1a1a;
-    color: #e0e0e0;
-}
-
-.tams.theme-dark input, .tams.theme-dark select, .tams.theme-dark textarea {
-    background: #2a2a2a;
-    color: #fff;
-    border: 1px solid #444;
-}
-
-.tams.theme-dark input:focus, .tams.theme-dark select:focus, .tams.theme-dark textarea:focus {
-    box-shadow: 0 0 5px #ff0000;
-    border-color: #ff0000;
-}
-
-.tams.theme-dark .sheet-tabs .item.active {
-    background: rgba(255,0,0,0.3);
-    color: #fff;
-}
-
-.tams.theme-dark .item:nth-child(even) {
-    background: rgba(255,255,255,0.05);
-}
-
-.tams.theme-parchment {
-    background-color: #f5e6c8;
-    background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
-    color: #1a0f0d;
-    letter-spacing: 0.03em;
-    line-height: 1.5;
-}
-
-.tams.theme-parchment h1, .tams.theme-parchment h3 {
-    color: #000000;
-}
-
-.tams.theme-parchment input, .tams.theme-parchment select, .tams.theme-parchment textarea {
-    background: rgba(255, 255, 255, 0.4);
-    border: 1px solid #8d6e63;
-    color: #000000;
-    font-weight: 500;
-}
-
-.tams.theme-parchment .sheet-tabs {
-    background: rgba(0, 0, 0, 0.05);
-    border-color: #8d6e63;
-}
-
-.tams.theme-parchment .sheet-tabs .item {
-    border-right-color: #8d6e63;
-    color: #5d4037;
-}
-
-.tams.theme-parchment .sheet-tabs .item.active {
-    background: rgba(0, 0, 0, 0.1);
-    border-bottom-color: #000000;
-    text-shadow: none;
-    color: #000000;
-}
-
-.tams.theme-parchment .item-name,
-.tams.theme-parchment .resource-label {
-    color: #1a0f0d;
-}
-
-.tams.theme-parchment .item:hover {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-.tams.theme-parchment .bar {
-    border-color: #1a0f0d;
-    background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 .tams .sheet-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 5px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 10px 10px 10px;
+  box-sizing: border-box;
 }
 
-.tams .tab {
-    display: none;
+.tams .grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
 }
 
-.tams .tab.active {
-    display: block;
+.tams select {
+  background: #fff;
+  color: #000;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  padding: 1px 3px;
+}
+
+.tams textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  padding: 8px;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 14px;
 }
 
 .tams h3 {
-    border-bottom: 1px solid #7a7971;
-    margin: 10px 0 5px 0;
-    font-family: 'Roboto Condensed', sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: bold;
-    font-size: 14px;
+  border-bottom: 1px solid #7a7971;
+  margin: 10px 0 5px 0;
+  font-family: "Roboto Condensed", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: bold;
+  font-size: 14px;
 }
-
 .tams h3.small-header {
-    font-size: 12px;
-    margin-top: 5px;
+  font-size: 12px;
+  margin-top: 5px;
 }
 
-.tams .full-heal {
-    float: right;
-    color: #c0392b;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 14px;
+.tams hr {
+  margin: 5px 0;
 }
 
-.tams .full-heal:hover {
-    color: #e74c3c;
-    text-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
+.tams .sheet-header {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  border-bottom: 2px solid #7a7971;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.tams .profile-img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border: 2px solid #7a7971;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  display: block;
+}
+
+.tams .profile-img-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  cursor: pointer;
+}
+.tams .profile-img-container:hover .image-edit-overlay {
+  opacity: 1;
+}
+
+.tams .image-edit-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 5px;
+  pointer-events: none;
+  font-size: 12px;
+  text-align: center;
+  padding: 5px;
+  box-sizing: border-box;
+}
+.tams .image-edit-overlay i {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+.tams .image-edit-overlay.small i {
+  font-size: 18px;
+  margin-bottom: 0;
+}
+
+.tams-item-form .profile-img-container {
+  width: 64px;
+  height: 64px;
+}
+.tams-item-form .profile-img-container img {
+  width: 64px;
+  height: 64px;
+}
+
+.tams .header-details {
+  flex: 1;
+}
+.tams .header-details .npc-tag {
+  background: #444;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.5em;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
+.tams .physical-notes {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tams .physical-notes input {
+  flex: 1;
+}
+
+.tams .theme-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tams .charname {
+  margin: 0;
+  padding: 0;
+  border-bottom: none;
+}
+.tams .charname input {
+  font-family: "MedievalSharp", serif;
+  font-size: 28px;
+  height: 40px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #7a7971;
+}
+
+.tams .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.tams .bar-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #7a7971;
+}
+.tams .bar-container input {
+  width: 50px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #7a7971;
+  height: 24px;
+}
+
+.tams .bar {
+  flex: 1;
+  height: 16px;
+  background: #333;
+  border: 1px solid #000;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+.tams .bar .fill {
+  height: 100%;
+  background: #3498db;
+  transition: width 0.4s cubic-bezier(0.47, 0, 0.745, 0.715);
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+.tams .bar.opposed .fill {
+  position: absolute;
+  right: 0;
+  border-right: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.tams .max-label {
+  min-width: 50px;
+  font-weight: bold;
 }
 
 .tams .sheet-tabs {
-    flex: 0 0 36px;
-    border-top: 1px solid #AAA;
-    border-bottom: 1px solid #AAA;
-    margin: 5px 0;
-    background: rgba(0,0,0,0.05);
-    display: flex;
+  flex: 0 0 36px;
+  border-top: 1px solid #AAA;
+  border-bottom: 1px solid #AAA;
+  margin: 5px 0;
+  background: rgba(0, 0, 0, 0.05);
+  display: flex;
 }
-
 .tams .sheet-tabs .item {
-    flex: 1;
-    line-height: 36px;
-    padding: 0;
-    border-right: 1px solid #AAA;
-    font-size: 16px;
-    text-align: center;
-    transition: all 0.2s ease;
+  flex: 1;
+  line-height: 36px;
+  padding: 0;
+  border-right: 1px solid #AAA;
+  font-size: 16px;
+  text-align: center;
+  transition: all 0.2s ease;
+  font-weight: normal;
+  text-transform: none;
+  font-family: inherit;
 }
-
 .tams .sheet-tabs .item:last-child {
-    border-right: none;
+  border-right: none;
 }
-
 .tams .sheet-tabs .item:hover {
-    background: rgba(255,0,0,0.1);
-    text-shadow: 0 0 5px rgba(255,0,0,0.5);
+  background: rgba(255, 0, 0, 0.1);
+  text-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+}
+.tams .sheet-tabs .item.active {
+  background: rgba(255, 0, 0, 0.2);
+  text-shadow: 0 0 10px red;
+  border-bottom: 2px solid red;
+  color: inherit;
 }
 
-.tams .sheet-tabs .item.active {
-    background: rgba(255,0,0,0.2);
-    text-shadow: 0 0 10px red;
-    border-bottom: 2px solid red;
+.tams .rollable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tams .rollable:hover {
+  color: #ff0000;
+  text-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
+  transform: translateX(3px);
+}
+.tams .rollable:hover i {
+  color: #ff0000;
+}
+.tams .rollable i {
+  margin-right: 5px;
+  color: #7a7971;
+  transition: color 0.2s ease;
 }
 
 .tams .items-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .tams .item {
-    border-bottom: 1px solid #CCC;
-    padding: 5px;
-    transition: background 0.2s ease;
+  border-bottom: 1px solid #CCC;
+  padding: 5px;
+  transition: background 0.2s ease;
 }
-
 .tams .item:nth-child(even) {
-    background: rgba(0,0,0,0.03);
+  background: rgba(0, 0, 0, 0.03);
 }
-
 .tams .item:hover {
-    background: rgba(255,0,0,0.05);
+  background: rgba(255, 0, 0, 0.05);
 }
-
 .tams .item.greyed-out {
-    opacity: 0.5;
-    background: rgba(0,0,0,0.1);
-    pointer-events: none;
-    filter: grayscale(100%);
+  opacity: 0.5;
+  background: rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  filter: grayscale(100%);
 }
-
 .tams .item.greyed-out:hover {
-    background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
 }
-
-.tams .item.greyed-out select, 
-.tams .item.greyed-out input {
-    cursor: not-allowed;
+.tams .item.greyed-out select, .tams .item.greyed-out input {
+  cursor: not-allowed;
 }
 
 .tams .item-name {
-    flex: 1;
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .tams .item-stat {
-    flex: 0 0 60px;
-    text-align: center;
-    font-size: 13px;
+  flex: 0 0 60px;
+  text-align: center;
+  font-size: 13px;
 }
 
 .tams .item-header {
-    font-weight: bold;
-    font-size: 11px;
-    text-transform: uppercase;
-    color: #666;
-    border-bottom: 2px solid #7a7971;
-}
-
-.tams .fire-rate-select {
-    width: 45px;
-    height: 20px;
-    font-size: 11px;
-    padding: 0;
-}
-
-.tams .abilities .item-name {
-    font-size: 18px;
-}
-
-.tams-item-form .charname input {
-    font-size: 22px;
-    height: 32px;
+  font-weight: bold;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #666;
+  border-bottom: 2px solid #7a7971;
 }
 
 .tams .item-controls {
-    flex: 0 0 100px;
-    text-align: right;
+  flex: 0 0 100px;
+  text-align: right;
+}
+.tams .item-controls a {
+  cursor: pointer;
 }
 
-/* Inventory Styles */
+.tams .upgrade-pool {
+  justify-content: flex-start;
+  gap: 10px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+}
+.tams .upgrade-pool label {
+  flex: 0 0 auto;
+  font-weight: bold;
+}
+.tams .upgrade-pool input {
+  width: 55px !important;
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.tams .tag-button {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid #7a7971;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: center;
+  color: #333;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.2s ease;
+}
+.tams .tag-button:hover {
+  background: rgba(0, 0, 0, 0.1);
+  text-shadow: none;
+  color: #000;
+}
+.tams .tag-button.active {
+  background: #7a7971;
+  color: #fff;
+}
+.tams .tag-button.active:hover {
+  background: rgb(95.5234042553, 94.7404255319, 88.4765957447);
+}
+
+.tams .tab.stats .grid-2col {
+  grid-template-columns: 1fr 350px;
+}
+
+.tams .stat label, .tams .limb label {
+  flex: 1;
+  font-weight: bold;
+}
+
+.tams .stat-inputs {
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.tams .mod-sep {
+  font-weight: bold;
+  font-size: 14px;
+  color: #7a7971;
+}
+
+.tams .stat input {
+  width: 35px;
+  text-align: center;
+}
+
+.tams .limb-row {
+  border-bottom: 1px solid #7a7971;
+  padding: 5px 0;
+}
+.tams .limb-row.injured-limb {
+  background: rgba(241, 196, 15, 0.15);
+}
+.tams .limb-row.crit-injured {
+  background: rgba(231, 76, 60, 0.15);
+}
+
+.tams .special-skill label {
+  font-size: 13px;
+}
+
+.tams .limb-label {
+  flex: 0 0 70px;
+  font-size: 13px;
+}
+
+.tams .limb-hp {
+  flex: 0 0 60px;
+  gap: 2px;
+  justify-content: flex-start;
+}
+.tams .limb-hp span {
+  font-size: 13px;
+}
+
+.tams .limb-armor {
+  flex: 0 0 200px;
+  justify-content: flex-end;
+  gap: 5px;
+}
+.tams .limb-armor label {
+  font-size: 11px;
+  font-weight: normal;
+  text-transform: uppercase;
+  color: #666;
+}
+.tams .limb-armor input {
+  width: 30px !important;
+}
+
+.tams .negative-hp {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.tams .injured-icon {
+  color: #f39c12;
+  margin-right: 3px;
+}
+
+.tams .crit-icon {
+  color: #e74c3c;
+  margin-right: 3px;
+}
+
+.tams .resource-item {
+  width: 100%;
+  border-bottom: 1px solid #CCC;
+  padding: 10px 0;
+  gap: 5px;
+}
+.tams .resource-item .resource-label {
+  flex: 0 0 70px;
+}
+
+.tams .delete-resource {
+  margin-left: 5px;
+  color: #666;
+}
+.tams .delete-resource:hover {
+  color: #ff0000;
+}
+
 .tams .inventory-section {
-    margin-bottom: 10px;
-    border: 1px solid rgba(0,0,0,0.1);
-    border-radius: 4px;
-    overflow: hidden;
+  margin-bottom: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .tams .inventory-section-header {
-    background: #4a0000;
-    color: white;
-    padding: 4px 8px;
-    margin: 0;
-    font-family: 'MedievalSharp', serif;
-    font-size: 1.1em;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  background: #4a0000;
+  color: white;
+  padding: 4px 8px;
+  margin: 0;
+  font-family: "MedievalSharp", serif;
+  font-size: 1.1em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-
 .tams .inventory-section-header.container-header {
-    background: #5c3b1e; /* Brown for containers */
+  background: #5c3b1e;
 }
-
 .tams .inventory-section-header.equipped {
-    border-left: 5px solid #2e7d32;
+  border-left: 5px solid #2e7d32;
+}
+.tams .inventory-section-header .header-main {
+  display: flex;
+  align-items: center;
+}
+.tams .inventory-section-header .capacity-tag {
+  font-size: 0.7em;
+  margin-left: 10px;
+  opacity: 0.8;
+  font-family: "Signika", sans-serif;
 }
 
 .tams .inventory-category-header {
-    background: #8b0000;
-    color: #fff;
-    padding: 2px 10px;
-    font-size: 0.85em;
-    font-weight: bold;
-    text-transform: uppercase;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    font-family: 'Roboto Condensed', sans-serif;
-}
-
-.tams.theme-dark .inventory-category-header {
-    background: #8b0000;
-    color: #fff;
-    border-bottom-color: rgba(255,255,255,0.1);
-}
-
-.tams.theme-parchment .inventory-category-header {
-    background: #8b0000;
-    color: #fff;
-}
-
-.tams .inventory-section-header .header-main {
-    display: flex;
-    align-items: center;
-}
-
-.tams .inventory-section-header .capacity-tag {
-    font-size: 0.7em;
-    margin-left: 10px;
-    opacity: 0.8;
-    font-family: 'Signika', sans-serif;
+  background: #8b0000;
+  color: #fff;
+  padding: 2px 10px;
+  font-size: 0.85em;
+  font-weight: bold;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-family: "Roboto Condensed", sans-serif;
 }
 
 .tams .inventory-controls-global {
-    background: rgba(0,0,0,0.05);
-    padding: 5px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    justify-content: center;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 5px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  justify-content: center;
 }
 
 .tams .item-name-col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .tams .item-sub-props {
-    display: flex;
-    gap: 5px;
+  display: flex;
+  gap: 5px;
 }
 
 .tams .prop-tag {
-    font-size: 9px;
-    text-transform: uppercase;
-    background: rgba(0,0,0,0.1);
-    padding: 1px 4px;
-    border-radius: 3px;
-    color: #666;
-}
-
-.tams.theme-dark .prop-tag {
-    background: rgba(255,255,255,0.1);
-    color: #aaa;
+  font-size: 9px;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #666;
 }
 
 .tams .nested-item {
-    padding-left: 15px;
-    border-left: 2px solid rgba(0,0,0,0.05);
+  padding-left: 15px;
+  border-left: 2px solid rgba(0, 0, 0, 0.05);
 }
 
 .tams .empty-notice {
-    padding: 8px;
-    text-align: center;
-    font-style: italic;
-    color: #888;
-    font-size: 0.9em;
+  padding: 8px;
+  text-align: center;
+  font-style: italic;
+  color: #888;
+  font-size: 0.9em;
 }
 
 .tams .inventory-controls {
-    display: flex;
-    gap: 8px;
+  display: flex;
+  gap: 8px;
 }
 
 .tams .inventory-controls a,
 .tams .inventory-controls-global a,
-.tams [data-action="resourceAdd"],
-.tams .tab.abilities [data-action="itemCreate"] {
-    font-size: 0.8em;
-    background: #7a7971;
-    color: white !important;
-    padding: 2px 8px;
-    border-radius: 3px;
-    text-decoration: none !important;
-    border: 1px solid #555;
-    white-space: nowrap;
-    display: inline-block;
+.tams [data-action=resourceAdd],
+.tams .tab.abilities [data-action=itemCreate] {
+  font-size: 0.8em;
+  background: #7a7971;
+  color: white !important;
+  padding: 2px 8px;
+  border-radius: 3px;
+  text-decoration: none !important;
+  border: 1px solid #555;
+  white-space: nowrap;
+  display: inline-block;
 }
-
 .tams .inventory-controls a:hover,
 .tams .inventory-controls-global a:hover,
-.tams [data-action="resourceAdd"]:hover,
-.tams .tab.abilities [data-action="itemCreate"]:hover {
-    background: #8b0000;
-    color: white !important;
+.tams [data-action=resourceAdd]:hover,
+.tams .tab.abilities [data-action=itemCreate]:hover {
+  background: #8b0000;
+  color: white !important;
 }
 
 .tams .tab.inventory.active {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 
 .tams .inventory-scroll {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 5px;
-    margin-bottom: 5px;
-    position: relative;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 5px;
+  margin-bottom: 5px;
+  position: relative;
 }
-
 .tams .inventory-scroll .item-header {
-    font-weight: bold;
-    border-bottom: 1px solid #7a7971;
-    position: sticky;
-    top: 0;
-    z-index: 5;
-    background: #e0e0e0;
-}
-
-.tams.theme-dark .inventory-scroll .item-header {
-    background: #2b2b2b;
-}
-
-.tams.theme-parchment .inventory-scroll .item-header {
-    background: #f4e1d2;
+  font-weight: bold;
+  border-bottom: 1px solid #7a7971;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #e0e0e0;
 }
 
 .tams .carry-weight {
-    flex: 0 0 auto;
-    padding: 5px;
-    background: rgba(0,0,0,0.05);
-    border-bottom: 1px solid #7a7971;
-    margin-bottom: 5px;
+  flex: 0 0 auto;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #7a7971;
+  margin-bottom: 5px;
 }
-
 .tams .carry-weight .encumbered {
-    color: #c62828;
-    font-weight: bold;
-    font-size: 0.8em;
-    margin-left: 10px;
+  color: #c62828;
+  font-weight: bold;
+  font-size: 0.8em;
+  margin-left: 10px;
 }
 
 .tams .currency-footer {
-    flex: 0 0 auto;
-    border-top: 2px solid #7a7971;
-    padding: 5px;
-    background: rgba(0,0,0,0.05);
+  flex: 0 0 auto;
+  border-top: 2px solid #7a7971;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.tams .backpack-slot-container {
-    background: rgba(0,0,0,0.02);
+.tams .full-heal {
+  float: right;
+  color: #c0392b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+.tams .full-heal:hover {
+  color: #e74c3c;
+  text-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
 }
 
-.tams .equipped-backpack {
-    background: rgba(46, 125, 50, 0.05) !important;
-    border-left: 4px solid #2e7d32 !important;
+.tams .fire-rate-select {
+  width: 45px;
+  height: 20px;
+  font-size: 11px;
+  padding: 0;
 }
 
-.tams .no-backpacks {
-    background: rgba(198, 40, 40, 0.05);
-    border: 1px dashed #c62828;
-    border-radius: 4px;
-    margin: 5px;
+.tams-item-form .charname input {
+  font-size: 22px;
+  height: 32px;
 }
 
-/* Loot Sheet */
 .tams.loot {
-    min-width: 300px;
-    min-height: 200px;
+  min-width: 300px;
+  min-height: 200px;
 }
-
 .tams.loot .sheet-header {
-    border-bottom: 1px solid #7a7971;
-    margin-bottom: 5px;
-    padding-bottom: 5px;
+  border-bottom: 1px solid #7a7971;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
 }
-
 .tams.loot .charname input {
-    font-size: 20px;
-    height: 30px;
+  font-size: 20px;
+  height: 30px;
 }
-
 .tams.loot .items-list .item:hover {
-    background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
 }
-
-.tams select {
-    background: #fff;
-    color: #000;
-    border: 1px solid rgba(0,0,0,0.2);
-    border-radius: 2px;
-    padding: 1px 3px;
-}
-
-.tams.theme-dark select {
-    background: #444;
-    color: #fff;
-    border-color: #666;
-}
-
-.tams.theme-dark select option {
-    background: #2b2b2b;
-    color: #fff;
-}
-
-.tams.theme-parchment select {
-    background: #fdf6e3;
-    color: #5c3b1e;
-    border-color: #d4a373;
-}
-
-.tams.theme-parchment select option {
-    background: #fdf6e3;
-    color: #5c3b1e;
-}
-
-.tams textarea {
-    width: 100%;
-    min-height: 100px;
-    resize: vertical;
-    padding: 8px;
-    box-sizing: border-box;
-    font-family: inherit;
-    font-size: 14px;
-}
-
 
 /* Chat Rolls */
 .tams-roll {
-    background: rgba(0,0,0,0.05);
-    border: 1px solid #7a7971;
-    border-radius: 5px;
-    padding: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    font-size: 14px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid #7a7971;
+  border-radius: 5px;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
 }
-
 .tams-roll .roll-label {
-    font-family: 'MedievalSharp', serif;
-    font-size: 1.2em;
-    color: #4a0000;
-    border-bottom: 2px solid #7a7971;
-    margin-bottom: 8px;
-    padding-bottom: 3px;
+  font-family: "MedievalSharp", serif;
+  font-size: 1.2em;
+  color: #4a0000;
+  border-bottom: 2px solid #7a7971;
+  margin-bottom: 8px;
+  padding-bottom: 3px;
 }
-
 .tams-roll .roll-description {
-    font-size: 0.9em;
-    font-style: italic;
-    color: #555;
-    margin-bottom: 8px;
-    padding-bottom: 5px;
-    border-bottom: 1px dashed rgba(0,0,0,0.1);
+  font-size: 0.9em;
+  font-style: italic;
+  color: #555;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
 }
-
 .tams-roll .roll-row {
-    display: flex;
-    justify-content: space-between;
-    line-height: 1.4;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    padding: 2px 0;
+  display: flex;
+  justify-content: space-between;
+  line-height: 1.4;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 2px 0;
 }
-
 .tams-roll .roll-value {
-    font-weight: bold;
-    font-size: 1.2em;
+  font-weight: bold;
+  font-size: 1.2em;
 }
-
 .tams-roll .roll-total {
-    text-align: center;
-    font-size: 1.4em;
-    margin: 5px 0;
-    font-weight: bold;
-    color: #000;
-    background: rgba(0,0,0,0.05);
-    border-radius: 3px;
-    padding: 5px;
-    margin-top: 10px !important;
+  text-align: center;
+  font-size: 1.4em;
+  margin: 5px 0;
+  font-weight: bold;
+  color: #000;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  padding: 5px;
+  margin-top: 10px !important;
+}
+.tams-roll .roll-contest-hint {
+  border-top: 1px dashed #aaa;
+  margin-top: 5px;
+  font-style: italic;
+}
+.tams-roll {
+  /* Buttons inside chat rolls */
+}
+.tams-roll button {
+  font-size: 12px;
+  padding: 2px 8px;
+  margin: 2px 0;
+  border: 1px solid #7a7971;
+  background: #e0e0e0;
+  color: #333;
+}
+.tams-roll button:hover {
+  background: #fff;
+}
+.tams-roll button.tams-take-damage {
+  background: #4a0000;
+  color: #fff;
+  border-color: #7a0000;
+}
+.tams-roll button.tams-take-damage:hover {
+  background: #7a0000;
+}
+.tams-roll button.tams-dodge, .tams-roll button.tams-retaliate {
+  background: #004a00;
+  color: #fff;
+  border-color: #007a00;
+}
+.tams-roll button.tams-dodge:hover, .tams-roll button.tams-retaliate:hover {
+  background: #007a00;
+}
+.tams-roll button.tams-behind-toggle, .tams-roll button.tams-unaware-toggle {
+  min-width: 30px;
+}
+.tams-roll button.tams-behind-toggle i, .tams-roll button.tams-unaware-toggle i {
+  pointer-events: none;
 }
 
 .tams-crit {
-    color: #006400;
-    font-weight: bold;
-    text-align: center;
-    background: #ccffcc;
-    border: 1px solid #006400;
-    padding: 5px;
-    margin-top: 5px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0,255,0,0.2);
+  color: #006400;
+  font-weight: bold;
+  text-align: center;
+  background: #ccffcc;
+  border: 1px solid #006400;
+  padding: 5px;
+  margin-top: 5px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
 }
-
 .tams-crit.failure {
-    background: #ffdada;
-    color: #8b0000;
-    border-color: #8b0000;
+  background: #ffdada;
+  color: #8b0000;
+  border-color: #8b0000;
 }
 
 .tams-success {
-    color: #00008b;
-    text-align: center;
+  color: #00008b;
+  text-align: center;
 }
 
 .tams-failure {
-    color: #8b0000;
-    text-align: center;
+  color: #8b0000;
+  text-align: center;
 }
 
-.tams-roll .roll-contest-hint {
-    border-top: 1px dashed #aaa;
-    margin-top: 5px;
-    font-style: italic;
+/* Generic window buttons */
+.tams .window-content button {
+  font-family: "Roboto Condensed", sans-serif;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+.tams .window-content button:hover {
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
 
-/* Buttons */
-.tams .window-content button,
-.tams-roll button {
-    font-family: 'Roboto Condensed', sans-serif;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s ease;
+.tams.theme-dark {
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+.tams.theme-dark input, .tams.theme-dark select, .tams.theme-dark textarea {
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+}
+.tams.theme-dark input:focus, .tams.theme-dark select:focus, .tams.theme-dark textarea:focus {
+  box-shadow: 0 0 5px #ff0000;
+  border-color: #ff0000;
+}
+.tams.theme-dark .sheet-tabs .item.active {
+  background: rgba(255, 0, 0, 0.3);
+  color: #fff;
+}
+.tams.theme-dark .item:nth-child(even) {
+  background: rgba(255, 255, 255, 0.05);
+}
+.tams.theme-dark .inventory-category-header {
+  background: #8b0000;
+  color: #fff;
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+.tams.theme-dark .prop-tag {
+  background: rgba(255, 255, 255, 0.1);
+  color: #aaa;
+}
+.tams.theme-dark .inventory-scroll .item-header {
+  background: #2b2b2b;
+}
+.tams.theme-dark select option {
+  background: #2b2b2b;
+  color: #fff;
 }
 
-.tams .window-content button:hover,
-.tams-roll button:hover {
-    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+.tams.theme-parchment {
+  background-color: #f5e6c8;
+  background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+  color: #1a0f0d;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+}
+.tams.theme-parchment h1, .tams.theme-parchment h3 {
+  color: #000000;
+}
+.tams.theme-parchment input, .tams.theme-parchment select, .tams.theme-parchment textarea {
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid #8d6e63;
+  color: #000000;
+  font-weight: 500;
+}
+.tams.theme-parchment .sheet-tabs {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: #8d6e63;
+}
+.tams.theme-parchment .sheet-tabs .item {
+  border-right-color: #8d6e63;
+  color: #5d4037;
+}
+.tams.theme-parchment .sheet-tabs .item.active {
+  background: rgba(0, 0, 0, 0.1);
+  border-bottom-color: #000000;
+  text-shadow: none;
+  color: #000000;
+}
+.tams.theme-parchment .item-name, .tams.theme-parchment .resource-label {
+  color: #1a0f0d;
+}
+.tams.theme-parchment .item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+.tams.theme-parchment .bar {
+  border-color: #1a0f0d;
+  background: rgba(0, 0, 0, 0.2);
+}
+.tams.theme-parchment .inventory-category-header {
+  background: #8b0000;
+  color: #fff;
+}
+.tams.theme-parchment .inventory-scroll .item-header {
+  background: #f4e1d2;
+}
+.tams.theme-parchment select option {
+  background: #fdf6e3;
+  color: #5c3b1e;
 }
 
-.tams-roll button {
-    font-size: 12px;
-    padding: 2px 8px;
-    margin: 2px 0;
-    border: 1px solid #7a7971;
-    background: #e0e0e0;
-    color: #333;
-}
-
-.tams-roll button:hover {
-    background: #fff;
-}
-
-.tams-roll .tams-take-damage {
-    background: #4a0000;
-    color: #fff;
-    border-color: #7a0000;
-}
-
-.tams-roll .tams-take-damage:hover {
-    background: #7a0000;
-}
-
-.tams-roll .tams-dodge, .tams-roll .tams-retaliate {
-    background: #004a00;
-    color: #fff;
-    border-color: #007a00;
-}
-
-.tams-roll .tams-dodge:hover, .tams-roll .tams-retaliate:hover {
-    background: #007a00;
-}
-
-.tams-roll .tams-behind-toggle, .tams-roll .tams-unaware-toggle {
-    min-width: 30px;
-}
-
-.tams-roll .tams-behind-toggle i, .tams-roll .tams-unaware-toggle i {
-    pointer-events: none;
-}
+/*# sourceMappingURL=tams.css.map */

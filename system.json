@@ -12,7 +12,7 @@
     }
   ],
   "esmodules": [
-    "scripts/tams.js"
+    "src/tams.js"
   ],
   "styles": [
     "styles/tams.css"

@@ -10,18 +10,18 @@
         <h1 class="charname"><input name="name" type="text" value="{{document.name}}" placeholder="Name"/></h1>
     </header>
 
-    <section class="sheet-body">
+    <section class="sheet-body" data-scrollable>
         <div class="flexcol">
             {{!-- Common Physical Fields --}}
             {{#if (or (eq item.type 'weapon') (eq item.type 'equipment') (eq item.type 'armor') (eq item.type 'consumable') (eq item.type 'tool') (eq item.type 'questItem') (eq item.type 'backpack'))}}
             <div class="flexrow">
-                <label>Quantity</label>
+                <label>{{localize 'TAMS.Quantity'}}</label>
                 <input type="number" name="system.quantity" value="{{system.quantity}}"/>
-                <label>Size</label>
+                <label>{{localize 'TAMS.Size'}}</label>
                 <select name="system.size">
                     {{selectOptions sizeOptions selected=system.size}}
                 </select>
-                <label>Location</label>
+                <label>{{localize 'TAMS.Location'}}</label>
                 <select name="system.location">
                     {{selectOptions locationOptions selected=system.location}}
                 </select>
@@ -29,95 +29,189 @@
             <hr>
             {{/if}}
 
-            {{#if (or (eq item.type 'weapon') (eq item.type 'skill') (eq item.type 'ability'))}}
+            {{#if (eq item.type "trait")}}
             <div class="flexrow">
-                <label>Familiarity</label>
+                <label>{{localize 'TAMS.UpgradePoints'}}</label>
+                <input type="number" name="system.upgradePoints" value="{{system.upgradePoints}}"/>
+            </div>
+            <div class="flexrow">
+                <label>{{localize 'TAMS.IsProfessionQ'}}</label>
+                <input type="checkbox" name="system.isProfession" {{checked system.isProfession}}/>
+                {{#if system.isProfession}}
+                <label>{{localize 'TAMS.Profession'}}</label>
+                <input type="text" name="system.profession" value="{{system.profession}}"/>
+                {{/if}}
+            </div>
+            <hr>
+            <div class="flexrow" style="align-items: center; margin-bottom: 5px;">
+                <h3 style="margin: 0; border: none;">{{localize 'TAMS.Modifiers'}}</h3>
+                <a class="modifier-control" title="{{localize 'TAMS.AddModifier'}}" data-action="modifierCreate" style="flex: 0 0 20px; text-align: right;">
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
+            <div class="modifiers-list flexcol" style="gap: 5px;">
+                {{#each system.modifiers as |mod index|}}
+                <div class="modifier-row flexrow" data-index="{{index}}" style="align-items: center; gap: 5px;">
+                    <select name="system.modifiers.{{index}}.target" style="flex: 2;">
+                        {{selectOptions ../modifierTargetOptions selected=mod.target localize=true}}
+                    </select>
+                    <input type="number" name="system.modifiers.{{index}}.value" value="{{mod.value}}" style="flex: 0 0 50px; text-align: center;"/>
+                    <select name="system.modifiers.{{index}}.type" style="flex: 1;">
+                        <option value="add" {{#if (eq mod.type "add")}}selected{{/if}}>Add</option>
+                    </select>
+                    <a class="modifier-control" title="{{localize 'TAMS.RemoveModifier'}}" data-action="modifierDelete" style="flex: 0 0 20px; text-align: right;"><i class="fas fa-trash"></i></a>
+                </div>
+                {{/each}}
+            </div>
+            <hr>
+            {{/if}}
+
+            {{#if (or (eq item.type 'skill') (eq item.type 'ability'))}}
+            <div class="flexrow">
+                <label>{{localize 'TAMS.Familiarity'}}</label>
                 <input type="number" name="system.familiarity" value="{{system.familiarity}}" data-dtype="Number"/>
             </div>
             {{/if}}
 
             {{#if (eq item.type "weapon")}}
-            <div class="flexrow">
-                <label>Equipped?</label>
-                <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
-            </div>
-            <div class="flexrow">
-                <label>Fire Rate</label>
-                <select name="system.fireRate">
-                    <option value="1" {{#if (eq system.fireRate "1")}}selected{{/if}}>Single (1)</option>
-                    <option value="3" {{#if (eq system.fireRate "3")}}selected{{/if}}>Burst (3)</option>
-                    <option value="auto" {{#if (eq system.fireRate "auto")}}selected{{/if}}>Full Auto (10)</option>
-                    <option value="custom" {{#if (eq system.fireRate "custom")}}selected{{/if}}>Custom</option>
-                </select>
-                {{#if (eq system.fireRate 'custom')}}
-                <input type="number" name="system.fireRateCustom" value="{{system.fireRateCustom}}" style="width: 50px;"/>
-                {{/if}}
-            </div>
-            <div class="flexrow">
-                {{#unless system.isRanged}}
-                <label>Heavy?</label>
-                <input type="checkbox" name="system.isHeavy" {{checked system.isHeavy}}/>
-                <label>Two Handed?</label>
-                <input type="checkbox" name="system.isTwoHanded" {{checked system.isTwoHanded}}/>
-                {{/unless}}
-                <label>Light?</label>
-                <input type="checkbox" name="system.isLight" {{checked system.isLight}}/>
-            </div>
-            <div class="flexrow">
-                <label>Ranged?</label>
-                <input type="checkbox" name="system.isRanged" {{checked system.isRanged}}/>
-                {{#if system.isRanged}}
-                <label>Thrown?</label>
-                <input type="checkbox" name="system.isThrown" {{checked system.isThrown}}/>
-                {{/if}}
-            </div>
-            {{#if system.isRanged}}
-            <div class="flexrow">
-                <label>Ranged Damage</label>
-                <input type="number" name="system.rangedDamage" value="{{system.rangedDamage}}" data-dtype="Number"/>
-            </div>
-            <div class="flexrow">
-                <label>Ammo</label>
-                <input type="number" name="system.ammo.current" value="{{system.ammo.current}}" data-dtype="Number"/>
-                <span> / </span>
-                <input type="number" name="system.ammo.total" value="{{system.ammo.total}}" data-dtype="Number"/>
-            </div>
-            {{/if}}
-            <div class="flexrow">
-                <label>Calculated Damage</label>
-                <span>{{system.calculatedDamage}}</span>
-            </div>
-            <div class="flexrow">
-                <label>Armour Penetration?</label>
-                <input type="checkbox" name="system.hasArmourPen" {{checked system.hasArmourPen}}/>
-                {{#if system.hasArmourPen}}
-                <label>Value</label>
-                <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>
-                {{/if}}
-            </div>
-            <div class="flexrow">
-                <label>AoE Attack?</label>
-                <input type="checkbox" name="system.isAoE" {{checked system.isAoE}}/>
-            </div>
-            <div class="flexrow">
-                <label>Special</label>
-                <input type="text" name="system.special" value="{{system.special}}"/>
+            <div class="weapon-properties">
+                <h3>{{localize "TAMS.WeaponSheet.Combat"}}</h3>
+                <div class="grid grid-2col">
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.Familiarity'}}</label>
+                        <input type="number" name="system.familiarity" value="{{system.familiarity}}" data-dtype="Number"/>
+                    </div>
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.EquippedQ'}}</label>
+                        <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
+                    </div>
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.AttackStat'}}</label>
+                        <select name="system.attackStat">
+                            {{selectOptions weaponStatOptions selected=system.attackStat localize=true}}
+                        </select>
+                    </div>
+                </div>
+                <hr>
+
+                <h3>{{localize "TAMS.WeaponSheet.Properties"}}</h3>
+                <div class="grid grid-3col">
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.RangedQ'}}</label>
+                        <input type="checkbox" name="system.isRanged" {{checked system.isRanged}}/>
+                    </div>
+                    {{#if system.isRanged}}
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.ThrownQ'}}</label>
+                        <input type="checkbox" name="system.isThrown" {{checked system.isThrown}}/>
+                    </div>
+                    {{else}}
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.HeavyQ'}}</label>
+                        <input type="checkbox" name="system.isHeavy" {{checked system.isHeavy}}/>
+                    </div>
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.TwoHandedQ'}}</label>
+                        <input type="checkbox" name="system.isTwoHanded" {{checked system.isTwoHanded}}/>
+                    </div>
+                    {{/if}}
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.LightQ'}}</label>
+                        <input type="checkbox" name="system.isLight" {{checked system.isLight}}/>
+                    </div>
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.IsAoE'}}</label>
+                        <input type="checkbox" name="system.isAoE" {{checked system.isAoE}}/>
+                    </div>
+                </div>
+                <hr>
+
+                <h3>{{localize "TAMS.WeaponSheet.FireRateAndAmmo"}}</h3>
+                <div class="grid grid-2col">
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.FireRate'}}</label>
+                        <select name="system.fireRate">
+                            <option value="1" {{#if (eq system.fireRate "1")}}selected{{/if}}>{{localize 'TAMS.FireRateSingle'}}</option>
+                            <option value="3" {{#if (eq system.fireRate "3")}}selected{{/if}}>{{localize 'TAMS.FireRateBurst'}}</option>
+                            <option value="auto" {{#if (eq system.fireRate "auto")}}selected{{/if}}>{{localize 'TAMS.FireRateAuto'}}</option>
+                            <option value="custom" {{#if (eq system.fireRate "custom")}}selected{{/if}}>{{localize 'TAMS.FireRateCustom'}}</option>
+                        </select>
+                        {{#if (eq system.fireRate 'custom')}}
+                        <input type="number" name="system.fireRateCustom" value="{{system.fireRateCustom}}" style="width: 50px;"/>
+                        {{/if}}
+                    </div>
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.ConsumeAmmo'}}</label>
+                        <input type="checkbox" name="system.consumeAmmo" {{checked system.consumeAmmo}}/>
+                    </div>
+                    {{#if system.isRanged}}
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.Ammo'}}</label>
+                        <input type="number" name="system.ammo.current" value="{{system.ammo.current}}" data-dtype="Number"/>
+                        <span> / </span>
+                        <input type="number" name="system.ammo.total" value="{{system.ammo.total}}" data-dtype="Number"/>
+                    </div>
+                    {{/if}}
+                </div>
+                <hr>
+
+                <h3>{{localize "TAMS.WeaponSheet.DamageAndPenalties"}}</h3>
+                <div class="grid grid-2col">
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.CalculatedDamage'}}</label>
+                        <span class="value-badge">{{system.calculatedDamage}}</span>
+                    </div>
+                    {{#if system.isRanged}}
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.RangedDamage'}}</label>
+                        <input type="number" name="system.rangedDamage" value="{{system.rangedDamage}}" data-dtype="Number"/>
+                    </div>
+                    {{/if}}
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.HasArmourPen'}}</label>
+                        <input type="checkbox" name="system.hasArmourPen" {{checked system.hasArmourPen}}/>
+                    </div>
+                    {{#if system.hasArmourPen}}
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.Value'}}</label>
+                        <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>
+                    </div>
+                    {{/if}}
+                </div>
+                <hr>
+                
+                <div class="flexcol" style="margin-top: 10px;">
+                    <label><b>{{localize 'TAMS.Special'}}</b></label>
+                    <input type="text" name="system.special" value="{{system.special}}"/>
+                </div>
+                
+                <div class="flexcol" style="margin-top: 5px;">
+                    <label><b>{{localize 'TAMS.Tags'}}</b></label>
+                    <input type="text" name="system.tags" value="{{system.tags}}" placeholder="reliable, accurate, etc."/>
+                    <div class="tag-buttons" style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px;">
+                        {{#each weaponTags as |tag|}}
+                        <a class="tag-button {{#if tag.active}}active{{/if}}" data-action="tagToggle" data-tag="{{tag.id}}">
+                            {{tag.label}}
+                        </a>
+                        {{/each}}
+                    </div>
+                </div>
             </div>
             {{/if}}
 
             {{#if (eq item.type "armor")}}
             <div class="flexrow">
-                <label>Equipped?</label>
+                <label>{{localize 'TAMS.EquippedQ'}}</label>
                 <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
             </div>
-            <h4 style="border-bottom: 1px solid #7a7971; margin-top: 10px;">Limb Protection</h4>
+            <h4 style="border-bottom: 1px solid #7a7971; margin-top: 10px;">{{localize 'TAMS.LimbProtection'}}</h4>
             <div class="grid grid-2col">
                 {{#each system.limbs as |limb id|}}
                 <div class="flexcol" style="border: 1px solid #ccc; padding: 3px; margin: 2px;">
                     <label><b>{{capitalize id}}</b></label>
                     <div class="flexrow">
-                        <span>Val:</span><input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}"/>
-                        <span>Max:</span><input type="number" name="system.limbs.{{id}}.max" value="{{limb.max}}"/>
+                        <span>{{localize 'TAMS.ValColon'}}</span><input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}"/>
+                        <span>{{localize 'TAMS.MaxColon'}}</span><input type="number" name="system.limbs.{{id}}.max" value="{{limb.max}}"/>
                     </div>
                 </div>
                 {{/each}}
@@ -126,39 +220,39 @@
 
             {{#if (eq item.type "backpack")}}
             <div class="flexrow">
-                <label>Equipped?</label>
+                <label>{{localize 'TAMS.EquippedQ'}}</label>
                 <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
             </div>
             <div class="flexrow">
-                <label title="How much extra capacity this backpack adds, in Medium Item units (10 Small = 1 Medium).">Capacity (Medium Items)</label>
+                <label title="How much extra capacity this backpack adds, in Medium Item units (10 Small = 1 Medium).">{{localize 'TAMS.CapacityMed'}}</label>
                 <input type="number" name="system.capacity" value="{{system.capacity}}"/>
             </div>
             <div class="flexrow">
-                <label title="Multiplier applied to items placed inside this backpack. 0.5 halves their effective size.">Carrying Modifier</label>
+                <label title="Multiplier applied to items placed inside this backpack. 0.5 halves their effective size.">{{localize 'TAMS.CarryingModifier'}}</label>
                 <input type="number" name="system.modifier" value="{{system.modifier}}" step="0.1"/>
             </div>
             <p class="notes" style="font-size: 0.85em; color: #666; font-style: italic; margin-top: 5px; border-left: 3px solid #7a7971; padding-left: 5px;">
-                <b>Carrying Modifier:</b> This multiplier is applied to the size of items placed in the 'Backpack' location. For example, 0.5 means items only take up 50% of their normal size units.
+                <b>{{localize 'TAMS.CarryingModifier'}}:</b> {{localize 'TAMS.CarryingModifierNotes'}}
             </p>
-            <h4 style="border-bottom: 1px solid #7a7971; margin-top: 10px;">Penalties</h4>
+            <h4 style="border-bottom: 1px solid #7a7971; margin-top: 10px;">{{localize 'TAMS.Penalties'}}</h4>
             <div class="flexrow">
-                <label>Active?</label>
+                <label>{{localize 'TAMS.ActiveQ'}}</label>
                 <input type="checkbox" name="system.penalties.active" {{checked system.penalties.active}}/>
             </div>
             {{#if system.penalties.active}}
             <div class="grid grid-2col">
-                <div class="flexrow"><label>Strength</label><input type="number" name="system.penalties.strength" value="{{system.penalties.strength}}"/></div>
-                <div class="flexrow"><label>Dexterity</label><input type="number" name="system.penalties.dexterity" value="{{system.penalties.dexterity}}"/></div>
-                <div class="flexrow"><label>Dodge</label><input type="number" name="system.penalties.dodge" value="{{system.penalties.dodge}}"/></div>
-                <div class="flexrow"><label>Attack</label><input type="number" name="system.penalties.attack" value="{{system.penalties.attack}}"/></div>
-                <div class="flexrow"><label>Movement</label><input type="number" name="system.penalties.movement" value="{{system.penalties.movement}}"/></div>
+                <div class="flexrow"><label>{{localize 'TAMS.StatStrength'}}</label><input type="number" name="system.penalties.strength" value="{{system.penalties.strength}}"/></div>
+                <div class="flexrow"><label>{{localize 'TAMS.StatDexterity'}}</label><input type="number" name="system.penalties.dexterity" value="{{system.penalties.dexterity}}"/></div>
+                <div class="flexrow"><label>{{localize 'TAMS.Dodge'}}</label><input type="number" name="system.penalties.dodge" value="{{system.penalties.dodge}}"/></div>
+                <div class="flexrow"><label>{{localize 'TAMS.Attack'}}</label><input type="number" name="system.penalties.attack" value="{{system.penalties.attack}}"/></div>
+                <div class="flexrow"><label>{{localize 'TAMS.Movement'}}</label><input type="number" name="system.penalties.movement" value="{{system.penalties.movement}}"/></div>
             </div>
             {{/if}}
             {{/if}}
 
             {{#if (eq item.type "consumable")}}
             <div class="flexrow">
-                <label>Uses</label>
+                <label>{{localize 'TAMS.Uses'}}</label>
                 <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
                 <span> / </span>
                 <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
@@ -171,16 +265,16 @@
 
             {{#if (or (eq item.type "skill") (eq item.type "ability"))}}
             <div class="flexrow">
-                <label>Upgrade Points</label>
+                <label>{{localize 'TAMS.UpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints" value="{{system.upgradePoints}}" data-dtype="Number"/>
             </div>
             <div class="flexrow">
-                <label>Bonus</label>
+                <label>{{localize 'TAMS.Bonus'}}</label>
                 <input type="number" name="system.bonus" value="{{system.bonus}}" data-dtype="Number"/>
             </div>
             {{#if (eq item.type "skill")}}
             <div class="flexrow">
-                <label>Linked Stat</label>
+                <label>{{localize 'TAMS.LinkedStat'}}</label>
                 <select name="system.stat">
                     {{selectOptions statOptions selected=system.stat localize=true}}
                 </select>
@@ -190,25 +284,25 @@
 
             {{#if (eq item.type "ability")}}
             <div class="flexrow">
-                <label>Apex Ability?</label>
+                <label>{{localize 'TAMS.IsApexQ'}}</label>
                 <input type="checkbox" name="system.isApex" {{checked system.isApex}}/>
-                <label>Is Reaction?</label>
+                <label>{{localize 'TAMS.IsReactionQ'}}</label>
                 <input type="checkbox" name="system.isReaction" {{checked system.isReaction}}/>
             </div>
             {{!-- Remove redundant bonus field here if needed --}}
             <div class="flexrow">
-                <label>Uses</label>
+                <label>{{localize 'TAMS.Uses'}}</label>
                 <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
                 <span> / </span>
                 <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
             </div>
             {{#unless system.isApex}}
             <div class="flexrow">
-                <label>Cost</label>
+                <label>{{localize 'TAMS.Cost'}}</label>
                 <input type="number" name="system.cost" value="{{system.cost}}" {{#if system.calculator.enabled}}disabled="disabled"{{/if}}/>
             </div>
             <div class="flexrow">
-                <label>Resource</label>
+                <label>{{localize 'TAMS.Resource'}}</label>
                 <select name="system.resource">
                     {{selectOptions resourceOptions selected=system.resource}}
                 </select>
@@ -216,7 +310,7 @@
             {{/unless}}
 
             <div class="calculator-toggle flexrow">
-                <label>Use Cost Calculator?</label>
+                <label>{{localize 'TAMS.UseCostCalculatorQ'}}</label>
                 <input type="checkbox" name="system.calculator.enabled" {{checked system.calculator.enabled}}/>
             </div>
 
@@ -428,13 +522,15 @@
             {{/unless}}
             {{/if}}
 
+            {{#unless (eq item.type "weapon")}}
             <hr>
             <div class="flexrow">
-                <label>Tags</label>
+                <label>{{localize 'TAMS.Tags'}}</label>
                 <input type="text" name="system.tags" value="{{system.tags}}"/>
             </div>
+            {{/unless}}
             <hr>
-            <label>Description</label>
+            <label>{{localize 'TAMS.Description'}}</label>
             <textarea name="system.description" rows="10">{{system.description}}</textarea>
         </div>
     </section>

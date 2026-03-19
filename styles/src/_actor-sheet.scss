@@ -1,0 +1,261 @@
+@import 'variables';
+
+.tams .tab.stats .grid-2col {
+    grid-template-columns: 1fr 350px;
+}
+
+.tams .stat label, .tams .limb label {
+    flex: 1;
+    font-weight: bold;
+}
+
+.tams .stat-inputs {
+    flex: 0 0 auto;
+    gap: 2px;
+}
+
+.tams .mod-sep {
+    font-weight: bold;
+    font-size: 14px;
+    color: $color-border;
+}
+
+.tams .stat input {
+    width: 35px;
+    text-align: center;
+}
+
+.tams .limb-row {
+    border-bottom: 1px solid $color-border;
+    padding: 5px 0;
+
+    &.injured-limb { background: rgba(241, 196, 15, 0.15); }
+    &.crit-injured { background: rgba(231, 76, 60, 0.15); }
+}
+
+.tams .special-skill label {
+    font-size: 13px;
+}
+
+.tams .limb-label {
+    flex: 0 0 70px;
+    font-size: 13px;
+}
+
+.tams .limb-hp {
+    flex: 0 0 60px;
+    gap: 2px;
+    justify-content: flex-start;
+
+    span { font-size: 13px; }
+}
+
+.tams .limb-armor {
+    flex: 0 0 200px;
+    justify-content: flex-end;
+    gap: 5px;
+
+    label {
+        font-size: 11px;
+        font-weight: normal;
+        text-transform: uppercase;
+        color: #666;
+    }
+
+    input { width: 30px !important; }
+}
+
+.tams .negative-hp {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.tams .injured-icon { color: #f39c12; margin-right: 3px; }
+.tams .crit-icon { color: #e74c3c; margin-right: 3px; }
+
+.tams .resource-item {
+    width: 100%;
+    border-bottom: 1px solid #CCC;
+    padding: 10px 0;
+    gap: 5px;
+
+    .resource-label { flex: 0 0 70px; }
+}
+
+.tams .delete-resource {
+    margin-left: 5px;
+    color: #666;
+    &:hover { color: $color-active; }
+}
+
+// Inventory specifics
+.tams .inventory-section {
+    margin-bottom: 10px;
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.tams .inventory-section-header {
+    background: #4a0000;
+    color: white;
+    padding: 4px 8px;
+    margin: 0;
+    font-family: $font-header;
+    font-size: 1.1em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    &.container-header { background: #5c3b1e; }
+    &.equipped { border-left: 5px solid #2e7d32; }
+
+    .header-main { display: flex; align-items: center; }
+    .capacity-tag {
+        font-size: 0.7em;
+        margin-left: 10px;
+        opacity: 0.8;
+        font-family: $font-main;
+    }
+}
+
+.tams .inventory-category-header {
+    background: #8b0000;
+    color: #fff;
+    padding: 2px 10px;
+    font-size: 0.85em;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    font-family: $font-condensed;
+}
+
+.tams .inventory-controls-global {
+    background: rgba(0,0,0,0.05);
+    padding: 5px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    justify-content: center;
+}
+
+.tams .item-name-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.tams .item-sub-props {
+    display: flex;
+    gap: 5px;
+}
+
+.tams .prop-tag {
+    font-size: 9px;
+    text-transform: uppercase;
+    background: rgba(0,0,0,0.1);
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #666;
+}
+
+.tams .nested-item {
+    padding-left: 15px;
+    border-left: 2px solid rgba(0,0,0,0.05);
+}
+
+.tams .empty-notice {
+    padding: 8px;
+    text-align: center;
+    font-style: italic;
+    color: #888;
+    font-size: 0.9em;
+}
+
+.tams .inventory-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.tams .inventory-controls a,
+.tams .inventory-controls-global a,
+.tams [data-action="resourceAdd"],
+.tams .tab.abilities [data-action="itemCreate"] {
+    font-size: 0.8em;
+    background: $color-border;
+    color: white !important;
+    padding: 2px 8px;
+    border-radius: 3px;
+    text-decoration: none !important;
+    border: 1px solid #555;
+    white-space: nowrap;
+    display: inline-block;
+
+    &:hover { background: #8b0000; color: white !important; }
+}
+
+.tams .tab.inventory.active {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.tams .inventory-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+    margin-bottom: 5px;
+    position: relative;
+
+    .item-header {
+        font-weight: bold;
+        border-bottom: 1px solid $color-border;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #e0e0e0;
+    }
+}
+
+.tams .carry-weight {
+    flex: 0 0 auto;
+    padding: 5px;
+    background: rgba(0,0,0,0.05);
+    border-bottom: 1px solid $color-border;
+    margin-bottom: 5px;
+
+    .encumbered {
+        color: #c62828;
+        font-weight: bold;
+        font-size: 0.8em;
+        margin-left: 10px;
+    }
+}
+
+.tams .currency-footer {
+    flex: 0 0 auto;
+    border-top: 2px solid $color-border;
+    padding: 5px;
+    background: rgba(0,0,0,0.05);
+}
+
+.tams .full-heal {
+    float: right;
+    color: #c0392b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+
+    &:hover {
+        color: #e74c3c;
+        text-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
+    }
+}
+
+.tams .fire-rate-select {
+    width: 45px;
+    height: 20px;
+    font-size: 11px;
+    padding: 0;
+}

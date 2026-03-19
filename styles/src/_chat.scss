@@ -1,0 +1,130 @@
+@import 'variables';
+
+/* Chat Rolls */
+.tams-roll {
+    background: rgba(0,0,0,0.05);
+    border: 1px solid $color-border;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    font-size: 14px;
+
+    .roll-label {
+        font-family: $font-header;
+        font-size: 1.2em;
+        color: #4a0000;
+        border-bottom: 2px solid $color-border;
+        margin-bottom: 8px;
+        padding-bottom: 3px;
+    }
+
+    .roll-description {
+        font-size: 0.9em;
+        font-style: italic;
+        color: #555;
+        margin-bottom: 8px;
+        padding-bottom: 5px;
+        border-bottom: 1px dashed rgba(0,0,0,0.1);
+    }
+
+    .roll-row {
+        display: flex;
+        justify-content: space-between;
+        line-height: 1.4;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        padding: 2px 0;
+    }
+
+    .roll-value {
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+
+    .roll-total {
+        text-align: center;
+        font-size: 1.4em;
+        margin: 5px 0;
+        font-weight: bold;
+        color: #000;
+        background: rgba(0,0,0,0.05);
+        border-radius: 3px;
+        padding: 5px;
+        margin-top: 10px !important;
+    }
+
+    .roll-contest-hint {
+        border-top: 1px dashed #aaa;
+        margin-top: 5px;
+        font-style: italic;
+    }
+
+    /* Buttons inside chat rolls */
+    button {
+        font-size: 12px;
+        padding: 2px 8px;
+        margin: 2px 0;
+        border: 1px solid $color-border;
+        background: #e0e0e0;
+        color: #333;
+
+        &:hover { background: #fff; }
+
+        &.tams-take-damage {
+            background: #4a0000;
+            color: #fff;
+            border-color: #7a0000;
+            &:hover { background: #7a0000; }
+        }
+
+        &.tams-dodge, &.tams-retaliate {
+            background: #004a00;
+            color: #fff;
+            border-color: #007a00;
+            &:hover { background: #007a00; }
+        }
+
+        &.tams-behind-toggle, &.tams-unaware-toggle {
+            min-width: 30px;
+            i { pointer-events: none; }
+        }
+    }
+}
+
+.tams-crit {
+    color: $color-crit-success;
+    font-weight: bold;
+    text-align: center;
+    background: #ccffcc;
+    border: 1px solid $color-crit-success;
+    padding: 5px;
+    margin-top: 5px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,255,0,0.2);
+
+    &.failure {
+        background: #ffdada;
+        color: $color-crit-fail;
+        border-color: $color-crit-fail;
+    }
+}
+
+.tams-success {
+    color: $color-success;
+    text-align: center;
+}
+
+.tams-failure {
+    color: $color-crit-fail;
+    text-align: center;
+}
+
+/* Generic window buttons */
+.tams .window-content button {
+    font-family: $font-condensed;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:hover { box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+}

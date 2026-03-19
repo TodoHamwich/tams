@@ -5,7 +5,7 @@
             <input type="hidden" name="img" value="{{document.img}}"/>
             <div class="image-edit-overlay">
                 <i class="fas fa-edit"></i>
-                <span>Change Image</span>
+                <span>{{localize 'TAMS.ChangeImage'}}</span>
             </div>
         </div>
         <div class="header-details">
@@ -19,13 +19,13 @@
             </h1>
             <div class="header-row">
                 <div class="physical-notes">
-                    <label>Physical Notes</label>
-                    <input type="text" name="system.physicalNotes" value="{{system.physicalNotes}}" placeholder="Physical characteristics..."/>
+                    <label>{{localize 'TAMS.PhysicalNotes'}}</label>
+                    <input type="text" name="system.physicalNotes" value="{{system.physicalNotes}}" placeholder="{{localize 'TAMS.PhysicalNotes'}}..."/>
                 </div>
             </div>
             <div class="header-row">
                 <div class="theme-selector">
-                    <label>Theme</label>
+                    <label>{{localize 'TAMS.Theme'}}</label>
                     <select name="system.theme">
                         {{selectOptions themeOptions selected=system.theme localize=true}}
                     </select>
@@ -35,38 +35,38 @@
     </header>
 
     <nav class="sheet-tabs tabs" data-group="primary">
-        <a class="item {{#if (eq activeTab 'stats')}}active{{/if}}" data-action="setTab" data-tab="stats" title="Stats & Limbs"><i class="fas fa-user"></i></a>
-        <a class="item {{#if (eq activeTab 'items')}}active{{/if}}" data-action="setTab" data-tab="items" title="Weapons & Skills"><i class="fas fa-shield-alt"></i></a>
-        <a class="item {{#if (eq activeTab 'abilities')}}active{{/if}}" data-action="setTab" data-tab="abilities" title="Abilities & Resources"><i class="fas fa-bolt"></i></a>
-        <a class="item {{#if (eq activeTab 'inventory')}}active{{/if}}" data-action="setTab" data-tab="inventory" title="Inventory"><i class="fas fa-boxes"></i></a>
-        <a class="item {{#if (eq activeTab 'description')}}active{{/if}}" data-action="setTab" data-tab="description" title="Traits & Bio"><i class="fas fa-scroll"></i></a>
-        <a class="item {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-action="setTab" data-tab="modifiers" title="Modifiers"><i class="fas fa-sliders-h"></i></a>
-        <a class="item {{#if (eq activeTab 'settings')}}active{{/if}}" data-action="setTab" data-tab="settings" title="Settings"><i class="fas fa-cog"></i></a>
+        <a class="item {{#if (eq activeTab 'stats')}}active{{/if}}" data-action="setTab" data-tab="stats" title="{{localize 'TAMS.Tabs.Stats'}}"><i class="fas fa-user"></i></a>
+        <a class="item {{#if (eq activeTab 'items')}}active{{/if}}" data-action="setTab" data-tab="items" title="{{localize 'TAMS.Tabs.Items'}}"><i class="fas fa-shield-alt"></i></a>
+        <a class="item {{#if (eq activeTab 'abilities')}}active{{/if}}" data-action="setTab" data-tab="abilities" title="{{localize 'TAMS.Tabs.Abilities'}}"><i class="fas fa-bolt"></i></a>
+        <a class="item {{#if (eq activeTab 'inventory')}}active{{/if}}" data-action="setTab" data-tab="inventory" title="{{localize 'TAMS.Tabs.Inventory'}}"><i class="fas fa-boxes"></i></a>
+        <a class="item {{#if (eq activeTab 'description')}}active{{/if}}" data-action="setTab" data-tab="description" title="{{localize 'TAMS.Tabs.Description'}}"><i class="fas fa-scroll"></i></a>
+        <a class="item {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-action="setTab" data-tab="modifiers" title="{{localize 'TAMS.Tabs.Modifiers'}}"><i class="fas fa-sliders-h"></i></a>
+        <a class="item {{#if (eq activeTab 'settings')}}active{{/if}}" data-action="setTab" data-tab="settings" title="{{localize 'TAMS.Tabs.Settings'}}"><i class="fas fa-cog"></i></a>
     </nav>
 
-    <section class="sheet-body">
+    <section class="sheet-body" data-scrollable>
         {{!-- Stats Tab --}}
         <div class="tab stats {{#if (eq activeTab 'stats')}}active{{/if}}" data-group="primary" data-tab="stats">
             <div class="upgrade-pool flexrow">
-                <label>Stat Upgrade Points:</label>
+                <label>{{localize 'TAMS.StatUpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints.stats" value="{{system.upgradePoints.stats}}"/>
             </div>
             <div class="grid grid-2col">
                 <section class="stats-list">
                     {{#each system.stats as |stat id|}}
                     <div class="stat flexrow">
-                        <label class="resource-label rollable" data-action="roll" data-roll="stat" data-stat-id="{{id}}" data-label="{{localize stat.label}}" data-stat-value="{{stat.value}}" data-stat-mod="{{stat.mod}}">
+                        <label class="resource-label rollable" data-action="roll" data-roll="stat" data-stat-id="{{id}}" data-label="{{localize stat.label}}" data-stat-value="{{stat.value}}" data-stat-mod="{{stat.mod}}" data-trait-bonus="{{stat.traitBonus}}">
                             <i class="fas fa-dice-d20"></i> {{localize stat.label}}
                         </label>
                         <div class="stat-inputs flexrow">
-                            <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number" title="Base Value"/>
+                            <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number" title="{{localize 'TAMS.Name'}}"/>
                             <span class="mod-sep">+</span>
-                            <input type="number" name="system.stats.{{id}}.mod" value="{{stat.mod}}" data-dtype="Number" title="Modifier" class="small-input"/>
+                            <input type="number" name="system.stats.{{id}}.mod" value="{{stat.mod}}" data-dtype="Number" title="{{localize 'TAMS.Multiplier'}}" class="small-input"/>
                         </div>
                     </div>
                     {{/each}}
                     <hr>
-                    <h3 class="small-header">Special Skills</h3>
+                    <h3 class="small-header">{{localize 'TAMS.SpecialSkills'}}</h3>
                     {{#each system.specialSkills as |skill id|}}
                     <div class="stat flexrow special-skill">
                         <label class="resource-label rollable" data-action="roll" data-stat-id="{{id}}" data-label="{{capitalize id}}" data-stat-value="{{skill.value}}">
@@ -81,7 +81,7 @@
                     {{!-- Total HP Resource --}}
                     <div class="resource-item hp flexcol" style="border-bottom: 2px solid #7a7971; margin-bottom: 10px; padding-bottom: 5px;">
                         <div class="flexrow">
-                            <label class="resource-label">Total HP {{#if (or (eq system.settings.npcType 'squad') (eq system.settings.npcType 'horde'))}}(Size: {{system.settings.squadSize}}){{/if}}</label>
+                            <label class="resource-label">{{localize 'TAMS.TotalHP'}} {{#if (or (eq system.settings.npcType 'squad') (eq system.settings.npcType 'horde'))}}({{localize 'TAMS.Size'}}: {{system.settings.squadSize}}){{/if}}</label>
                             <div class="bar-container">
                                 <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled/>
                                 <div class="bar">
@@ -92,7 +92,7 @@
                         </div>
                     </div>
 
-                    <h3 class="small-header">Limbs (HP / Armor) <a class="full-heal" data-action="fullHeal" title="Full Heal All Limbs"><i class="fas fa-heartbeat"></i></a></h3>
+                    <h3 class="small-header">{{localize 'TAMS.LimbsHPAndArmor'}} <a class="full-heal" data-action="fullHeal" title="{{localize 'TAMS.FullHealAllLimbs'}}"><i class="fas fa-heartbeat"></i></a></h3>
                     {{#each system.limbs as |limb id|}}
                     <div class="limb-row flexrow {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}}">
                         <label class="resource-label limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}{{#if (and limb.injured (not limb.criticallyInjured))}}INJURED{{/if}}">
@@ -100,14 +100,14 @@
                             {{limb.label}}
                         </label>
                         <div class="limb-hp flexrow">
-                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input {{#if (lt limb.value 0)}}negative-hp{{/if}}" title="Current HP"/>
+                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input {{#if (lt limb.value 0)}}negative-hp{{/if}}" title="{{localize 'TAMS.CurrentHP'}}"/>
                             <span>/{{limb.max}}</span>
                         </div>
                         <div class="limb-armor flexrow">
-                            <input type="checkbox" name="system.limbs.{{id}}.injured" {{checked limb.injured}} title="Injured?"/>
-                            <input type="checkbox" name="system.limbs.{{id}}.criticallyInjured" {{checked limb.criticallyInjured}} title="Critically Injured?"/>
-                            <label>Armour</label>
-                            <select name="system.limbs.{{id}}.equippedArmorId" style="max-width: 80px;" title="Equipped Armor Item">
+                            <input type="checkbox" name="system.limbs.{{id}}.injured" {{checked limb.injured}} title="{{localize 'TAMS.InjuredQ'}}"/>
+                            <input type="checkbox" name="system.limbs.{{id}}.criticallyInjured" {{checked limb.criticallyInjured}} title="{{localize 'TAMS.CriticallyInjuredQ'}}"/>
+                            <label>{{localize 'TAMS.Armour'}}</label>
+                            <select name="system.limbs.{{id}}.equippedArmorId" style="max-width: 80px;" title="{{localize 'TAMS.EquippedArmorItem'}}">
                                 {{selectOptions (lookup ../limbArmorOptions id) selected=limb.equippedArmorId}}
                             </select>
                             <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input" max="40" min="0" {{#if limb.hasEquippedArmor}}disabled{{/if}}/>
@@ -123,20 +123,20 @@
         {{!-- Items Tab --}}
         <div class="tab items {{#if (eq activeTab 'items')}}active{{/if}}" data-group="primary" data-tab="items">
             <div class="upgrade-pool flexrow">
-                <label>Weapon Upgrade Points:</label>
+                <label>{{localize 'TAMS.WeaponUpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints.weapons" value="{{system.upgradePoints.weapons}}"/>
-                <label>Skill Upgrade Points:</label>
+                <label>{{localize 'TAMS.SkillUpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints.skills" value="{{system.upgradePoints.skills}}"/>
             </div>
-            <h3>Weapons <a data-action="itemCreate" data-type="weapon"><i class="fas fa-plus"></i> Add</a></h3>
+            <h3>{{localize 'TAMS.Weapons'}} <a data-action="itemCreate" data-type="weapon"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
-                <div class="item-name">Name</div>
-                <div class="item-stat">Dmg</div>
-                <div class="item-stat">Fam</div>
-                <div class="item-stat">Rate</div>
-                <div class="item-stat">Ammo</div>
-                <div class="item-stat">Total</div>
-                <div class="item-stat">Equip</div>
+                <div class="item-name">{{localize 'TAMS.Name'}}</div>
+                <div class="item-stat">{{localize 'TAMS.Dmg'}}</div>
+                <div class="item-stat">{{localize 'TAMS.Fam'}}</div>
+                <div class="item-stat">{{localize 'TAMS.Rate'}}</div>
+                <div class="item-stat">{{localize 'TAMS.Ammo'}}</div>
+                <div class="item-stat">{{localize 'TAMS.Total'}}</div>
+                <div class="item-stat">{{localize 'TAMS.Equip'}}</div>
                 <div class="item-controls"></div>
             </li>
             <ol class="items-list">
@@ -180,20 +180,20 @@
                         <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}}/>
                     </div>
                     <div class="item-controls">
-                        <a class="item-control" data-action="itemGive" title="Give Item"><i class="fas fa-gift"></i></a>
-                        <a class="item-control" data-action="itemExport" title="Export to Items Tab"><i class="fas fa-file-export"></i></a>
-                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        <a class="item-control" data-action="itemGive" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
+                        <a class="item-control" data-action="itemExport" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
+                        <a class="item-control" data-action="itemEdit" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
+                        <a class="item-control" data-action="itemDelete" title="{{localize 'TAMS.DeleteItem'}}"><i class="fas fa-trash"></i></a>
                     </div>
                 </li>
                 {{/each}}
             </ol>
 
-            <h3>Skills <a data-action="itemCreate" data-type="skill"><i class="fas fa-plus"></i> Add</a></h3>
+            <h3>{{localize 'TAMS.Skills'}} <a data-action="itemCreate" data-type="skill"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
-                <div class="item-name">Name</div>
-                <div class="item-stat">Fam</div>
-                <div class="item-stat">Stat</div>
+                <div class="item-name">{{localize 'TAMS.Name'}}</div>
+                <div class="item-stat">{{localize 'TAMS.Fam'}}</div>
+                <div class="item-stat">{{localize 'TAMS.Stat'}}</div>
                 <div class="item-controls"></div>
             </li>
             <ol class="items-list">
@@ -211,10 +211,10 @@
                         </select>
                     </div>
                     <div class="item-controls">
-                        <a class="item-control" data-action="itemGive" title="Give Item"><i class="fas fa-gift"></i></a>
-                        <a class="item-control" data-action="itemExport" title="Export to Items Tab"><i class="fas fa-file-export"></i></a>
-                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        <a class="item-control" data-action="itemGive" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
+                        <a class="item-control" data-action="itemExport" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
+                        <a class="item-control" data-action="itemEdit" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
+                        <a class="item-control" data-action="itemDelete" title="{{localize 'TAMS.DeleteItem'}}"><i class="fas fa-trash"></i></a>
                     </div>
                 </li>
                 {{/each}}
@@ -223,15 +223,12 @@
 
         {{!-- Abilities & Resources Tab --}}
         <div class="tab abilities {{#if (eq activeTab 'abilities')}}active{{/if}}" data-group="primary" data-tab="abilities">
-            <div class="flexrow">
-                <h3>Resources</h3>
-                <a data-action="resourceAdd"><i class="fas fa-plus"></i> Add Resource</a>
-            </div>
+            <h3>{{localize 'TAMS.Resources'}}</h3>
             <ol class="resources-list">
                 {{!-- Main Stamina Resource --}}
                 <li class="resource-item stamina flexcol">
                     <div class="flexrow">
-                        <label class="resource-label">Stamina</label>
+                        <label class="resource-label">{{localize 'TAMS.Stamina'}}</label>
                         <div class="bar-container">
                             <input type="number" name="system.stamina.value" value="{{system.stamina.value}}" max="{{system.stamina.max}}" min="0"/>
                             <div class="bar">
@@ -246,14 +243,13 @@
                 {{#each customResourceData as |res index|}}
                 <li class="resource-item flexcol" data-index="{{index}}">
                     <div class="flexrow">
-                        <input type="text" name="system.customResources.{{index}}.name" value="{{res.name}}" placeholder="Resource Name" class="resource-name-input"/>
+                        <label class="resource-label" style="flex: 1;">{{res.name}}{{#if (and res.isOpposed res.nameSecondary)}} / {{res.nameSecondary}}{{/if}}</label>
                         <div class="bar-container">
                             <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}" max="{{res.max}}" min="0"/>
-                            <div class="bar">
-                                <div class="fill" style="width: {{res.percentage}}%; background: {{res.color}} !important;"></div>
+                            <div class="bar {{#if res.isOpposed}}opposed{{/if}}" style="{{#if res.isOpposed}}background: {{res.color}} !important;{{/if}}">
+                                <div class="fill" style="width: {{res.percentage}}%; background: {{#if res.isOpposed}}{{res.colorSecondary}}{{else}}{{res.color}}{{/if}} !important; {{#if res.isOpposed}}right: 0; position: absolute;{{/if}}"></div>
                             </div>
                             <span class="max-label"> / {{res.max}} </span>
-                            <a data-action="resourceDelete" data-index="{{index}}" class="delete-resource"><i class="fas fa-trash"></i></a>
                         </div>
                     </div>
                 </li>
@@ -263,36 +259,36 @@
             <hr>
 
             <div class="upgrade-pool flexrow">
-                <label>Ability Upgrade Points:</label>
+                <label>{{localize 'TAMS.AbilityUpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints.abilities" value="{{system.upgradePoints.abilities}}"/>
             </div>
-            <h3>Abilities <a data-action="itemCreate" data-type="ability"><i class="fas fa-plus"></i> Add</a></h3>
+            <h3>{{localize 'TAMS.Abilities'}} <a data-action="itemCreate" data-type="ability"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <ol class="items-list">
                 {{#each abilities as |item id|}}
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} 
                         {{#if item.system.isAttack}}
-                        (Dmg: {{item.system.calculatedDamage}})
+                        ({{localize 'TAMS.DmgColon'}} {{item.system.calculatedDamage}})
                         {{/if}}
                         {{#if (gt item.system.uses.max 0)}}
-                        (Uses: {{item.system.uses.value}}/{{item.system.uses.max}})
+                        ({{localize 'TAMS.UsesColon'}} {{item.system.uses.value}}/{{item.system.uses.max}})
                         {{else}}
                             {{#if item.system.isApex}}
-                            (Apex: {{item.system.uses.value}}/{{item.system.uses.max}})
+                            ({{localize 'TAMS.ApexColon'}} {{item.system.uses.value}}/{{item.system.uses.max}})
                             {{else}}
-                            (Cost: {{item.system.cost}})
+                            ({{localize 'TAMS.CostColon'}} {{item.system.cost}})
                             {{/if}}
                         {{/if}}
                     </h4>
                     <div class="item-controls">
-                        <a class="item-control" data-action="itemGive" title="Give Item"><i class="fas fa-gift"></i></a>
-                        <a class="item-control" data-action="itemExport" title="Export to Items Tab"><i class="fas fa-file-export"></i></a>
+                        <a class="item-control" data-action="itemGive" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
+                        <a class="item-control" data-action="itemExport" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
                         {{#if (or item.system.isApex (gt item.system.uses.max 0))}}
-                        <a class="item-control" data-action="itemRecharge" title="Recharge Uses"><i class="fas fa-bolt"></i></a>
+                        <a class="item-control" data-action="itemRecharge" title="{{localize 'TAMS.RechargeUses'}}"><i class="fas fa-bolt"></i></a>
                         {{/if}}
-                        <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                        <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                        <a class="item-control" data-action="itemEdit" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
+                        <a class="item-control" data-action="itemDelete" title="{{localize 'TAMS.DeleteItem'}}"><i class="fas fa-trash"></i></a>
                     </div>
                 </li>
                 {{/each}}
@@ -303,8 +299,8 @@
         <div class="tab inventory {{#if (eq activeTab 'inventory')}}active{{/if}}" data-group="primary" data-tab="inventory">
             <div class="carry-weight flexcol">
                 <div class="flexrow">
-                    <span>Carry Capacity: <b>{{inventory.usedMedium}}</b> / <b>{{inventory.maxMedium}}</b> Medium Items</span>
-                    {{#if inventory.isEncumbered}} <span class="encumbered">(Encumbered - Speed Halved)</span>{{/if}}
+                    <span>{{localize 'TAMS.CarryCapacity'}} <b>{{inventory.usedMedium}}</b> / <b>{{inventory.maxMedium}}</b> {{localize 'TAMS.MediumItems'}}</span>
+                    {{#if inventory.isEncumbered}} <span class="encumbered">{{localize 'TAMS.EncumberedWarning'}}</span>{{/if}}
                 </div>
                 <div class="bar-container" style="height: 8px; margin-top: 2px;">
                     <div class="bar">
@@ -313,13 +309,13 @@
                 </div>
             </div>
 
-            <div class="inventory-scroll">
+            <div class="inventory-scroll" data-scrollable>
                 <div class="inventory-controls-global flexrow">
-                    <a data-action="itemCreate" data-type="weapon" title="Add Weapon"><i class="fas fa-plus"></i> Weapon</a>
-                    <a data-action="itemCreate" data-type="armor" title="Add Armor"><i class="fas fa-plus"></i> Armor</a>
-                    <a data-action="itemCreate" data-type="consumable" title="Add Consumable"><i class="fas fa-plus"></i> Consumable</a>
-                    <a data-action="itemCreate" data-type="equipment" title="Add Misc"><i class="fas fa-plus"></i> Misc</a>
-                    <a data-action="itemCreate" data-type="backpack" title="Add Backpack"><i class="fas fa-plus"></i> Container</a>
+                    <a data-action="itemCreate" data-type="weapon" title="{{localize 'TAMS.AddWeapon'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Weapon'}}</a>
+                    <a data-action="itemCreate" data-type="armor" title="{{localize 'TAMS.AddArmor'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Armor'}}</a>
+                    <a data-action="itemCreate" data-type="consumable" title="{{localize 'TAMS.AddConsumable'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Consumable'}}</a>
+                    <a data-action="itemCreate" data-type="equipment" title="{{localize 'TAMS.AddMisc'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Misc'}}</a>
+                    <a data-action="itemCreate" data-type="backpack" title="{{localize 'TAMS.AddBackpack'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Container'}}</a>
                 </div>
 
                 {{#each inventorySections as |section|}}
@@ -331,15 +327,15 @@
                             {{/if}}
                             <span>{{section.label}}</span>
                             {{#if (eq section.type 'container')}}
-                            <small class="capacity-tag">({{section.capacity}} Med Units | {{section.modifier}}x)</small>
+                            <small class="capacity-tag">({{section.capacity}} {{localize 'TAMS.MedUnits'}} | {{section.modifier}}x)</small>
                             {{/if}}
                         </div>
                         <div class="header-controls">
                             {{#if (eq section.type 'container')}}
-                            <label style="font-size: 10px; text-transform: uppercase; color: white;">Equip</label>
+                            <label style="font-size: 10px; text-transform: uppercase; color: white;">{{localize 'TAMS.Equip'}}</label>
                             <input type="checkbox" data-action="updateItemField" data-item-id="{{section.id}}" data-field="system.equipped" {{checked section.isEquipped}}/>
-                            <a class="item-control" data-action="itemEdit" data-item-id="{{section.id}}" title="Edit Container" style="color: white; margin-left: 5px;"><i class="fas fa-edit"></i></a>
-                            <a class="item-control" data-action="itemDelete" data-item-id="{{section.id}}" title="Delete Container" style="color: white; margin-left: 5px;"><i class="fas fa-trash"></i></a>
+                            <a class="item-control" data-action="itemEdit" data-item-id="{{section.id}}" title="{{localize 'TAMS.EditContainer'}}" style="color: white; margin-left: 5px;"><i class="fas fa-edit"></i></a>
+                            <a class="item-control" data-action="itemDelete" data-item-id="{{section.id}}" title="{{localize 'TAMS.DeleteContainer'}}" style="color: white; margin-left: 5px;"><i class="fas fa-trash"></i></a>
                             {{/if}}
                         </div>
                     </h4>
@@ -366,20 +362,20 @@
                                 </select>
                             </div>
                             <div class="item-controls">
-                                <a class="item-control" data-action="itemGive" title="Give Item"><i class="fas fa-gift"></i></a>
-                                <a class="item-control" data-action="itemExport" title="Export to Items Tab"><i class="fas fa-file-export"></i></a>
+                                <a class="item-control" data-action="itemGive" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
+                                <a class="item-control" data-action="itemExport" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
                                 {{#if (eq item.type 'consumable')}}
-                                <a class="item-control" data-action="itemUseCharge" title="Use Charge"><i class="fas fa-flask"></i></a>
+                                <a class="item-control" data-action="itemUseCharge" title="{{localize 'TAMS.UseCharge'}}"><i class="fas fa-flask"></i></a>
                                 {{/if}}
-                                <a class="item-control" data-action="itemEdit" title="Edit Item"><i class="fas fa-edit"></i></a>
-                                <a class="item-control" data-action="itemDelete" title="Delete Item"><i class="fas fa-trash"></i></a>
+                                <a class="item-control" data-action="itemEdit" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
+                                <a class="item-control" data-action="itemDelete" title="{{localize 'TAMS.DeleteItem'}}"><i class="fas fa-trash"></i></a>
                             </div>
                         </li>
                         {{/each}}
                         {{/each}}
                         {{#unless section.categories.length}}
                         {{#if (eq section.type 'container')}}
-                        <li class="item empty-notice">Empty</li>
+                        <li class="item empty-notice">{{localize 'TAMS.Empty'}}</li>
                         {{/if}}
                         {{/unless}}
                     </ol>
@@ -388,7 +384,7 @@
             </div>
 
             <div class="currency-footer">
-                <h4 class="inventory-section-header">Currencies</h4>
+                <h4 class="inventory-section-header">{{localize 'TAMS.Currencies'}}</h4>
                 <div class="flexrow currency-list" style="flex-wrap: wrap; gap: 5px; margin-bottom: 8px;">
                     {{#each currencies as |cur|}}
                     {{#if cur.enabled}}
@@ -406,13 +402,37 @@
         {{!-- Description Tab --}}
         <div class="tab {{#if (eq activeTab 'description')}}active{{/if}}" data-group="primary" data-tab="description">
             <div class="upgrade-pool flexrow">
-                <label>Traits Upgrade Points:</label>
+                <label>{{localize 'TAMS.TraitsUpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints.traits" value="{{system.upgradePoints.traits}}"/>
             </div>
-            <h3>Traits</h3>
-            <textarea name="system.traits" rows="5">{{system.traits}}</textarea>
+
+            <div class="flexrow" style="align-items: center; margin-bottom: 5px; margin-top: 10px;">
+                <h3 style="margin: 0; border: none;">{{localize 'TAMS.Traits'}}</h3>
+                <a class="item-control item-create" title="{{localize 'TAMS.AddTrait'}}" data-action="itemCreate" data-type="trait" style="flex: 0 0 20px; text-align: right;">
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
+            
+            <div class="traits-list">
+                {{#each traits as |trait|}}
+                <div class="item flexrow trait-row" data-item-id="{{trait.id}}" style="align-items: center; padding: 2px 0; border-bottom: 1px solid #ccc;">
+                    <div class="item-name flexrow" style="align-items: center; flex: 1; cursor: pointer;" data-action="itemEdit">
+                        <div class="item-image" style="background-image: url('{{trait.img}}'); width: 24px; height: 24px; background-size: cover; margin-right: 5px;"></div>
+                        <h4 style="margin: 0;">{{trait.name}}</h4>
+                        {{#if trait.system.isProfession}}
+                        <span class="trait-profession" style="margin-left: 5px; font-style: italic; font-size: 11px; opacity: 0.8;">({{trait.system.profession}})</span>
+                        {{/if}}
+                    </div>
+                    <div class="item-controls" style="flex: 0 0 60px; text-align: right;">
+                        <a class="item-control item-edit" title="{{localize 'TAMS.EditItem'}}" data-action="itemEdit"><i class="fas fa-edit"></i></a>
+                        <a class="item-control item-delete" title="{{localize 'TAMS.DeleteItem'}}" data-action="itemDelete"><i class="fas fa-trash"></i></a>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+
             <hr>
-            <h3>Biography</h3>
+            <h3 style="border: none;">{{localize 'TAMS.Biography'}}</h3>
             <textarea name="system.description" rows="10">{{system.description}}</textarea>
         </div>
 
@@ -421,39 +441,43 @@
             <div class="flexcol">
                 <div class="grid grid-2col">
                     <div class="modifier-group">
-                        <h3>Stamina</h3>
+                        <h3>{{localize 'TAMS.Stamina'}}</h3>
                         <div class="flexrow">
-                            <label>Multiplier</label>
+                            <label>{{localize 'TAMS.Multiplier'}}</label>
                             <input type="number" name="system.stamina.mult" value="{{system.stamina.mult}}" step="0.25" style="width: 50px;"/>
-                            <label>Color</label>
+                            <label>{{localize 'TAMS.Color'}}</label>
                             <input type="color" name="system.stamina.color" value="{{system.stamina.color}}" style="width: 30px; padding: 0;"/>
                         </div>
                     </div>
                     <div class="modifier-group">
-                        <h3>HP</h3>
+                        <h3>{{localize 'TAMS.TotalHP'}}</h3>
                         <div class="flexrow">
-                            <label>Color</label>
+                            <label>{{localize 'TAMS.Color'}}</label>
                             <input type="color" name="system.hp.color" value="{{system.hp.color}}" style="width: 30px; padding: 0;"/>
                         </div>
                     </div>
                     <div class="modifier-group">
-                        <h3>Inventory</h3>
+                        <h3>{{localize 'TAMS.Tabs.Inventory'}}</h3>
                         <div class="flexrow">
-                            <label>Capacity Color</label>
+                            <label>{{localize 'TAMS.CapacityColor'}}</label>
                             <input type="color" name="system.inventory.color" value="{{system.inventory.color}}" style="width: 30px; padding: 0;"/>
                         </div>
                     </div>
                     <div class="modifier-group">
-                        <h3>Combat</h3>
+                        <h3>{{localize 'TAMS.Combat'}}</h3>
                         <div class="flexrow">
-                            <label>Behind Mult</label>
+                            <label>{{localize 'TAMS.BehindMult'}}</label>
                             <input type="number" name="system.behindMult" value="{{system.behindMult}}" step="0.05" style="width: 50px;"/>
                         </div>
                     </div>
                 </div>
                 <hr>
-                <h3>Limb Multipliers</h3>
-                <div class="grid grid-2col">
+                <div class="flexrow rollable" data-action="toggleLimbMultipliers" style="cursor: pointer;">
+                    <i class="fas fa-chevron-{{#if limbMultipliersCollapsed}}right{{else}}down{{/if}}"></i>
+                    <h3 style="flex: 1; margin: 0; border: none;">{{localize 'TAMS.LimbMultipliers'}}</h3>
+                </div>
+                {{#unless limbMultipliersCollapsed}}
+                <div class="grid grid-2col" style="margin-top: 5px;">
                     {{#each system.limbs as |limb id|}}
                     <div class="flexrow">
                         <label style="font-size: 13px;">{{limb.label}}</label>
@@ -461,57 +485,102 @@
                     </div>
                     {{/each}}
                 </div>
+                {{/unless}}
                 <hr>
-                <h3>Resource Modifiers</h3>
-                {{#each system.customResources as |res index|}}
-                <div class="flexrow modifier-row" data-index="{{index}}">
-                    <label style="flex:1">{{res.name}}</label>
-                    <select name="system.customResources.{{index}}.stat" style="width:100px;">
-                        {{selectOptions ../statOptions selected=res.stat localize=true}}
-                    </select>
-                    <small>x</small>
-                    <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 45px;"/>
-                    <small>+</small>
-                    <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 40px;"/>
-                    <input type="color" name="system.customResources.{{index}}.color" value="{{res.color}}" style="width: 30px; padding: 0;"/>
+                <div class="flexrow" style="margin-bottom: 5px;">
+                    <h3 style="flex: 1; margin: 0; border: none;">{{localize 'TAMS.ResourceModifiers'}}</h3>
+                    <a data-action="resourceAdd"><i class="fas fa-plus"></i> {{localize 'TAMS.AddResource'}}</a>
                 </div>
-                {{/each}}
+                <div class="resource-modifiers-list">
+                    <div class="resource-header">
+                        <div class="col-name">{{localize 'TAMS.ResourceName'}}</div>
+                        <div class="col-stat">{{localize 'TAMS.Stat'}}</div>
+                        <div class="col-mult">{{localize 'TAMS.Multiplier'}}</div>
+                        <div class="col-bonus">{{localize 'TAMS.Bonus'}}</div>
+                        <div class="col-max">{{localize 'TAMS.Max'}}</div>
+                        <div class="col-visuals">{{localize 'TAMS.Visuals'}}</div>
+                        <div class="col-delete"></div>
+                    </div>
+                    {{#each system.customResources as |res index|}}
+                    <div class="modifier-row" data-index="{{index}}">
+                        <div class="col-name flexcol" style="gap: 2px;">
+                            <input type="text" name="system.customResources.{{index}}.name" value="{{res.name}}" placeholder="{{localize 'TAMS.ResourceName'}}" style="font-weight: bold;"/>
+                            {{#if res.isOpposed}}
+                            <input type="text" name="system.customResources.{{index}}.nameSecondary" value="{{res.nameSecondary}}" placeholder="{{localize 'TAMS.ResourceNameSecondary'}}" style="font-size: 11px;"/>
+                            {{/if}}
+                        </div>
+                        <div class="col-stat">
+                            <select name="system.customResources.{{index}}.stat">
+                                {{selectOptions ../statOptions selected=res.stat localize=true}}
+                            </select>
+                            {{#if (eq res.stat "custom")}}
+                                <div class="stat-base">
+                                    <input type="number" name="system.customResources.{{index}}.customValue" value="{{res.customValue}}" title="Base Value"/>
+                                </div>
+                            {{else}}
+                                <div class="stat-base" title="Current Stat Base">
+                                    {{#with (lookup ../system.stats res.stat)}}{{total}}{{/with}}
+                                </div>
+                            {{/if}}
+                        </div>
+                        <div class="col-mult flexrow" style="gap: 3px;">
+                            <small>x</small>
+                            <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" style="width: 100%; text-align: center;"/>
+                        </div>
+                        <div class="col-bonus flexrow" style="gap: 3px;">
+                            <small>+</small>
+                            <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" style="width: 100%; text-align: center;"/>
+                        </div>
+                        <div class="col-max">{{res.max}}</div>
+                        <div class="col-visuals">
+                            <input type="color" name="system.customResources.{{index}}.color" value="{{res.color}}" title="{{localize 'TAMS.PrimaryColor'}}"/>
+                            <input type="checkbox" name="system.customResources.{{index}}.isOpposed" {{checked res.isOpposed}} title="{{localize 'TAMS.IsOpposedBar'}}"/>
+                            {{#if res.isOpposed}}
+                            <input type="color" name="system.customResources.{{index}}.colorSecondary" value="{{res.colorSecondary}}" title="{{localize 'TAMS.SecondaryColor'}}"/>
+                            {{/if}}
+                        </div>
+                        <div class="col-delete">
+                            <a data-action="resourceDelete" data-index="{{index}}" class="delete-resource" title="{{localize 'TAMS.Delete'}}"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
             </div>
         </div>
 
         {{!-- Settings Tab --}}
         <div class="tab settings {{#if (eq activeTab 'settings')}}active{{/if}}" data-group="primary" data-tab="settings">
-            <h3>Settings</h3>
+            <h3>{{localize 'TAMS.Settings'}}</h3>
             <div class="flexcol">
                 <div class="form-group flexrow" style="margin-bottom: 10px;">
-                    <label>Alternate Armour</label>
+                    <label>{{localize 'TAMS.AlternateArmour'}}</label>
                     <input type="checkbox" name="system.settings.alternateArmour" {{checked system.settings.alternateArmour}}/>
                 </div>
                 <div class="form-group flexrow" style="margin-bottom: 10px;">
-                    <label>Is NPC?</label>
+                    <label>{{localize 'TAMS.IsNPCQ'}}</label>
                     <input type="checkbox" name="system.settings.isNPC" {{checked system.settings.isNPC}}/>
                 </div>
                 {{#if system.settings.isNPC}}
                 <div class="form-group flexrow" style="margin-bottom: 10px;">
-                    <label>NPC Type</label>
+                    <label>{{localize 'TAMS.NPCType'}}</label>
                     <select name="system.settings.npcType">
                         {{selectOptions npcTypeOptions selected=system.settings.npcType}}
                     </select>
                 </div>
                 {{#if (or (eq system.settings.npcType "squad") (eq system.settings.npcType "horde"))}}
                 <div class="form-group flexrow" style="margin-bottom: 10px;">
-                    <label>Size</label>
+                    <label>{{localize 'TAMS.Size'}}</label>
                     <input type="number" name="system.settings.squadSize" value="{{system.settings.squadSize}}"/>
                 </div>
                 {{/if}}
                 {{/if}}
                 <p class="notes" style="margin-bottom: 15px; font-size: 0.9em; color: #666; font-style: italic; border: 1px solid #ccc; padding: 5px; border-radius: 4px; background: rgba(0,0,0,0.05);">
-                    <b>Alternate Armour:</b> When enabled, Armour value remains constant. Instead, every hit reduces Armour Max (HP) by 1. When Armour Max reaches 0, the armour no longer provides protection.
+                    <b>{{localize 'TAMS.AlternateArmour'}}:</b> {{localize 'TAMS.AlternateArmourNotes'}}
                 </p>
 
                 <hr>
                 
-                <h3>Currency Visibility</h3>
+                <h3>{{localize 'TAMS.CurrencyVisibility'}}</h3>
                 <div class="currency-toggles flexrow" style="flex-wrap: wrap; gap: 10px; padding: 5px; background: rgba(0,0,0,0.05); border-radius: 4px;">
                     {{#each currencies as |cur|}}
                     <label style="font-size: 0.9em; white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.5); padding: 2px 8px; border-radius: 10px; border: 1px solid #ccc;">
