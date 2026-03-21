@@ -7,15 +7,16 @@ class StatModifier extends foundry.abstract.DataModel {
     return {
       value: new fields.NumberField({ initial: 10, integer: true }),
       mod: new fields.NumberField({ initial: 0, integer: true }),
+      traitBonus: new fields.NumberField({ initial: 0, integer: true }),
       label: new fields.StringField()
     };
   }
   /**
-   * The total value of the stat (base + mod).
+   * The total value of the stat (base + mod + traitBonus).
    * @type {number}
    */
   get total() {
-    return this.value + (this.mod || 0);
+    return this.value + (this.mod || 0) + (this.traitBonus || 0);
   }
 }
 class TAMSCharacterData extends foundry.abstract.TypeDataModel {
@@ -60,11 +61,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       }),
       customResources: new fields.ArrayField(new fields.SchemaField({
         name: new fields.StringField({ initial: "New Resource" }),
+        nameSecondary: new fields.StringField({ initial: "Secondary" }),
         value: new fields.NumberField({ initial: 0, min: 0 }),
         max: new fields.NumberField({ initial: 0, min: 0 }),
         stat: new fields.StringField({ initial: "endurance" }),
         mult: new fields.NumberField({ initial: 1 }),
         bonus: new fields.NumberField({ initial: 0 }),
+        customValue: new fields.NumberField({ initial: 10, min: 0 }),
         color: new fields.StringField({ initial: "#3498db" }),
         isOpposed: new fields.BooleanField({ initial: false }),
         colorSecondary: new fields.StringField({ initial: "#e74c3c" })
@@ -98,12 +101,49 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   }
   /** @override */
   prepareDerivedData() {
+    this._prepareTraitModifiers();
     this._prepareLimbMaxHP();
     this._prepareArmorSync();
     this._prepareTotalHP();
     this._prepareStamina();
     this._prepareCustomResources();
     this._prepareInventoryCapacity();
+  }
+  /**
+   * Iterate over traits and calculate bonuses for stats and rolls.
+   * @protected
+   */
+  _prepareTraitModifiers() {
+    for (const stat of Object.values(this.stats)) {
+      stat.traitBonus = 0;
+    }
+    this.traitRollBonus = 0;
+    this.traitHPExtra = 0;
+    this.traitStaminaExtra = 0;
+    this.traitProfessionBonuses = {};
+    const traits = this.parent.items.filter((i) => i.type === "trait");
+    for (const trait of traits) {
+      const system = trait.system;
+      for (const mod of system.modifiers) {
+        if (mod.target.startsWith("stats.")) {
+          const statKey = mod.target.split(".")[1];
+          if (this.stats[statKey]) {
+            this.stats[statKey].traitBonus += mod.value;
+          }
+        } else if (mod.target === "hp.max") {
+          this.traitHPExtra += mod.value;
+        } else if (mod.target === "stamina.max") {
+          this.traitStaminaExtra += mod.value;
+        } else if (mod.target === "allRolls") {
+          this.traitRollBonus += mod.value;
+        } else if (mod.target === "allProfessionRolls") {
+          if (system.isProfession && system.profession) {
+            const p = system.profession.trim().toLowerCase();
+            this.traitProfessionBonuses[p] = (this.traitProfessionBonuses[p] || 0) + mod.value;
+          }
+        }
+      }
+    }
   }
   /**
    * Recompute max HP for each limb based on Endurance and NPC settings.
@@ -151,7 +191,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       totalMaxHp += limb.max || 0;
     }
     this.hp.value = totalHp;
-    this.hp.max = totalMaxHp;
+    this.hp.max = totalMaxHp + (this.traitHPExtra || 0);
   }
   /**
    * Calculate stamina maximum based on Endurance.
@@ -160,7 +200,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   _prepareStamina() {
     const end = this.stats.endurance.total;
     const baseStamina = Math.max(1, end);
-    this.stamina.max = Math.floor(baseStamina * (this.stamina.mult || 1));
+    this.stamina.max = Math.floor(baseStamina * (this.stamina.mult || 1)) + (this.traitStaminaExtra || 0);
   }
   /**
    * Update maximum values for custom resources.
@@ -169,7 +209,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   _prepareCustomResources() {
     var _a;
     for (const res of this.customResources) {
-      const statVal = ((_a = this.stats[res.stat]) == null ? void 0 : _a.total) || 10;
+      const statVal = res.stat === "custom" ? res.customValue ?? 10 : ((_a = this.stats[res.stat]) == null ? void 0 : _a.total) || 0;
       res.max = Math.floor(statVal * (res.mult || 1)) + (res.bonus || 0);
     }
   }
@@ -183,9 +223,11 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const hasBackpack = this.inventory.hasBackpack;
     const backpackId = this.inventory.equippedBackpackId;
     const backpackItem = backpackId ? this.parent.items.get(backpackId) : null;
+    const allBackpackIds = new Set(this.parent.items.filter((i) => i.type === "backpack").map((i) => i.id));
     for (const item of this.parent.items) {
       const system = item.system;
-      if (system.location === "stowed" || system.location === "hand") {
+      const location = system.location;
+      if (location === "stowed" || location === "hand" || allBackpackIds.has(location)) {
         let itemSize = 0;
         switch (system.size) {
           case "small":
@@ -199,10 +241,10 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
             break;
         }
         if (item.id !== backpackId) {
-          const container = this.parent.items.find((i) => i.type === "backpack" && i.id === system.location);
+          const container = this.parent.items.find((i) => i.type === "backpack" && i.id === location);
           if (container && container.system.equipped) {
             itemSize *= container.system.modifier ?? 0.5;
-          } else if (container) {
+          } else if (container && !container.system.equipped) {
             itemSize = 0;
           }
         }
@@ -214,6 +256,18 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const backpackExtra = hasBackpack && backpackItem ? (backpackItem.system.capacity || 0) * 10 : 0;
     this.inventory.maxCapacity = baseCapacity + backpackExtra;
     this.inventory.isEncumbered = this.inventory.usedCapacity > this.inventory.maxCapacity;
+    this.backpackPenalties = { strength: 0, dexterity: 0, dodge: 0, attack: 0, movement: 0 };
+    const equippedBackpacks = this.parent.items.filter((i) => i.type === "backpack" && i.system.equipped);
+    for (const backpack of equippedBackpacks) {
+      const pen = backpack.system.penalties;
+      if (pen && pen.active) {
+        this.backpackPenalties.strength += pen.strength || 0;
+        this.backpackPenalties.dexterity += pen.dexterity || 0;
+        this.backpackPenalties.dodge += pen.dodge || 0;
+        this.backpackPenalties.attack += pen.attack || 0;
+        this.backpackPenalties.movement += pen.movement || 0;
+      }
+    }
   }
 }
 class TAMSWeaponData extends foundry.abstract.TypeDataModel {
@@ -239,8 +293,11 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       }),
       fireRate: new fields.StringField({ initial: "1" }),
       fireRateCustom: new fields.NumberField({ initial: 1, nullable: true }),
+      attackStat: new fields.StringField({ initial: "default" }),
+      consumeAmmo: new fields.BooleanField({ initial: false }),
       special: new fields.StringField({ initial: "" }),
       isAoE: new fields.BooleanField({ initial: false }),
+      tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
   }
@@ -249,15 +306,21 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
    * @type {number}
    */
   get calculatedDamage() {
-    var _a;
+    var _a, _b;
     if (this.isRanged) return Math.floor(this.rangedDamage || 0);
     const actor = (_a = this.parent) == null ? void 0 : _a.actor;
     if (!actor) return 0;
-    const str = actor.system.stats.strength.total;
+    let statKey = "strength";
+    if (this.attackStat && this.attackStat !== "default") {
+      statKey = this.attackStat;
+    } else {
+      statKey = this.isLight ? "dexterity" : "strength";
+    }
+    const statValue = ((_b = actor.system.stats[statKey]) == null ? void 0 : _b.total) || 0;
     let mult = 0.5;
     if (this.isHeavy) mult += 0.25;
     if (this.isTwoHanded) mult += 0.25;
-    return Math.floor(str * mult);
+    return Math.floor(statValue * mult);
   }
 }
 class TAMSSkillData extends foundry.abstract.TypeDataModel {
@@ -519,6 +582,37 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     }
   }
 }
+class TAMSTraitData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      upgradePoints: new fields.NumberField({ initial: 0, integer: true, min: 0, nullable: true }),
+      isProfession: new fields.BooleanField({ initial: false }),
+      profession: new fields.StringField({ initial: "" }),
+      modifiers: new fields.ArrayField(new fields.SchemaField({
+        target: new fields.StringField({ initial: "stats.strength.value" }),
+        value: new fields.NumberField({ initial: 0 }),
+        type: new fields.StringField({ initial: "add" })
+      })),
+      tags: new fields.StringField({ initial: "" }),
+      description: new fields.HTMLField({ initial: "" })
+    };
+  }
+}
+async function tamsUpdateMessage(message, updateData) {
+  if (game.user.isGM || message.isAuthor) {
+    try {
+      return await message.update(updateData);
+    } catch (err) {
+      console.error("TAMS | Failed to update message", err);
+    }
+  }
+  game.socket.emit("system.tams", {
+    type: "updateMessage",
+    messageId: message.id,
+    updateData
+  });
+}
 async function getHitLocation(rollValue = null) {
   const raw = rollValue ?? (await new Roll("1d100").evaluate()).total;
   if (raw >= 96) return "Head";
@@ -665,8 +759,8 @@ async function tamsRenderChatMessage(message, html, data) {
       if (token) target = token.actor;
     }
     if (!target && targetActorId) target = game.actors.get(targetActorId);
-    if (!target) target = ((_b = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0]) == null ? void 0 : _b.actor) ?? null;
-    if (!target) target = ((_c = canvas.tokens.controlled[0]) == null ? void 0 : _c.actor) ?? null;
+    if (!target) target = ((_a = canvas.tokens.controlled[0]) == null ? void 0 : _a.actor) ?? null;
+    if (!target) target = ((_c = [...((_b = game == null ? void 0 : game.user) == null ? void 0 : _b.targets) ?? []][0]) == null ? void 0 : _c.actor) ?? null;
     if (!target) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetDamage"));
     const locationMap = {
       "Head": "head",
@@ -678,6 +772,7 @@ async function tamsRenderChatMessage(message, html, data) {
       "Right Leg": "rightLeg"
     };
     const isAoEHit = btn.dataset.isAoe === "1";
+    const forceCrit = btn.dataset.forceCrit === "1";
     const isSquadOrHorde = ((_d = target.system.settings) == null ? void 0 : _d.isNPC) && (target.system.settings.npcType === "squad" || target.system.settings.npcType === "horde");
     let initialMultiplier = 1;
     let squadHtml = "";
@@ -735,7 +830,7 @@ async function tamsRenderChatMessage(message, html, data) {
                 remainingDmg -= incoming;
                 if (incoming <= 0 && m > 0) continue;
                 const loc = isAoEHit && isSquadOrHorde && (m > 0 || i > 0) ? await getHitLocation() : locations[i];
-                hits.push({ location: loc, damage: incoming, armourPen });
+                hits.push({ location: loc, damage: incoming, armourPen, forceCrit: forceCrit ? "1" : "0" });
               }
             }
             const { pendingChecks, report } = await target.applyDamage(hits, { isAoE: isAoEHit, multiplier });
@@ -746,6 +841,91 @@ async function tamsRenderChatMessage(message, html, data) {
       },
       default: "apply"
     }).render(true);
+  }));
+  root.querySelectorAll(".tams-dodge").forEach((el) => el.addEventListener("click", async (ev) => {
+    var _a, _b, _c;
+    ev.preventDefault();
+    const btn = ev.currentTarget;
+    const attackerRaw = parseInt(btn.dataset.raw);
+    const attackerTotal = parseInt(btn.dataset.total);
+    const attackerMulti = parseInt(btn.dataset.multi) || 1;
+    const attackerDamage = parseInt(btn.dataset.damage) || 0;
+    const attackerArmourPen = parseInt(btn.dataset.armourPen) || 0;
+    const firstLocation = btn.dataset.location;
+    const attackerLocations = btn.dataset.locations ? JSON.parse(btn.dataset.locations) : firstLocation ? [firstLocation] : [];
+    const targetLimb = btn.dataset.targetLimb;
+    const isAoEFromData = btn.dataset.isAoe === "1";
+    const container = btn.closest(".tams-roll");
+    const isBehind = (container == null ? void 0 : container.classList.contains("behind-attack")) || false;
+    const isUnaware = (container == null ? void 0 : container.classList.contains("unaware-defender")) || false;
+    let actor = null;
+    const targetTokenId = btn.dataset.targetTokenId;
+    const targetActorId = btn.dataset.targetActorId;
+    if (targetTokenId) {
+      const token = canvas.tokens.get(targetTokenId);
+      if (token) actor = token.actor;
+    }
+    if (!actor && targetActorId) actor = game.actors.get(targetActorId);
+    if (!actor) actor = ((_a = canvas.tokens.controlled[0]) == null ? void 0 : _a.actor) ?? null;
+    if (!actor) actor = ((_c = [...((_b = game == null ? void 0 : game.user) == null ? void 0 : _b.targets) ?? []][0]) == null ? void 0 : _c.actor) ?? null;
+    if (!actor) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetDodge"));
+    const dex = actor.system.stats.dexterity;
+    let cap = dex.total;
+    if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
+    if (isUnaware) cap = Math.floor(cap * 0.5);
+    const fam = Math.floor(actor.system.specialSkills.dodge.value || 0);
+    const roll = await new Roll("1d100").evaluate();
+    const raw = roll.total;
+    const capped = Math.min(raw, cap);
+    const total = capped + fam;
+    let critInfo = "";
+    if (raw >= attackerRaw * 2) {
+      critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", { raw, attacker: attackerRaw })}</div>`;
+    } else if (attackerRaw >= raw * 2) {
+      critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { attacker: attackerRaw, raw })}</div>`;
+    }
+    let hitsScored = 0;
+    let damageInfo = "";
+    if (attackerTotal > total) {
+      hitsScored = Math.min(1 + Math.floor((attackerTotal - total) / 5), attackerMulti);
+      const locations = [];
+      const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
+      for (let i = 0; i < hitsScored; i++) {
+        locations.push(attackerLocations[i] || (targetLimb && targetLimb !== "none" ? limbOptions[targetLimb] : await getHitLocation()));
+      }
+      damageInfo = `
+            <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.HitsTaken")} ${hitsScored} / ${attackerMulti}</b></div>
+            <div class="roll-row"><small>${game.i18n.localize("TAMS.Location")}: ${locations.join(", ")}</small></div>
+            <div class="roll-row" style="margin-top: 5px;">
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-locations='${JSON.stringify(locations)}' data-is-aoe="${isAoEFromData ? "1" : "0"}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
+            </div>
+          `;
+      if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", { total: attackerTotal })}</div>`;
+    } else {
+      if (!critInfo) critInfo = `<div class="tams-success">${game.i18n.format("TAMS.Combat.DodgeSuccess", { total: attackerTotal })}</div>`;
+    }
+    const msg = `
+        <div class="tams-roll" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-first-location="${attackerLocations[0] || ""}" data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? "1" : "0"}" data-is-aoe="${isAoEFromData ? "1" : "0"}">
+          <h3 class="roll-label">${game.i18n.format("TAMS.Combat.DodgeWith", { name: actor.name })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
+          <div class="roll-crit-info">${critInfo}</div>
+          <div class="roll-hits-info">${damageInfo}</div>
+          <div class="roll-row"><span>${game.i18n.localize("TAMS.Combat.RawDiceResult")}</span><span class="roll-value">${raw}</span></div>
+          <div class="roll-row"><small>${game.i18n.format("TAMS.Combat.StatCapLabel", { name: "Dex", value: cap })}</small><span>${capped}</span></div>
+          <div class="roll-row"><small>${game.i18n.localize("TAMS.Dodge")}:</small><span>+${fam}</span></div>
+          <div class="roll-boost-container"></div>
+          <hr>
+          <div class="roll-total">${game.i18n.localize("TAMS.Total")}: <b>${total}</b></div>
+          ${attackerTotal > total && actor.type === "character" ? `
+            <div class="roll-row" style="margin-top: 5px;">
+                <button class="tams-boost-dodge">${game.i18n.localize("TAMS.Checks.SpendResourceToBoost")}</button>
+            </div>
+          ` : ""}
+          <div class="roll-contest-hint">
+            <small><b>${game.i18n.localize("TAMS.Combat.ContestLabel")}</b> Total vs Attacker Total (${attackerTotal})</small><br>
+            <small><b>${game.i18n.localize("TAMS.Combat.CritCheckLabel")}</b> Raw vs Attacker Raw (${attackerRaw})</small>
+          </div>
+        </div>`;
+    ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: msg, rolls: [roll] });
   }));
   root.querySelectorAll(".tams-boost-dodge").forEach((el) => el.addEventListener("click", async (ev) => {
     var _a;
@@ -882,8 +1062,8 @@ async function tamsRenderChatMessage(message, html, data) {
       if (token) actor = token.actor;
     }
     if (!actor && targetActorId) actor = game.actors.get(targetActorId);
-    if (!actor) actor = ((_b = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0]) == null ? void 0 : _b.actor) ?? null;
-    if (!actor) actor = ((_c = canvas.tokens.controlled[0]) == null ? void 0 : _c.actor) ?? null;
+    if (!actor) actor = ((_a = canvas.tokens.controlled[0]) == null ? void 0 : _a.actor) ?? null;
+    if (!actor) actor = ((_c = [...((_b = game == null ? void 0 : game.user) == null ? void 0 : _b.targets) ?? []][0]) == null ? void 0 : _c.actor) ?? null;
     if (!actor) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetRetaliate"));
     const weapons = actor.items.filter((i) => i.type === "weapon" || i.type === "ability" && i.system.isReaction && i.system.isAttack);
     if (!weapons.length) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoValidWeapons"));
@@ -935,14 +1115,18 @@ async function tamsRenderChatMessage(message, html, data) {
       }
     }
     let cap = 0;
+    let balancedBonus = 0;
     if (weapon.type === "weapon") {
       cap = weapon.system.isRanged && !weapon.system.isThrown || weapon.system.isLight ? actor.system.stats.dexterity.total : actor.system.stats.strength.total;
+      if (weapon.system.tags.toLowerCase().includes("balanced") && !weapon.system.isRanged) {
+        balancedBonus = 10;
+      }
     } else {
-      cap = ((_d = actor.system.stats[weapon.system.attackStat]) == null ? void 0 : _d.total) || 100;
+      cap = ((_d = actor.system.stats[weapon.system.attackStat]) == null ? void 0 : _d.total) || 0;
     }
     if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
     if (isUnaware) cap = Math.floor(cap * 0.5);
-    const fam = Math.floor(weapon.system.familiarity || 0);
+    const fam = Math.floor(weapon.system.familiarity || 0) + balancedBonus;
     const roll = await new Roll("1d100").evaluate();
     const raw = roll.total;
     const capped = Math.min(raw, cap);
@@ -1067,6 +1251,72 @@ async function tamsRenderChatMessage(message, html, data) {
     if (statusDiv) {
       statusDiv.className = success ? "tams-success" : "tams-crit failure";
       statusDiv.innerText = success ? game.i18n.localize("TAMS.Combat.RemainsConscious") : game.i18n.localize("TAMS.Combat.FallsUnconscious");
+    }
+    const messageId = (_a = btn.closest(".chat-message")) == null ? void 0 : _a.dataset.messageId;
+    btn.remove();
+    const message2 = game.messages.get(messageId);
+    if (message2) await tamsUpdateMessage(message2, { content: container.outerHTML });
+  }));
+  root.querySelectorAll(".tams-boost-roll").forEach((el) => el.addEventListener("click", async (ev) => {
+    var _a;
+    ev.preventDefault();
+    const btn = ev.currentTarget;
+    const container = btn.closest(".tams-roll");
+    const actor = game.actors.get(btn.dataset.actorId);
+    if (!actor) return;
+    const difficulty = parseInt(btn.dataset.difficulty);
+    const currentTotal = parseInt(btn.dataset.total);
+    const pointsNeeded = Math.max(0, Math.ceil((difficulty - currentTotal) / 5));
+    const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
+    actor.system.customResources.forEach((res, idx) => resources.push({ id: idx.toString(), name: res.name, value: res.value }));
+    const options = resources.map((r) => `<option value="${r.id}">${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
+    const spending = await new Promise((resolve) => {
+      new Dialog({
+        title: game.i18n.localize("TAMS.BoostRollTitle"),
+        content: `
+                    <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
+                    <div class="form-group">
+                        <label>${game.i18n.localize("TAMS.Combat.PointsSpent")}</label>
+                        <input type="number" id="res-points" value="${pointsNeeded}" min="0"/>
+                        <p><small>${game.i18n.localize("TAMS.Combat.BoostLabel")} (+5/pt)</small></p>
+                    </div>`,
+        buttons: {
+          go: { label: game.i18n.localize("TAMS.Combat.ApplyBoost"), callback: (html2) => {
+            const resId2 = html2.find("#res-type").val();
+            const res = resources.find((r) => r.id === resId2);
+            let pts2 = parseInt(html2.find("#res-points").val()) || 0;
+            if (pts2 > res.value) pts2 = res.value;
+            resolve({ resId: resId2, pts: pts2 });
+          } },
+          cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+        },
+        default: "go"
+      }).render(true);
+    });
+    if (!spending) return;
+    const { resId, pts } = spending;
+    const bonus = pts * 5;
+    const newTotal = currentTotal + bonus;
+    const success = newTotal >= difficulty;
+    if (pts > 0) {
+      if (resId === "stamina") await actor.update({ "system.stamina.value": actor.system.stamina.value - pts });
+      else {
+        const customResources = foundry.utils.duplicate(actor.system.customResources);
+        customResources[parseInt(resId)].value -= pts;
+        await actor.update({ "system.customResources": customResources });
+      }
+    }
+    const resName = resources.find((r) => r.id === resId).name;
+    const boostContainer = container.querySelector(".roll-boost-container");
+    if (boostContainer) {
+      boostContainer.innerHTML = `<div class="roll-row"><span>Boost (${resName}):</span><span>+${bonus}</span></div>`;
+    }
+    const totalEl = container.querySelector(".roll-total b");
+    if (totalEl) totalEl.innerText = newTotal;
+    const statusDiv = container.querySelector(".tams-failure, .tams-success");
+    if (statusDiv) {
+      statusDiv.className = success ? "tams-success" : "tams-failure";
+      statusDiv.innerHTML = success ? game.i18n.format("TAMS.SuccessVsDiffBoosted", { difficulty, amount: bonus }) : game.i18n.format("TAMS.FailureVsDiff", { difficulty });
     }
     const messageId = (_a = btn.closest(".chat-message")) == null ? void 0 : _a.dataset.messageId;
     btn.remove();
@@ -1274,7 +1524,7 @@ class TAMSActor extends Actor {
     }
     await this.update(finalUpdates);
     for (let [limbKey, damage] of Object.entries(limbDamageReceived)) {
-      if (damage === 0) continue;
+      if (damage === 0 && !hits.some((h) => locationMap[h.location] === limbKey && h.forceCrit)) continue;
       const original = originalLimbStatus[limbKey];
       const limb = this.system.limbs[limbKey];
       const currentVal = limb.value;
@@ -1284,6 +1534,15 @@ class TAMSActor extends Actor {
       }
       if (currentVal <= -limb.max && !original.criticallyInjured && original.value > -limb.max) {
         pendingChecks.push({ type: "crit", loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
+      } else if (hits.some((h) => locationMap[h.location] === limbKey && h.forceCrit === "1")) {
+        if (!original.criticallyInjured) {
+          pendingChecks.push({
+            type: "crit",
+            loc: limb.label,
+            dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)),
+            limbKey
+          });
+        }
       }
     }
     const totalHp = this.system.hp.value;
@@ -1358,7 +1617,7 @@ class TAMSItem extends Item {
    */
   static get metadata() {
     return foundry.utils.mergeObject(super.metadata, {
-      types: ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "questItem", "backpack"]
+      types: ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "questItem", "backpack", "trait"]
     }, { inplace: false });
   }
 }
@@ -1509,7 +1768,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       tag: "form",
       classes: ["tams", "sheet", "actor"],
       position: { width: 600, height: 800 },
-      window: { resizable: true, scrollable: [".sheet-body", ".inventory-scroll"] },
+      window: { resizable: true, scrollable: [".tab", ".inventory-scroll"] },
       form: { submitOnChange: true, closeOnSubmit: false },
       dragDrop: [{ dragSelector: ".item[data-item-id]", dropSelector: null }],
       actions: {
@@ -1526,7 +1785,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         editImage: _TAMSActorSheet.prototype._onEditImage,
         fullHeal: _TAMSActorSheet.prototype._onFullHeal,
         itemGive: _TAMSActorSheet.prototype._onItemGive,
-        itemExport: _TAMSActorSheet.prototype._onItemExport
+        itemExport: _TAMSActorSheet.prototype._onItemExport,
+        toggleLimbMultipliers: _TAMSActorSheet.prototype._onToggleLimbMultipliers
       }
     }, { inplace: false });
   }
@@ -1560,6 +1820,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     context.activeTab = this._activeTab;
     context.editable = this.isEditable;
     context.owner = this.document.isOwner;
+    if (this._limbMultipliersCollapsed === void 0) this._limbMultipliersCollapsed = true;
+    context.limbMultipliersCollapsed = this._limbMultipliersCollapsed;
     this._preparePercentages(context);
     this._prepareItemCollections(context);
     this._prepareSelectOptions(context);
@@ -1600,6 +1862,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const inventoryMisc = [];
     const inventoryWeapons = [];
     const inventoryBackpacks = [];
+    const traits = [];
     const allItems = [];
     const hasBackpack = !!this.document.system.inventory.hasBackpack;
     for (let i of this.document.items) {
@@ -1634,6 +1897,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       else if (i.type === "tool") inventoryTools.push(itemData);
       else if (i.type === "questItem") inventoryQuestItems.push(itemData);
       else if (i.type === "backpack") inventoryBackpacks.push(itemData);
+      else if (i.type === "trait") traits.push(itemData);
       else if (i.type === "equipment") inventoryMisc.push(itemData);
     }
     const equippedSection = { id: "hand", label: "Equipped / In Hand", items: [], type: "status" };
@@ -1652,7 +1916,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     const stowedSection = { id: "stowed", label: "Loose / Stowed", items: [], type: "status" };
     for (const item of allItems) {
-      if (["skill", "ability"].includes(item.type)) continue;
+      if (["skill", "ability", "trait"].includes(item.type)) continue;
       if (item.isEquipped && item.type !== "backpack") {
         equippedSection.items.push(item);
       } else if (item.system.location && item.system.location !== "stowed" && item.system.location !== "hand") {
@@ -1697,6 +1961,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     context.inventoryMisc = inventoryMisc;
     context.skills = skills;
     context.abilities = abilities;
+    context.traits = traits;
   }
   /**
    * Prepare options for select fields.
@@ -1788,8 +2053,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    */
   async _onItemCreate(event, target) {
     const type = target.dataset.type;
-    console.log(`TAMS | Creating item of type: ${type}`);
-    console.log(`TAMS | Valid Item Types:`, this.document.constructor.metadata.types);
     const itemData = {
       name: `New ${type.capitalize()}`,
       type
@@ -2176,48 +2439,114 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
       if (tName) label = `${label} -> ${tName}`;
     }
-    let statValue = parseInt(dataset.statValue) || 100;
-    let statMod = parseInt(dataset.statMod) || 0;
+    let statValue = isNaN(parseInt(dataset.statValue)) ? 0 : parseInt(dataset.statValue);
+    let statMod = (parseInt(dataset.statMod) || 0) + (parseInt(dataset.traitBonus) || 0);
     let familiarity = parseInt(dataset.familiarity) || 0;
     let bonus = 0;
     let statId = dataset.statId;
+    const bonusSources = [];
+    const statModSources = [];
+    const traits = this.document.items.filter((i) => i.type === "trait");
+    const addStatModSources = (sId) => {
+      statModSources.length = 0;
+      const s = this.document.system.stats[sId];
+      if (!s) return;
+      if (s.mod !== 0) statModSources.push({ label: game.i18n.localize("TAMS.StatMod"), value: s.mod });
+      for (const trait of traits) {
+        const val = trait.system.modifiers.filter((m) => m.target === `stats.${sId}`).reduce((acc, m) => acc + m.value, 0);
+        if (val !== 0) statModSources.push({ label: trait.name, value: val });
+      }
+      const backpackPen2 = this.document.system.backpackPenalties;
+      if (backpackPen2 && (sId === "strength" || sId === "dexterity")) {
+        const val = backpackPen2[sId];
+        if (val !== 0) statModSources.push({ label: game.i18n.localize("TAMS.BackpackPenalty"), value: val });
+      }
+    };
+    const traitRollBonus = this.document.system.traitRollBonus || 0;
+    if (traitRollBonus !== 0) {
+      bonus += traitRollBonus;
+      for (const trait of traits) {
+        const val = trait.system.modifiers.filter((m) => m.target === "allRolls").reduce((acc, m) => acc + m.value, 0);
+        if (val !== 0) bonusSources.push({ label: trait.name, value: val });
+      }
+    }
+    if (item && item.system.tags) {
+      const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+      for (const trait of traits) {
+        if (trait.system.isProfession && trait.system.profession) {
+          const prof = trait.system.profession.trim().toLowerCase();
+          if (tags.includes(prof)) {
+            const val = trait.system.modifiers.filter((m) => m.target === "allProfessionRolls").reduce((acc, m) => acc + m.value, 0);
+            if (val !== 0) {
+              bonus += val;
+              bonusSources.push({ label: `${trait.name} (${trait.system.profession})`, value: val });
+            }
+          }
+        }
+      }
+    }
+    if (item && item.system.tags) {
+      const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+      if (tags.includes("accurate")) {
+        bonus += 5;
+        bonusSources.push({ label: game.i18n.localize("TAMS.WeaponTags.Accurate"), value: 5 });
+      }
+    }
     if (!item && statId === "dodge") {
       const dex = this.document.system.stats.dexterity;
+      familiarity = statValue;
       statValue = dex.value;
       statMod = dex.mod;
+      addStatModSources("dexterity");
+    } else if (!item && statId) {
+      addStatModSources(statId);
     }
-    if (!item) familiarity = 0;
+    if (!item) {
+      if (statId !== "dodge") familiarity = 0;
+    }
     if (item && item.type === "weapon") {
       const str = this.document.system.stats.strength;
-      const dex = this.document.system.stats.dexterity;
+      this.document.system.stats.dexterity;
       let usesDex = false;
-      if (item.system.isRanged) {
-        usesDex = !item.system.isThrown;
+      if (item.system.attackStat && item.system.attackStat !== "default") {
+        statId = item.system.attackStat;
       } else {
-        usesDex = !!item.system.isLight;
+        if (item.system.isRanged) {
+          usesDex = !item.system.isThrown;
+        } else {
+          usesDex = !!item.system.isLight;
+        }
+        statId = usesDex ? "dexterity" : "strength";
       }
-      const stat = usesDex ? dex : str;
+      const stat = this.document.system.stats[statId];
       statValue = stat.value;
-      statMod = stat.mod;
-      statId = usesDex ? "dexterity" : "strength";
+      addStatModSources(statId);
+      statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
       label = `Attacking with ${item.name}`;
       if (item.system.isTwoHanded && !item.system.equippedTwoHanded) {
         statValue = Math.floor(statValue / 2);
         statMod = Math.floor(statMod / 2);
+        statModSources.forEach((s) => s.value = Math.floor(s.value / 2));
       }
       if (item.system.isHeavy && str.value < 40) {
         statValue = Math.floor(statValue / 2);
         statMod = Math.floor(statMod / 2);
+        statModSources.forEach((s) => s.value = Math.floor(s.value / 2));
       }
     }
     if (item && item.type === "skill") {
       const name = item.name;
       label = name;
       statId = item.system.stat;
-      bonus = parseInt(item.system.bonus) || 0;
+      const itemBonus = parseInt(item.system.bonus) || 0;
+      if (itemBonus !== 0) {
+        bonus += itemBonus;
+        bonusSources.push({ label: game.i18n.localize("TAMS.ItemBonus"), value: itemBonus });
+      }
+      addStatModSources(statId);
       const stat = this.document.system.stats[statId];
-      statValue = stat ? stat.value : 100;
-      statMod = stat ? stat.mod || 0 : 0;
+      statValue = stat ? stat.value : 0;
+      statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
       if (name.includes("(") && name.includes(")")) {
         const confirmed = await new Promise((resolve) => {
           new Dialog({
@@ -2235,12 +2564,17 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     if (item && item.type === "ability") {
       familiarity = parseInt(item.system.familiarity) || 0;
-      bonus = parseInt(item.system.bonus) || 0;
+      const itemBonus = parseInt(item.system.bonus) || 0;
+      if (itemBonus !== 0) {
+        bonus += itemBonus;
+        bonusSources.push({ label: game.i18n.localize("TAMS.ItemBonus"), value: itemBonus });
+      }
       if (item.system.isAttack) {
         statId = item.system.attackStat;
+        addStatModSources(statId);
         const stat = this.document.system.stats[statId];
-        statValue = stat ? stat.value : 100;
-        statMod = stat ? stat.mod || 0 : 0;
+        statValue = stat ? stat.value : 0;
+        statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         label = game.i18n.format("TAMS.UsingAbilityLabel", { name: item.name });
         const weapon = this.document.items.find((i) => i.type === "weapon" && i.system.equipped);
         if (weapon) {
@@ -2248,17 +2582,20 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           if (weapon.system.isTwoHanded && !weapon.system.equippedTwoHanded) {
             statValue = Math.floor(statValue / 2);
             statMod = Math.floor(statMod / 2);
+            statModSources.forEach((s) => s.value = Math.floor(s.value / 2));
           }
           if (weapon.system.isHeavy && str.value < 40) {
             statValue = Math.floor(statValue / 2);
             statMod = Math.floor(statMod / 2);
+            statModSources.forEach((s) => s.value = Math.floor(s.value / 2));
           }
         }
       } else {
         statId = item.system.capStat || "strength";
+        addStatModSources(statId);
         const stat = this.document.system.stats[statId];
-        statValue = stat ? stat.value : 100;
-        statMod = stat ? stat.mod || 0 : 0;
+        statValue = stat ? stat.value : 0;
+        statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
       }
       const cost = ((_c = item.system.calculator) == null ? void 0 : _c.enabled) ? item.system.calculatedCost : parseInt(item.system.cost) || 0;
       const usesMax = parseInt(item.system.uses.max) || 0;
@@ -2374,17 +2711,35 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       });
     }
     const roll = await new Roll("1d100").evaluate();
-    const rawResult = roll.total;
+    let rawResult = roll.total;
+    let isJammed = false;
+    if (item && item.system.tags) {
+      const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+      if (tags.includes("reliable") && rawResult <= 4) {
+        const reroll = await new Roll("1d100").evaluate();
+        rawResult = reroll.total;
+      }
+      if (tags.includes("unreliable") && rawResult <= 4) {
+        isJammed = true;
+      }
+    }
     const effectiveStat = statValue + statMod;
     const cappedResult = Math.min(rawResult, effectiveStat);
-    bonus = parseInt((_d = item == null ? void 0 : item.system) == null ? void 0 : _d.bonus) || 0;
     const backpackPen = this.document.system.backpackPenalties;
     if (backpackPen) {
-      if (item && (item.type === "weapon" || item.system.isAttack)) {
-        bonus += backpackPen.attack || 0;
+      if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
+        const pen = backpackPen.attack || 0;
+        if (pen !== 0) {
+          bonus += pen;
+          bonusSources.push({ label: game.i18n.localize("TAMS.BackpackPenalty"), value: pen });
+        }
       }
-      if (dataset.statId === "dodge") {
-        bonus += backpackPen.dodge || 0;
+      if (statId === "dodge") {
+        const pen = backpackPen.dodge || 0;
+        if (pen !== 0) {
+          bonus += pen;
+          bonusSources.push({ label: game.i18n.localize("TAMS.BackpackPenalty"), value: pen });
+        }
       }
     }
     const settings = this.document.system.settings;
@@ -2393,7 +2748,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let squadBonus = 0;
     let maxSquadTargets = 1;
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
-      const isRangedAttack = item.type === "weapon" ? !!item.system.isRanged : ((_e = item.system.calculator) == null ? void 0 : _e.range) > 10;
+      const isRangedAttack = item.type === "weapon" ? !!item.system.isRanged : ((_d = item.system.calculator) == null ? void 0 : _d.range) > 10;
       if (isSquadOrHorde) {
         maxSquadTargets = isRangedAttack ? Math.floor(squadSize / 2) : squadSize;
         maxSquadTargets = Math.max(1, maxSquadTargets);
@@ -2405,91 +2760,77 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
     }
     const finalTotal = cappedResult + familiarity + bonus + squadBonus;
+    let dcTotal = finalTotal;
     let critInfo = "";
     let success = true;
     let resultText = "";
     let resultClass = "";
-    if (statId === "bravery") {
+    if (isJammed) {
+      success = false;
+      resultText = "JAMMED";
+      resultClass = "failure";
+      critInfo = `<div class="tams-crit failure">${game.i18n.localize("TAMS.Checks.Jammed")}</div>`;
+    } else if (statId === "bravery") {
       const targetValue = effectiveStat + familiarity + bonus;
       success = rawResult <= targetValue;
       resultText = success ? "SUCCESS" : "FAILURE";
       resultClass = success ? "success" : "failure";
       critInfo = `<div class="tams-crit ${resultClass}">${resultText}</div>`;
     } else if (difficulty > 0) {
-      let dcTotal = finalTotal;
       const actor = this.document;
       const canBoost = actor.type === "character";
-      if (dcTotal < difficulty && canBoost) {
-        const resources = [{ id: "stamina", name: "Stamina", value: actor.system.stamina.value }];
-        actor.system.customResources.forEach((res, idx) => {
-          resources.push({ id: idx.toString(), name: res.name, value: res.value });
-        });
-        const boostConfirmed = await new Promise((resolve) => {
-          const options = resources.map((r) => `<option value="${r.id}">${r.name} (${r.value} avail)</option>`).join("");
-          new Dialog({
-            title: game.i18n.localize("TAMS.BoostRollTitle"),
-            content: `
-                        <p>${game.i18n.format("TAMS.BoostRollLine1", { total: dcTotal, dc: difficulty })}</p>
-                        <div class="form-group">
-                            <label>${game.i18n.localize("TAMS.ResourceToSpend")}</label>
-                            <select id="boost-resource">${options}</select>
-                        </div>
-                        <div class="form-group">
-                            <label>${game.i18n.localize("TAMS.AmountToSpend")}</label>
-                            <input type="number" id="boost-amount" value="${difficulty - dcTotal}" min="1"/>
-                        </div>
-                    `,
-            buttons: {
-              boost: {
-                label: game.i18n.localize("TAMS.Boost"),
-                callback: (html) => {
-                  resolve({
-                    amount: parseInt(html.find("#boost-amount").val()) || 0,
-                    resId: html.find("#boost-resource").val()
-                  });
-                }
-              },
-              cancel: { label: game.i18n.localize("TAMS.NoBoost"), callback: () => resolve(null) }
-            },
-            default: "boost"
-          }).render(true);
-        });
-        if (boostConfirmed) {
-          const { amount, resId } = boostConfirmed;
-          const res = resources.find((r) => r.id === resId);
-          if (res && res.value >= amount) {
-            if (resId === "stamina") {
-              await actor.update({ "system.stamina.value": res.value - amount });
-            } else {
-              const idx = parseInt(resId);
-              const custom = [...actor.system.customResources];
-              custom[idx].value -= amount;
-              await actor.update({ "system.customResources": custom });
-            }
-            dcTotal += amount;
-            critInfo = `<div class="tams-success">${game.i18n.format("TAMS.SuccessVsDiffBoosted", { difficulty, amount })}</div>`;
-          } else {
-            ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughToBoost"));
-          }
-        }
-      }
       if (dcTotal >= difficulty * 2) {
         critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.CritSuccess", { total: dcTotal, difficulty })}</div>`;
       } else if (dcTotal >= difficulty) {
-        if (!critInfo) critInfo = `<div class="tams-success">${game.i18n.format("TAMS.SuccessVsDiff", { difficulty })}</div>`;
+        critInfo = `<div class="tams-success">${game.i18n.format("TAMS.SuccessVsDiff", { difficulty })}</div>`;
       } else {
-        critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.FailureVsDiff", { difficulty })}</div>`;
+        critInfo = `
+                <div class="tams-failure">${game.i18n.format("TAMS.FailureVsDiff", { difficulty })}</div>
+                <div class="roll-boost-container"></div>
+                ${canBoost ? `
+                    <div class="roll-row">
+                        <button class="tams-boost-roll" 
+                                data-difficulty="${difficulty}" 
+                                data-total="${dcTotal}" 
+                                data-actor-id="${actor.id}">
+                            ${game.i18n.localize("TAMS.Checks.SpendResourceToBoost")}
+                        </button>
+                    </div>
+                ` : ""}
+            `;
       }
     }
     let damageInfo = "";
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
-      const damage = item.system.calculatedDamage;
-      const isRanged = item.type === "weapon" ? !!item.system.isRanged : ((_f = item.system.calculator) == null ? void 0 : _f.range) > 10;
+      let damage = item.system.calculatedDamage;
+      const isRanged = item.type === "weapon" ? !!item.system.isRanged : ((_e = item.system.calculator) == null ? void 0 : _e.range) > 10;
+      const isCrit = difficulty > 0 && dcTotal >= difficulty * 2;
+      let forceCrit = false;
+      if (item && item.system.tags) {
+        const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+        if (isCrit && tags.includes("vicious")) {
+          damage = Math.floor(damage * 1.5);
+        }
+        if (tags.includes("brutal")) {
+          forceCrit = true;
+        }
+      }
       let multiVal = 1;
-      if (item.type === "weapon" && item.system.isRanged) {
+      if (item.type === "weapon") {
         if (item.system.fireRate === "3") multiVal = 3;
         else if (item.system.fireRate === "auto") multiVal = 10;
         else if (item.system.fireRate === "custom") multiVal = item.system.fireRateCustom || 1;
+        if (item.system.consumeAmmo) {
+          const currentAmmo = ((_f = item.system.ammo) == null ? void 0 : _f.current) || 0;
+          if (currentAmmo < multiVal) {
+            if (currentAmmo <= 0) {
+              return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", { item: item.name }));
+            }
+            ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", { count: currentAmmo }));
+            multiVal = currentAmmo;
+          }
+          await item.update({ "system.ammo.current": Math.max(0, currentAmmo - multiVal) });
+        }
       } else if (item.type === "ability") {
         multiVal = item.system.multiAttack || 1;
       }
@@ -2554,6 +2895,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-locations='${JSON.stringify(tHits)}' 
                                   data-target-limb="${targetLimb}"
                                   data-is-aoe="${isAoE ? "1" : "0"}"
+                                  data-force-crit="${forceCrit ? "1" : "0"}"
                                   data-target-token-id="${targetTokenId || ""}"
                                   data-target-actor-id="${targetActorId || ""}">Apply Damage</button>
                           <button class="tams-dodge" 
@@ -2646,8 +2988,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         ${damageInfo}
         <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${rawResult}</span></div>
         ${statId === "bravery" ? `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? " + " + familiarity : ""}${bonus ? " + " + bonus : ""}</span></div>` : `<div class="roll-row"><small>Stat Cap (${statValue}${statMod >= 0 ? "+" : ""}${statMod}):</small><span>${cappedResult}</span></div>
+             ${statModSources.length > 0 ? statModSources.map((s) => `<div class="roll-row-detail"><small>${s.label}:</small><span>${s.value >= 0 ? "+" : ""}${s.value}</span></div>`).join("") : ""}
              ${familiarity > 0 ? `<div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>` : ""}
              ${bonus !== 0 ? `<div class="roll-row"><small>Bonus:</small><span>${bonus >= 0 ? "+" : ""}${bonus}</span></div>` : ""}
+             ${bonusSources.length > 0 ? bonusSources.map((s) => `<div class="roll-row-detail"><small>${s.label}:</small><span>${s.value >= 0 ? "+" : ""}${s.value}</span></div>`).join("") : ""}
              ${squadBonus > 0 ? `<div class="roll-row"><small>Squad Bonus:</small><span>+${squadBonus}</span></div>` : ""}`}
         <hr>
         <div class="roll-total">${statId === "bravery" ? "Target to beat" : "Total"}: <b>${statId === "bravery" ? effectiveStat + familiarity + bonus : finalTotal}</b></div>
@@ -2665,6 +3009,16 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     });
   }
   /**
+   * Handle toggling the limb multipliers section.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  _onToggleLimbMultipliers(event, target) {
+    this._limbMultipliersCollapsed = !this._limbMultipliersCollapsed;
+    this.render();
+  }
+  /**
    * Handle adding a new custom resource.
    * @param {Event} event The originating click event.
    * @param {HTMLElement} target The clickable element.
@@ -2674,11 +3028,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const resources = [...this.document.system.customResources || []];
     resources.push({
       name: "New Resource",
+      nameSecondary: "Secondary",
       value: 0,
       max: 0,
       stat: "endurance",
       mult: 1,
       bonus: 0,
+      customValue: 10,
       color: "#3498db",
       isOpposed: false,
       colorSecondary: "#e74c3c"
@@ -2737,7 +3093,10 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       window: { resizable: true, scrollable: [".sheet-body"] },
       form: { submitOnChange: true, closeOnSubmit: false },
       actions: {
-        editImage: _TAMSItemSheet.prototype._onEditImage
+        editImage: _TAMSItemSheet.prototype._onEditImage,
+        modifierCreate: _TAMSItemSheet.prototype._onModifierCreate,
+        modifierDelete: _TAMSItemSheet.prototype._onModifierDelete,
+        tagToggle: _TAMSItemSheet.prototype._onTagToggle
       }
     }, { inplace: false });
   }
@@ -2765,6 +3124,11 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     const statOptionsNoCustom = foundry.utils.duplicate(context.statOptions);
     delete statOptionsNoCustom["custom"];
     context.statOptionsNoCustom = statOptionsNoCustom;
+    context.weaponStatOptions = {
+      "default": "TAMS.Default",
+      ...context.statOptions
+    };
+    delete context.weaponStatOptions["custom"];
     context.limbOptions = {
       "none": "TAMS.CalculatorOptions.None",
       "head": "TAMS.HitLocations.Head",
@@ -2792,6 +3156,27 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       }
     }
     context.locationOptions = locationOptions;
+    context.modifierTargetOptions = {
+      "stats.strength.value": "TAMS.StatStrength",
+      "stats.dexterity.value": "TAMS.StatDexterity",
+      "stats.endurance.value": "TAMS.StatEndurance",
+      "stats.wisdom.value": "TAMS.StatWisdom",
+      "stats.intelligence.value": "TAMS.StatIntelligence",
+      "stats.bravery.value": "TAMS.StatBravery",
+      "hp.max": "TAMS.TotalHPMax",
+      "stamina.max": "TAMS.StaminaMax",
+      "allRolls": "TAMS.ModifierAllRolls",
+      "allProfessionRolls": "TAMS.ModifierAllProfessionRolls"
+    };
+    if (this.document.type === "weapon") {
+      const tags = ["accurate", "reliable", "unreliable", "vicious", "brutal", "balanced", "compact", "reach", "silent"];
+      const activeTags = (this.document.system.tags || "").split(",").map((t) => t.trim().toLowerCase());
+      context.weaponTags = tags.map((t) => ({
+        id: t,
+        label: game.i18n.localize(`TAMS.WeaponTags.${t.charAt(0).toUpperCase() + t.slice(1)}`),
+        active: activeTags.includes(t)
+      }));
+    }
     if (this.document.type === "ability") {
       const resources = { "stamina": "Stamina" };
       if (this.document.actor) {
@@ -2871,6 +3256,46 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     });
     return fp.browse();
   }
+  /**
+   * Handle creating a new modifier on the item.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onModifierCreate(event, target) {
+    const modifiers = foundry.utils.duplicate(this.document.system.modifiers || []);
+    modifiers.push({ target: "stats.strength.value", value: 0, type: "add" });
+    await this.document.update({ "system.modifiers": modifiers });
+  }
+  /**
+   * Handle deleting an existing modifier from the item.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onModifierDelete(event, target) {
+    const index = parseInt(target.closest(".modifier-row").dataset.index);
+    const modifiers = foundry.utils.duplicate(this.document.system.modifiers || []);
+    modifiers.splice(index, 1);
+    await this.document.update({ "system.modifiers": modifiers });
+  }
+  /**
+   * Handle toggling a tag on the weapon.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onTagToggle(event, target) {
+    const tag = target.dataset.tag;
+    const currentTags = this.document.system.tags || "";
+    let tagsArray = currentTags ? currentTags.split(",").map((t) => t.trim().toLowerCase()) : [];
+    if (tagsArray.includes(tag.toLowerCase())) {
+      tagsArray = tagsArray.filter((t) => t.toLowerCase() !== tag.toLowerCase());
+    } else {
+      tagsArray.push(tag.toLowerCase());
+    }
+    await this.document.update({ "system.tags": tagsArray.filter((t) => t).join(", ") });
+  }
 };
 __publicField(_TAMSItemSheet, "PARTS", {
   form: {
@@ -2908,6 +3333,7 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.tool = TAMSToolData;
   CONFIG.Item.dataModels.questItem = TAMSQuestItemData;
   CONFIG.Item.dataModels.backpack = TAMSBackpackData;
+  CONFIG.Item.dataModels.trait = TAMSTraitData;
   CONFIG.Item.systemDataModels = CONFIG.Item.dataModels;
   CONFIG.Actor.systemDataModels = CONFIG.Actor.dataModels;
   CONFIG.Actor.documentClass = TAMSActor;

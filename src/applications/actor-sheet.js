@@ -762,7 +762,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
         if (tName) label = `${label} -> ${tName}`;
     }
-    let statValue = parseInt(dataset.statValue) || 100;
+    let statValue = isNaN(parseInt(dataset.statValue)) ? 0 : parseInt(dataset.statValue);
     let statMod = (parseInt(dataset.statMod) || 0) + (parseInt(dataset.traitBonus) || 0);
     let familiarity = parseInt(dataset.familiarity) || 0;
     let bonus = 0;
@@ -828,7 +828,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     if (!item && statId === 'dodge') {
         const dex = this.document.system.stats.dexterity;
-        familiarity = statValue; // The special skill value from dataset.statValue
+        familiarity = 0;
+        bonus = 0;
         statValue = dex.value;
         statMod = dex.mod;
         addStatModSources('dexterity');
@@ -887,7 +888,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
         addStatModSources(statId);
         const stat = this.document.system.stats[statId];
-        statValue = stat ? stat.value : 100;
+        statValue = stat ? stat.value : 0;
         statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         if (name.includes("(") && name.includes(")")) {
             const confirmed = await new Promise(resolve => {
@@ -916,7 +917,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             statId = item.system.attackStat;
             addStatModSources(statId);
             const stat = this.document.system.stats[statId];
-            statValue = stat ? stat.value : 100;
+            statValue = stat ? stat.value : 0;
             statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
             label = game.i18n.format("TAMS.UsingAbilityLabel", {name: item.name});
 
@@ -940,7 +941,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             statId = item.system.capStat || "strength";
             addStatModSources(statId);
             const stat = this.document.system.stats[statId];
-            statValue = stat ? stat.value : 100;
+            statValue = stat ? stat.value : 0;
             statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         }
         const cost = item.system.calculator?.enabled ? item.system.calculatedCost : (parseInt(item.system.cost) || 0);

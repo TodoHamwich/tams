@@ -318,11 +318,10 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
       if (isUnaware) cap = Math.floor(cap * 0.5);
 
-      const fam = Math.floor(actor.system.specialSkills.dodge.value || 0);
       const roll = await new Roll('1d100').evaluate();
       const raw = roll.total;
       const capped = Math.min(raw, cap);
-      const total = capped + fam;
+      const total = capped;
 
       let critInfo = "";
       if (raw >= (attackerRaw * 2)) {
@@ -359,7 +358,6 @@ export async function tamsRenderChatMessage(message, html, data) {
           <div class="roll-hits-info">${damageInfo}</div>
           <div class="roll-row"><span>${game.i18n.localize("TAMS.Combat.RawDiceResult")}</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>${game.i18n.format("TAMS.Combat.StatCapLabel", {name: "Dex", value: cap})}</small><span>${capped}</span></div>
-          <div class="roll-row"><small>${game.i18n.localize("TAMS.Dodge")}:</small><span>+${fam}</span></div>
           <div class="roll-boost-container"></div>
           <hr>
           <div class="roll-total">${game.i18n.localize("TAMS.Total")}: <b>${total}</b></div>
@@ -585,7 +583,7 @@ export async function tamsRenderChatMessage(message, html, data) {
               balancedBonus = 10;
           }
       } else {
-          cap = actor.system.stats[weapon.system.attackStat]?.total || 100;
+          cap = actor.system.stats[weapon.system.attackStat]?.total || 0;
       }
       if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
       if (isUnaware) cap = Math.floor(cap * 0.5);
