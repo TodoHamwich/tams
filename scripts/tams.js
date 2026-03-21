@@ -873,11 +873,10 @@ async function tamsRenderChatMessage(message, html, data) {
     let cap = dex.total;
     if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
     if (isUnaware) cap = Math.floor(cap * 0.5);
-    const fam = Math.floor(actor.system.specialSkills.dodge.value || 0);
     const roll = await new Roll("1d100").evaluate();
     const raw = roll.total;
     const capped = Math.min(raw, cap);
-    const total = capped + fam;
+    const total = capped;
     let critInfo = "";
     if (raw >= attackerRaw * 2) {
       critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", { raw, attacker: attackerRaw })}</div>`;
@@ -911,7 +910,6 @@ async function tamsRenderChatMessage(message, html, data) {
           <div class="roll-hits-info">${damageInfo}</div>
           <div class="roll-row"><span>${game.i18n.localize("TAMS.Combat.RawDiceResult")}</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>${game.i18n.format("TAMS.Combat.StatCapLabel", { name: "Dex", value: cap })}</small><span>${capped}</span></div>
-          <div class="roll-row"><small>${game.i18n.localize("TAMS.Dodge")}:</small><span>+${fam}</span></div>
           <div class="roll-boost-container"></div>
           <hr>
           <div class="roll-total">${game.i18n.localize("TAMS.Total")}: <b>${total}</b></div>
@@ -1976,24 +1974,24 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       "wisdom": "TAMS.StatWisdom",
       "intelligence": "TAMS.StatIntelligence",
       "bravery": "TAMS.StatBravery",
-      "custom": "Custom"
+      "custom": "TAMS.StatCustom"
     };
-    context.themeOptions = { "default": "Default", "dark": "Dark", "parchment": "Parchment" };
-    context.npcTypeOptions = { "individual": "Individual", "squad": "Squad", "horde": "Horde" };
+    context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment" };
+    context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.limbOptions = {
-      "none": "None",
-      "head": "Head",
-      "thorax": "Thorax",
-      "stomach": "Stomach",
-      "leftArm": "Left Arm",
-      "rightArm": "Right Arm",
-      "leftLeg": "Left Leg",
-      "rightLeg": "Right Leg"
+      "none": "TAMS.CalculatorOptions.None",
+      "head": "TAMS.HitLocations.Head",
+      "thorax": "TAMS.HitLocations.Thorax",
+      "stomach": "TAMS.HitLocations.Stomach",
+      "leftArm": "TAMS.HitLocations.LeftArm",
+      "rightArm": "TAMS.HitLocations.RightArm",
+      "leftLeg": "TAMS.HitLocations.LeftLeg",
+      "rightLeg": "TAMS.HitLocations.RightLeg"
     };
-    context.sizeOptions = { "small": "Small", "medium": "Medium", "large": "Large" };
-    const locationOptions = { "hand": "In Hand", "stowed": "Stowed", "backpack": "Backpack (Legacy)" };
+    context.sizeOptions = { "small": "TAMS.SizeOptions.Small", "medium": "TAMS.SizeOptions.Medium", "large": "TAMS.SizeOptions.Large" };
+    const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.BackpackLegacy" };
     for (const bp of context.inventoryBackpacks || []) {
-      locationOptions[bp.id] = `In ${bp.name}`;
+      locationOptions[bp.id] = game.i18n.format("TAMS.LocationOptions.InContainer", { name: bp.name });
     }
     context.locationOptions = locationOptions;
   }
@@ -2494,7 +2492,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     if (!item && statId === "dodge") {
       const dex = this.document.system.stats.dexterity;
-      familiarity = statValue;
+      familiarity = 0;
+      bonus = 0;
       statValue = dex.value;
       statMod = dex.mod;
       addStatModSources("dexterity");
@@ -3178,7 +3177,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       }));
     }
     if (this.document.type === "ability") {
-      const resources = { "stamina": "Stamina" };
+      const resources = { "stamina": "TAMS.Stamina" };
       if (this.document.actor) {
         this.document.actor.system.customResources.forEach((res, index) => {
           resources[index.toString()] = res.name;

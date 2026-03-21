@@ -253,19 +253,19 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       "wisdom": "TAMS.StatWisdom",
       "intelligence": "TAMS.StatIntelligence",
       "bravery": "TAMS.StatBravery",
-      "custom": "Custom"
+      "custom": "TAMS.StatCustom"
     };
-    context.themeOptions = { "default": "Default", "dark": "Dark", "parchment": "Parchment" };
-    context.npcTypeOptions = { "individual": "Individual", "squad": "Squad", "horde": "Horde" };
+    context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment" };
+    context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.limbOptions = {
-      "none": "None", "head": "Head", "thorax": "Thorax", "stomach": "Stomach",
-      "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg"
+      "none": "TAMS.CalculatorOptions.None", "head": "TAMS.HitLocations.Head", "thorax": "TAMS.HitLocations.Thorax", "stomach": "TAMS.HitLocations.Stomach",
+      "leftArm": "TAMS.HitLocations.LeftArm", "rightArm": "TAMS.HitLocations.RightArm", "leftLeg": "TAMS.HitLocations.LeftLeg", "rightLeg": "TAMS.HitLocations.RightLeg"
     };
-    context.sizeOptions = { "small": "Small", "medium": "Medium", "large": "Large" };
+    context.sizeOptions = { "small": "TAMS.SizeOptions.Small", "medium": "TAMS.SizeOptions.Medium", "large": "TAMS.SizeOptions.Large" };
 
-    const locationOptions = { "hand": "In Hand", "stowed": "Stowed", "backpack": "Backpack (Legacy)" };
+    const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.BackpackLegacy" };
     for (const bp of context.inventoryBackpacks || []) {
-        locationOptions[bp.id] = `In ${bp.name}`;
+        locationOptions[bp.id] = game.i18n.format("TAMS.LocationOptions.InContainer", {name: bp.name});
     }
     context.locationOptions = locationOptions;
   }

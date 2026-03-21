@@ -700,6 +700,101 @@
   padding: 0;
 }
 
+.resource-modifiers-list {
+  margin-top: 10px;
+  border: 1px solid #7a7971;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.resource-modifiers-list .resource-header {
+  background: rgba(0, 0, 0, 0.1);
+  font-weight: bold;
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 5px;
+  display: grid;
+  grid-template-columns: minmax(120px, 3fr) 100px 65px 65px 40px 100px 30px;
+  gap: 5px;
+  align-items: center;
+  border-bottom: 2px solid #7a7971;
+  text-align: center;
+}
+.resource-modifiers-list .resource-header .col-name {
+  text-align: left;
+}
+.resource-modifiers-list .modifier-row {
+  padding: 5px;
+  display: grid;
+  grid-template-columns: minmax(120px, 3fr) 100px 65px 65px 40px 100px 30px;
+  gap: 5px;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+.resource-modifiers-list .modifier-row:last-child {
+  border-bottom: none;
+}
+.resource-modifiers-list .modifier-row:nth-child(even) {
+  background: rgba(0, 0, 0, 0.03);
+}
+.resource-modifiers-list .modifier-row input[type=text], .resource-modifiers-list .modifier-row input[type=number], .resource-modifiers-list .modifier-row select {
+  width: 100%;
+  height: 24px;
+  padding: 2px;
+  margin: 0;
+  text-align: inherit;
+}
+.resource-modifiers-list .modifier-row .col-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.resource-modifiers-list .modifier-row .col-stat .stat-base {
+  font-size: 10px;
+  text-align: center;
+  color: #666;
+}
+.resource-modifiers-list .modifier-row .col-mult, .resource-modifiers-list .modifier-row .col-bonus {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.resource-modifiers-list .modifier-row .col-mult small, .resource-modifiers-list .modifier-row .col-bonus small {
+  flex: 0 0 10px;
+  text-align: center;
+  font-weight: bold;
+}
+.resource-modifiers-list .modifier-row .col-max {
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+}
+.resource-modifiers-list .modifier-row .col-visuals {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+}
+.resource-modifiers-list .modifier-row .col-visuals input[type=color] {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #7a7971;
+  cursor: pointer;
+}
+.resource-modifiers-list .modifier-row .col-visuals input[type=checkbox] {
+  margin: 0;
+  cursor: pointer;
+}
+.resource-modifiers-list .modifier-row .col-delete {
+  text-align: center;
+}
+.resource-modifiers-list .modifier-row .col-delete .delete-resource {
+  color: #666;
+}
+.resource-modifiers-list .modifier-row .col-delete .delete-resource:hover {
+  color: #ff0000;
+}
+
 .tams-item-form .charname input {
   font-size: 22px;
   height: 32px;

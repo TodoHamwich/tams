@@ -19,11 +19,11 @@
                 <input type="number" name="system.quantity" value="{{system.quantity}}"/>
                 <label>{{localize 'TAMS.Size'}}</label>
                 <select name="system.size">
-                    {{selectOptions sizeOptions selected=system.size}}
+                    {{selectOptions sizeOptions selected=system.size localize=true}}
                 </select>
                 <label>{{localize 'TAMS.Location'}}</label>
                 <select name="system.location">
-                    {{selectOptions locationOptions selected=system.location}}
+                    {{selectOptions locationOptions selected=system.location localize=true}}
                 </select>
             </div>
             <hr>
@@ -304,7 +304,7 @@
             <div class="flexrow">
                 <label>{{localize 'TAMS.Resource'}}</label>
                 <select name="system.resource">
-                    {{selectOptions resourceOptions selected=system.resource}}
+                    {{selectOptions resourceOptions selected=system.resource localize=true}}
                 </select>
             </div>
             {{/unless}}
@@ -363,7 +363,7 @@
                 <div class="flexrow">
                     <label>Target Body Part</label>
                     <select name="system.calculator.bodyPart">
-                        {{selectOptions calculatorOptions.bodyParts selected=system.calculator.bodyPart}}
+                        {{selectOptions calculatorOptions.bodyParts selected=system.calculator.bodyPart localize=true}}
                     </select>
                 </div>
 
@@ -371,7 +371,7 @@
                 <div class="flexrow">
                     <label>Targeted Limb</label>
                     <select name="system.calculator.targetLimb">
-                        {{selectOptions limbOptions selected=system.calculator.targetLimb}}
+                        {{selectOptions limbOptions selected=system.calculator.targetLimb localize=true}}
                     </select>
                 </div>
                 {{/if}}
@@ -379,7 +379,7 @@
                 <div class="flexrow">
                     <label>Fire Rate</label>
                     <select name="system.calculator.fireRate">
-                        {{selectOptions calculatorOptions.fireRates selected=system.calculator.fireRate}}
+                        {{selectOptions calculatorOptions.fireRates selected=system.calculator.fireRate localize=true}}
                     </select>
                 </div>
 
@@ -391,14 +391,14 @@
                 <div class="flexrow">
                     <label>Damage from Stat</label>
                     <select name="system.calculator.damageStatFraction">
-                        {{selectOptions calculatorOptions.damageFractions selected=system.calculator.damageStatFraction}}
+                        {{selectOptions calculatorOptions.damageFractions selected=system.calculator.damageStatFraction localize=true}}
                     </select>
                 </div>
 
                 <div class="flexrow">
                     <label>Stun / Activation Loss</label>
                     <select name="system.calculator.stun">
-                        {{selectOptions calculatorOptions.stunOptions selected=system.calculator.stun}}
+                        {{selectOptions calculatorOptions.stunOptions selected=system.calculator.stun localize=true}}
                     </select>
                 </div>
 
@@ -411,7 +411,7 @@
                     <div class="flexrow">
                         <label>Damage Reduction Type</label>
                         <select name="system.calculator.drType">
-                            {{selectOptions calculatorOptions.drTypes selected=system.calculator.drType}}
+                            {{selectOptions calculatorOptions.drTypes selected=system.calculator.drType localize=true}}
                         </select>
                     </div>
                     <div class="flexrow">
@@ -430,7 +430,7 @@
                 <div class="flexrow">
                     <label>Target(s)</label>
                     <select name="system.calculator.targetType">
-                        {{selectOptions calculatorOptions.targetTypes selected=system.calculator.targetType}}
+                        {{selectOptions calculatorOptions.targetTypes selected=system.calculator.targetType localize=true}}
                     </select>
                 </div>
 
@@ -447,7 +447,7 @@
                 <div class="flexrow">
                     <label>Duration</label>
                     <select name="system.calculator.duration">
-                        {{selectOptions calculatorOptions.durations selected=system.calculator.duration}}
+                        {{selectOptions calculatorOptions.durations selected=system.calculator.duration localize=true}}
                     </select>
                 </div>
 

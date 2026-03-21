@@ -259,3 +259,110 @@
     font-size: 11px;
     padding: 0;
 }
+
+.resource-modifiers-list {
+    margin-top: 10px;
+    border: 1px solid $color-border;
+    border-radius: 4px;
+    overflow: hidden;
+
+    .resource-header {
+        background: rgba(0, 0, 0, 0.1);
+        font-weight: bold;
+        font-size: 11px;
+        text-transform: uppercase;
+        padding: 5px;
+        display: grid;
+        grid-template-columns: minmax(120px, 3fr) 100px 65px 65px 40px 100px 30px;
+        gap: 5px;
+        align-items: center;
+        border-bottom: 2px solid $color-border;
+        text-align: center;
+
+        .col-name { text-align: left; }
+    }
+
+    .modifier-row {
+        padding: 5px;
+        display: grid;
+        grid-template-columns: minmax(120px, 3fr) 100px 65px 65px 40px 100px 30px;
+        gap: 5px;
+        align-items: center;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:nth-child(even) {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            height: 24px;
+            padding: 2px;
+            margin: 0;
+            text-align: inherit;
+        }
+
+        .col-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            
+            .stat-base {
+                font-size: 10px;
+                text-align: center;
+                color: #666;
+            }
+        }
+
+        .col-mult, .col-bonus {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            
+            small {
+                flex: 0 0 10px;
+                text-align: center;
+                font-weight: bold;
+            }
+        }
+
+        .col-max {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .col-visuals {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            justify-content: center;
+
+            input[type="color"] {
+                width: 24px;
+                height: 24px;
+                padding: 0;
+                border: 1px solid #7a7971;
+                cursor: pointer;
+            }
+
+            input[type="checkbox"] {
+                margin: 0;
+                cursor: pointer;
+            }
+        }
+
+        .col-delete {
+            text-align: center;
+            
+            .delete-resource {
+                color: #666;
+                &:hover { color: $color-active; }
+            }
+        }
+    }
+}

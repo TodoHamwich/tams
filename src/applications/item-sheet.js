@@ -112,7 +112,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     }
 
     if (this.document.type === 'ability') {
-        const resources = { "stamina": "Stamina" };
+        const resources = { "stamina": "TAMS.Stamina" };
         if (this.document.actor) {
             this.document.actor.system.customResources.forEach((res, index) => {
                 resources[index.toString()] = res.name;
