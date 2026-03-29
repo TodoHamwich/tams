@@ -39,6 +39,7 @@ export class TAMSActor extends Actor {
     const isSquadOrHorde = this.system.settings?.isNPC && (this.system.settings.npcType === "squad" || this.system.settings.npcType === "horde");
     const currentSquadSize = this.system.settings.squadSize || 1;
     const accumulatedLimbDamage = {};
+    const limbLosses = {};
 
     for (let i = 0; i < hits.length; i++) {
         const hit = hits[i];
@@ -89,12 +90,32 @@ export class TAMSActor extends Actor {
             const limbCap = (isAoE ? multiplier : 1) * indMax; 
             if (!accumulatedLimbDamage[limbKey]) accumulatedLimbDamage[limbKey] = 0;
 
+            const currentLimbHpBeforeHit = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
+
             const remainingCap = Math.max(0, limbCap - accumulatedLimbDamage[limbKey]);
             const cappedEffective = Math.min(effective, remainingCap);
             
             overflow = effective - cappedEffective;
+            const totalDamageOfHit = effective; // Total damage after armor (includes overflow)
             effective = cappedEffective;
             accumulatedLimbDamage[limbKey] += effective;
+
+            // Track DCs for lost members in this hit
+            if (!limbLosses[limbKey]) limbLosses[limbKey] = [];
+            const newLimbHpAfterHit = currentLimbHpBeforeHit - effective;
+            const oldSize = Math.max(0, Math.ceil(currentLimbHpBeforeHit / indMax));
+            const newSize = Math.max(0, Math.ceil(newLimbHpAfterHit / indMax));
+            const lostInThisHit = oldSize - newSize;
+            
+            if (lostInThisHit > 0) {
+                const damageTakenAlready = limb.max - currentLimbHpBeforeHit;
+                const totalDamageOnLimb = damageTakenAlready + totalDamageOfHit;
+                const dc = totalDamageOnLimb;
+                
+                for (let j = 0; j < lostInThisHit; j++) {
+                    limbLosses[limbKey].push(dc);
+                }
+            }
         }
         
         const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
@@ -146,18 +167,43 @@ export class TAMSActor extends Actor {
     // Squad size reduction logic
     if (isSquadOrHorde) {
         let finalSquadSize = currentSquadSize;
+        let bottleneckLimb = null;
         for (let [lk, limb] of Object.entries(this.system.limbs)) {
             const newLimbVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
             const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
             const potentialSize = Math.max(0, Math.ceil(newLimbVal / indMax));
-            if (potentialSize < finalSquadSize) finalSquadSize = potentialSize;
+            if (potentialSize < finalSquadSize) {
+                finalSquadSize = potentialSize;
+                bottleneckLimb = lk;
+            }
         }
         if (finalSquadSize < currentSquadSize) {
             const lostCount = currentSquadSize - finalSquadSize;
-            updates["system.settings.squadSize"] = finalSquadSize;
-            report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadLostMembers", {name: this.name, lostCount, finalSquadSize})} !!!</b><br>`;
-            report += `<button class="tams-squad-crit-roll" data-actor-id="${this.id}" data-count="${lostCount}" data-name="${this.name}">${game.i18n.format("TAMS.Checks.RollForCriticalWounds", {count: lostCount})}</button><br>`;
-            if (finalSquadSize === 0) {
+            const npcRank = this.system.settings.npcRank || "mook";
+            const isMook = npcRank === "mook";
+            if (isMook) {
+                updates["system.settings.squadSize"] = finalSquadSize;
+                report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadLostMembers", {name: this.name, lostCount, finalSquadSize})} !!!</b><br>`;
+                
+                // Ensure all limbs are capped to the new squad size
+                for (let [lk, limb] of Object.entries(this.system.limbs)) {
+                    const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
+                    const newMax = finalSquadSize * indMax;
+                    const currentVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
+                    if (Math.abs(currentVal) > newMax) {
+                        updates[`system.limbs.${lk}.value`] = Math.min(Math.max(currentVal, -newMax), newMax);
+                    }
+                }
+            } else {
+                report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadThreatenedMembers", {name: this.name, lostCount})} !!!</b><br>`;
+            }
+            
+            if (!isMook) {
+                const dcs = (bottleneckLimb && limbLosses[bottleneckLimb]) ? limbLosses[bottleneckLimb].slice(0, lostCount) : [];
+                const dcsAttr = dcs.length > 0 ? ` data-dcs="${dcs.join(',')}"` : "";
+                report += `<button class="tams-squad-crit-roll" data-actor-id="${this.id}" data-count="${lostCount}" data-name="${this.name}"${dcsAttr}>${game.i18n.format("TAMS.Checks.RollForCriticalWounds", {count: lostCount})}</button><br>`;
+            }
+            if (finalSquadSize === 0 && isMook) {
                 report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadDestroyed", {name: this.name})} !!!</b><br>`;
             }
         }

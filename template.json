@@ -32,6 +32,7 @@
         "alternateArmour": false,
         "isNPC": false,
         "npcType": "individual",
+        "npcRank": "mook",
         "squadSize": 1,
         "enabledCurrencies": {}
       },

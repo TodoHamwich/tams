@@ -829,32 +829,78 @@ export async function tamsRenderChatMessage(message, html, data) {
         if (!actor) return;
         const count = parseInt(btn.dataset.count), end = actor.system.stats.endurance.total;
 
-        const dc = await new Promise(resolve => {
-            new Dialog({
-                title: game.i18n.localize("TAMS.Combat.CritDC"),
-                content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Combat.EnterDC")}</label><input type="number" id="dc" value="0"/></div>`,
-                buttons: { roll: { label: game.i18n.localize("TAMS.Combat.Roll"), callback: (html) => resolve(parseInt(html.find("#dc").val()) || 0) }, cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) } },
-                default: "roll"
-            }).render(true);
-        });
-        if (dc === null) return;
+        const dcsAttr = btn.dataset.dcs;
+        let dcs = dcsAttr ? dcsAttr.split(',').map(Number) : [];
+        let dc = 0;
+
+        if (dcs.length === 0) {
+            dc = await new Promise(resolve => {
+                new Dialog({
+                    title: game.i18n.localize("TAMS.Combat.CritDC"),
+                    content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Combat.EnterDC")}</label><input type="number" id="dc" value="0"/></div>`,
+                    buttons: { roll: { label: game.i18n.localize("TAMS.Combat.Roll"), callback: (html) => resolve(parseInt(html.find("#dc").val()) || 0) }, cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) } },
+                    default: "roll"
+                }).render(true);
+            });
+            if (dc === null) return;
+        }
 
         let rollResults = [], successCount = 0;
         for (let i = 0; i < count; i++) {
-            const raw = (await new Roll("1d100").evaluate()).total, capped = Math.min(raw, end), success = capped >= dc;
+            const currentDc = dcs.length > 0 ? (dcs[i] ?? dcs[dcs.length - 1]) : dc;
+            const raw = (await new Roll("1d100").evaluate()).total, capped = Math.min(raw, end), success = capped >= currentDc;
             if (success) successCount++;
-            rollResults.push({ raw, capped, success });
+            rollResults.push({ raw, capped, success, dc: currentDc });
+        }
+
+        const failureCount = count - successCount;
+        const isMook = (actor.system.settings.npcRank || "mook") === "mook";
+        const updates = {};
+        let needsUpdate = false;
+
+        const currentSize = actor.system.settings.squadSize;
+        const newSize = isMook ? (currentSize + successCount) : (currentSize - failureCount);
+
+        if (newSize !== currentSize) {
+            updates["system.settings.squadSize"] = newSize;
+            needsUpdate = true;
         }
 
         if (successCount > 0) {
-            const updates = { "system.settings.squadSize": actor.system.settings.squadSize + successCount };
-            for (let [key, limb] of Object.entries(actor.system.limbs)) updates[`system.limbs.${key}.value`] = limb.value + (successCount * Math.floor(end * limb.mult));
-            await actor.update(updates);
+            for (let [key, limb] of Object.entries(actor.system.limbs)) {
+                const indMax = Math.floor(end * limb.mult);
+                const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
+                updates[`system.limbs.${key}.value`] = currentVal + (successCount * indMax);
+            }
+            needsUpdate = true;
         }
 
-        let resultsHtml = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Combat.SquadCritChecks", {name: btn.dataset.name})}</h3><div class="roll-row"><span>Checks:</span><span>${count}</span></div><div class="roll-row"><span>Endurance:</span><span>${end}</span></div><div class="roll-row"><span>Target DC:</span><span>${dc}</span></div><hr><div class="squad-crit-list" style="max-height: 200px; overflow-y: auto;">`;
-        rollResults.forEach((r, i) => { resultsHtml += `<div class="roll-row" style="border-bottom: 1px solid #eee; font-size: 0.9em; padding: 2px 0;"><span style="flex: 1;">${game.i18n.format("TAMS.Combat.SquadCritCheckRow", {i: i+1, raw: r.raw, capped: r.capped})}</span><span style="color: ${r.success ? '#2e7d32' : '#c0392b'}; font-weight: bold; min-width: 50px; text-align: right;">${r.success ? game.i18n.localize("TAMS.Combat.Pass") : game.i18n.localize("TAMS.Combat.Fail")}</span></div>`; });
-        resultsHtml += `</div>${successCount > 0 ? `<div class="roll-row" style="color: #2e7d32; font-weight: bold; margin-top: 5px; border-top: 1px solid #2e7d32; padding-top: 3px;">${game.i18n.format("TAMS.Combat.SquadMembersRestored", {count: successCount})}</div>` : ''}</div>`;
+        if (needsUpdate) {
+            // Cap all limbs to the new squad size
+            for (let [key, limb] of Object.entries(actor.system.limbs)) {
+                const indMax = Math.floor(end * limb.mult);
+                const maxForNewSize = newSize * indMax;
+                const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
+                if (Math.abs(currentVal) > maxForNewSize) {
+                    updates[`system.limbs.${key}.value`] = Math.min(Math.max(currentVal, -maxForNewSize), maxForNewSize);
+                }
+            }
+        }
+
+        if (needsUpdate) await actor.update(updates);
+
+        const displayDc = dcs.length > 0 ? (dcs.every(d => d === dcs[0]) ? dcs[0] : game.i18n.localize("TAMS.Combat.Variable")) : dc;
+        let resultsHtml = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Combat.SquadCritChecks", {name: btn.dataset.name})}</h3><div class="roll-row"><span>Checks:</span><span>${count}</span></div><div class="roll-row"><span>Endurance:</span><span>${end}</span></div><div class="roll-row"><span>Target DC:</span><span>${displayDc}</span></div><hr><div class="squad-crit-list" style="max-height: 200px; overflow-y: auto;">`;
+        rollResults.forEach((r, i) => { resultsHtml += `<div class="roll-row" style="border-bottom: 1px solid #eee; font-size: 0.9em; padding: 2px 0;"><span style="flex: 1;">${game.i18n.format("TAMS.Combat.SquadCritCheckRow", {i: i+1, raw: r.raw, capped: r.capped})} (DC ${r.dc})</span><span style="color: ${r.success ? '#2e7d32' : '#c0392b'}; font-weight: bold; min-width: 50px; text-align: right;">${r.success ? game.i18n.localize("TAMS.Combat.Pass") : game.i18n.localize("TAMS.Combat.Fail")}</span></div>`; });
+        resultsHtml += `</div>`;
+        
+        if (successCount > 0) {
+            resultsHtml += `<div class="roll-row" style="color: #2e7d32; font-weight: bold; margin-top: 5px; border-top: 1px solid #2e7d32; padding-top: 3px;">${game.i18n.format("TAMS.Combat.SquadMembersRestored", {count: successCount})}</div>`;
+        }
+        if (!isMook && failureCount > 0) {
+            resultsHtml += `<div class="roll-row" style="color: #c0392b; font-weight: bold; margin-top: 5px; border-top: 1px solid #c0392b; padding-top: 3px;">${game.i18n.format("TAMS.Combat.SquadMembersLost", {count: failureCount})}</div>`;
+        }
+        resultsHtml += `</div>`;
 
         ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: resultsHtml });
         btn.disabled = true; btn.innerText = game.i18n.localize("TAMS.Combat.ChecksRolled");

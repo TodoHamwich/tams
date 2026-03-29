@@ -111,6 +111,37 @@ describe('TAMSActor applyDamage', () => {
         await actor.applyDamage(hits);
         expect(actor.system.limbs.thorax.value).toBe(40); // 50 - 10
     });
+
+    it('calculates the new squad DC formula correctly', async () => {
+        // Elite Squad (not Mook, to get the button/DCs)
+        actor.system.settings.npcRank = "elite";
+        // indMax = 10. Max = 50.
+        // Already took 10 damage. currentLimbHpBeforeHit = 40.
+        actor.system.limbs.thorax.value = 40;
+        
+        // Hit for 20 damage. 
+        // effective = 10 (capped by indMax).
+        // totalDamageOfHit = 20 (before capping).
+        const hits = [{ damage: 20, location: "Thorax", armourPen: 0 }];
+        const result = await actor.applyDamage(hits);
+        
+        // indMax = 10.
+        // damageTakenAlready = 50 - 40 = 10.
+        // totalDamageOfHit = 20.
+        // New DC = 10 (already) + 20 (new) = 30.
+        
+        // Check if report contains the correct DC in data-dcs
+        expect(result.report).toContain('data-dcs="30"');
+    });
+
+    it('does not include the Roll for Critical Wounds button for Mooks', async () => {
+        actor.system.settings.npcRank = "mook";
+        actor.system.limbs.thorax.value = 40;
+        const hits = [{ damage: 20, location: "Thorax", armourPen: 0 }];
+        const result = await actor.applyDamage(hits);
+        
+        expect(result.report).not.toContain('tams-squad-crit-roll');
+    });
   });
 
   describe('Survival and Injury Checks', () => {

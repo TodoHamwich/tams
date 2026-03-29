@@ -99,6 +99,12 @@ Hooks.once("init", async function() {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1);
   });
+  
+  /** Uppercase a string */
+  Handlebars.registerHelper('upperCase', (str) => {
+    if (!str) return "";
+    return str.toUpperCase();
+  });
 
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
 });

@@ -165,16 +165,18 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    * @protected
    */
   _prepareArmorSync() {
-    for (const limb of Object.values(this.limbs)) {
-      limb.armor = 0;
-      limb.armorMax = 0;
-    }
-    const equippedArmor = this.parent.items.filter((i) => i.type === "armor" && i.system.equipped);
-    for (const armor of equippedArmor) {
-      for (const [key, limbArmor] of Object.entries(armor.system.limbs || {})) {
-        if (limbArmor.max > 0) {
-          this.limbs[key].armor += limbArmor.value || 0;
-          this.limbs[key].armorMax += limbArmor.max || 0;
+    var _a, _b;
+    for (const [key, limb] of Object.entries(this.limbs)) {
+      limb.hasEquippedArmor = false;
+      if (limb.equippedArmorId) {
+        const armor = this.parent.items.get(limb.equippedArmorId);
+        if (armor && armor.type === "armor" && armor.system.equipped) {
+          limb.armor = ((_a = armor.system.limbs[key]) == null ? void 0 : _a.value) || 0;
+          limb.armorMax = ((_b = armor.system.limbs[key]) == null ? void 0 : _b.max) || 0;
+          limb.hasEquippedArmor = true;
+        } else {
+          limb.armor = 0;
+          limb.armorMax = 0;
         }
       }
     }
@@ -2522,11 +2524,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       addStatModSources(statId);
       statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
       label = `Attacking with ${item.name}`;
-      if (item.system.isTwoHanded && !item.system.equippedTwoHanded) {
-        statValue = Math.floor(statValue / 2);
-        statMod = Math.floor(statMod / 2);
-        statModSources.forEach((s) => s.value = Math.floor(s.value / 2));
-      }
       if (item.system.isHeavy && str.value < 40) {
         statValue = Math.floor(statValue / 2);
         statMod = Math.floor(statMod / 2);
@@ -2578,11 +2575,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         const weapon = this.document.items.find((i) => i.type === "weapon" && i.system.equipped);
         if (weapon) {
           const str = this.document.system.stats.strength;
-          if (weapon.system.isTwoHanded && !weapon.system.equippedTwoHanded) {
-            statValue = Math.floor(statValue / 2);
-            statMod = Math.floor(statMod / 2);
-            statModSources.forEach((s) => s.value = Math.floor(s.value / 2));
-          }
           if (weapon.system.isHeavy && str.value < 40) {
             statValue = Math.floor(statValue / 2);
             statMod = Math.floor(statMod / 2);

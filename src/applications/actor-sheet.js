@@ -257,6 +257,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     };
     context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
+    context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
     context.limbOptions = {
       "none": "TAMS.CalculatorOptions.None", "head": "TAMS.HitLocations.Head", "thorax": "TAMS.HitLocations.Thorax", "stomach": "TAMS.HitLocations.Stomach",
       "leftArm": "TAMS.HitLocations.LeftArm", "rightArm": "TAMS.HitLocations.RightArm", "leftLeg": "TAMS.HitLocations.LeftLeg", "rightLeg": "TAMS.HitLocations.RightLeg"
@@ -863,18 +864,6 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         label = `Attacking with ${item.name}`;
 
-        // Two-Handed: If equipped with one hand, halve stat.
-        if (item.system.isTwoHanded && !item.system.equippedTwoHanded) {
-            statValue = Math.floor(statValue / 2);
-            statMod = Math.floor(statMod / 2);
-            statModSources.forEach(s => s.value = Math.floor(s.value / 2));
-        }
-        // Heavy: If Strength < 40, halve stat.
-        if (item.system.isHeavy && str.value < 40) {
-            statValue = Math.floor(statValue / 2);
-            statMod = Math.floor(statMod / 2);
-            statModSources.forEach(s => s.value = Math.floor(s.value / 2));
-        }
     }
 
     if (item && item.type === 'skill') {
@@ -921,22 +910,6 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
             label = game.i18n.format("TAMS.UsingAbilityLabel", {name: item.name});
 
-            const weapon = this.document.items.find(i => i.type === 'weapon' && i.system.equipped);
-            if (weapon) {
-                const str = this.document.system.stats.strength;
-                // Two-Handed: If equipped with one hand, halve stat.
-                if (weapon.system.isTwoHanded && !weapon.system.equippedTwoHanded) {
-                    statValue = Math.floor(statValue / 2);
-                    statMod = Math.floor(statMod / 2);
-                    statModSources.forEach(s => s.value = Math.floor(s.value / 2));
-                }
-                // Heavy: If Strength < 40, halve stat.
-                if (weapon.system.isHeavy && str.value < 40) {
-                    statValue = Math.floor(statValue / 2);
-                    statMod = Math.floor(statMod / 2);
-                    statModSources.forEach(s => s.value = Math.floor(s.value / 2));
-                }
-            }
         } else {
             statId = item.system.capStat || "strength";
             addStatModSources(statId);

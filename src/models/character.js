@@ -89,7 +89,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         alternateArmour: new fields.BooleanField({initial: false}),
         isNPC: new fields.BooleanField({initial: false}),
         npcType: new fields.StringField({initial: "individual"}),
-        squadSize: new fields.NumberField({initial: 1, integer: true, min: 1}),
+        npcRank: new fields.StringField({initial: "mook"}),
+        squadSize: new fields.NumberField({initial: 1, integer: true, min: 0}),
         enabledCurrencies: new fields.ObjectField({initial: {}})
       }),
       upgradePoints: new fields.SchemaField({
@@ -180,18 +181,18 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    * @protected
    */
   _prepareArmorSync() {
-    // Reset limb armor
-    for (const limb of Object.values(this.limbs)) {
-      limb.armor = 0;
-      limb.armorMax = 0;
-    }
-
-    const equippedArmor = this.parent.items.filter(i => i.type === "armor" && i.system.equipped);
-    for (const armor of equippedArmor) {
-      for (const [key, limbArmor] of Object.entries(armor.system.limbs || {})) {
-        if (limbArmor.max > 0) {
-          this.limbs[key].armor += (limbArmor.value || 0);
-          this.limbs[key].armorMax += (limbArmor.max || 0);
+    for (const [key, limb] of Object.entries(this.limbs)) {
+      limb.hasEquippedArmor = false;
+      if (limb.equippedArmorId) {
+        const armor = this.parent.items.get(limb.equippedArmorId);
+        if (armor && armor.type === "armor" && armor.system.equipped) {
+          limb.armor = armor.system.limbs[key]?.value || 0;
+          limb.armorMax = armor.system.limbs[key]?.max || 0;
+          limb.hasEquippedArmor = true;
+        } else {
+          // If armor is assigned but missing or unequipped, reset to 0
+          limb.armor = 0;
+          limb.armorMax = 0;
         }
       }
     }
