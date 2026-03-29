@@ -201,7 +201,7 @@ export class TAMSActor extends Actor {
             if (!isMook) {
                 const dcs = (bottleneckLimb && limbLosses[bottleneckLimb]) ? limbLosses[bottleneckLimb].slice(0, lostCount) : [];
                 const dcsAttr = dcs.length > 0 ? ` data-dcs="${dcs.join(',')}"` : "";
-                report += `<button class="tams-squad-crit-roll" data-actor-id="${this.id}" data-count="${lostCount}" data-name="${this.name}"${dcsAttr}>${game.i18n.format("TAMS.Checks.RollForCriticalWounds", {count: lostCount})}</button><br>`;
+                report += `<button class="tams-squad-crit-roll" data-actor-uuid="${this.uuid}" data-count="${lostCount}" data-name="${this.name}"${dcsAttr}>${game.i18n.format("TAMS.Checks.RollForCriticalWounds", {count: lostCount})}</button><br>`;
             }
             if (finalSquadSize === 0 && isMook) {
                 report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadDestroyed", {name: this.name})} !!!</b><br>`;

@@ -1136,6 +1136,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         <button class="tams-boost-roll" 
                                 data-difficulty="${difficulty}" 
                                 data-total="${dcTotal}" 
+                                data-actor-uuid="${actor.uuid}"
                                 data-actor-id="${actor.id}">
                             ${game.i18n.localize("TAMS.Checks.SpendResourceToBoost")}
                         </button>
@@ -1250,7 +1251,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-force-crit="${forceCrit ? '1' : '0'}"
                                   data-target-token-id="${targetTokenId || ''}"
-                                  data-target-actor-id="${targetActorId || ''}">Apply Damage</button>
+                                  data-target-actor-id="${targetActorId || ''}"
+                                  data-target-actor-uuid="${targetActor?.uuid || ''}">Apply Damage</button>
                           <button class="tams-dodge" 
                                   data-raw="${rawResult}" 
                                   data-total="${finalTotal}" 
@@ -1262,7 +1264,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-target-limb="${targetLimb}"
                                   data-target-token-id="${targetTokenId || ''}"
-                                  data-target-actor-id="${targetActorId || ''}">Dodge</button>
+                                  data-target-actor-id="${targetActorId || ''}"
+                                  data-target-actor-uuid="${targetActor?.uuid || ''}">Dodge</button>
                           <button class="tams-retaliate" 
                                   data-raw="${rawResult}" 
                                   data-total="${finalTotal}" 
@@ -1274,7 +1277,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-target-limb="${targetLimb}"
                                   data-target-token-id="${targetTokenId || ''}"
-                                  data-target-actor-id="${targetActorId || ''}">Retaliate</button>
+                                  data-target-actor-id="${targetActorId || ''}"
+                                  data-target-actor-uuid="${targetActor?.uuid || ''}">Retaliate</button>
                           <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
                           <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
                         </div>
@@ -1309,14 +1313,17 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                     data-damage="${damage}" data-armour-pen="${armourPen}" data-locations='${JSON.stringify(tHits)}' data-target-limb="${targetLimb}"
                                     data-is-aoe="${isAoE ? '1' : '0'}"
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}" 
+                                    data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
                             <button class="tams-dodge" title="Dodge"
                                     data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
+                                    data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">D</button>
                             <button class="tams-retaliate" title="Retaliate"
                                     data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
+                                    data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
                             <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
                             <button class="tams-unaware-toggle" title="Unaware" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">U</button>

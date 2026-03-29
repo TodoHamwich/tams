@@ -126,7 +126,7 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                     }
                 } else if (check.type === 'unconscious') {
                     report = `
-                        <div class="tams-roll" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}" data-reasons='${JSON.stringify(check.reasons)}'>
+                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}" data-reasons='${JSON.stringify(check.reasons)}'>
                             <h3 class="roll-label" style="color: #2980b9;">${game.i18n.format("TAMS.Checks.UnconsciousCheckLabel", {name: target.name})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: end})}</span><span>${capped}</span></div>
@@ -193,8 +193,10 @@ export async function tamsRenderChatMessage(message, html, data) {
       let target = null;
       const targetTokenId = btn.dataset.targetTokenId;
       const targetActorId = btn.dataset.targetActorId;
+      const targetActorUuid = btn.dataset.targetActorUuid;
       
-      if (targetTokenId) {
+      if (targetActorUuid) target = fromUuidSync(targetActorUuid);
+      if (!target && targetTokenId) {
           const token = canvas.tokens.get(targetTokenId);
           if (token) target = token.actor;
       }
@@ -352,7 +354,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       }
 
       const msg = `
-        <div class="tams-roll" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-first-location="${attackerLocations[0] || ""}" data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? '1' : '0'}" data-is-aoe="${isAoEFromData ? '1' : '0'}">
+        <div class="tams-roll" data-actor-uuid="${actor.uuid}" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-first-location="${attackerLocations[0] || ""}" data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? '1' : '0'}" data-is-aoe="${isAoEFromData ? '1' : '0'}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.DodgeWith", {name: actor.name})} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           <div class="roll-crit-info">${critInfo}</div>
           <div class="roll-hits-info">${damageInfo}</div>
@@ -382,10 +384,11 @@ export async function tamsRenderChatMessage(message, html, data) {
       const container = btn.closest(".tams-roll");
       const attackerTotal = parseInt(container.dataset.attackerTotal);
       const actorId = container.dataset.actorId;
+      const actorUuid = container.dataset.actorUuid;
       const raw = parseInt(container.dataset.raw);
       const capped = parseInt(container.dataset.capped);
       
-      const actor = game.actors.get(actorId);
+      const actor = fromUuidSync(actorUuid) || game.actors.get(actorId);
       if (!actor) return;
 
       const isUnawareFromData = container.dataset.unaware === '1';
@@ -673,7 +676,7 @@ export async function tamsRenderChatMessage(message, html, data) {
         ev.preventDefault();
         const btn = ev.currentTarget;
         const container = btn.closest(".tams-roll");
-        const actor = game.actors.get(container.dataset.actorId);
+        const actor = fromUuidSync(container.dataset.actorUuid) || game.actors.get(container.dataset.actorId);
         if (!actor) return;
         const dc = parseInt(container.dataset.dc), raw = parseInt(container.dataset.raw), end = parseInt(container.dataset.end);
         const capped = Math.min(raw, end), pointsNeeded = Math.max(0, Math.ceil((dc - capped) / 5));
@@ -736,8 +739,7 @@ export async function tamsRenderChatMessage(message, html, data) {
     root.querySelectorAll('.tams-boost-roll').forEach(el => el.addEventListener("click", async ev => {
         ev.preventDefault();
         const btn = ev.currentTarget;
-        const container = btn.closest(".tams-roll");
-        const actor = game.actors.get(btn.dataset.actorId);
+        const actor = fromUuidSync(btn.dataset.actorUuid) || game.actors.get(btn.dataset.actorId);
         if (!actor) return;
 
         const difficulty = parseInt(btn.dataset.difficulty);
@@ -825,7 +827,7 @@ export async function tamsRenderChatMessage(message, html, data) {
     // Squad Crit Roll
     root.querySelectorAll('.tams-squad-crit-roll').forEach(el => el.addEventListener("click", async ev => {
         ev.preventDefault();
-        const btn = ev.currentTarget, actor = game.actors.get(btn.dataset.actorId);
+        const btn = ev.currentTarget, actor = fromUuidSync(btn.dataset.actorUuid) || game.actors.get(btn.dataset.actorId);
         if (!actor) return;
         const count = parseInt(btn.dataset.count), end = actor.system.stats.endurance.total;
 
