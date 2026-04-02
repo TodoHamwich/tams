@@ -1093,7 +1093,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
         const isRangedAttack = item.type === 'weapon' ? !!item.system.isRanged : (item.system.calculator?.range > 10);
         if (isSquadOrHorde) {
-            maxSquadTargets = isRangedAttack ? Math.floor(squadSize / 2) : squadSize;
+            maxSquadTargets = squadSize;
             maxSquadTargets = Math.max(1, maxSquadTargets);
 
             const actualTargets = [...game.user.targets].slice(0, maxSquadTargets);

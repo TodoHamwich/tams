@@ -2836,9 +2836,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let squadBonus = 0;
     let maxSquadTargets = 1;
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
-      const isRangedAttack = item.type === "weapon" ? !!item.system.isRanged : ((_d = item.system.calculator) == null ? void 0 : _d.range) > 10;
+      item.type === "weapon" ? !!item.system.isRanged : ((_d = item.system.calculator) == null ? void 0 : _d.range) > 10;
       if (isSquadOrHorde) {
-        maxSquadTargets = isRangedAttack ? Math.floor(squadSize / 2) : squadSize;
+        maxSquadTargets = squadSize;
         maxSquadTargets = Math.max(1, maxSquadTargets);
         const actualTargets = [...game.user.targets].slice(0, maxSquadTargets);
         const numTargetsCount = actualTargets.length > 0 ? actualTargets.length : tToken ? 1 : 0;
