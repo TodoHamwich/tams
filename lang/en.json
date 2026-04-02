@@ -94,6 +94,7 @@
     "Empty": "Empty",
     "Yes": "Yes",
     "No": "No",
+    "None": "None",
     "Default": "Default",
     "Confirm": "Confirm",
     "Cancel": "Cancel",
@@ -331,7 +332,13 @@
       "RetaliateNoAoE": "Retaliation doesn't support AOE.",
       "InsufficientResources": "Insufficient Resources",
       "InsufficientResourcesContent": "You only have {val} {res}. Spend the remaining {rem} from Stamina?",
-      "TakeDamage": "Take Damage"
+      "TakeDamage": "Take Damage",
+      "Cover": "Cover:",
+      "CoverLight": "Light (10)",
+      "CoverMedium": "Medium (20)",
+      "CoverHeavy": "Heavy (30)",
+      "CoverCustom": "Custom",
+      "InCover": "In Cover?"
     },
     "Checks": {
       "InjuryCheck": "INJURY CHECK: {loc}",

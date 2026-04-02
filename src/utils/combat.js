@@ -231,7 +231,23 @@ export async function tamsRenderChatMessage(message, html, data) {
       }
       const defaultDmg = damageBase * initialMultiplier;
 
-      let dialogContent = `<p>${game.i18n.format("TAMS.Combat.ApplyingHitsTo", {count: locations.length, name: target.name})}</p>${squadHtml}`;
+      const coverHtml = `
+        <div class="form-group" style="margin-bottom: 10px; border-bottom: 1px solid #666; padding-bottom: 10px;">
+            <label>${game.i18n.localize("TAMS.Combat.Cover")}</label>
+            <div class="flexrow">
+                <select id="cover-select">
+                    <option value="0">${game.i18n.localize("TAMS.None")}</option>
+                    <option value="10">${game.i18n.localize("TAMS.Combat.CoverLight")}</option>
+                    <option value="20">${game.i18n.localize("TAMS.Combat.CoverMedium")}</option>
+                    <option value="30">${game.i18n.localize("TAMS.Combat.CoverHeavy")}</option>
+                    <option value="custom">${game.i18n.localize("TAMS.Combat.CoverCustom")}</option>
+                </select>
+                <input type="number" id="cover-custom" value="0" style="display:none; width: 60px; margin-left: 5px;"/>
+            </div>
+        </div>
+      `;
+
+      let dialogContent = `<p>${game.i18n.format("TAMS.Combat.ApplyingHitsTo", {count: locations.length, name: target.name})}</p>${squadHtml}${coverHtml}`;
       locations.forEach((loc, i) => {
           const limbKey = locationMap[loc];
           const limb = target.system.limbs[limbKey];
@@ -243,6 +259,9 @@ export async function tamsRenderChatMessage(message, html, data) {
                 <div class="flexrow">
                     <span>${game.i18n.localize("TAMS.Combat.DmgShort")} </span><input type="number" class="hit-dmg" data-index="${i}" value="${defaultDmg}" style="width: 50px;"/>
                     <span>${game.i18n.localize("TAMS.Combat.ArmorShort")} ${armor}/${armorMax}</span>
+                    <label style="flex: 0 0 auto; margin-left: 10px;">
+                        <input type="checkbox" class="hit-in-cover" data-index="${i}"> ${game.i18n.localize("TAMS.Combat.InCover")}
+                    </label>
                 </div>
             </div>`;
       });
@@ -251,11 +270,31 @@ export async function tamsRenderChatMessage(message, html, data) {
         title: game.i18n.format("TAMS.Checks.ApplyDamageTo", {name: target.name}),
         content: dialogContent,
         render: (html) => {
-            html.find("#aoe-targets-hit").on("input", (ev) => {
-                const multiplier = parseInt(ev.currentTarget.value) || 0;
-                const newDmg = damageBase * multiplier;
-                html.find(".hit-dmg").val(newDmg);
-            });
+            const updateDamage = () => {
+                const multiplier = (isAoEHit && isSquadOrHorde) ? (parseInt(html.find("#aoe-targets-hit").val()) || 1) : 1;
+                const coverSelect = html.find("#cover-select").val();
+                let coverVal = 0;
+                if (coverSelect === "custom") {
+                    html.find("#cover-custom").show();
+                    coverVal = parseInt(html.find("#cover-custom").val()) || 0;
+                } else {
+                    html.find("#cover-custom").hide();
+                    coverVal = parseInt(coverSelect) || 0;
+                }
+
+                html.find(".hit-dmg").each(function() {
+                    const idx = $(this).data("index");
+                    const isCovered = html.find(`.hit-in-cover[data-index="${idx}"]`).is(":checked");
+                    let effectiveBaseDmg = damageBase;
+                    if (isCovered) {
+                        effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
+                    }
+                    $(this).val(effectiveBaseDmg * multiplier);
+                });
+            };
+
+            html.find("#aoe-targets-hit, #cover-select, #cover-custom").on("input change", updateDamage);
+            html.find(".hit-in-cover").on("change", updateDamage);
         },
         buttons: {
         apply: { label: game.i18n.localize("TAMS.Checks.ApplyAllHits"), callback: async (html) => {
