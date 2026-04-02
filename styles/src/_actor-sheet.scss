@@ -1,7 +1,8 @@
 @import 'variables';
 
 .tams .tab.stats .grid-2col {
-    grid-template-columns: 1fr 350px;
+    grid-template-columns: 180px 1fr;
+    gap: 10px;
 }
 
 .tams .stat label, .tams .limb label {
@@ -21,16 +22,38 @@
 }
 
 .tams .stat input {
-    width: 35px;
     text-align: center;
 }
 
-.tams .limb-row {
-    border-bottom: 1px solid $color-border;
-    padding: 5px 0;
+.tams .limb-header {
+    font-weight: bold;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #666;
+    border-bottom: 2px solid $color-border;
+    padding: 0 5px 2px 5px;
+    margin-top: 5px;
+    display: grid;
+    grid-template-columns: 80px 70px 1fr 45px;
+    align-items: center;
+    gap: 5px;
 
-    &.injured-limb { background: rgba(241, 196, 15, 0.15); }
-    &.crit-injured { background: rgba(231, 76, 60, 0.15); }
+    .header-hp { text-align: center; }
+    .header-armor { text-align: center; }
+    .header-status { text-align: center; }
+}
+
+.tams .limb-row {
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding: 3px 5px;
+    display: grid;
+    grid-template-columns: 80px 70px 1fr 45px;
+    align-items: center;
+    gap: 5px;
+
+    &:nth-child(even) { background: rgba(0,0,0,0.02); }
+    &.injured-limb { background: rgba(241, 196, 15, 0.1); }
+    &.crit-injured { background: rgba(231, 76, 60, 0.1); }
 }
 
 .tams .special-skill label {
@@ -38,31 +61,85 @@
 }
 
 .tams .limb-label {
-    flex: 0 0 70px;
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 3px;
 }
 
 .tams .limb-hp {
-    flex: 0 0 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 2px;
-    justify-content: flex-start;
+    font-size: 11px;
+    border-left: 1px solid rgba(0,0,0,0.05);
+    border-right: 1px solid rgba(0,0,0,0.05);
 
-    span { font-size: 13px; }
+    input { 
+        width: 40px !important; 
+        height: 18px;
+        padding: 0;
+        text-align: center;
+    }
+    .sep { color: #888; }
+    .max { color: #666; font-weight: bold; }
 }
 
-.tams .limb-armor {
-    flex: 0 0 200px;
-    justify-content: flex-end;
-    gap: 5px;
+.tams .limb-armor-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    overflow: hidden;
 
-    label {
+    .armor-selection select {
+        height: 18px;
         font-size: 11px;
-        font-weight: normal;
-        text-transform: uppercase;
-        color: #666;
+        padding: 0;
+        width: 100%;
+        min-width: 40px;
     }
 
-    input { width: 30px !important; }
+    .armor-values {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1px;
+        
+        label {
+            flex: none;
+            color: #555;
+            font-size: 10px;
+            margin-right: 2px;
+        }
+
+        input { 
+            width: 38px !important; 
+            height: 18px; 
+            text-align: center; 
+            font-size: 11px;
+            padding: 0;
+        }
+        .sep, .mod-sep { font-size: 10px; color: #666; font-weight: bold; }
+    }
+}
+
+.tams .limb-status-checks {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    
+    input[type="checkbox"] {
+        width: 13px;
+        height: 13px;
+        margin: 0;
+        cursor: pointer;
+    }
 }
 
 .tams .negative-hp {

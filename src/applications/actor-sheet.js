@@ -306,7 +306,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
   _prepareLimbArmorOptions(context) {
     const armorItems = this.document.items.filter(i => i.type === "armor");
     context.limbArmorOptions = {};
-    for (const limbKey of Object.keys(this.document.system.limbs)) {
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    for (const limbKey of limbKeys) {
         context.limbArmorOptions[limbKey] = { "": "None" };
         for (const armor of armorItems) {
             if (armor.system.limbs[limbKey]?.max > 0) {
@@ -655,7 +656,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
    */
   async _onFullHeal(event, target) {
     const updates = {};
-    for (const [id, limb] of Object.entries(this.document.system.limbs)) {
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    for (const id of limbKeys) {
+        const limb = this.document.system.limbs[id];
+        if (!limb) continue;
       updates[`system.limbs.${id}.value`] = limb.max;
       updates[`system.limbs.${id}.injured`] = false;
       updates[`system.limbs.${id}.criticallyInjured`] = false;
@@ -1041,6 +1045,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     const roll = await new Roll("1d100").evaluate();
     let rawResult = roll.total;
+    let originalResult = rawResult;
     let rerolled = false;
     let isJammed = false;
 
@@ -1356,6 +1361,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         <h3 class="roll-label">${label}</h3>
         ${descriptionHtml}
         ${damageInfo}
+        ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
+            ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", {original: originalResult})}
+        </div>` : ""}
         <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${rawResult}</span></div>
         ${statId === 'bravery' ? 
             `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? ' + ' + familiarity : ''}${bonus ? ' + ' + bonus : ''}</span></div>` :

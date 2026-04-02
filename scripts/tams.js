@@ -32,13 +32,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         bravery: new fields.EmbeddedDataField(StatModifier, { initial: { label: "TAMS.StatBravery" } })
       }),
       limbs: new fields.SchemaField({
-        head: new fields.SchemaField({ value: new fields.NumberField({ initial: 5 }), max: new fields.NumberField({ initial: 5 }), mult: new fields.NumberField({ initial: 0.5 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Head" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        thorax: new fields.SchemaField({ value: new fields.NumberField({ initial: 10 }), max: new fields.NumberField({ initial: 10 }), mult: new fields.NumberField({ initial: 1 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Thorax" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        stomach: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Stomach" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        leftArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        rightArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        leftLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        rightLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) })
+        head: new fields.SchemaField({ value: new fields.NumberField({ initial: 5 }), max: new fields.NumberField({ initial: 5 }), mult: new fields.NumberField({ initial: 0.5 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Head" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({ initial: 10 }), max: new fields.NumberField({ initial: 10 }), mult: new fields.NumberField({ initial: 1 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Thorax" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Stomach" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) })
       }),
       inventory: new fields.SchemaField({
         usedCapacity: new fields.NumberField({ initial: 0 }),
@@ -81,7 +81,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         alternateArmour: new fields.BooleanField({ initial: false }),
         isNPC: new fields.BooleanField({ initial: false }),
         npcType: new fields.StringField({ initial: "individual" }),
-        squadSize: new fields.NumberField({ initial: 1, integer: true, min: 1 }),
+        npcRank: new fields.StringField({ initial: "mook" }),
+        squadSize: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
         enabledCurrencies: new fields.ObjectField({ initial: {} })
       }),
       upgradePoints: new fields.SchemaField({
@@ -114,8 +115,9 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    * @protected
    */
   _prepareTraitModifiers() {
-    for (const stat of Object.values(this.stats)) {
-      stat.traitBonus = 0;
+    const statKeys = ["strength", "dexterity", "endurance", "wisdom", "intelligence", "bravery"];
+    for (const key of statKeys) {
+      if (this.stats[key]) this.stats[key].traitBonus = 0;
     }
     this.traitRollBonus = 0;
     this.traitHPExtra = 0;
@@ -154,7 +156,10 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const settings = this.settings;
     const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
     const squadSize = settings.squadSize || 1;
-    for (const limb of Object.values(this.limbs)) {
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    for (const key of limbKeys) {
+      const limb = this.limbs[key];
+      if (!limb) continue;
       const individualMax = Math.floor(end * limb.mult);
       limb.max = isSquadOrHorde ? individualMax * squadSize : individualMax;
       limb.individualMax = individualMax;
@@ -165,18 +170,15 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    * @protected
    */
   _prepareArmorSync() {
-    var _a, _b;
-    for (const [key, limb] of Object.entries(this.limbs)) {
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    for (const key of limbKeys) {
+      const limb = this.limbs[key];
+      if (!limb) continue;
       limb.hasEquippedArmor = false;
       if (limb.equippedArmorId) {
         const armor = this.parent.items.get(limb.equippedArmorId);
         if (armor && armor.type === "armor" && armor.system.equipped) {
-          limb.armor = ((_a = armor.system.limbs[key]) == null ? void 0 : _a.value) || 0;
-          limb.armorMax = ((_b = armor.system.limbs[key]) == null ? void 0 : _b.max) || 0;
           limb.hasEquippedArmor = true;
-        } else {
-          limb.armor = 0;
-          limb.armorMax = 0;
         }
       }
     }
@@ -188,9 +190,12 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   _prepareTotalHP() {
     let totalHp = 0;
     let totalMaxHp = 0;
-    for (const limb of Object.values(this.limbs)) {
-      totalHp += limb.value || 0;
-      totalMaxHp += limb.max || 0;
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    for (const key of limbKeys) {
+      const limb = this.limbs[key];
+      if (!limb) continue;
+      totalHp += Number(limb.value) || 0;
+      totalMaxHp += Number(limb.max) || 0;
     }
     this.hp.value = totalHp;
     this.hp.max = totalMaxHp + (this.traitHPExtra || 0);
@@ -243,10 +248,10 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
             break;
         }
         if (item.id !== backpackId) {
-          const container = this.parent.items.find((i) => i.type === "backpack" && i.id === location);
-          if (container && container.system.equipped) {
-            itemSize *= container.system.modifier ?? 0.5;
-          } else if (container && !container.system.equipped) {
+          const container2 = this.parent.items.find((i) => i.type === "backpack" && i.id === location);
+          if (container2 && container2.system.equipped) {
+            itemSize *= container2.system.modifier ?? 0.5;
+          } else if (container2 && !container2.system.equipped) {
             itemSize = 0;
           }
         }
@@ -703,7 +708,7 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
           }
         } else if (check.type === "unconscious") {
           report = `
-                        <div class="tams-roll" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}" data-reasons='${JSON.stringify(check.reasons)}'>
+                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}" data-reasons='${JSON.stringify(check.reasons)}'>
                             <h3 class="roll-label" style="color: #2980b9;">${game.i18n.format("TAMS.Checks.UnconsciousCheckLabel", { name: target.name })}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end })}</span><span>${capped}</span></div>
@@ -737,12 +742,12 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
 }
 async function tamsRenderChatMessage(message, html, data) {
   const root = html instanceof jQuery ? html[0] : html;
-  root.querySelectorAll(".tams-roll").forEach((container) => {
-    container.querySelectorAll(".tams-behind-toggle").forEach((btn) => {
-      btn.style.background = container.classList.contains("behind-attack") ? "#2e7d32" : "#444";
+  root.querySelectorAll(".tams-roll").forEach((container2) => {
+    container2.querySelectorAll(".tams-behind-toggle").forEach((btn) => {
+      btn.style.background = container2.classList.contains("behind-attack") ? "#2e7d32" : "#444";
     });
-    container.querySelectorAll(".tams-unaware-toggle").forEach((btn) => {
-      btn.style.background = container.classList.contains("unaware-defender") ? "#2e7d32" : "#444";
+    container2.querySelectorAll(".tams-unaware-toggle").forEach((btn) => {
+      btn.style.background = container2.classList.contains("unaware-defender") ? "#2e7d32" : "#444";
     });
   });
   root.querySelectorAll(".tams-take-damage").forEach((el) => el.addEventListener("click", async (ev) => {
@@ -756,7 +761,9 @@ async function tamsRenderChatMessage(message, html, data) {
     let target = null;
     const targetTokenId = btn.dataset.targetTokenId;
     const targetActorId = btn.dataset.targetActorId;
-    if (targetTokenId) {
+    const targetActorUuid = btn.dataset.targetActorUuid;
+    if (targetActorUuid) target = fromUuidSync(targetActorUuid);
+    if (!target && targetTokenId) {
       const token = canvas.tokens.get(targetTokenId);
       if (token) target = token.actor;
     }
@@ -857,9 +864,9 @@ async function tamsRenderChatMessage(message, html, data) {
     const attackerLocations = btn.dataset.locations ? JSON.parse(btn.dataset.locations) : firstLocation ? [firstLocation] : [];
     const targetLimb = btn.dataset.targetLimb;
     const isAoEFromData = btn.dataset.isAoe === "1";
-    const container = btn.closest(".tams-roll");
-    const isBehind = (container == null ? void 0 : container.classList.contains("behind-attack")) || false;
-    const isUnaware = (container == null ? void 0 : container.classList.contains("unaware-defender")) || false;
+    const container2 = btn.closest(".tams-roll");
+    const isBehind = (container2 == null ? void 0 : container2.classList.contains("behind-attack")) || false;
+    const isUnaware = (container2 == null ? void 0 : container2.classList.contains("unaware-defender")) || false;
     let actor = null;
     const targetTokenId = btn.dataset.targetTokenId;
     const targetActorId = btn.dataset.targetActorId;
@@ -906,7 +913,7 @@ async function tamsRenderChatMessage(message, html, data) {
       if (!critInfo) critInfo = `<div class="tams-success">${game.i18n.format("TAMS.Combat.DodgeSuccess", { total: attackerTotal })}</div>`;
     }
     const msg = `
-        <div class="tams-roll" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-first-location="${attackerLocations[0] || ""}" data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? "1" : "0"}" data-is-aoe="${isAoEFromData ? "1" : "0"}">
+        <div class="tams-roll" data-actor-uuid="${actor.uuid}" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-first-location="${attackerLocations[0] || ""}" data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? "1" : "0"}" data-is-aoe="${isAoEFromData ? "1" : "0"}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.DodgeWith", { name: actor.name })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
           <div class="roll-crit-info">${critInfo}</div>
           <div class="roll-hits-info">${damageInfo}</div>
@@ -931,14 +938,15 @@ async function tamsRenderChatMessage(message, html, data) {
     var _a;
     ev.preventDefault();
     const btn = ev.currentTarget;
-    const container = btn.closest(".tams-roll");
-    const attackerTotal = parseInt(container.dataset.attackerTotal);
-    const actorId = container.dataset.actorId;
-    const raw = parseInt(container.dataset.raw);
-    const capped = parseInt(container.dataset.capped);
-    const actor = game.actors.get(actorId);
+    const container2 = btn.closest(".tams-roll");
+    const attackerTotal = parseInt(container2.dataset.attackerTotal);
+    const actorId = container2.dataset.actorId;
+    const actorUuid = container2.dataset.actorUuid;
+    const raw = parseInt(container2.dataset.raw);
+    const capped = parseInt(container2.dataset.capped);
+    const actor = fromUuidSync(actorUuid) || game.actors.get(actorId);
     if (!actor) return;
-    const isUnawareFromData = container.dataset.unaware === "1";
+    const isUnawareFromData = container2.dataset.unaware === "1";
     const pointsNeeded = Math.max(0, Math.ceil((attackerTotal - capped) / 5));
     const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
     actor.system.customResources.forEach((res, idx) => {
@@ -992,13 +1000,13 @@ async function tamsRenderChatMessage(message, html, data) {
     let critInfo = "";
     let hitsScored = 0;
     let damageInfo = "";
-    const attackerMulti = parseInt(container.dataset.attackerMulti) || 1;
-    const attackerRaw = parseInt(container.dataset.attackerRaw);
-    const attackerDamage = parseInt(container.dataset.attackerDamage) || 0;
-    const attackerArmourPen = parseInt(container.dataset.attackerArmourPen) || 0;
-    const firstLocation = container.dataset.firstLocation;
-    const targetLimb = container.dataset.targetLimb;
-    const isAoEFromData = container.dataset.isAoe === "1";
+    const attackerMulti = parseInt(container2.dataset.attackerMulti) || 1;
+    const attackerRaw = parseInt(container2.dataset.attackerRaw);
+    const attackerDamage = parseInt(container2.dataset.attackerDamage) || 0;
+    const attackerArmourPen = parseInt(container2.dataset.attackerArmourPen) || 0;
+    const firstLocation = container2.dataset.firstLocation;
+    const targetLimb = container2.dataset.targetLimb;
+    const isAoEFromData = container2.dataset.isAoe === "1";
     if (raw >= attackerRaw * 2) {
       critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", { raw, attacker: attackerRaw })}</div>`;
     } else if (attackerRaw >= raw * 2) {
@@ -1024,18 +1032,18 @@ async function tamsRenderChatMessage(message, html, data) {
     }
     const boostHtml = `<div class="roll-row"><small>${game.i18n.localize("TAMS.Combat.BoostLabel")}</small><span>+${bonus}</span></div>`;
     if (unaware) {
-      const labelEl = container.querySelector(".roll-label");
+      const labelEl = container2.querySelector(".roll-label");
       if (!labelEl.innerText.includes("(Unaware)")) labelEl.innerText += " (Unaware)";
-      container.querySelectorAll(".roll-row")[1].innerHTML = `<span>${game.i18n.format("TAMS.Combat.StatCapLabel", { name: "Unaware", value: finalCapped })}</span><span>${finalCapped}</span>`;
+      container2.querySelectorAll(".roll-row")[1].innerHTML = `<span>${game.i18n.format("TAMS.Combat.StatCapLabel", { name: "Unaware", value: finalCapped })}</span><span>${finalCapped}</span>`;
     }
-    container.querySelector(".roll-boost-container").innerHTML = boostHtml;
-    container.querySelector(".roll-total b").innerText = total;
-    container.querySelector(".roll-hits-info").innerHTML = damageInfo;
-    container.querySelector(".roll-crit-info").innerHTML = critInfo;
+    container2.querySelector(".roll-boost-container").innerHTML = boostHtml;
+    container2.querySelector(".roll-total b").innerText = total;
+    container2.querySelector(".roll-hits-info").innerHTML = damageInfo;
+    container2.querySelector(".roll-crit-info").innerHTML = critInfo;
     const messageId = (_a = btn.closest(".chat-message")) == null ? void 0 : _a.dataset.messageId;
     btn.remove();
     const message2 = game.messages.get(messageId);
-    if (message2) await tamsUpdateMessage(message2, { content: container.outerHTML });
+    if (message2) await tamsUpdateMessage(message2, { content: container2.outerHTML });
   }));
   root.querySelectorAll(".tams-retaliate").forEach((el) => el.addEventListener("click", async (ev) => {
     var _a, _b, _c, _d, _e;
@@ -1051,9 +1059,9 @@ async function tamsRenderChatMessage(message, html, data) {
     const attackerLocations = btn.dataset.locations ? JSON.parse(btn.dataset.locations) : firstLocation ? [firstLocation] : [];
     const attackerTargetLimb = btn.dataset.targetLimb;
     const isAoEFromData = btn.dataset.isAoe === "1";
-    const container = btn.closest(".tams-roll");
-    const isBehind = (container == null ? void 0 : container.classList.contains("behind-attack")) || false;
-    const isUnaware = (container == null ? void 0 : container.classList.contains("unaware-defender")) || false;
+    const container2 = btn.closest(".tams-roll");
+    const isBehind = (container2 == null ? void 0 : container2.classList.contains("behind-attack")) || false;
+    const isUnaware = (container2 == null ? void 0 : container2.classList.contains("unaware-defender")) || false;
     let actor = null;
     const targetTokenId = btn.dataset.targetTokenId;
     const targetActorId = btn.dataset.targetActorId;
@@ -1128,7 +1136,15 @@ async function tamsRenderChatMessage(message, html, data) {
     if (isUnaware) cap = Math.floor(cap * 0.5);
     const fam = Math.floor(weapon.system.familiarity || 0) + balancedBonus;
     const roll = await new Roll("1d100").evaluate();
-    const raw = roll.total;
+    let raw = roll.total;
+    const originalRaw = raw;
+    let rerolled = false;
+    const tags = (weapon.system.tags || "").split(",").map((t) => t.trim().toLowerCase());
+    if (tags.includes("reliable") && raw <= 4) {
+      const reroll = await new Roll("1d100").evaluate();
+      raw = reroll.total;
+      rerolled = true;
+    }
     const capped = Math.min(raw, cap);
     const total = capped + fam;
     const threshold = isRanged ? 20 : 10;
@@ -1178,6 +1194,9 @@ async function tamsRenderChatMessage(message, html, data) {
         <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? "1" : "0"}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.RetaliationWith", { name: actor.name, weapon: weapon.name })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
           ${weapon.type === "ability" && weapon.system.description ? `<div class="roll-description">${weapon.system.description}</div>` : ""}
+          ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
+              ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", { original: originalRaw })}
+          </div>` : ""}
           ${defenseDamageInfo}
           <hr>
           <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.DmgShort")} ${damage}</b></div>
@@ -1202,10 +1221,10 @@ async function tamsRenderChatMessage(message, html, data) {
     var _a;
     ev.preventDefault();
     const btn = ev.currentTarget;
-    const container = btn.closest(".tams-roll");
-    const actor = game.actors.get(container.dataset.actorId);
+    const container2 = btn.closest(".tams-roll");
+    const actor = fromUuidSync(container2.dataset.actorUuid) || game.actors.get(container2.dataset.actorId);
     if (!actor) return;
-    const dc = parseInt(container.dataset.dc), raw = parseInt(container.dataset.raw), end = parseInt(container.dataset.end);
+    const dc = parseInt(container2.dataset.dc), raw = parseInt(container2.dataset.raw), end = parseInt(container2.dataset.end);
     const capped = Math.min(raw, end), pointsNeeded = Math.max(0, Math.ceil((dc - capped) / 5));
     const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
     actor.system.customResources.forEach((res, idx) => resources.push({ id: idx.toString(), name: res.name, value: res.value }));
@@ -1245,9 +1264,9 @@ async function tamsRenderChatMessage(message, html, data) {
       }
     }
     const resName = resources.find((r) => r.id === resId).name;
-    container.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><span>Boost (${resName}):</span><span>+${bonus}</span></div>`;
-    container.querySelector(".roll-total b").innerText = total;
-    const statusDiv = container.querySelector(".tams-success, .tams-crit.failure");
+    container2.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><span>Boost (${resName}):</span><span>+${bonus}</span></div>`;
+    container2.querySelector(".roll-total b").innerText = total;
+    const statusDiv = container2.querySelector(".tams-success, .tams-crit.failure");
     if (statusDiv) {
       statusDiv.className = success ? "tams-success" : "tams-crit failure";
       statusDiv.innerText = success ? game.i18n.localize("TAMS.Combat.RemainsConscious") : game.i18n.localize("TAMS.Combat.FallsUnconscious");
@@ -1255,14 +1274,13 @@ async function tamsRenderChatMessage(message, html, data) {
     const messageId = (_a = btn.closest(".chat-message")) == null ? void 0 : _a.dataset.messageId;
     btn.remove();
     const message2 = game.messages.get(messageId);
-    if (message2) await tamsUpdateMessage(message2, { content: container.outerHTML });
+    if (message2) await tamsUpdateMessage(message2, { content: container2.outerHTML });
   }));
   root.querySelectorAll(".tams-boost-roll").forEach((el) => el.addEventListener("click", async (ev) => {
     var _a;
     ev.preventDefault();
     const btn = ev.currentTarget;
-    const container = btn.closest(".tams-roll");
-    const actor = game.actors.get(btn.dataset.actorId);
+    const actor = fromUuidSync(btn.dataset.actorUuid) || game.actors.get(btn.dataset.actorId);
     if (!actor) return;
     const difficulty = parseInt(btn.dataset.difficulty);
     const currentTotal = parseInt(btn.dataset.total);
@@ -1327,43 +1345,91 @@ async function tamsRenderChatMessage(message, html, data) {
     root.querySelectorAll(`.tams-${type}-toggle`).forEach((el) => el.addEventListener("click", async (ev) => {
       var _a;
       ev.preventDefault();
-      const btn = ev.currentTarget, container = btn.closest(".tams-roll");
-      container.classList.toggle(`${type === "behind" ? "behind-attack" : "unaware-defender"}`);
-      btn.style.background = container.classList.contains(`${type === "behind" ? "behind-attack" : "unaware-defender"}`) ? "#2e7d32" : "#444";
+      const btn = ev.currentTarget, container2 = btn.closest(".tams-roll");
+      container2.classList.toggle(`${type === "behind" ? "behind-attack" : "unaware-defender"}`);
+      btn.style.background = container2.classList.contains(`${type === "behind" ? "behind-attack" : "unaware-defender"}`) ? "#2e7d32" : "#444";
       const messageId = (_a = btn.closest(".chat-message")) == null ? void 0 : _a.dataset.messageId, message2 = game.messages.get(messageId);
-      if (message2) await tamsUpdateMessage(message2, { content: container.outerHTML });
+      if (message2) await tamsUpdateMessage(message2, { content: container2.outerHTML });
     }));
   });
   root.querySelectorAll(".tams-squad-crit-roll").forEach((el) => el.addEventListener("click", async (ev) => {
     ev.preventDefault();
-    const btn = ev.currentTarget, actor = game.actors.get(btn.dataset.actorId);
+    const btn = ev.currentTarget, actor = fromUuidSync(btn.dataset.actorUuid) || game.actors.get(btn.dataset.actorId);
     if (!actor) return;
     const count = parseInt(btn.dataset.count), end = actor.system.stats.endurance.total;
-    const dc = await new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.Combat.CritDC"),
-        content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Combat.EnterDC")}</label><input type="number" id="dc" value="0"/></div>`,
-        buttons: { roll: { label: game.i18n.localize("TAMS.Combat.Roll"), callback: (html2) => resolve(parseInt(html2.find("#dc").val()) || 0) }, cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) } },
-        default: "roll"
-      }).render(true);
-    });
-    if (dc === null) return;
+    const dcsAttr = btn.dataset.dcs;
+    let dcs = dcsAttr ? dcsAttr.split(",").map(Number) : [];
+    let dc = 0;
+    if (dcs.length === 0) {
+      dc = await new Promise((resolve) => {
+        new Dialog({
+          title: game.i18n.localize("TAMS.Combat.CritDC"),
+          content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Combat.EnterDC")}</label><input type="number" id="dc" value="0"/></div>`,
+          buttons: { roll: { label: game.i18n.localize("TAMS.Combat.Roll"), callback: (html2) => resolve(parseInt(html2.find("#dc").val()) || 0) }, cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) } },
+          default: "roll"
+        }).render(true);
+      });
+      if (dc === null) return;
+    }
     let rollResults = [], successCount = 0;
     for (let i = 0; i < count; i++) {
-      const raw = (await new Roll("1d100").evaluate()).total, capped = Math.min(raw, end), success = capped >= dc;
+      const currentDc = dcs.length > 0 ? dcs[i] ?? dcs[dcs.length - 1] : dc;
+      const raw = (await new Roll("1d100").evaluate()).total, capped = Math.min(raw, end), success = capped >= currentDc;
       if (success) successCount++;
-      rollResults.push({ raw, capped, success });
+      rollResults.push({ raw, capped, success, dc: currentDc });
+    }
+    const failureCount = count - successCount;
+    const isMook = (actor.system.settings.npcRank || "mook") === "mook";
+    const updates = {};
+    let needsUpdate = false;
+    const currentSize = actor.system.settings.squadSize;
+    const newSize = isMook ? currentSize + successCount : currentSize - failureCount;
+    if (newSize !== currentSize) {
+      updates["system.settings.squadSize"] = newSize;
+      needsUpdate = true;
     }
     if (successCount > 0) {
-      const updates = { "system.settings.squadSize": actor.system.settings.squadSize + successCount };
-      for (let [key, limb] of Object.entries(actor.system.limbs)) updates[`system.limbs.${key}.value`] = limb.value + successCount * Math.floor(end * limb.mult);
-      await actor.update(updates);
+      const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+      for (let key of limbKeys) {
+        const limb = actor.system.limbs[key];
+        if (!limb) continue;
+        const indMax = Math.floor(end * limb.mult);
+        const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
+        updates[`system.limbs.${key}.value`] = currentVal + successCount * indMax;
+      }
+      needsUpdate = true;
     }
-    let resultsHtml = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Combat.SquadCritChecks", { name: btn.dataset.name })}</h3><div class="roll-row"><span>Checks:</span><span>${count}</span></div><div class="roll-row"><span>Endurance:</span><span>${end}</span></div><div class="roll-row"><span>Target DC:</span><span>${dc}</span></div><hr><div class="squad-crit-list" style="max-height: 200px; overflow-y: auto;">`;
+    if (needsUpdate) {
+      const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+      for (let key of limbKeys) {
+        const limb = actor.system.limbs[key];
+        if (!limb) continue;
+        const indMax = Math.floor(end * limb.mult);
+        const maxForNewSize = newSize * indMax;
+        const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
+        const totalDamage = limb.max - currentVal;
+        const remainderDamage = totalDamage % indMax;
+        if (currentVal > 0) {
+          updates[`system.limbs.${key}.value`] = maxForNewSize - remainderDamage;
+        } else {
+          updates[`system.limbs.${key}.value`] = Math.max(currentVal, -maxForNewSize);
+        }
+      }
+    }
+    if (needsUpdate) await actor.update(updates);
+    const displayDc = dcs.length > 0 ? dcs.every((d) => d === dcs[0]) ? dcs[0] : game.i18n.localize("TAMS.Combat.Variable") : dc;
+    let resultsHtml = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Combat.SquadCritChecks", { name: btn.dataset.name })}</h3><div class="roll-row"><span>Checks:</span><span>${count}</span></div><div class="roll-row"><span>Endurance:</span><span>${end}</span></div><div class="roll-row"><span>Target DC:</span><span>${displayDc}</span></div><hr><div class="squad-crit-list" style="max-height: 200px; overflow-y: auto;">`;
     rollResults.forEach((r, i) => {
-      resultsHtml += `<div class="roll-row" style="border-bottom: 1px solid #eee; font-size: 0.9em; padding: 2px 0;"><span style="flex: 1;">${game.i18n.format("TAMS.Combat.SquadCritCheckRow", { i: i + 1, raw: r.raw, capped: r.capped })}</span><span style="color: ${r.success ? "#2e7d32" : "#c0392b"}; font-weight: bold; min-width: 50px; text-align: right;">${r.success ? game.i18n.localize("TAMS.Combat.Pass") : game.i18n.localize("TAMS.Combat.Fail")}</span></div>`;
+      resultsHtml += `<div class="roll-row" style="border-bottom: 1px solid #eee; font-size: 0.9em; padding: 2px 0;"><span style="flex: 1;">${game.i18n.format("TAMS.Combat.SquadCritCheckRow", { i: i + 1, raw: r.raw, capped: r.capped })} (DC ${r.dc})</span><span style="color: ${r.success ? "#2e7d32" : "#c0392b"}; font-weight: bold; min-width: 50px; text-align: right;">${r.success ? game.i18n.localize("TAMS.Combat.Pass") : game.i18n.localize("TAMS.Combat.Fail")}</span></div>`;
     });
-    resultsHtml += `</div>${successCount > 0 ? `<div class="roll-row" style="color: #2e7d32; font-weight: bold; margin-top: 5px; border-top: 1px solid #2e7d32; padding-top: 3px;">${game.i18n.format("TAMS.Combat.SquadMembersRestored", { count: successCount })}</div>` : ""}</div>`;
+    resultsHtml += `</div>`;
+    if (successCount > 0) {
+      resultsHtml += `<div class="roll-row" style="color: #2e7d32; font-weight: bold; margin-top: 5px; border-top: 1px solid #2e7d32; padding-top: 3px;">${game.i18n.format("TAMS.Combat.SquadMembersRestored", { count: successCount })}</div>`;
+    }
+    if (!isMook && failureCount > 0) {
+      resultsHtml += `<div class="roll-row" style="color: #c0392b; font-weight: bold; margin-top: 5px; border-top: 1px solid #c0392b; padding-top: 3px;">${game.i18n.format("TAMS.Combat.SquadMembersLost", { count: failureCount })}</div>`;
+    }
+    resultsHtml += `</div>`;
     ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: resultsHtml });
     btn.disabled = true;
     btn.innerText = game.i18n.localize("TAMS.Combat.ChecksRolled");
@@ -1379,7 +1445,7 @@ class TAMSActor extends Actor {
    * @returns {Promise<object>} Result including updates, itemUpdates, pendingChecks, and report.
    */
   async applyDamage(hits, { isAoE = false, multiplier = 1 } = {}) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+    var _a, _b;
     const updates = {};
     const itemUpdates = {};
     const pendingChecks = [];
@@ -1394,7 +1460,8 @@ class TAMSActor extends Actor {
       "Left Leg": "leftLeg",
       "Right Leg": "rightLeg"
     };
-    for (let key of Object.keys(this.system.limbs)) {
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    for (let key of limbKeys) {
       originalLimbStatus[key] = {
         value: this.system.limbs[key].value,
         injured: this.system.limbs[key].injured,
@@ -1407,6 +1474,7 @@ class TAMSActor extends Actor {
     const isSquadOrHorde = ((_a = this.system.settings) == null ? void 0 : _a.isNPC) && (this.system.settings.npcType === "squad" || this.system.settings.npcType === "horde");
     const currentSquadSize = this.system.settings.squadSize || 1;
     const accumulatedLimbDamage = {};
+    const limbLosses = {};
     for (let i = 0; i < hits.length; i++) {
       const hit = hits[i];
       const incoming = Math.floor(hit.damage || 0);
@@ -1416,34 +1484,15 @@ class TAMSActor extends Actor {
       if (!limbKey) continue;
       const limb = this.system.limbs[limbKey];
       const isAltArmor = (_b = this.system.settings) == null ? void 0 : _b.alternateArmour;
-      let armor = 0;
-      let armorItems = [];
-      if (limb.hasEquippedArmor) {
-        const it = this.items.get(limb.equippedArmorId);
-        if (it && it.type === "armor") {
-          armorItems = [it];
-          const pendingVal = (_c = itemUpdates[it.id]) == null ? void 0 : _c[`system.limbs.${limbKey}.value`];
-          const curVal = pendingVal !== void 0 ? pendingVal : ((_d = it.system.limbs[limbKey]) == null ? void 0 : _d.value) || 0;
-          if (isAltArmor) {
-            const pendingMax = (_e = itemUpdates[it.id]) == null ? void 0 : _e[`system.limbs.${limbKey}.max`];
-            const curMax = pendingMax !== void 0 ? pendingMax : ((_f = it.system.limbs[limbKey]) == null ? void 0 : _f.max) || 0;
-            if (curMax > 0) armor = curVal;
-          } else {
-            armor = curVal;
-          }
-        }
-      } else {
-        const pendingVal = updates[`system.limbs.${limbKey}.armor`];
-        const curVal = pendingVal !== void 0 ? pendingVal : limb.armor || 0;
-        if (isAltArmor) {
-          const pendingMax = updates[`system.limbs.${limbKey}.armorMax`];
-          const curMax = pendingMax !== void 0 ? pendingMax : limb.armorMax || 0;
-          if (curMax > 0) armor = curVal;
-        } else {
-          armor = curVal;
-        }
+      const pendingArmor = updates[`system.limbs.${limbKey}.armor`];
+      let armorValue = pendingArmor !== void 0 ? pendingArmor : limb.armor || 0;
+      if (isAltArmor) {
+        const pendingMax = updates[`system.limbs.${limbKey}.armorMax`];
+        const curMax = pendingMax !== void 0 ? pendingMax : limb.armorMax || 0;
+        if (curMax <= 0) armorValue = 0;
       }
-      armor = Math.floor(armor);
+      const otherArmor = limb.otherArmor || 0;
+      const armor = Math.floor(armorValue + otherArmor);
       const effectiveArmor = Math.max(0, armor - armourPen);
       let effective = Math.max(0, incoming - effectiveArmor);
       const blocked = Math.min(incoming, effectiveArmor);
@@ -1452,41 +1501,37 @@ class TAMSActor extends Actor {
         const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
         const limbCap = (isAoE ? multiplier : 1) * indMax;
         if (!accumulatedLimbDamage[limbKey]) accumulatedLimbDamage[limbKey] = 0;
+        const currentLimbHpBeforeHit = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
         const remainingCap = Math.max(0, limbCap - accumulatedLimbDamage[limbKey]);
         const cappedEffective = Math.min(effective, remainingCap);
         overflow = effective - cappedEffective;
+        const totalDamageOfHit = effective;
         effective = cappedEffective;
         accumulatedLimbDamage[limbKey] += effective;
+        if (!limbLosses[limbKey]) limbLosses[limbKey] = [];
+        const newLimbHpAfterHit = currentLimbHpBeforeHit - effective;
+        const oldSize = Math.max(0, Math.ceil(currentLimbHpBeforeHit / indMax));
+        const newSize = Math.max(0, Math.ceil(newLimbHpAfterHit / indMax));
+        const lostInThisHit = oldSize - newSize;
+        if (lostInThisHit > 0) {
+          const damageTakenAlready = limb.max - currentLimbHpBeforeHit;
+          const totalDamageOnLimb = damageTakenAlready + totalDamageOfHit;
+          const dc = totalDamageOnLimb;
+          for (let j = 0; j < lostInThisHit; j++) {
+            limbLosses[limbKey].push(dc);
+          }
+        }
       }
       const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
       const newHp = Math.floor(currentHp) - effective;
       updates[`system.limbs.${limbKey}.value`] = newHp;
       limbDamageReceived[limbKey] += effective;
       let lossLabel = "";
-      if (armor > 0 && effective + overflow < incoming) {
-        if (limb.hasEquippedArmor) {
-          const itemToDamage = armorItems.find((it) => {
-            var _a2, _b2, _c2, _d2;
-            const pending = isAltArmor ? (_a2 = itemUpdates[it.id]) == null ? void 0 : _a2[`system.limbs.${limbKey}.max`] : (_b2 = itemUpdates[it.id]) == null ? void 0 : _b2[`system.limbs.${limbKey}.value`];
-            const val = pending !== void 0 ? pending : isAltArmor ? (_c2 = it.system.limbs[limbKey]) == null ? void 0 : _c2.max : (_d2 = it.system.limbs[limbKey]) == null ? void 0 : _d2.value;
-            return (val || 0) > 0;
-          });
-          if (itemToDamage) {
-            const key = isAltArmor ? `system.limbs.${limbKey}.max` : `system.limbs.${limbKey}.value`;
-            const pending = (_g = itemUpdates[itemToDamage.id]) == null ? void 0 : _g[key];
-            const currentVal = pending !== void 0 ? pending : isAltArmor ? (_h = itemToDamage.system.limbs[limbKey]) == null ? void 0 : _h.max : (_i = itemToDamage.system.limbs[limbKey]) == null ? void 0 : _i.value;
-            itemUpdates[itemToDamage.id] = {
-              ...itemUpdates[itemToDamage.id] || {},
-              _id: itemToDamage.id,
-              [key]: Math.max(0, currentVal - 1)
-            };
-          }
-        } else {
-          const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
-          const pending = updates[key];
-          const currentVal = pending !== void 0 ? pending : isAltArmor ? limb.armorMax : limb.armor;
-          updates[key] = Math.max(0, (currentVal || 0) - 1);
-        }
+      if (armorValue > 0 && effective + overflow < incoming) {
+        const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
+        const pending = updates[key];
+        const currentVal = pending !== void 0 ? pending : isAltArmor ? limb.armorMax : limb.armor;
+        updates[key] = Math.max(0, (currentVal || 0) - 1);
         lossLabel = isAltArmor ? game.i18n.localize("TAMS.Checks.ArmorHPLost") : game.i18n.localize("TAMS.Checks.ArmorPointLost");
       }
       const penLabel = armourPen > 0 ? game.i18n.format("TAMS.Checks.ArmorPenetrated", { pen: armourPen }) : "";
@@ -1502,18 +1547,50 @@ class TAMSActor extends Actor {
     }
     if (isSquadOrHorde) {
       let finalSquadSize = currentSquadSize;
-      for (let [lk, limb] of Object.entries(this.system.limbs)) {
+      let bottleneckLimb = null;
+      const limbKeys2 = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+      for (let lk of limbKeys2) {
+        const limb = this.system.limbs[lk];
+        if (!limb) continue;
         const newLimbVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
         const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
         const potentialSize = Math.max(0, Math.ceil(newLimbVal / indMax));
-        if (potentialSize < finalSquadSize) finalSquadSize = potentialSize;
+        if (potentialSize < finalSquadSize) {
+          finalSquadSize = potentialSize;
+          bottleneckLimb = lk;
+        }
       }
       if (finalSquadSize < currentSquadSize) {
         const lostCount = currentSquadSize - finalSquadSize;
-        updates["system.settings.squadSize"] = finalSquadSize;
-        report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadLostMembers", { name: this.name, lostCount, finalSquadSize })} !!!</b><br>`;
-        report += `<button class="tams-squad-crit-roll" data-actor-id="${this.id}" data-count="${lostCount}" data-name="${this.name}">${game.i18n.format("TAMS.Checks.RollForCriticalWounds", { count: lostCount })}</button><br>`;
-        if (finalSquadSize === 0) {
+        const npcRank = this.system.settings.npcRank || "mook";
+        const isMook = npcRank === "mook";
+        if (isMook) {
+          updates["system.settings.squadSize"] = finalSquadSize;
+          report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadLostMembers", { name: this.name, lostCount, finalSquadSize })} !!!</b><br>`;
+          const limbKeys3 = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+          for (let lk of limbKeys3) {
+            const limb = this.system.limbs[lk];
+            if (!limb) continue;
+            const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
+            const newMax = finalSquadSize * indMax;
+            const currentVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
+            const totalDamage = limb.max - currentVal;
+            const remainderDamage = totalDamage % indMax;
+            if (currentVal > 0) {
+              updates[`system.limbs.${lk}.value`] = newMax - remainderDamage;
+            } else {
+              updates[`system.limbs.${lk}.value`] = Math.max(currentVal, -newMax);
+            }
+          }
+        } else {
+          report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadThreatenedMembers", { name: this.name, lostCount })} !!!</b><br>`;
+        }
+        if (!isMook) {
+          const dcs = bottleneckLimb && limbLosses[bottleneckLimb] ? limbLosses[bottleneckLimb].slice(0, lostCount) : [];
+          const dcsAttr = dcs.length > 0 ? ` data-dcs="${dcs.join(",")}"` : "";
+          report += `<button class="tams-squad-crit-roll" data-actor-uuid="${this.uuid}" data-count="${lostCount}" data-name="${this.name}"${dcsAttr}>${game.i18n.format("TAMS.Checks.RollForCriticalWounds", { count: lostCount })}</button><br>`;
+        }
+        if (finalSquadSize === 0 && isMook) {
           report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadDestroyed", { name: this.name })} !!!</b><br>`;
         }
       }
@@ -1581,28 +1658,54 @@ class TAMSActor extends Actor {
   }
   /** @override */
   async _preUpdate(updateData, options, user) {
+    var _a, _b;
     const res = await super._preUpdate(updateData, options, user);
     if (res === false) return false;
-    const hasValue = foundry.utils.hasProperty(updateData, "system.stats.endurance.value");
-    const hasMod = foundry.utils.hasProperty(updateData, "system.stats.endurance.mod");
-    if (hasValue || hasMod) {
-      const stats = this.system.stats;
-      const oldVal = stats.endurance.value;
-      const oldMod = stats.endurance.mod;
-      const oldEnd = oldVal + (oldMod || 0);
-      const newVal = hasValue ? foundry.utils.getProperty(updateData, "system.stats.endurance.value") : oldVal;
-      const newMod = hasMod ? foundry.utils.getProperty(updateData, "system.stats.endurance.mod") : oldMod || 0;
-      const newEnd = newVal + newMod;
-      if (newEnd !== oldEnd) {
-        const limbs = this.system.limbs;
-        for (const [key, limb] of Object.entries(limbs)) {
-          const oldMax = Math.floor(oldEnd * limb.mult);
-          const newMax = Math.floor(newEnd * limb.mult);
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    for (const key of limbKeys) {
+      const armorIdPath = `system.limbs.${key}.equippedArmorId`;
+      if (foundry.utils.hasProperty(updateData, armorIdPath)) {
+        const newArmorId = foundry.utils.getProperty(updateData, armorIdPath);
+        const oldArmorId = this.system.limbs[key].equippedArmorId;
+        if (newArmorId !== oldArmorId) {
+          if (newArmorId) {
+            const armorItem = this.items.get(newArmorId);
+            if (armorItem && armorItem.type === "armor") {
+              foundry.utils.setProperty(updateData, `system.limbs.${key}.armor`, ((_a = armorItem.system.limbs[key]) == null ? void 0 : _a.value) || 0);
+              foundry.utils.setProperty(updateData, `system.limbs.${key}.armorMax`, ((_b = armorItem.system.limbs[key]) == null ? void 0 : _b.max) || 0);
+            }
+          } else {
+            foundry.utils.setProperty(updateData, `system.limbs.${key}.armor`, 0);
+            foundry.utils.setProperty(updateData, `system.limbs.${key}.armorMax`, 0);
+          }
+        }
+      }
+    }
+    const stats = this.system.stats;
+    const settings = this.system.settings;
+    const oldSquadSize = settings.squadSize || 1;
+    const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
+    const hasEndValue = foundry.utils.hasProperty(updateData, "system.stats.endurance.value");
+    const hasEndMod = foundry.utils.hasProperty(updateData, "system.stats.endurance.mod");
+    const hasSquadSize = foundry.utils.hasProperty(updateData, "system.settings.squadSize");
+    if (hasEndValue || hasEndMod || hasSquadSize) {
+      const oldEnd = stats.endurance.value + (stats.endurance.mod || 0);
+      const newEnd = (hasEndValue ? foundry.utils.getProperty(updateData, "system.stats.endurance.value") : stats.endurance.value) + (hasEndMod ? foundry.utils.getProperty(updateData, "system.stats.endurance.mod") : stats.endurance.mod || 0);
+      const newSquadSize = hasSquadSize ? foundry.utils.getProperty(updateData, "system.settings.squadSize") : oldSquadSize;
+      if (newEnd !== oldEnd || newSquadSize !== oldSquadSize) {
+        const limbKeys2 = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+        for (const key of limbKeys2) {
+          const limb = this.system.limbs[key];
+          if (!limb) continue;
+          const currentPath = `system.limbs.${key}.value`;
+          if (foundry.utils.hasProperty(updateData, currentPath)) continue;
+          const oldIndMax = Math.floor(oldEnd * limb.mult);
+          const newIndMax = Math.floor(newEnd * limb.mult);
+          const oldMax = isSquadOrHorde ? oldIndMax * oldSquadSize : oldIndMax;
+          const newMax = isSquadOrHorde ? newIndMax * newSquadSize : newIndMax;
           const deltaMax = newMax - oldMax;
           if (deltaMax !== 0) {
-            const currentPath = `system.limbs.${key}.value`;
-            const currentVal = foundry.utils.hasProperty(updateData, currentPath) ? foundry.utils.getProperty(updateData, currentPath) : limb.value;
-            foundry.utils.setProperty(updateData, currentPath, currentVal + deltaMax);
+            foundry.utils.setProperty(updateData, currentPath, limb.value + deltaMax);
           }
         }
       }
@@ -1870,9 +1973,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       if (i.system.location === "backpack") {
         isGreyedOut = !hasBackpack;
       } else if (i.system.location && i.system.location !== "stowed" && i.system.location !== "hand") {
-        const container = this.document.items.get(i.system.location);
-        if (container && container.type === "backpack") {
-          isGreyedOut = !container.system.equipped;
+        const container2 = this.document.items.get(i.system.location);
+        if (container2 && container2.type === "backpack") {
+          isGreyedOut = !container2.system.equipped;
         }
       }
       const itemData = {
@@ -1980,6 +2083,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     };
     context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
+    context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
     context.limbOptions = {
       "none": "TAMS.CalculatorOptions.None",
       "head": "TAMS.HitLocations.Head",
@@ -2031,7 +2135,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     var _a;
     const armorItems = this.document.items.filter((i) => i.type === "armor");
     context.limbArmorOptions = {};
-    for (const limbKey of Object.keys(this.document.system.limbs)) {
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    for (const limbKey of limbKeys) {
       context.limbArmorOptions[limbKey] = { "": "None" };
       for (const armor of armorItems) {
         if (((_a = armor.system.limbs[limbKey]) == null ? void 0 : _a.max) > 0) {
@@ -2348,7 +2453,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    */
   async _onFullHeal(event, target) {
     const updates = {};
-    for (const [id, limb] of Object.entries(this.document.system.limbs)) {
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    for (const id of limbKeys) {
+      const limb = this.document.system.limbs[id];
+      if (!limb) continue;
       updates[`system.limbs.${id}.value`] = limb.max;
       updates[`system.limbs.${id}.injured`] = false;
       updates[`system.limbs.${id}.criticallyInjured`] = false;
@@ -2506,7 +2614,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       if (statId !== "dodge") familiarity = 0;
     }
     if (item && item.type === "weapon") {
-      const str = this.document.system.stats.strength;
+      this.document.system.stats.strength;
       this.document.system.stats.dexterity;
       let usesDex = false;
       if (item.system.attackStat && item.system.attackStat !== "default") {
@@ -2524,11 +2632,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       addStatModSources(statId);
       statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
       label = `Attacking with ${item.name}`;
-      if (item.system.isHeavy && str.value < 40) {
-        statValue = Math.floor(statValue / 2);
-        statMod = Math.floor(statMod / 2);
-        statModSources.forEach((s) => s.value = Math.floor(s.value / 2));
-      }
     }
     if (item && item.type === "skill") {
       const name = item.name;
@@ -2572,15 +2675,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         statValue = stat ? stat.value : 0;
         statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         label = game.i18n.format("TAMS.UsingAbilityLabel", { name: item.name });
-        const weapon = this.document.items.find((i) => i.type === "weapon" && i.system.equipped);
-        if (weapon) {
-          const str = this.document.system.stats.strength;
-          if (weapon.system.isHeavy && str.value < 40) {
-            statValue = Math.floor(statValue / 2);
-            statMod = Math.floor(statMod / 2);
-            statModSources.forEach((s) => s.value = Math.floor(s.value / 2));
-          }
-        }
       } else {
         statId = item.system.capStat || "strength";
         addStatModSources(statId);
@@ -2703,12 +2797,15 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     const roll = await new Roll("1d100").evaluate();
     let rawResult = roll.total;
+    let originalResult = rawResult;
+    let rerolled = false;
     let isJammed = false;
     if (item && item.system.tags) {
       const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
       if (tags.includes("reliable") && rawResult <= 4) {
         const reroll = await new Roll("1d100").evaluate();
         rawResult = reroll.total;
+        rerolled = true;
       }
       if (tags.includes("unreliable") && rawResult <= 4) {
         isJammed = true;
@@ -2783,6 +2880,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                         <button class="tams-boost-roll" 
                                 data-difficulty="${difficulty}" 
                                 data-total="${dcTotal}" 
+                                data-actor-uuid="${actor.uuid}"
                                 data-actor-id="${actor.id}">
                             ${game.i18n.localize("TAMS.Checks.SpendResourceToBoost")}
                         </button>
@@ -2888,7 +2986,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-is-aoe="${isAoE ? "1" : "0"}"
                                   data-force-crit="${forceCrit ? "1" : "0"}"
                                   data-target-token-id="${targetTokenId || ""}"
-                                  data-target-actor-id="${targetActorId || ""}">Apply Damage</button>
+                                  data-target-actor-id="${targetActorId || ""}"
+                                  data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}">Apply Damage</button>
                           <button class="tams-dodge" 
                                   data-raw="${rawResult}" 
                                   data-total="${finalTotal}" 
@@ -2900,7 +2999,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-is-aoe="${isAoE ? "1" : "0"}"
                                   data-target-limb="${targetLimb}"
                                   data-target-token-id="${targetTokenId || ""}"
-                                  data-target-actor-id="${targetActorId || ""}">Dodge</button>
+                                  data-target-actor-id="${targetActorId || ""}"
+                                  data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}">Dodge</button>
                           <button class="tams-retaliate" 
                                   data-raw="${rawResult}" 
                                   data-total="${finalTotal}" 
@@ -2912,7 +3012,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-is-aoe="${isAoE ? "1" : "0"}"
                                   data-target-limb="${targetLimb}"
                                   data-target-token-id="${targetTokenId || ""}"
-                                  data-target-actor-id="${targetActorId || ""}">Retaliate</button>
+                                  data-target-actor-id="${targetActorId || ""}"
+                                  data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}">Retaliate</button>
                           <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
                           <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
                         </div>
@@ -2943,14 +3044,17 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                     data-damage="${damage}" data-armour-pen="${armourPen}" data-locations='${JSON.stringify(tHits)}' data-target-limb="${targetLimb}"
                                     data-is-aoe="${isAoE ? "1" : "0"}"
                                     data-target-token-id="${targetTokenId || ""}" data-target-actor-id="${targetActorId || ""}" 
+                                    data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
                             <button class="tams-dodge" title="Dodge"
                                     data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isAoE ? "1" : "0"}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ""}" data-target-actor-id="${targetActorId || ""}"
+                                    data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">D</button>
                             <button class="tams-retaliate" title="Retaliate"
                                     data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isAoE ? "1" : "0"}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ""}" data-target-actor-id="${targetActorId || ""}"
+                                    data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
                             <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
                             <button class="tams-unaware-toggle" title="Unaware" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">U</button>
@@ -2977,6 +3081,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         <h3 class="roll-label">${label}</h3>
         ${descriptionHtml}
         ${damageInfo}
+        ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
+            ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", { original: originalResult })}
+        </div>` : ""}
         <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${rawResult}</span></div>
         ${statId === "bravery" ? `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? " + " + familiarity : ""}${bonus ? " + " + bonus : ""}</span></div>` : `<div class="roll-row"><small>Stat Cap (${statValue}${statMod >= 0 ? "+" : ""}${statMod}):</small><span>${cappedResult}</span></div>
              ${statModSources.length > 0 ? statModSources.map((s) => `<div class="roll-row-detail"><small>${s.label}:</small><span>${s.value >= 0 ? "+" : ""}${s.value}</span></div>`).join("") : ""}
@@ -3355,6 +3462,10 @@ Hooks.once("init", async function() {
   Handlebars.registerHelper("capitalize", (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1);
+  });
+  Handlebars.registerHelper("upperCase", (str) => {
+    if (!str) return "";
+    return str.toUpperCase();
   });
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
 });

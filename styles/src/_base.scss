@@ -19,6 +19,18 @@
     flex-direction: column;
 }
 
+.tams .small-input {
+    width: 42px !important;
+    text-align: center;
+    -moz-appearance: textfield;
+}
+
+.tams .small-input::-webkit-outer-spin-button,
+.tams .small-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .tams .flexrow {
     display: flex;
     flex-direction: row;

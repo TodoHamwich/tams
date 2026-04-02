@@ -27,8 +27,12 @@
     "TotalHP": "Total HP",
     "Size": "Size",
     "LimbsHPAndArmor": "Limbs (HP / Armor)",
+    "Limb": "Limb",
+    "HP": "HP",
+    "Status": "Status",
     "Armour": "Armour",
-    "EquippedArmorItem": "Equipped Armor Item",
+    "OtherArmour": "Other Armour (Magical/Temp)",
+    "EquippedArmorItem": "Equipped Armour Item",
     "InjuredQ": "Injured?",
     "CriticallyInjuredQ": "Critically Injured?",
     "CurrentHP": "Current HP",
@@ -401,7 +405,8 @@
         "NoUsesLeft": "No uses left! Shift-click to refill.",
         "NotEnoughToBoost": "Not enough resource to boost!",
         "NotEnoughAmmo": "Not enough ammo! Using only {count} ammo.",
-        "Jammed": "JAMMED"
+        "Jammed": "JAMMED",
+        "ReliableReroll": "Reliable Reroll (Original: {original})"
       }
     }
   },

@@ -1,0 +1,107 @@
+TAMS (Todo's Advanced Modular System) - System Features
+
+COMBAT
+--------------------------------------------------------------------------------
+* Hit Locations:
+  - Combat uses a d100 hit location system for every attack.
+  - Locations: Right Leg (01-10), Left Leg (11-20), Right Arm (21-30), Left Arm (31-40), Stomach (41-55), Thorax (56-95), Head (96-100).
+  - Each limb has its own Health (HP), Armor, and Damage Multiplier.
+
+* Defensive Maneuvers:
+  - Dodge: A contested roll against the attacker's total. The defender's d100 roll is capped by their Dexterity stat.
+  - Retaliation: A defensive counter-attack. The defender chooses a weapon or ability and rolls against the attacker's total. Results can lead to mutual hits or the defender successfully hitting back.
+
+* Damage System:
+  - Damage is applied to specific hit locations.
+  - Armor on the hit limb reduces incoming damage.
+  - Alternate Armor Rules: When enabled, Armor value remains constant, but every hit reduces Armor Max (HP). When it reaches 0, the armor no longer provides protection.
+  - Total HP is the sum of all individual limb HP.
+  - Limb States: Limbs can become "Injured" or "Critically Injured" if they take significant damage, requiring Endurance checks.
+
+* Boosting & Success:
+  - Characters can spend Stamina or Custom Resources to "Boost" a roll.
+  - Each point spent provides a +5 bonus to the roll total (maximum 10 points/ +50 bonus per boost).
+  - Critical Success: A roll total that is at least double the target difficulty results in a Critical Success.
+  - Critical Failure/Hit: Attacker's raw roll vs. Defender's raw roll determines critical hits in contested rolls.
+
+* Combat Modifiers:
+  - Behind: Attacking from behind applies a penalty to the defender's stat cap (default 50%).
+  - Unaware: An unaware defender has their stat cap reduced by 50%.
+
+* Tags & Automation:
+  - Weapons (and other items) can have tags that automate specific mechanics.
+  - Accurate: Provides a flat +5 bonus to the roll total.
+  - Reliable: If the raw d100 roll is 4 or less, it automatically rerolls the dice once.
+  - Unreliable: If the raw d100 roll is 4 or less, the weapon "Jams" (fails the attack).
+  - Vicious: Increases damage by 50% (x1.5) on a Critical Success (Total >= 2x DC).
+  - Brutal: Forces the attack to be treated as a Critical Hit (always triggers critical damage effects).
+  - Balanced: Provides a +10 bonus to Familiarity for melee weapons.
+  - Profession Tags: If an item's tag matches a character's "Profession" trait, it automatically receives bonuses configured for that profession (e.g., "All Profession Rolls" bonus).
+  - Other Tags: Compact, Reach, Silent (primarily descriptive or situational).
+
+* Automated Weapon Properties:
+  - Light: Automatically uses Dexterity instead of Strength for melee damage.
+  - Heavy: Melee damage multiplier increases by +0.25 (Total 0.75x).
+  - Two-Handed: Melee damage multiplier increases by +0.25 (Total 0.75x).
+  - (Combining Heavy + Two-Handed results in a 1.0x damage multiplier).
+  - Ranged: Damage is based on a fixed value rather than a derived stat.
+  - Throwing: Thrown weapons use Strength for attack rolls even if Ranged.
+
+* Automated Ability Types:
+  - Apex: Powerful abilities that do not consume uses or require a recharge cost.
+  - Reaction: Abilities specifically marked to be available for use during contested defensive maneuvers (Retaliation).
+
+* Mandatory Checks:
+  - Injury Check: Triggered by heavy damage; failing results in the "Injured" status for a limb.
+  - Critical Injury Check: Triggered by extreme damage; failing results in "Critically Injured".
+  - Unconscious Check: Triggered when HP is low or specific conditions are met; failure results in falling unconscious.
+  - Survival Check: Triggered by potentially fatal damage.
+
+* Squads & Hordes (NPCs):
+  - Special NPC types that represent groups.
+  - Limb HP is multiplied by the squad size.
+  - Mechanics for losing members when taking damage and restoring them through successful checks.
+
+
+CORE SYSTEMS
+--------------------------------------------------------------------------------
+* Stats:
+  - Six primary stats: Strength, Dexterity, Endurance, Wisdom, Intelligence, and Bravery.
+  - Stats act as caps for d100 rolls (e.g., a roll of 80 with a Stat of 60 is capped at 60).
+
+* Resource Management:
+  - Stamina: Derived from Endurance. Primary resource for boosting and abilities.
+  - Custom Resources: Fully configurable bars for tracking unique mechanics (e.g., Mana, Rage, Ammo). Can be linked to stats or fixed values.
+  - Opposed Resources: Custom resources can be configured as dual-color bars for "Tug-of-War" style mechanics.
+
+* Inventory & Encumbrance:
+  - Capacity: Maximum carrying capacity is based on the Endurance stat.
+  - Item Sizes: Items are categorized as Small (1 unit), Medium (10 units), or Large (50 units).
+  - Backpacks: Increase total capacity but may apply penalties to stats, dodge, or movement.
+  - Equipment Locations: Items can be equipped in hands, stowed, or placed inside backpacks.
+
+* Progression & Upgrades:
+  - Characters earn Upgrade Points in five categories: Stats, Weapons, Skills, Abilities, and Traits.
+  - Familiarity: Using weapons and skills increases their Familiarity, providing a flat bonus to rolls.
+
+* Item Types:
+  - Weapons: Support for melee/ranged, fire rates (Single, 3-round, Auto, Custom), and armor penetration.
+  - Skills: General proficiency rolls with specific stats.
+  - Abilities: Complex actions that can cost resources, deal damage, apply effects, or act as reactions.
+  - Armor: Provides protection to specific limbs.
+  - Traits: Passive bonuses that can modify stats, HP, stamina, or roll results.
+  - Consumables, Tools, and Quest Items.
+  - Backpacks: Carry more items and manage encumbrance.
+
+* Loot & Economy:
+  - Loot Sheet: Support for transforming actors into lootable containers.
+  - Loot Drop: GMs can drop items directly onto the canvas to create lootable actors.
+  - Currencies: Fully configurable currency system (default: Gold, Silver, Copper).
+  - Item Transfer: Secure item transfers between actors via sockets.
+
+* Visuals & UI:
+  - Themes: Supports three distinct visual themes: Default, Dark, and Parchment.
+  - Custom Resource Bars: Dynamic colors and icons for resource tracking.
+
+* Ability Calculator:
+  - A robust tool for GMs and players to define ability behavior, including AoE radius, range, duration, damage stats, and special effects like Stun or Healing.

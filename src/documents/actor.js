@@ -25,7 +25,8 @@ export class TAMSActor extends Actor {
       "Left Leg": "leftLeg", "Right Leg": "rightLeg"
     };
     
-    for (let key of Object.keys(this.system.limbs)) {
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    for (let key of limbKeys) {
         originalLimbStatus[key] = {
             value: this.system.limbs[key].value,
             injured: this.system.limbs[key].injured,
@@ -51,34 +52,17 @@ export class TAMSActor extends Actor {
         const limb = this.system.limbs[limbKey];
         
         const isAltArmor = this.system.settings?.alternateArmour;
-        let armor = 0;
-        let armorItems = [];
-        if (limb.hasEquippedArmor) {
-            const it = this.items.get(limb.equippedArmorId);
-            if (it && it.type === 'armor') {
-                armorItems = [it];
-                const pendingVal = itemUpdates[it.id]?.[`system.limbs.${limbKey}.value`];
-                const curVal = (pendingVal !== undefined ? pendingVal : (it.system.limbs[limbKey]?.value || 0));
-                if (isAltArmor) {
-                    const pendingMax = itemUpdates[it.id]?.[`system.limbs.${limbKey}.max`];
-                    const curMax = (pendingMax !== undefined ? pendingMax : (it.system.limbs[limbKey]?.max || 0));
-                    if (curMax > 0) armor = curVal;
-                } else {
-                    armor = curVal;
-                }
-            }
-        } else {
-            const pendingVal = updates[`system.limbs.${limbKey}.armor`];
-            const curVal = pendingVal !== undefined ? pendingVal : (limb.armor || 0);
-            if (isAltArmor) {
-                const pendingMax = updates[`system.limbs.${limbKey}.armorMax`];
-                const curMax = pendingMax !== undefined ? pendingMax : (limb.armorMax || 0);
-                if (curMax > 0) armor = curVal;
-            } else {
-                armor = curVal;
-            }
+        const pendingArmor = updates[`system.limbs.${limbKey}.armor`];
+        let armorValue = pendingArmor !== undefined ? pendingArmor : (limb.armor || 0);
+        
+        if (isAltArmor) {
+            const pendingMax = updates[`system.limbs.${limbKey}.armorMax`];
+            const curMax = pendingMax !== undefined ? pendingMax : (limb.armorMax || 0);
+            if (curMax <= 0) armorValue = 0;
         }
-        armor = Math.floor(armor);
+        
+        const otherArmor = limb.otherArmor || 0;
+        const armor = Math.floor(armorValue + otherArmor);
         const effectiveArmor = Math.max(0, armor - armourPen);
         
         let effective = Math.max(0, incoming - effectiveArmor);
@@ -125,29 +109,11 @@ export class TAMSActor extends Actor {
         limbDamageReceived[limbKey] += effective;
 
         let lossLabel = "";
-        if (armor > 0 && (effective + overflow) < incoming) {
-            if (limb.hasEquippedArmor) {
-                const itemToDamage = armorItems.find(it => {
-                    const pending = isAltArmor ? itemUpdates[it.id]?.[`system.limbs.${limbKey}.max`] : itemUpdates[it.id]?.[`system.limbs.${limbKey}.value`];
-                    const val = pending !== undefined ? pending : (isAltArmor ? it.system.limbs[limbKey]?.max : it.system.limbs[limbKey]?.value);
-                    return (val || 0) > 0;
-                });
-                if (itemToDamage) {
-                    const key = isAltArmor ? `system.limbs.${limbKey}.max` : `system.limbs.${limbKey}.value`;
-                    const pending = itemUpdates[itemToDamage.id]?.[key];
-                    const currentVal = pending !== undefined ? pending : (isAltArmor ? itemToDamage.system.limbs[limbKey]?.max : itemToDamage.system.limbs[limbKey]?.value);
-                    itemUpdates[itemToDamage.id] = { 
-                        ...(itemUpdates[itemToDamage.id] || {}),
-                        _id: itemToDamage.id, 
-                        [key]: Math.max(0, currentVal - 1) 
-                    };
-                }
-            } else {
-                const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
-                const pending = updates[key];
-                const currentVal = pending !== undefined ? pending : (isAltArmor ? limb.armorMax : limb.armor);
-                updates[key] = Math.max(0, (currentVal || 0) - 1);
-            }
+        if (armorValue > 0 && (effective + overflow) < incoming) {
+            const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
+            const pending = updates[key];
+            const currentVal = pending !== undefined ? pending : (isAltArmor ? limb.armorMax : limb.armor);
+            updates[key] = Math.max(0, (currentVal || 0) - 1);
             lossLabel = isAltArmor ? game.i18n.localize("TAMS.Checks.ArmorHPLost") : game.i18n.localize("TAMS.Checks.ArmorPointLost");
         }
 
@@ -168,7 +134,10 @@ export class TAMSActor extends Actor {
     if (isSquadOrHorde) {
         let finalSquadSize = currentSquadSize;
         let bottleneckLimb = null;
-        for (let [lk, limb] of Object.entries(this.system.limbs)) {
+        const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+        for (let lk of limbKeys) {
+            const limb = this.system.limbs[lk];
+            if (!limb) continue;
             const newLimbVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
             const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
             const potentialSize = Math.max(0, Math.ceil(newLimbVal / indMax));
@@ -186,12 +155,20 @@ export class TAMSActor extends Actor {
                 report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadLostMembers", {name: this.name, lostCount, finalSquadSize})} !!!</b><br>`;
                 
                 // Ensure all limbs are capped to the new squad size
-                for (let [lk, limb] of Object.entries(this.system.limbs)) {
+                const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+                for (let lk of limbKeys) {
+                    const limb = this.system.limbs[lk];
+                    if (!limb) continue;
                     const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
                     const newMax = finalSquadSize * indMax;
                     const currentVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
-                    if (Math.abs(currentVal) > newMax) {
-                        updates[`system.limbs.${lk}.value`] = Math.min(Math.max(currentVal, -newMax), newMax);
+                    const totalDamage = limb.max - currentVal;
+                    const remainderDamage = totalDamage % indMax;
+
+                    if (currentVal > 0) {
+                        updates[`system.limbs.${lk}.value`] = newMax - remainderDamage;
+                    } else {
+                        updates[`system.limbs.${lk}.value`] = Math.max(currentVal, -newMax);
                     }
                 }
             } else {
@@ -288,36 +265,67 @@ export class TAMSActor extends Actor {
     const res = await super._preUpdate(updateData, options, user);
     if ( res === false ) return false;
 
-    // Check if endurance changed
-    const hasValue = foundry.utils.hasProperty(updateData, "system.stats.endurance.value");
-    const hasMod = foundry.utils.hasProperty(updateData, "system.stats.endurance.mod");
+    // --- Armor Set Once Logic ---
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    for (const key of limbKeys) {
+        const armorIdPath = `system.limbs.${key}.equippedArmorId`;
+        if (foundry.utils.hasProperty(updateData, armorIdPath)) {
+            const newArmorId = foundry.utils.getProperty(updateData, armorIdPath);
+            const oldArmorId = this.system.limbs[key].equippedArmorId;
+            if (newArmorId !== oldArmorId) {
+                if (newArmorId) {
+                    const armorItem = this.items.get(newArmorId);
+                    if (armorItem && armorItem.type === "armor") {
+                        // Copy values from the armor item to the limb
+                        foundry.utils.setProperty(updateData, `system.limbs.${key}.armor`, armorItem.system.limbs[key]?.value || 0);
+                        foundry.utils.setProperty(updateData, `system.limbs.${key}.armorMax`, armorItem.system.limbs[key]?.max || 0);
+                    }
+                } else {
+                    // Reset to 0 if "None" is selected
+                    foundry.utils.setProperty(updateData, `system.limbs.${key}.armor`, 0);
+                    foundry.utils.setProperty(updateData, `system.limbs.${key}.armorMax`, 0);
+                }
+            }
+        }
+    }
+    // ----------------------------
 
-    if (hasValue || hasMod) {
-      const stats = this.system.stats;
-      const oldVal = stats.endurance.value;
-      const oldMod = stats.endurance.mod;
-      const oldEnd = oldVal + (oldMod || 0);
+    // Check for endurance or squad size changes to adjust HP accordingly
+    const stats = this.system.stats;
+    const settings = this.system.settings;
+    const oldSquadSize = settings.squadSize || 1;
+    const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
 
-      const newVal = hasValue ? foundry.utils.getProperty(updateData, "system.stats.endurance.value") : oldVal;
-      const newMod = hasMod ? foundry.utils.getProperty(updateData, "system.stats.endurance.mod") : (oldMod || 0);
-      const newEnd = newVal + newMod;
+    const hasEndValue = foundry.utils.hasProperty(updateData, "system.stats.endurance.value");
+    const hasEndMod = foundry.utils.hasProperty(updateData, "system.stats.endurance.mod");
+    const hasSquadSize = foundry.utils.hasProperty(updateData, "system.settings.squadSize");
 
-      if (newEnd !== oldEnd) {
-        const deltaEnd = newEnd - oldEnd;
-        const limbs = this.system.limbs;
-        for (const [key, limb] of Object.entries(limbs)) {
-          // Calculate the delta in max HP for this limb
-          const oldMax = Math.floor(oldEnd * limb.mult);
-          const newMax = Math.floor(newEnd * limb.mult);
+    if (hasEndValue || hasEndMod || hasSquadSize) {
+      const oldEnd = stats.endurance.value + (stats.endurance.mod || 0);
+      const newEnd = (hasEndValue ? foundry.utils.getProperty(updateData, "system.stats.endurance.value") : stats.endurance.value) +
+                     (hasEndMod ? foundry.utils.getProperty(updateData, "system.stats.endurance.mod") : (stats.endurance.mod || 0));
+      
+      const newSquadSize = hasSquadSize ? foundry.utils.getProperty(updateData, "system.settings.squadSize") : oldSquadSize;
+
+      if (newEnd !== oldEnd || newSquadSize !== oldSquadSize) {
+        const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+        for (const key of limbKeys) {
+          const limb = this.system.limbs[key];
+          if (!limb) continue;
+
+          // Only adjust if the value itself isn't being manually updated
+          const currentPath = `system.limbs.${key}.value`;
+          if (foundry.utils.hasProperty(updateData, currentPath)) continue;
+
+          const oldIndMax = Math.floor(oldEnd * limb.mult);
+          const newIndMax = Math.floor(newEnd * limb.mult);
+          
+          const oldMax = isSquadOrHorde ? (oldIndMax * oldSquadSize) : oldIndMax;
+          const newMax = isSquadOrHorde ? (newIndMax * newSquadSize) : newIndMax;
+          
           const deltaMax = newMax - oldMax;
-
           if (deltaMax !== 0) {
-            const currentPath = `system.limbs.${key}.value`;
-            const currentVal = foundry.utils.hasProperty(updateData, currentPath) 
-                ? foundry.utils.getProperty(updateData, currentPath) 
-                : limb.value;
-            
-            foundry.utils.setProperty(updateData, currentPath, currentVal + deltaMax);
+            foundry.utils.setProperty(updateData, currentPath, limb.value + deltaMax);
           }
         }
       }

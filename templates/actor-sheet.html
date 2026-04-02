@@ -59,7 +59,7 @@
                             <i class="fas fa-dice-d20"></i> {{localize stat.label}}
                         </label>
                         <div class="stat-inputs flexrow">
-                            <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number" title="{{localize 'TAMS.Name'}}"/>
+                            <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number" title="{{localize 'TAMS.Name'}}" class="small-input"/>
                             <span class="mod-sep">+</span>
                             <input type="number" name="system.stats.{{id}}.mod" value="{{stat.mod}}" data-dtype="Number" title="{{localize 'TAMS.Multiplier'}}" class="small-input"/>
                         </div>
@@ -72,7 +72,7 @@
                         <label class="resource-label rollable" data-action="roll" data-stat-id="{{id}}" data-label="{{capitalize id}}" data-stat-value="{{skill.value}}">
                             <i class="fas fa-dice-d20"></i> {{capitalize id}}
                         </label>
-                        <input type="number" name="system.specialSkills.{{id}}.value" value="{{skill.value}}" data-dtype="Number"/>
+                        <input type="number" name="system.specialSkills.{{id}}.value" value="{{skill.value}}" data-dtype="Number" class="small-input"/>
                     </div>
                     {{/each}}
                 </section>
@@ -83,7 +83,7 @@
                         <div class="flexrow">
                             <label class="resource-label">{{localize 'TAMS.TotalHP'}} {{#if (or (eq system.settings.npcType 'squad') (eq system.settings.npcType 'horde'))}}({{localize 'TAMS.Size'}}: {{system.settings.squadSize}}){{/if}}</label>
                             <div class="bar-container">
-                                <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled/>
+                                <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled class="small-input"/>
                                 <div class="bar">
                                     <div class="fill" style="width: {{hpPercentage}}%; background: {{system.hp.color}} !important;"></div>
                                 </div>
@@ -93,26 +93,41 @@
                     </div>
 
                     <h3 class="small-header">{{localize 'TAMS.LimbsHPAndArmor'}} <a class="full-heal" data-action="fullHeal" title="{{localize 'TAMS.FullHealAllLimbs'}}"><i class="fas fa-heartbeat"></i></a></h3>
+                    <div class="limb-header">
+                        <div class="header-label">{{localize 'TAMS.Limb'}}</div>
+                        <div class="header-hp">{{localize 'TAMS.HP'}}</div>
+                        <div class="header-armor">{{localize 'TAMS.Armour'}}</div>
+                        <div class="header-status" title="{{localize 'TAMS.Status'}}"><i class="fas fa-notes-medical"></i></div>
+                    </div>
                     {{#each system.limbs as |limb id|}}
-                    <div class="limb-row flexrow {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}}">
-                        <label class="resource-label limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}{{#if (and limb.injured (not limb.criticallyInjured))}}INJURED{{/if}}">
+                    <div class="limb-row {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}}" data-limb="{{id}}">
+                        <div class="limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}{{#if (and limb.injured (not limb.criticallyInjured))}}INJURED{{/if}}">
                             {{#if limb.criticallyInjured}}<i class="fas fa-skull crit-icon"></i>{{else if limb.injured}}<i class="fas fa-exclamation-triangle injured-icon"></i>{{/if}}
-                            {{limb.label}}
-                        </label>
-                        <div class="limb-hp flexrow">
-                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input {{#if (lt limb.value 0)}}negative-hp{{/if}}" title="{{localize 'TAMS.CurrentHP'}}"/>
-                            <span>/{{limb.max}}</span>
+                            <span>{{limb.label}}</span>
                         </div>
-                        <div class="limb-armor flexrow">
+                        <div class="limb-hp">
+                            <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input {{#if (lt limb.value 0)}}negative-hp{{/if}}" title="{{localize 'TAMS.CurrentHP'}}"/>
+                            <span class="sep">/</span>
+                            <span class="max">{{limb.max}}</span>
+                        </div>
+                        <div class="limb-armor-group">
+                            <div class="armor-selection">
+                                <select name="system.limbs.{{id}}.equippedArmorId" title="{{localize 'TAMS.EquippedArmorItem'}}">
+                                    {{selectOptions (lookup ../limbArmorOptions id) selected=limb.equippedArmorId}}
+                                </select>
+                            </div>
+                            <div class="armor-values">
+                                <label title="{{localize 'TAMS.Armour'}}"><i class="fas fa-shield-alt"></i></label>
+                                <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input" max="40" min="0" title="{{localize 'TAMS.Armour'}}"/>
+                                <span class="sep">/</span>
+                                <input type="number" name="system.limbs.{{id}}.armorMax" value="{{limb.armorMax}}" class="small-input" max="40" min="0" title="{{localize 'TAMS.AlternateArmour'}} HP"/>
+                                <span class="mod-sep">+</span>
+                                <input type="number" name="system.limbs.{{id}}.otherArmor" value="{{limb.otherArmor}}" class="small-input" max="40" min="0" title="{{localize 'TAMS.OtherArmour'}}"/>
+                            </div>
+                        </div>
+                        <div class="limb-status-checks">
                             <input type="checkbox" name="system.limbs.{{id}}.injured" {{checked limb.injured}} title="{{localize 'TAMS.InjuredQ'}}"/>
                             <input type="checkbox" name="system.limbs.{{id}}.criticallyInjured" {{checked limb.criticallyInjured}} title="{{localize 'TAMS.CriticallyInjuredQ'}}"/>
-                            <label>{{localize 'TAMS.Armour'}}</label>
-                            <select name="system.limbs.{{id}}.equippedArmorId" style="max-width: 80px;" title="{{localize 'TAMS.EquippedArmorItem'}}">
-                                {{selectOptions (lookup ../limbArmorOptions id) selected=limb.equippedArmorId}}
-                            </select>
-                            <input type="number" name="system.limbs.{{id}}.armor" value="{{limb.armor}}" class="small-input" max="40" min="0" {{#if limb.hasEquippedArmor}}disabled{{/if}}/>
-                            <span>/</span>
-                            <input type="number" name="system.limbs.{{id}}.armorMax" value="{{limb.armorMax}}" class="small-input" max="40" min="0" {{#if limb.hasEquippedArmor}}disabled{{/if}}/>
                         </div>
                     </div>
                     {{/each}}
@@ -230,7 +245,7 @@
                     <div class="flexrow">
                         <label class="resource-label">{{localize 'TAMS.Stamina'}}</label>
                         <div class="bar-container">
-                            <input type="number" name="system.stamina.value" value="{{system.stamina.value}}" max="{{system.stamina.max}}" min="0"/>
+                            <input type="number" name="system.stamina.value" value="{{system.stamina.value}}" max="{{system.stamina.max}}" min="0" class="small-input"/>
                             <div class="bar">
                                 <div class="fill" style="width: {{staminaPercentage}}%; background: {{system.stamina.color}} !important;"></div>
                             </div>
@@ -245,7 +260,7 @@
                     <div class="flexrow">
                         <label class="resource-label" style="flex: 1;">{{res.name}}{{#if (and res.isOpposed res.nameSecondary)}} / {{res.nameSecondary}}{{/if}}</label>
                         <div class="bar-container">
-                            <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}" max="{{res.max}}" min="0"/>
+                            <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}" max="{{res.max}}" min="0" class="small-input"/>
                             <div class="bar {{#if res.isOpposed}}opposed{{/if}}" style="{{#if res.isOpposed}}background: {{res.color}} !important;{{/if}}">
                                 <div class="fill" style="width: {{res.percentage}}%; background: {{#if res.isOpposed}}{{res.colorSecondary}}{{else}}{{res.color}}{{/if}} !important; {{#if res.isOpposed}}right: 0; position: absolute;{{/if}}"></div>
                             </div>
@@ -481,7 +496,7 @@
                     {{#each system.limbs as |limb id|}}
                     <div class="flexrow">
                         <label style="font-size: 13px;">{{limb.label}}</label>
-                        <input type="number" name="system.limbs.{{id}}.mult" value="{{limb.mult}}" step="0.25" style="width:45px;"/>
+                        <input type="number" name="system.limbs.{{id}}.mult" value="{{limb.mult}}" step="0.25" class="small-input"/>
                     </div>
                     {{/each}}
                 </div>
@@ -515,7 +530,7 @@
                             </select>
                             {{#if (eq res.stat "custom")}}
                                 <div class="stat-base">
-                                    <input type="number" name="system.customResources.{{index}}.customValue" value="{{res.customValue}}" title="Base Value"/>
+                                    <input type="number" name="system.customResources.{{index}}.customValue" value="{{res.customValue}}" title="Base Value" class="small-input"/>
                                 </div>
                             {{else}}
                                 <div class="stat-base" title="Current Stat Base">
@@ -525,11 +540,11 @@
                         </div>
                         <div class="col-mult">
                             <small>x</small>
-                            <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25"/>
+                            <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" class="small-input"/>
                         </div>
                         <div class="col-bonus">
                             <small>+</small>
-                            <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}"/>
+                            <input type="number" name="system.customResources.{{index}}.bonus" value="{{res.bonus}}" class="small-input"/>
                         </div>
                         <div class="col-max">{{res.max}}</div>
                         <div class="col-visuals">

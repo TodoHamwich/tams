@@ -334,43 +334,29 @@ describe('TAMSCharacterData', () => {
   });
 
   describe('_prepareArmorSync', () => {
-    it('does NOT reset armor when no armor is equipped', () => {
-      charData.limbs.head = { armor: 10, armorMax: 10, equippedArmorId: "" };
-      charData.parent = { items: { get: () => null } };
-      charData._prepareArmorSync();
-      expect(charData.limbs.head.armor).toBe(10);
-      expect(charData.limbs.head.armorMax).toBe(10);
-      expect(charData.limbs.head.hasEquippedArmor).toBe(false);
-    });
-
-    it('syncs armor only from specifically assigned and equipped items', () => {
+    it('sets hasEquippedArmor correctly but does NOT sync armor values', () => {
       const armorItem = {
         id: "armor1",
         type: "armor",
         system: {
           equipped: true,
           limbs: {
-            head: { value: 5, max: 5 },
-            thorax: { value: 3, max: 3 }
+            head: { value: 5, max: 5 }
           }
         }
       };
       charData.parent = { items: { get: (id) => id === "armor1" ? armorItem : null } };
-      charData.limbs.head = { equippedArmorId: "armor1", armor: 0, armorMax: 0 };
-      charData.limbs.thorax = { equippedArmorId: "", armor: 2, armorMax: 2 };
+      charData.limbs.head = { equippedArmorId: "armor1", armor: 10, armorMax: 10 };
 
       charData._prepareArmorSync();
 
-      expect(charData.limbs.head.armor).toBe(5);
-      expect(charData.limbs.head.armorMax).toBe(5);
       expect(charData.limbs.head.hasEquippedArmor).toBe(true);
-
-      expect(charData.limbs.thorax.armor).toBe(2);
-      expect(charData.limbs.thorax.armorMax).toBe(2);
-      expect(charData.limbs.thorax.hasEquippedArmor).toBe(false);
+      // Values should remain as they were, NOT synced from item
+      expect(charData.limbs.head.armor).toBe(10);
+      expect(charData.limbs.head.armorMax).toBe(10);
     });
 
-    it('resets armor to 0 when assigned item is unequipped', () => {
+    it('sets hasEquippedArmor to false if item is unequipped', () => {
       const armorItem = {
         id: "armor1",
         type: "armor",
@@ -381,9 +367,9 @@ describe('TAMSCharacterData', () => {
 
       charData._prepareArmorSync();
 
-      expect(charData.limbs.head.armor).toBe(0);
-      expect(charData.limbs.head.armorMax).toBe(0);
       expect(charData.limbs.head.hasEquippedArmor).toBe(false);
+      // Values should remain
+      expect(charData.limbs.head.armor).toBe(10);
     });
   });
 });

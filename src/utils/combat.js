@@ -593,7 +593,17 @@ export async function tamsRenderChatMessage(message, html, data) {
 
       const fam = Math.floor(weapon.system.familiarity || 0) + balancedBonus;
       const roll = await new Roll('1d100').evaluate();
-      const raw = roll.total;
+      let raw = roll.total;
+      const originalRaw = raw;
+      let rerolled = false;
+
+      const tags = (weapon.system.tags || "").split(",").map(t => t.trim().toLowerCase());
+      if (tags.includes("reliable") && raw <= 4) {
+          const reroll = await new Roll("1d100").evaluate();
+          raw = reroll.total;
+          rerolled = true;
+      }
+
       const capped = Math.min(raw, cap);
       const total = capped + fam;
       const threshold = isRanged ? 20 : 10;
@@ -650,6 +660,9 @@ export async function tamsRenderChatMessage(message, html, data) {
         <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? '1' : '0'}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.RetaliationWith", {name: actor.name, weapon: weapon.name})} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           ${(weapon.type === 'ability' && weapon.system.description) ? `<div class="roll-description">${weapon.system.description}</div>` : ""}
+          ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
+              ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", {original: originalRaw})}
+          </div>` : ""}
           ${defenseDamageInfo}
           <hr>
           <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.DmgShort")} ${damage}</b></div>
@@ -869,7 +882,10 @@ export async function tamsRenderChatMessage(message, html, data) {
         }
 
         if (successCount > 0) {
-            for (let [key, limb] of Object.entries(actor.system.limbs)) {
+            const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+            for (let key of limbKeys) {
+                const limb = actor.system.limbs[key];
+                if (!limb) continue;
                 const indMax = Math.floor(end * limb.mult);
                 const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
                 updates[`system.limbs.${key}.value`] = currentVal + (successCount * indMax);
@@ -879,12 +895,20 @@ export async function tamsRenderChatMessage(message, html, data) {
 
         if (needsUpdate) {
             // Cap all limbs to the new squad size
-            for (let [key, limb] of Object.entries(actor.system.limbs)) {
+            const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+            for (let key of limbKeys) {
+                const limb = actor.system.limbs[key];
+                if (!limb) continue;
                 const indMax = Math.floor(end * limb.mult);
                 const maxForNewSize = newSize * indMax;
                 const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
-                if (Math.abs(currentVal) > maxForNewSize) {
-                    updates[`system.limbs.${key}.value`] = Math.min(Math.max(currentVal, -maxForNewSize), maxForNewSize);
+                const totalDamage = limb.max - currentVal;
+                const remainderDamage = totalDamage % indMax;
+
+                if (currentVal > 0) {
+                    updates[`system.limbs.${key}.value`] = maxForNewSize - remainderDamage;
+                } else {
+                    updates[`system.limbs.${key}.value`] = Math.max(currentVal, -maxForNewSize);
                 }
             }
         }

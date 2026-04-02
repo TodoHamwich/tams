@@ -16,13 +16,13 @@ describe('TAMSActor applyDamage', () => {
     const system = {
       stats: { endurance: { total: 10 } },
       limbs: {
-        head: { value: 5, max: 5, mult: 0.5, armor: 0, armorMax: 0, injured: false, criticallyInjured: false },
-        thorax: { value: 10, max: 10, mult: 1.0, armor: 0, armorMax: 0, injured: false, criticallyInjured: false },
-        stomach: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, injured: false, criticallyInjured: false },
-        leftArm: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, injured: false, criticallyInjured: false },
-        rightArm: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, injured: false, criticallyInjured: false },
-        leftLeg: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, injured: false, criticallyInjured: false },
-        rightLeg: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, injured: false, criticallyInjured: false }
+        head: { value: 5, max: 5, mult: 0.5, armor: 0, armorMax: 0, otherArmor: 0, injured: false, criticallyInjured: false },
+        thorax: { value: 10, max: 10, mult: 1.0, armor: 0, armorMax: 0, otherArmor: 0, injured: false, criticallyInjured: false },
+        stomach: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, otherArmor: 0, injured: false, criticallyInjured: false },
+        leftArm: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, otherArmor: 0, injured: false, criticallyInjured: false },
+        rightArm: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, otherArmor: 0, injured: false, criticallyInjured: false },
+        leftLeg: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, otherArmor: 0, injured: false, criticallyInjured: false },
+        rightLeg: { value: 7, max: 7, mult: 0.75, armor: 0, armorMax: 0, otherArmor: 0, injured: false, criticallyInjured: false }
       },
       hp: { value: 50, max: 50 },
       settings: { isNPC: false, alternateArmour: false }
@@ -57,6 +57,16 @@ describe('TAMSActor applyDamage', () => {
     
     // 5 armor - 3 pen = 2 effective armor. 10 damage - 2 armor = 8 effective. 10 - 8 = 2.
     expect(actor.system.limbs.thorax.value).toBe(2);
+  });
+
+  it('includes otherArmor in protection calculation', async () => {
+    actor.system.limbs.thorax.armor = 2;
+    actor.system.limbs.thorax.otherArmor = 3;
+    const hits = [{ damage: 10, location: "Thorax", armourPen: 0 }];
+    await actor.applyDamage(hits);
+    
+    // (2 armor + 3 other) = 5 total. 10 damage - 5 armor = 5 effective. 10 - 5 = 5.
+    expect(actor.system.limbs.thorax.value).toBe(5);
   });
 
   describe('Squads and Hordes', () => {

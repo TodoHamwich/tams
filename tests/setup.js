@@ -32,6 +32,45 @@ global.foundry = {
       HTMLField: class { constructor(options = {}) { this.options = options; } },
       ObjectField: class { constructor(options = {}) { this.options = options; } }
     }
+  },
+  utils: {
+    hasProperty: (obj, path) => {
+      if (!obj) return false;
+      if (path in obj) return true;
+      const parts = path.split('.');
+      let current = obj;
+      for (const part of parts) {
+        if (current === null || typeof current !== 'object' || !(part in current)) return false;
+        current = current[part];
+      }
+      return true;
+    },
+    getProperty: (obj, path) => {
+      if (!obj) return undefined;
+      if (path in obj) return obj[path];
+      const parts = path.split('.');
+      let current = obj;
+      for (const part of parts) {
+        if (current === null || typeof current !== 'object') return undefined;
+        current = current[part];
+      }
+      return current;
+    },
+    setProperty: (obj, path, value) => {
+      if (path in obj) {
+          obj[path] = value;
+          return true;
+      }
+      const parts = path.split('.');
+      let current = obj;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const part = parts[i];
+        if (!(part in current)) current[part] = {};
+        current = current[part];
+      }
+      current[parts[parts.length - 1]] = value;
+      return true;
+    }
   }
 };
 
@@ -77,6 +116,7 @@ global.Actor = class {
       return data;
     });
   }
+  async _preUpdate() { return true; }
 };
 
 global.Item = class {

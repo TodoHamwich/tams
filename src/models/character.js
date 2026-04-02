@@ -40,13 +40,13 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         bravery: new fields.EmbeddedDataField(StatModifier, {initial: {label: "TAMS.StatBravery"}})
       }),
       limbs: new fields.SchemaField({
-        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
-        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Thorax"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
-        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Stomach"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
-        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
-        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
-        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
-        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) })
+        head: new fields.SchemaField({ value: new fields.NumberField({initial: 5}), max: new fields.NumberField({initial: 5}), mult: new fields.NumberField({initial: 0.5}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), otherArmor: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Head"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({initial: 10}), max: new fields.NumberField({initial: 10}), mult: new fields.NumberField({initial: 1.0}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), otherArmor: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Thorax"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), otherArmor: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Stomach"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), otherArmor: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), otherArmor: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Arm"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), otherArmor: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Left Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 7}), max: new fields.NumberField({initial: 7}), mult: new fields.NumberField({initial: 0.75}), armor: new fields.NumberField({initial: 0, min: 0, max: 40}), armorMax: new fields.NumberField({initial: 0, min: 0, max: 40}), otherArmor: new fields.NumberField({initial: 0, min: 0, max: 40}), label: new fields.StringField({initial: "Right Leg"}), injured: new fields.BooleanField({initial: false}), criticallyInjured: new fields.BooleanField({initial: false}), equippedArmorId: new fields.StringField({initial: ""}) })
       }),
       inventory: new fields.SchemaField({
         usedCapacity: new fields.NumberField({initial: 0}),
@@ -126,8 +126,9 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    */
   _prepareTraitModifiers() {
     // Reset trait bonuses
-    for (const stat of Object.values(this.stats)) {
-      stat.traitBonus = 0;
+    const statKeys = ['strength', 'dexterity', 'endurance', 'wisdom', 'intelligence', 'bravery'];
+    for (const key of statKeys) {
+      if (this.stats[key]) this.stats[key].traitBonus = 0;
     }
     this.traitRollBonus = 0;
     this.traitHPExtra = 0;
@@ -169,7 +170,10 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
     const squadSize = settings.squadSize || 1;
 
-    for (const limb of Object.values(this.limbs)) {
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    for (const key of limbKeys) {
+      const limb = this.limbs[key];
+      if (!limb) continue;
       const individualMax = Math.floor(end * limb.mult);
       limb.max = isSquadOrHorde ? (individualMax * squadSize) : individualMax;
       limb.individualMax = individualMax;
@@ -181,18 +185,15 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    * @protected
    */
   _prepareArmorSync() {
-    for (const [key, limb] of Object.entries(this.limbs)) {
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    for (const key of limbKeys) {
+      const limb = this.limbs[key];
+      if (!limb) continue;
       limb.hasEquippedArmor = false;
       if (limb.equippedArmorId) {
         const armor = this.parent.items.get(limb.equippedArmorId);
         if (armor && armor.type === "armor" && armor.system.equipped) {
-          limb.armor = armor.system.limbs[key]?.value || 0;
-          limb.armorMax = armor.system.limbs[key]?.max || 0;
           limb.hasEquippedArmor = true;
-        } else {
-          // If armor is assigned but missing or unequipped, reset to 0
-          limb.armor = 0;
-          limb.armorMax = 0;
         }
       }
     }
@@ -205,9 +206,12 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   _prepareTotalHP() {
     let totalHp = 0;
     let totalMaxHp = 0;
-    for (const limb of Object.values(this.limbs)) {
-      totalHp += (limb.value || 0);
-      totalMaxHp += (limb.max || 0);
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    for (const key of limbKeys) {
+      const limb = this.limbs[key];
+      if (!limb) continue;
+      totalHp += (Number(limb.value) || 0);
+      totalMaxHp += (Number(limb.max) || 0);
     }
     this.hp.value = totalHp;
     this.hp.max = totalMaxHp + (this.traitHPExtra || 0);
