@@ -39,7 +39,6 @@ export class TAMSActor extends Actor {
     let report = `<b>${this.name}</b> ${game.i18n.localize("TAMS.TakingDamage")}:<br>`;
     const isSquadOrHorde = this.system.settings?.isNPC && (this.system.settings.npcType === "squad" || this.system.settings.npcType === "horde");
     const currentSquadSize = this.system.settings.squadSize || 1;
-    const accumulatedLimbDamage = {};
     const limbLosses = {};
 
     for (let i = 0; i < hits.length; i++) {
@@ -72,17 +71,14 @@ export class TAMSActor extends Actor {
         if (isSquadOrHorde) {
             const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
             const limbCap = (isAoE ? multiplier : 1) * indMax; 
-            if (!accumulatedLimbDamage[limbKey]) accumulatedLimbDamage[limbKey] = 0;
 
             const currentLimbHpBeforeHit = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
 
-            const remainingCap = Math.max(0, limbCap - accumulatedLimbDamage[limbKey]);
-            const cappedEffective = Math.min(effective, remainingCap);
+            const cappedEffective = Math.min(effective, limbCap);
             
             overflow = effective - cappedEffective;
             const totalDamageOfHit = effective; // Total damage after armor (includes overflow)
             effective = cappedEffective;
-            accumulatedLimbDamage[limbKey] += effective;
 
             // Track DCs for lost members in this hit
             if (!limbLosses[limbKey]) limbLosses[limbKey] = [];

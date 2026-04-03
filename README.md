@@ -5,6 +5,7 @@ A custom system for Foundry VTT.
 ## Features
 - **Capped 1d100 Rolls:** 1d100maxStat + Familiarity.
 - **Limb-Based Health:** Tracks 7 body regions with unique health multipliers and armor.
+- **Cover System:** Integrated damage reduction with customizable levels.
 - **Dynamic Resource Pools:** Add custom resources that scale with stats.
 - **Weapon Tags:** Automated damage calculation for Heavy, Two-Handed, and Light weapons.
 - **Visual Themes:** Default, Dark, and Parchment styles.

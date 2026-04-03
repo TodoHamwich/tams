@@ -110,16 +110,30 @@ describe('TAMSActor applyDamage', () => {
         expect(actor.system.limbs.thorax.value).toBe(30); // 50 - 20
     });
 
-    it('accumulates damage across multiple hits to the same limb and caps correctly', async () => {
+    it('does not accumulate damage for capping purposes across multiple hits to the same limb', async () => {
         // Individual max 10.
-        // Hit 1: 7 damage. Effective 7. Accumulated 7.
-        // Hit 2: 8 damage. Remaining cap 3. Effective 3. Accumulated 10.
+        // Hit 1: 7 damage. Effective 7.
+        // Hit 2: 8 damage. Effective 8.
+        // Total should be 15.
         const hits = [
             { damage: 7, location: "Thorax", armourPen: 0 },
             { damage: 8, location: "Thorax", armourPen: 0 }
         ];
         await actor.applyDamage(hits);
-        expect(actor.system.limbs.thorax.value).toBe(40); // 50 - 10
+        expect(actor.system.limbs.thorax.value).toBe(35); // 50 - 15
+    });
+
+    it('caps each individual hit for squads if it exceeds indMax but still allows multiple hits', async () => {
+        // Individual max 10.
+        // Hit 1: 15 damage. Capped to 10.
+        // Hit 2: 15 damage. Capped to 10.
+        // Total should be 20.
+        const hits = [
+            { damage: 15, location: "Thorax", armourPen: 0 },
+            { damage: 15, location: "Thorax", armourPen: 0 }
+        ];
+        await actor.applyDamage(hits);
+        expect(actor.system.limbs.thorax.value).toBe(30); // 50 - 20
     });
 
     it('calculates the new squad DC formula correctly', async () => {
