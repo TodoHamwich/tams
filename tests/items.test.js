@@ -121,6 +121,13 @@ describe('TAMSAbilityData', () => {
   });
 
   describe('calculatedCost', () => {
+    it('can have ifStatement and ifCost', () => {
+      abilityData.ifStatement = "If in cover";
+      abilityData.ifCost = 5;
+      expect(abilityData.ifStatement).toBe("If in cover");
+      expect(abilityData.ifCost).toBe(5);
+    });
+
     it('has a minimum cost of 1', () => {
       expect(abilityData.calculatedCost).toBe(1);
     });

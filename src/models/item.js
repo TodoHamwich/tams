@@ -226,6 +226,8 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       isAoE: new fields.BooleanField({initial: false}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""}),
+      ifStatement: new fields.StringField({initial: ""}),
+      ifCost: new fields.NumberField({initial: 0, integer: true, nullable: true}),
       calculator: new fields.SchemaField({
         enabled: new fields.BooleanField({initial: false}),
         isUtility: new fields.BooleanField({initial: false}),

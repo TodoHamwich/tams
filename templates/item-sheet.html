@@ -301,6 +301,16 @@
                 <label>{{localize 'TAMS.Cost'}}</label>
                 <input type="number" name="system.cost" value="{{system.cost}}" {{#if system.calculator.enabled}}disabled="disabled"{{/if}}/>
             </div>
+            <div class="flexcol" style="border: 1px solid #7a7971; padding: 5px; margin-bottom: 5px; background: rgba(0,0,0,0.05);">
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.IFStatement'}}</label>
+                    <input type="text" name="system.ifStatement" value="{{system.ifStatement}}" placeholder="e.g. If in cover..."/>
+                </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.IFCost'}}</label>
+                    <input type="number" name="system.ifCost" value="{{system.ifCost}}"/>
+                </div>
+            </div>
             <div class="flexrow">
                 <label>{{localize 'TAMS.Resource'}}</label>
                 <select name="system.resource">

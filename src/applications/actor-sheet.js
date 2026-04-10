@@ -1356,10 +1356,30 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         ? `<div class="roll-description">${item.system.description}</div>`
         : "";
 
+    let ifButtonHtml = "";
+    if (item && item.type === 'ability' && item.system.ifStatement && item.system.ifCost) {
+        const ifStatement = item.system.ifStatement;
+        const ifCost = item.system.ifCost;
+        const ifResource = item.system.resource || "stamina";
+        ifButtonHtml = `
+            <div class="roll-row" style="margin-top: 5px;">
+                <button class="tams-apply-if-cost" 
+                        data-cost="${ifCost}" 
+                        data-resource="${ifResource}"
+                        data-actor-uuid="${this.document.uuid}"
+                        data-label="${ifStatement}">
+                    ${game.i18n.format("TAMS.ApplyIFCost", {cost: ifCost})}
+                </button>
+            </div>
+            <div class="roll-row-detail" style="margin-bottom: 5px;"><small>${ifStatement}</small></div>
+        `;
+    }
+
     const messageContent = `
       <div class="tams-roll">
         <h3 class="roll-label">${label}</h3>
         ${descriptionHtml}
+        ${ifButtonHtml}
         ${damageInfo}
         ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
             ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", {original: originalResult})}

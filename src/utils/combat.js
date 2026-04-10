@@ -327,6 +327,65 @@ export async function tamsRenderChatMessage(message, html, data) {
       }).render(true);
     }));
 
+    // Apply IF Cost button
+    root.querySelectorAll(".tams-apply-if-cost").forEach(el => el.addEventListener("click", async ev => {
+        ev.preventDefault();
+        const btn = ev.currentTarget;
+        const cost = parseInt(btn.dataset.cost) || 0;
+        const resourceKey = btn.dataset.resource || "stamina";
+        const actorUuid = btn.dataset.actorUuid;
+        const label = btn.dataset.label;
+
+        if (!actorUuid) return;
+        const actor = await fromUuid(actorUuid);
+        if (!actor) return;
+
+        if (resourceKey === 'stamina') {
+            const current = actor.system.stamina.value;
+            if (current < cost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
+            await actor.update({"system.stamina.value": current - cost});
+        } else {
+            const idx = parseInt(resourceKey);
+            const res = actor.system.customResources[idx];
+            if (res) {
+                if (res.value < cost) {
+                    const remaining = cost - res.value;
+                    const stamina = actor.system.stamina.value;
+                    if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", {resource: res.name}));
+                    
+                    const useBoth = await new Promise(resolve => {
+                        new Dialog({
+                            title: game.i18n.localize("TAMS.Combat.InsufficientResources"),
+                            content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", {val: res.value, res: res.name, rem: remaining})}</p>`,
+                            buttons: {
+                                yes: { label: game.i18n.localize("TAMS.Yes"), callback: () => resolve(true) },
+                                no: { label: game.i18n.localize("TAMS.No"), callback: () => resolve(false) }
+                            },
+                            default: "yes",
+                            close: () => resolve(false)
+                        }).render(true);
+                    });
+                    
+                    if (!useBoth) return;
+
+                    const resources = foundry.utils.duplicate(actor.system.customResources);
+                    resources[idx].value = 0;
+                    await actor.update({
+                        "system.customResources": resources,
+                        "system.stamina.value": stamina - remaining
+                    });
+                } else {
+                    const resources = foundry.utils.duplicate(actor.system.customResources);
+                    resources[idx].value -= cost;
+                    await actor.update({"system.customResources": resources});
+                }
+            }
+        }
+        ui.notifications.info(`Applied cost for: ${label}`);
+        btn.disabled = true;
+        btn.innerText = "Applied";
+    }));
+
     // Dodge button
     root.querySelectorAll('.tams-dodge').forEach(el => el.addEventListener("click", async ev => {
       ev.preventDefault();
