@@ -150,7 +150,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         system: i.system,
         type: i.type,
         isGreyedOut: isGreyedOut,
-        isEquipped: (i.type === 'weapon' && i.system.location === 'hand') || (['armor', 'backpack'].includes(i.type) && i.system.equipped)
+        isEquipped: (i.type === 'weapon' && i.system.location === 'hand') || (['armor', 'backpack', 'shield'].includes(i.type) && i.system.equipped)
       };
 
       allItems.push(itemData);
@@ -162,7 +162,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       }
       else if (i.type === 'skill') skills.push(itemData);
       else if (i.type === 'ability') abilities.push(itemData);
-      else if (i.type === 'armor') inventoryArmor.push(itemData);
+      else if (i.type === 'armor' || i.type === 'shield') inventoryArmor.push(itemData);
       else if (i.type === 'consumable') inventoryConsumables.push(itemData);
       else if (i.type === 'tool') inventoryTools.push(itemData);
       else if (i.type === 'questItem') inventoryQuestItems.push(itemData);
@@ -1284,6 +1284,14 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-target-token-id="${targetTokenId || ''}"
                                   data-target-actor-id="${targetActorId || ''}"
                                   data-target-actor-uuid="${targetActor?.uuid || ''}">Retaliate</button>
+                          <button class="tams-block"
+                                  data-raw="${rawResult}"
+                                  data-total="${finalTotal}"
+                                  data-multi="${multiVal}"
+                                  data-locations='${JSON.stringify(tHits)}'
+                                  data-damage="${damage}"
+                                  data-armour-pen="${armourPen}"
+                                  data-target-actor-uuid="${targetActor?.uuid || ''}">Block</button>
                           <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
                           <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
                         </div>
@@ -1330,6 +1338,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
+                            <button class="tams-block" title="Block"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}"
+                                    data-target-actor-uuid="${targetActor?.uuid || ''}"
+                                    style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">Sh</button>
                             <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
                             <button class="tams-unaware-toggle" title="Unaware" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">U</button>
                         </div>

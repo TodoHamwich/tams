@@ -405,6 +405,20 @@ class TAMSToolData extends foundry.abstract.TypeDataModel {
     };
   }
 }
+class TAMSShieldData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      armorValue: new fields.NumberField({ initial: 5, integer: true, min: 0 }),
+      equipped: new fields.BooleanField({ initial: false }),
+      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
+      size: new fields.StringField({ initial: "medium" }),
+      location: new fields.StringField({ initial: "hand" }),
+      tags: new fields.StringField({ initial: "" }),
+      description: new fields.HTMLField({ initial: "" })
+    };
+  }
+}
 class TAMSQuestItemData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
@@ -467,6 +481,8 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       isAoE: new fields.BooleanField({ initial: false }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" }),
+      ifStatement: new fields.StringField({ initial: "" }),
+      ifCost: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
       calculator: new fields.SchemaField({
         enabled: new fields.BooleanField({ initial: false }),
         isUtility: new fields.BooleanField({ initial: false }),
@@ -798,7 +814,22 @@ async function tamsRenderChatMessage(message, html, data) {
           `;
     }
     const defaultDmg = damageBase * initialMultiplier;
-    let dialogContent = `<p>${game.i18n.format("TAMS.Combat.ApplyingHitsTo", { count: locations.length, name: target.name })}</p>${squadHtml}`;
+    const coverHtml = `
+        <div class="form-group" style="margin-bottom: 10px; border-bottom: 1px solid #666; padding-bottom: 10px;">
+            <label>${game.i18n.localize("TAMS.Combat.Cover")}</label>
+            <div class="flexrow">
+                <select id="cover-select">
+                    <option value="0">${game.i18n.localize("TAMS.None")}</option>
+                    <option value="10">${game.i18n.localize("TAMS.Combat.CoverLight")}</option>
+                    <option value="20">${game.i18n.localize("TAMS.Combat.CoverMedium")}</option>
+                    <option value="30">${game.i18n.localize("TAMS.Combat.CoverHeavy")}</option>
+                    <option value="custom">${game.i18n.localize("TAMS.Combat.CoverCustom")}</option>
+                </select>
+                <input type="number" id="cover-custom" value="0" style="display:none; width: 60px; margin-left: 5px;"/>
+            </div>
+        </div>
+      `;
+    let dialogContent = `<p>${game.i18n.format("TAMS.Combat.ApplyingHitsTo", { count: locations.length, name: target.name })}</p>${squadHtml}${coverHtml}`;
     locations.forEach((loc, i) => {
       const limbKey = locationMap[loc];
       const limb = target.system.limbs[limbKey];
@@ -810,6 +841,9 @@ async function tamsRenderChatMessage(message, html, data) {
                 <div class="flexrow">
                     <span>${game.i18n.localize("TAMS.Combat.DmgShort")} </span><input type="number" class="hit-dmg" data-index="${i}" value="${defaultDmg}" style="width: 50px;"/>
                     <span>${game.i18n.localize("TAMS.Combat.ArmorShort")} ${armor}/${armorMax}</span>
+                    <label style="flex: 0 0 auto; margin-left: 10px;">
+                        <input type="checkbox" class="hit-in-cover" data-index="${i}"> ${game.i18n.localize("TAMS.Combat.InCover")}
+                    </label>
                 </div>
             </div>`;
     });
@@ -817,11 +851,29 @@ async function tamsRenderChatMessage(message, html, data) {
       title: game.i18n.format("TAMS.Checks.ApplyDamageTo", { name: target.name }),
       content: dialogContent,
       render: (html2) => {
-        html2.find("#aoe-targets-hit").on("input", (ev2) => {
-          const multiplier = parseInt(ev2.currentTarget.value) || 0;
-          const newDmg = damageBase * multiplier;
-          html2.find(".hit-dmg").val(newDmg);
-        });
+        const updateDamage = () => {
+          const multiplier = isAoEHit && isSquadOrHorde ? parseInt(html2.find("#aoe-targets-hit").val()) || 1 : 1;
+          const coverSelect = html2.find("#cover-select").val();
+          let coverVal = 0;
+          if (coverSelect === "custom") {
+            html2.find("#cover-custom").show();
+            coverVal = parseInt(html2.find("#cover-custom").val()) || 0;
+          } else {
+            html2.find("#cover-custom").hide();
+            coverVal = parseInt(coverSelect) || 0;
+          }
+          html2.find(".hit-dmg").each(function() {
+            const idx = $(this).data("index");
+            const isCovered = html2.find(`.hit-in-cover[data-index="${idx}"]`).is(":checked");
+            let effectiveBaseDmg = damageBase;
+            if (isCovered) {
+              effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
+            }
+            $(this).val(effectiveBaseDmg * multiplier);
+          });
+        };
+        html2.find("#aoe-targets-hit, #cover-select, #cover-custom").on("input change", updateDamage);
+        html2.find(".hit-in-cover").on("change", updateDamage);
       },
       buttons: {
         apply: {
@@ -850,6 +902,58 @@ async function tamsRenderChatMessage(message, html, data) {
       },
       default: "apply"
     }).render(true);
+  }));
+  root.querySelectorAll(".tams-apply-if-cost").forEach((el) => el.addEventListener("click", async (ev) => {
+    ev.preventDefault();
+    const btn = ev.currentTarget;
+    const cost = parseInt(btn.dataset.cost) || 0;
+    const resourceKey = btn.dataset.resource || "stamina";
+    const actorUuid = btn.dataset.actorUuid;
+    const label = btn.dataset.label;
+    if (!actorUuid) return;
+    const actor = await fromUuid(actorUuid);
+    if (!actor) return;
+    if (resourceKey === "stamina") {
+      const current = actor.system.stamina.value;
+      if (current < cost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
+      await actor.update({ "system.stamina.value": current - cost });
+    } else {
+      const idx = parseInt(resourceKey);
+      const res = actor.system.customResources[idx];
+      if (res) {
+        if (res.value < cost) {
+          const remaining = cost - res.value;
+          const stamina = actor.system.stamina.value;
+          if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", { resource: res.name }));
+          const useBoth = await new Promise((resolve) => {
+            new Dialog({
+              title: game.i18n.localize("TAMS.Combat.InsufficientResources"),
+              content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", { val: res.value, res: res.name, rem: remaining })}</p>`,
+              buttons: {
+                yes: { label: game.i18n.localize("TAMS.Yes"), callback: () => resolve(true) },
+                no: { label: game.i18n.localize("TAMS.No"), callback: () => resolve(false) }
+              },
+              default: "yes",
+              close: () => resolve(false)
+            }).render(true);
+          });
+          if (!useBoth) return;
+          const resources = foundry.utils.duplicate(actor.system.customResources);
+          resources[idx].value = 0;
+          await actor.update({
+            "system.customResources": resources,
+            "system.stamina.value": stamina - remaining
+          });
+        } else {
+          const resources = foundry.utils.duplicate(actor.system.customResources);
+          resources[idx].value -= cost;
+          await actor.update({ "system.customResources": resources });
+        }
+      }
+    }
+    ui.notifications.info(`Applied cost for: ${label}`);
+    btn.disabled = true;
+    btn.innerText = "Applied";
   }));
   root.querySelectorAll(".tams-dodge").forEach((el) => el.addEventListener("click", async (ev) => {
     var _a, _b, _c;
@@ -1341,6 +1445,53 @@ async function tamsRenderChatMessage(message, html, data) {
     const message2 = game.messages.get(messageId);
     if (message2) await tamsUpdateMessage(message2, { content: container.outerHTML });
   }));
+  root.querySelectorAll(".tams-block").forEach((el) => el.addEventListener("click", async (ev) => {
+    var _a, _b, _c;
+    ev.preventDefault();
+    const btn = ev.currentTarget;
+    const actorUuid = btn.dataset.targetActorUuid;
+    const actor = actorUuid ? await fromUuid(actorUuid) : ((_a = canvas.tokens.controlled[0]) == null ? void 0 : _a.actor) || ((_c = [...((_b = game == null ? void 0 : game.user) == null ? void 0 : _b.targets) ?? []][0]) == null ? void 0 : _c.actor);
+    if (!actor) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetDodge"));
+    const shield = actor.items.find((i) => i.type === "shield" && i.system.equipped);
+    if (!shield) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoShield"));
+    const locations = JSON.parse(btn.dataset.locations);
+    const content = `
+            <p>${game.i18n.format("TAMS.Combat.ChooseLimbToBlock", { name: shield.name, armor: shield.system.armorValue })}</p>
+            <select id="block-loc">
+                ${locations.map((loc, i) => `<option value="${i}">${loc}</option>`).join("")}
+            </select>`;
+    new Dialog({
+      title: game.i18n.localize("TAMS.Combat.ShieldBlock"),
+      content,
+      buttons: {
+        block: {
+          label: game.i18n.localize("TAMS.Combat.BlockHit"),
+          callback: async (html2) => {
+            const idx = parseInt(html2.find("#block-loc").val());
+            const locationToBlock = locations[idx];
+            const damage = parseInt(btn.dataset.damage);
+            const armourPen = parseInt(btn.dataset.armourPen) || 0;
+            const shieldArmor = shield.system.armorValue;
+            const report = `
+                            <div class="tams-roll">
+                                <h3 class="roll-label">${game.i18n.format("TAMS.Combat.ShieldBlockWith", { name: actor.name, shield: shield.name })}</h3>
+                                <div class="tams-success">${game.i18n.format("TAMS.Combat.BlockReport", { location: locationToBlock, armor: shieldArmor })}</div>
+                                <div class="roll-row" style="margin-top: 5px;">
+                                    <button class="tams-take-damage" 
+                                            data-damage="${damage}" 
+                                            data-armour-pen="${armourPen - shieldArmor}" 
+                                            data-locations='${JSON.stringify([locationToBlock])}'
+                                            data-target-actor-uuid="${actor.uuid}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
+                                </div>
+                            </div>`;
+            ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: report });
+          }
+        },
+        cancel: { label: game.i18n.localize("TAMS.Cancel") }
+      },
+      default: "block"
+    }).render(true);
+  }));
   ["behind", "unaware"].forEach((type) => {
     root.querySelectorAll(`.tams-${type}-toggle`).forEach((el) => el.addEventListener("click", async (ev) => {
       var _a;
@@ -1473,7 +1624,6 @@ class TAMSActor extends Actor {
     let report = `<b>${this.name}</b> ${game.i18n.localize("TAMS.TakingDamage")}:<br>`;
     const isSquadOrHorde = ((_a = this.system.settings) == null ? void 0 : _a.isNPC) && (this.system.settings.npcType === "squad" || this.system.settings.npcType === "horde");
     const currentSquadSize = this.system.settings.squadSize || 1;
-    const accumulatedLimbDamage = {};
     const limbLosses = {};
     for (let i = 0; i < hits.length; i++) {
       const hit = hits[i];
@@ -1500,14 +1650,11 @@ class TAMSActor extends Actor {
       if (isSquadOrHorde) {
         const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
         const limbCap = (isAoE ? multiplier : 1) * indMax;
-        if (!accumulatedLimbDamage[limbKey]) accumulatedLimbDamage[limbKey] = 0;
         const currentLimbHpBeforeHit = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
-        const remainingCap = Math.max(0, limbCap - accumulatedLimbDamage[limbKey]);
-        const cappedEffective = Math.min(effective, remainingCap);
+        const cappedEffective = Math.min(effective, limbCap);
         overflow = effective - cappedEffective;
         const totalDamageOfHit = effective;
         effective = cappedEffective;
-        accumulatedLimbDamage[limbKey] += effective;
         if (!limbLosses[limbKey]) limbLosses[limbKey] = [];
         const newLimbHpAfterHit = currentLimbHpBeforeHit - effective;
         const oldSize = Math.max(0, Math.ceil(currentLimbHpBeforeHit / indMax));
@@ -1986,7 +2133,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         system: i.system,
         type: i.type,
         isGreyedOut,
-        isEquipped: i.type === "weapon" && i.system.location === "hand" || ["armor", "backpack"].includes(i.type) && i.system.equipped
+        isEquipped: i.type === "weapon" && i.system.location === "hand" || ["armor", "backpack", "shield"].includes(i.type) && i.system.equipped
       };
       allItems.push(itemData);
       if (i.type === "weapon") {
@@ -1995,7 +2142,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         else inventoryWeapons.push(itemData);
       } else if (i.type === "skill") skills.push(itemData);
       else if (i.type === "ability") abilities.push(itemData);
-      else if (i.type === "armor") inventoryArmor.push(itemData);
+      else if (i.type === "armor" || i.type === "shield") inventoryArmor.push(itemData);
       else if (i.type === "consumable") inventoryConsumables.push(itemData);
       else if (i.type === "tool") inventoryTools.push(itemData);
       else if (i.type === "questItem") inventoryQuestItems.push(itemData);
@@ -3014,6 +3161,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-target-token-id="${targetTokenId || ""}"
                                   data-target-actor-id="${targetActorId || ""}"
                                   data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}">Retaliate</button>
+                          <button class="tams-block"
+                                  data-raw="${rawResult}"
+                                  data-total="${finalTotal}"
+                                  data-multi="${multiVal}"
+                                  data-locations='${JSON.stringify(tHits)}'
+                                  data-damage="${damage}"
+                                  data-armour-pen="${armourPen}"
+                                  data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}">Block</button>
                           <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
                           <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
                         </div>
@@ -3056,6 +3211,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                     data-target-token-id="${targetTokenId || ""}" data-target-actor-id="${targetActorId || ""}"
                                     data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
+                            <button class="tams-block" title="Block"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}"
+                                    data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}"
+                                    style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">Sh</button>
                             <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
                             <button class="tams-unaware-toggle" title="Unaware" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">U</button>
                         </div>
@@ -3076,10 +3235,29 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
     }
     const descriptionHtml = item && (item.type === "ability" || item.type === "skill") && item.system.description ? `<div class="roll-description">${item.system.description}</div>` : "";
+    let ifButtonHtml = "";
+    if (item && item.type === "ability" && item.system.ifStatement && item.system.ifCost) {
+      const ifStatement = item.system.ifStatement;
+      const ifCost = item.system.ifCost;
+      const ifResource = item.system.resource || "stamina";
+      ifButtonHtml = `
+            <div class="roll-row" style="margin-top: 5px;">
+                <button class="tams-apply-if-cost" 
+                        data-cost="${ifCost}" 
+                        data-resource="${ifResource}"
+                        data-actor-uuid="${this.document.uuid}"
+                        data-label="${ifStatement}">
+                    ${game.i18n.format("TAMS.ApplyIFCost", { cost: ifCost })}
+                </button>
+            </div>
+            <div class="roll-row-detail" style="margin-bottom: 5px;"><small>${ifStatement}</small></div>
+        `;
+    }
     const messageContent = `
       <div class="tams-roll">
         <h3 class="roll-label">${label}</h3>
         ${descriptionHtml}
+        ${ifButtonHtml}
         ${damageInfo}
         ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
             ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", { original: originalResult })}
@@ -3401,6 +3579,413 @@ __publicField(_TAMSItemSheet, "PARTS", {
   }
 });
 let TAMSItemSheet = _TAMSItemSheet;
+const _TAMSTravelPaceApp = class _TAMSTravelPaceApp extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
+  constructor(options = {}) {
+    super(options);
+    this.distanceKm = 0;
+    this.fmHours = 0;
+    this.daysBetweenRest = 0;
+    this.warmMealsEnabled = false;
+    this.warmMealsValue = 0;
+    this.cookUuid = "";
+    this.cookDC = 10;
+    this.warmMealsResults = [];
+    this.membersState = {};
+    this.members = [];
+    this._focusSelector = null;
+  }
+  /** @override */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    context.distanceKm = this.distanceKm;
+    context.fmHours = this.fmHours;
+    context.daysBetweenRest = this.daysBetweenRest;
+    context.warmMealsEnabled = this.warmMealsEnabled;
+    context.warmMealsValue = this.warmMealsValue;
+    context.cookUuid = this.cookUuid;
+    context.cookDC = this.cookDC;
+    const mileToKm = 1.60934;
+    const memberData = this.members.map((uuid) => {
+      var _a, _b;
+      const actor = fromUuidSync(uuid);
+      if (!actor) return null;
+      const state = this.membersState[uuid] || { speed: null, isMounted: false };
+      const endurance = ((_b = (_a = actor.system.stats) == null ? void 0 : _a.endurance) == null ? void 0 : _b.value) || 0;
+      const end10 = Math.floor(endurance / 10);
+      const defaultSpeed = state.isMounted ? 40 : 20;
+      const currentSpeed = state.speed !== null && state.speed !== "" ? parseFloat(state.speed) : defaultSpeed;
+      const baseSpeedKmPerDay = currentSpeed * mileToKm;
+      const adjustedSpeedKmPerDay = baseSpeedKmPerDay * (8 + this.fmHours) / 8;
+      return {
+        actor,
+        uuid,
+        state,
+        end10,
+        currentSpeed,
+        baseSpeedKmPerDay,
+        adjustedSpeedKmPerDay,
+        defaultSpeed
+      };
+    }).filter((m) => m !== null);
+    context.partyCookOptions = memberData.reduce((acc, m) => {
+      acc[m.uuid] = m.actor.name;
+      return acc;
+    }, {});
+    const partySpeedKmPerDay = memberData.length > 0 ? Math.min(...memberData.map((m) => m.adjustedSpeedKmPerDay)) : 0;
+    const totalTravelDays = partySpeedKmPerDay > 0 ? this.distanceKm / partySpeedKmPerDay : 0;
+    let totalElapsedDays = totalTravelDays;
+    if (this.daysBetweenRest > 0 && totalTravelDays > 0) {
+      const numRests = Math.floor((totalTravelDays - 1e-6) / this.daysBetweenRest);
+      totalElapsedDays += numRests;
+    }
+    context.timeBreakdown = this._formatTime(totalElapsedDays);
+    const mealValGlobal = this.warmMealsEnabled ? parseFloat(this.warmMealsValue) || 0 : 0;
+    context.members = memberData.map((m) => {
+      const staminaPerDay = [];
+      let totalStamina = 0;
+      if (totalTravelDays > 0) {
+        let travelDayCount = 0;
+        let daysInCycle = 0;
+        const fullTravelDays = Math.floor(totalTravelDays);
+        const totalElapsedDaysToIterate = Math.ceil(totalElapsedDays);
+        for (let e = 1; e <= totalElapsedDaysToIterate; e++) {
+          if (this.daysBetweenRest > 0 && travelDayCount > 0 && travelDayCount % this.daysBetweenRest === 0 && daysInCycle === this.daysBetweenRest) {
+            staminaPerDay.push(0);
+            daysInCycle = 0;
+            continue;
+          }
+          travelDayCount++;
+          daysInCycle++;
+          const hasWarmMeal = this.warmMealsEnabled && this.cookUuid && (this.warmMealsResults.length >= travelDayCount ? this.warmMealsResults[travelDayCount - 1] : true);
+          const currentMealVal = hasWarmMeal ? parseFloat(this.warmMealsValue) || 0 : 0;
+          const bonus = m.end10 + currentMealVal;
+          if (travelDayCount <= fullTravelDays) {
+            const dailyAccumulatedFM = daysInCycle * this.fmHours;
+            const cost = Math.ceil(Math.max(0, dailyAccumulatedFM - bonus));
+            staminaPerDay.push(cost);
+            totalStamina += cost;
+          } else if (travelDayCount > fullTravelDays && travelDayCount <= Math.ceil(totalTravelDays)) {
+            const lastDayFraction = totalTravelDays - fullTravelDays;
+            if (lastDayFraction > 0) {
+              const totalTravelHoursPerDay = 8 + this.fmHours;
+              const lastDayHours = lastDayFraction * totalTravelHoursPerDay;
+              const lastDayFM = Math.max(0, lastDayHours - 8);
+              const dailyAccumulatedFM = (daysInCycle - 1) * this.fmHours + lastDayFM;
+              const cost = Math.ceil(Math.max(0, dailyAccumulatedFM - bonus));
+              staminaPerDay.push(cost);
+              totalStamina += cost;
+            }
+          }
+        }
+      }
+      let staminaCons = "0";
+      let staminaPerRest = 0;
+      if (this.daysBetweenRest > 0) {
+        for (let d = 1; d <= this.daysBetweenRest; d++) {
+          const dailyAccumulatedFM = d * this.fmHours;
+          staminaPerRest += Math.ceil(Math.max(0, dailyAccumulatedFM - (m.end10 + mealValGlobal)));
+        }
+      }
+      if (totalStamina > 0) {
+        if (staminaPerDay.length <= 5) {
+          staminaCons = staminaPerDay.join(", ");
+        } else {
+          const first = staminaPerDay[0];
+          const last = staminaPerDay[staminaPerDay.length - 1];
+          staminaCons = `${first} ... ${last} (${game.i18n.localize("TAMS.Total")}: ${totalStamina})`;
+        }
+      }
+      return {
+        uuid: m.uuid,
+        name: m.actor.name,
+        img: m.actor.img,
+        speed: m.state.speed,
+        isMounted: m.state.isMounted,
+        defaultSpeed: m.defaultSpeed,
+        currentSpeed: m.currentSpeed,
+        staminaCons,
+        staminaPerRest,
+        staminaPerDay,
+        totalStamina,
+        end10: m.end10
+      };
+    });
+    return context;
+  }
+  _formatTime(totalDays) {
+    if (totalDays === 0 || isNaN(totalDays)) return null;
+    let days = Math.floor(totalDays);
+    let fractionalDay = totalDays - days;
+    const travelHoursPerDay = 8 + this.fmHours;
+    let hours = Math.round(fractionalDay * travelHoursPerDay);
+    if (hours >= travelHoursPerDay) {
+      days += 1;
+      hours -= travelHoursPerDay;
+    }
+    let months = Math.floor(days / 30);
+    days %= 30;
+    let weeks = Math.floor(days / 7);
+    days %= 7;
+    return { months, weeks, days, hours };
+  }
+  /** @override */
+  _onRender(context, options) {
+    super._onRender(context, options);
+    const html = this.element;
+    html.addEventListener("focusin", (event) => {
+      this._storeFocus(event.target);
+    }, true);
+    html.querySelectorAll("input, select, textarea").forEach((input) => {
+      input.addEventListener("input", (event) => {
+        const action = input.dataset.action;
+        if (action === "updateValue") this._onUpdateValue(event, input, false);
+        else if (action === "updateMember") this._onUpdateMember(event, input, false);
+      });
+      input.addEventListener("change", (event) => {
+        const action = input.dataset.action;
+        if (action === "updateValue") this._onUpdateValue(event, input, true);
+        else if (action === "updateMember") this._onUpdateMember(event, input, true);
+        else if (action === "toggleValue") this._onToggleValue(event, input, true);
+      });
+    });
+    if (this._focusSelector) {
+      const el = this.element.querySelector(this._focusSelector);
+      if (el) {
+        el.focus();
+        const supportsSelection = el.type && ["text", "search", "url", "tel", "password"].includes(el.type);
+        if (supportsSelection && el.setSelectionRange && this._selectionRange) {
+          el.setSelectionRange(this._selectionRange[0], this._selectionRange[1]);
+        }
+      }
+      this._focusSelector = null;
+      this._selectionRange = null;
+    }
+  }
+  /* -------------------------------------------- */
+  /*  Action Handlers                             */
+  /* -------------------------------------------- */
+  _onUpdateValue(event, target, render = true) {
+    const field = target.dataset.field;
+    if (target.type === "number") {
+      this[field] = target.value === "" ? 0 : parseFloat(target.value) || 0;
+    } else {
+      this[field] = target.value;
+    }
+    if (render) {
+      this._storeFocus();
+      this.render();
+    }
+  }
+  _onToggleValue(event, target, render = true) {
+    const field = target.dataset.field;
+    this[field] = target.checked;
+    if (render) {
+      this._storeFocus();
+      this.render();
+    }
+  }
+  _onUpdateMember(event, target, render = true) {
+    const actorUuid = target.closest(".member").dataset.actorUuid;
+    const field = target.dataset.field;
+    if (!this.membersState[actorUuid]) {
+      this.membersState[actorUuid] = { speed: null, isMounted: false };
+    }
+    if (target.type === "checkbox") {
+      this.membersState[actorUuid][field] = target.checked;
+    } else {
+      this.membersState[actorUuid][field] = target.value;
+    }
+    if (render) {
+      this._storeFocus();
+      this.render();
+    }
+  }
+  async _onAddMember(event, target) {
+    const tokens = canvas.tokens.controlled;
+    if (tokens.length === 0) {
+      ui.notifications.warn(game.i18n.localize("TAMS.Notifications.SelectTokensForTravel"));
+      return;
+    }
+    let added = false;
+    for (let t of tokens) {
+      if (t.actor && !this.members.includes(t.actor.uuid)) {
+        this.members.push(t.actor.uuid);
+        this.membersState[t.actor.uuid] = { speed: null, isMounted: false };
+        added = true;
+      }
+    }
+    if (added) this.render();
+  }
+  _onRemoveMember(event, target) {
+    const actorUuid = target.closest(".member").dataset.actorUuid;
+    this.members = this.members.filter((uuid) => uuid !== actorUuid);
+    delete this.membersState[actorUuid];
+    if (this.cookUuid === actorUuid) this.cookUuid = "";
+    this.render();
+  }
+  async _onMakeCookChecks(event, target) {
+    if (!this.warmMealsEnabled) return;
+    if (!this.cookUuid) {
+      ui.notifications.warn(game.i18n.localize("TAMS.Notifications.SelectCook"));
+      return;
+    }
+    const cookActor = fromUuidSync(this.cookUuid);
+    if (!cookActor) {
+      ui.notifications.warn(game.i18n.localize("TAMS.Notifications.SelectCook"));
+      return;
+    }
+    if (this.members.length === 0) {
+      ui.notifications.warn(game.i18n.localize("TAMS.Notifications.NoMembersForCook"));
+      return;
+    }
+    if (this.distanceKm <= 0) {
+      ui.notifications.warn(game.i18n.localize("TAMS.Notifications.EnterDistance"));
+      return;
+    }
+    const mileToKm = 1.60934;
+    const memberSpeeds = this.members.map((uuid) => {
+      const state = this.membersState[uuid] || { speed: null, isMounted: false };
+      const defaultSpeed = state.isMounted ? 40 : 20;
+      return state.speed !== null && state.speed !== "" ? parseFloat(state.speed) : defaultSpeed;
+    });
+    const partySpeedMiles = memberSpeeds.length > 0 ? Math.min(...memberSpeeds) : 0;
+    const adjustedSpeedKmPerDay = partySpeedMiles * mileToKm * (8 + this.fmHours) / 8;
+    const totalTravelDays = adjustedSpeedKmPerDay > 0 ? Math.ceil(this.distanceKm / adjustedSpeedKmPerDay) : 0;
+    if (totalTravelDays <= 0) return;
+    const results = [];
+    const dc = this.cookDC || 10;
+    const rollSummary = [];
+    const skill = cookActor.items.find((i) => {
+      if (i.type !== "skill") return false;
+      const tags = (i.system.tags || "").split(",").map((t) => t.trim().toLowerCase());
+      return tags.includes("cooking");
+    });
+    const wisdom = cookActor.system.stats.wisdom;
+    let statId = "wisdom";
+    let statValue = wisdom.value;
+    let statMod = wisdom.mod;
+    let familiarity = 0;
+    let bonus = 0;
+    if (skill) {
+      statId = skill.system.stat;
+      const stat = cookActor.system.stats[statId];
+      statValue = stat.value;
+      statMod = stat.mod;
+      familiarity = parseInt(skill.system.familiarity) || 0;
+      bonus = parseInt(skill.system.bonus) || 0;
+    }
+    for (let d = 1; d <= totalTravelDays; d++) {
+      const roll = await new Roll("1d100").evaluate();
+      const rawResult = roll.total;
+      const cappedResult = Math.min(rawResult, statValue + statMod);
+      const total = cappedResult + familiarity + bonus;
+      const success = total >= dc;
+      results.push(success);
+      rollSummary.push(`Day ${d}: ${total} (Roll: ${rawResult}) - ${success ? "Success" : "Failure"}`);
+    }
+    this.warmMealsResults = results;
+    const content = `
+      <div class="tams-roll">
+        <h3 class="roll-label">${game.i18n.localize("TAMS.MakeCookChecks")}: ${cookActor.name}</h3>
+        <p><small>${game.i18n.format("TAMS.CookCheckDescription", { dc })}</small></p>
+        <ul style="list-style: none; padding: 0; font-size: 0.9em;">
+          ${rollSummary.map((s) => `<li>${s}</li>`).join("")}
+        </ul>
+      </div>
+    `;
+    ChatMessage.create({
+      user: game.user.id,
+      content,
+      speaker: ChatMessage.getSpeaker({ actor: cookActor })
+    });
+    this.render();
+  }
+  _storeFocus(target = null) {
+    var _a;
+    target = target || document.activeElement;
+    if (!target || !((_a = this.element) == null ? void 0 : _a.contains(target))) return;
+    const field = target.dataset.field;
+    if (!field) return;
+    const member = target.closest(".member");
+    if (member) {
+      const uuid = member.dataset.actorUuid;
+      this._focusSelector = `.member[data-actor-uuid="${uuid}"] [data-field="${field}"]`;
+    } else {
+      this._focusSelector = `[data-field="${field}"]`;
+    }
+    const supportsSelection = target.type && ["text", "search", "url", "tel", "password"].includes(target.type);
+    if (supportsSelection && target.setSelectionRange) {
+      this._selectionRange = [target.selectionStart, target.selectionEnd];
+    } else {
+      this._selectionRange = null;
+    }
+  }
+  async _onOutputToChat(event, target) {
+    const context = await this._prepareContext();
+    const { timeBreakdown, members } = context;
+    let timeParts = [];
+    if (timeBreakdown) {
+      if (timeBreakdown.months) timeParts.push(`${timeBreakdown.months} ${game.i18n.localize("TAMS.Months")}`);
+      if (timeBreakdown.weeks) timeParts.push(`${timeBreakdown.weeks} ${game.i18n.localize("TAMS.Weeks")}`);
+      if (timeBreakdown.days) timeParts.push(`${timeBreakdown.days} ${game.i18n.localize("TAMS.Days")}`);
+      if (timeBreakdown.hours) timeParts.push(`${timeBreakdown.hours} ${game.i18n.localize("TAMS.Hours")}`);
+    }
+    const timeString = timeParts.length > 0 ? timeParts.join(", ") : `0 ${game.i18n.localize("TAMS.Hours")}`;
+    let staminaInfo = members.map((m) => {
+      const dayBreakdown = m.staminaPerDay.map((cost, i) => cost > 0 ? `${game.i18n.localize("TAMS.Day")} ${i + 1}: ${cost}` : null).filter((d) => d !== null);
+      let info = `<li><strong>${m.name}</strong>: ${m.totalStamina} ${game.i18n.localize("TAMS.Stamina")}</li>`;
+      if (dayBreakdown.length > 0) {
+        info += `<li style="list-style: none; margin-left: 10px; font-size: 0.85em;">${dayBreakdown.join(", ")}</li>`;
+      }
+      if (m.staminaPerRest) {
+        info += `<li style="list-style: none; margin-left: 10px; font-size: 0.8em;">(${game.i18n.localize("TAMS.StaminaPerRest")}: ${m.staminaPerRest})</li>`;
+      }
+      return info;
+    }).join("");
+    const content = `
+      <div class="tams-roll travel-pace-card">
+        <h3 class="roll-label">${game.i18n.localize("TAMS.TravelResults")}</h3>
+        <div class="roll-row">
+          <span>${game.i18n.localize("TAMS.TravelTimeResult")}:</span>
+          <span>${timeString}</span>
+        </div>
+        <hr>
+        <div class="roll-description"><strong>${game.i18n.localize("TAMS.StaminaConsumption")}:</strong></div>
+        <ul style="list-style: none; padding: 0; margin: 0;">${staminaInfo}</ul>
+      </div>
+    `;
+    ChatMessage.create({
+      user: game.user.id,
+      content,
+      speaker: ChatMessage.getSpeaker()
+    });
+  }
+};
+/** @override */
+__publicField(_TAMSTravelPaceApp, "DEFAULT_OPTIONS", {
+  tag: "div",
+  id: "tams-travel-pace",
+  classes: ["tams", "travel-pace"],
+  position: { width: 400, height: "auto" },
+  window: {
+    title: "TAMS.TravelPaceMenu",
+    resizable: true,
+    icon: "icons/svg/walk.svg"
+  },
+  actions: {
+    addMember: _TAMSTravelPaceApp.prototype._onAddMember,
+    removeMember: _TAMSTravelPaceApp.prototype._onRemoveMember,
+    makeCookChecks: _TAMSTravelPaceApp.prototype._onMakeCookChecks,
+    outputToChat: _TAMSTravelPaceApp.prototype._onOutputToChat
+  }
+});
+/** @override */
+__publicField(_TAMSTravelPaceApp, "PARTS", {
+  form: {
+    template: "systems/tams/templates/travel-pace.html"
+  }
+});
+let TAMSTravelPaceApp = _TAMSTravelPaceApp;
 Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
   game.socket.on("system.tams", (data) => {
@@ -3429,6 +4014,7 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.armor = TAMSArmorData;
   CONFIG.Item.dataModels.consumable = TAMSConsumableData;
   CONFIG.Item.dataModels.tool = TAMSToolData;
+  CONFIG.Item.dataModels.shield = TAMSShieldData;
   CONFIG.Item.dataModels.questItem = TAMSQuestItemData;
   CONFIG.Item.dataModels.backpack = TAMSBackpackData;
   CONFIG.Item.dataModels.trait = TAMSTraitData;
@@ -3436,6 +4022,14 @@ Hooks.once("init", async function() {
   CONFIG.Actor.systemDataModels = CONFIG.Actor.dataModels;
   CONFIG.Actor.documentClass = TAMSActor;
   CONFIG.Item.documentClass = TAMSItem;
+  game.tams = {
+    travelPace: () => {
+      if (!game.tams._travelPaceApp) {
+        game.tams._travelPaceApp = new TAMSTravelPaceApp();
+      }
+      game.tams._travelPaceApp.render(true, { focus: true });
+    }
+  };
   foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
   foundry.documents.collections.Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
   foundry.documents.collections.Actors.registerSheet("tams", TAMSLootSheet, {

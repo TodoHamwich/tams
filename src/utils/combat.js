@@ -923,6 +923,62 @@ export async function tamsRenderChatMessage(message, html, data) {
         if (message) await tamsUpdateMessage(message, { content: container.outerHTML });
     }));
 
+    // Block button
+    root.querySelectorAll('.tams-block').forEach(el => el.addEventListener("click", async ev => {
+        ev.preventDefault();
+        const btn = ev.currentTarget;
+        const actorUuid = btn.dataset.targetActorUuid;
+        const actor = actorUuid ? await fromUuid(actorUuid) : (canvas.tokens.controlled[0]?.actor || [...(game?.user?.targets ?? [])][0]?.actor);
+
+        if (!actor) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetDodge"));
+
+        const shield = actor.items.find(i => i.type === 'shield' && i.system.equipped);
+        if (!shield) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoShield"));
+
+        const locations = JSON.parse(btn.dataset.locations);
+        const content = `
+            <p>${game.i18n.format("TAMS.Combat.ChooseLimbToBlock", {name: shield.name, armor: shield.system.armorValue})}</p>
+            <select id="block-loc">
+                ${locations.map((loc, i) => `<option value="${i}">${loc}</option>`).join('')}
+            </select>`;
+
+        new Dialog({
+            title: game.i18n.localize("TAMS.Combat.ShieldBlock"),
+            content: content,
+            buttons: {
+                block: {
+                    label: game.i18n.localize("TAMS.Combat.BlockHit"),
+                    callback: async (html) => {
+                        const idx = parseInt(html.find('#block-loc').val());
+                        const locationToBlock = locations[idx];
+                        
+                        const damage = parseInt(btn.dataset.damage);
+                        const armourPen = parseInt(btn.dataset.armourPen) || 0;
+                        const shieldArmor = shield.system.armorValue;
+                        
+                        // Show a message about the block
+                        const report = `
+                            <div class="tams-roll">
+                                <h3 class="roll-label">${game.i18n.format("TAMS.Combat.ShieldBlockWith", {name: actor.name, shield: shield.name})}</h3>
+                                <div class="tams-success">${game.i18n.format("TAMS.Combat.BlockReport", {location: locationToBlock, armor: shieldArmor})}</div>
+                                <div class="roll-row" style="margin-top: 5px;">
+                                    <button class="tams-take-damage" 
+                                            data-damage="${damage}" 
+                                            data-armour-pen="${armourPen - shieldArmor}" 
+                                            data-locations='${JSON.stringify([locationToBlock])}'
+                                            data-target-actor-uuid="${actor.uuid}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
+                                </div>
+                            </div>`;
+                        
+                        ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: report });
+                    }
+                },
+                cancel: { label: game.i18n.localize("TAMS.Cancel") }
+            },
+            default: "block"
+        }).render(true);
+    }));
+
     // Toggles (Behind/Unaware)
     ['behind', 'unaware'].forEach(type => {
         root.querySelectorAll(`.tams-${type}-toggle`).forEach(el => el.addEventListener("click", async ev => {

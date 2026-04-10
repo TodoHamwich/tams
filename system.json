@@ -2,7 +2,7 @@
   "id": "tams",
   "title": "Todo's Advanced Modular System",
   "description": "A custom system for Foundry VTT",
-  "version": "1.0.85",
+  "version": "1.0.86",
   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
   "authors": [
@@ -17,7 +17,15 @@
   "styles": [
     "styles/tams.css"
   ],
-  "packs": [],
+  "packs": [
+    {
+      "name": "macros",
+      "label": "TAMS Macros",
+      "path": "packs/macros.db",
+      "type": "Macro",
+      "system": "tams"
+    }
+  ],
   "languages": [
     {
       "lang": "en",

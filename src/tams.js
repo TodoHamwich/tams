@@ -1,10 +1,11 @@
 import { TAMSCharacterData } from './models/character.js';
-import { TAMSWeaponData, TAMSSkillData, TAMSEquipmentData, TAMSArmorData, TAMSConsumableData, TAMSToolData, TAMSQuestItemData, TAMSBackpackData, TAMSAbilityData, TAMSTraitData } from './models/item.js';
+import { TAMSWeaponData, TAMSSkillData, TAMSEquipmentData, TAMSArmorData, TAMSConsumableData, TAMSToolData, TAMSShieldData, TAMSQuestItemData, TAMSBackpackData, TAMSAbilityData, TAMSTraitData } from './models/item.js';
 import { TAMSActor } from './documents/actor.js';
 import { TAMSItem } from './documents/item.js';
 import { TAMSActorSheet } from './applications/actor-sheet.js';
 import { TAMSLootSheet } from './applications/loot-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
+import { TAMSTravelPaceApp } from './applications/travel-pace.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
 import { tamsRenderChatMessage } from './utils/combat.js';
 
@@ -41,6 +42,7 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.armor = TAMSArmorData;
   CONFIG.Item.dataModels.consumable = TAMSConsumableData;
   CONFIG.Item.dataModels.tool = TAMSToolData;
+  CONFIG.Item.dataModels.shield = TAMSShieldData;
   CONFIG.Item.dataModels.questItem = TAMSQuestItemData;
   CONFIG.Item.dataModels.backpack = TAMSBackpackData;
   CONFIG.Item.dataModels.trait = TAMSTraitData;
@@ -51,6 +53,15 @@ Hooks.once("init", async function() {
 
   CONFIG.Actor.documentClass = TAMSActor;
   CONFIG.Item.documentClass = TAMSItem;
+
+  game.tams = {
+    travelPace: () => {
+      if (!game.tams._travelPaceApp) {
+        game.tams._travelPaceApp = new TAMSTravelPaceApp();
+      }
+      game.tams._travelPaceApp.render(true, { focus: true });
+    }
+  };
 
   foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
   foundry.documents.collections.Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });

@@ -154,6 +154,24 @@ export class TAMSToolData extends foundry.abstract.TypeDataModel {
 }
 
 /**
+ * DataModel for Shield items.
+ */
+export class TAMSShieldData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      armorValue: new fields.NumberField({initial: 5, integer: true, min: 0}),
+      equipped: new fields.BooleanField({initial: false}),
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      size: new fields.StringField({initial: "medium"}),
+      location: new fields.StringField({initial: "hand"}),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+/**
  * DataModel for Quest Item items.
  */
 export class TAMSQuestItemData extends foundry.abstract.TypeDataModel {

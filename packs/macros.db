@@ -1,0 +1,1 @@
+{"name":"Travel Pace Calculator","type":"script","author":"tams-system","img":"icons/svg/walk.svg","command":"game.tams.travelPace();","folder":null,"sort":0,"ownership":{"default":0},"flags":{},"_id":"tamsTravelPace01"}

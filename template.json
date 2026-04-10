@@ -52,7 +52,7 @@
     }
   },
   "Item": {
-    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "questItem", "backpack", "trait"],
+    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait"],
     "weapon": {
       "familiarity": 0,
       "quantity": 1,
@@ -171,6 +171,15 @@
       "quantity": 1,
       "size": "medium",
       "location": "stowed",
+      "tags": "",
+      "description": ""
+    },
+    "shield": {
+      "armorValue": 5,
+      "equipped": false,
+      "quantity": 1,
+      "size": "medium",
+      "location": "hand",
       "tags": "",
       "description": ""
     },

@@ -1,0 +1,101 @@
+<div class="tams travel-pace-app">
+    <section class="travel-config flexcol">
+        <div class="flexrow">
+            <label>{{localize "TAMS.DistanceKm"}}</label>
+            <input type="number" name="distanceKm" value="{{distanceKm}}" data-action="updateValue" data-field="distanceKm">
+        </div>
+        <div class="flexrow">
+            <label>{{localize "TAMS.ForcedMarch"}} ({{localize "TAMS.Hours"}})</label>
+            <input type="number" name="fmHours" value="{{fmHours}}" data-action="updateValue" data-field="fmHours">
+        </div>
+        <div class="flexrow">
+            <label>{{localize "TAMS.DaysBetweenRest"}}</label>
+            <input type="number" name="daysBetweenRest" value="{{daysBetweenRest}}" data-action="updateValue" data-field="daysBetweenRest">
+        </div>
+        <div class="flexrow">
+            <label>{{localize "TAMS.WarmMeals"}}</label>
+            <input type="checkbox" name="warmMealsEnabled" {{checked warmMealsEnabled}} data-action="toggleValue" data-field="warmMealsEnabled">
+            {{#if warmMealsEnabled}}
+            <input type="number" name="warmMealsValue" value="{{warmMealsValue}}" data-action="updateValue" data-field="warmMealsValue" style="width: 50px;">
+            {{/if}}
+        </div>
+        {{#if warmMealsEnabled}}
+        <div class="flexrow">
+            <label>{{localize "TAMS.Cook"}}</label>
+            <select name="cookUuid" data-action="updateValue" data-field="cookUuid">
+                <option value="">{{localize "TAMS.None"}}</option>
+                {{selectOptions partyCookOptions selected=cookUuid}}
+            </select>
+        </div>
+        <div class="flexrow">
+            <label>{{localize "TAMS.CookDC"}}</label>
+            <input type="number" name="cookDC" value="{{cookDC}}" data-action="updateValue" data-field="cookDC">
+        </div>
+        <button type="button" data-action="makeCookChecks" class="roll-button">
+            <i class="fas fa-utensils"></i> {{localize "TAMS.MakeCookChecks"}}
+        </button>
+        {{/if}}
+    </section>
+
+    <hr>
+
+    <section class="travel-results flexcol">
+        <h3>{{localize "TAMS.TravelResults"}}</h3>
+        <div class="flexrow">
+            <span>{{localize "TAMS.TravelTimeResult"}}:</span>
+            <strong>
+                {{#if timeBreakdown}}
+                    {{#if timeBreakdown.months}}{{timeBreakdown.months}} {{localize "TAMS.Months"}} {{/if}}
+                    {{#if timeBreakdown.weeks}}{{timeBreakdown.weeks}} {{localize "TAMS.Weeks"}} {{/if}}
+                    {{#if timeBreakdown.days}}{{timeBreakdown.days}} {{localize "TAMS.Days"}} {{/if}}
+                    {{#if timeBreakdown.hours}}{{timeBreakdown.hours}} {{localize "TAMS.Hours"}}{{/if}}
+                {{else}}
+                    0 {{localize "TAMS.Hours"}}
+                {{/if}}
+            </strong>
+        </div>
+    </section>
+
+    <hr>
+
+    <section class="travel-members flexcol">
+        <div class="flexrow">
+            <h3>{{localize "TAMS.PartyMembers"}}</h3>
+            <button type="button" data-action="addMember" title="{{localize 'TAMS.AddMember'}}">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+        <ul class="member-list">
+            {{#each members}}
+            <li class="member flexcol" data-actor-uuid="{{this.uuid}}">
+                <div class="flexrow">
+                    <img src="{{this.img}}" width="24" height="24" style="border:none">
+                    <span class="member-name">{{this.name}}</span>
+                    <button type="button" data-action="removeMember" class="small-button">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="flexrow member-controls">
+                    <label>{{#if this.isMounted}}{{localize "TAMS.MountSpeed"}}{{else}}{{localize "TAMS.MemberSpeed"}}{{/if}}</label>
+                    <input type="number" value="{{this.speed}}" placeholder="{{this.defaultSpeed}}" data-action="updateMember" data-field="speed">
+                    
+                    <label>{{localize "TAMS.Mounted"}}</label>
+                    <input type="checkbox" {{checked this.isMounted}} data-action="updateMember" data-field="isMounted">
+                </div>
+                <div class="member-stats">
+                    <small>{{localize "TAMS.StaminaConsumption"}}: {{this.staminaCons}} (End: {{this.end10}})</small>
+                    {{#if this.staminaPerRest}}
+                    <br><small>{{localize "TAMS.StaminaPerRest"}}: {{this.staminaPerRest}}</small>
+                    {{/if}}
+                </div>
+            </li>
+            {{else}}
+            <li>{{localize "TAMS.NoMembers"}}</li>
+            {{/each}}
+        </ul>
+    </section>
+
+    <button type="button" data-action="outputToChat" class="output-button">
+        <i class="fas fa-comment"></i> {{localize "TAMS.OutputToChat"}}
+    </button>
+</div>

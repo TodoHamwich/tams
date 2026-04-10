@@ -103,5 +103,12 @@ CORE SYSTEMS
   - Themes: Supports three distinct visual themes: Default, Dark, and Parchment.
   - Custom Resource Bars: Dynamic colors and icons for resource tracking.
 
+UTILITIES
+--------------------------------------------------------------------------------
+* Travel Pace Calculator:
+  - A tool for GMs and players to calculate travel distances based on party speed, pace (Slow, Normal, Fast), and travel time.
+  - Supports manual party speed input and member management (drag-and-drop or token selection).
+  - Accessible via the global `game.tams.travelPace()` function or the premade macro in the system compendium.
+
 * Ability Calculator:
   - A robust tool for GMs and players to define ability behavior, including AoE radius, range, duration, damage stats, and special effects like Stun or Healing.

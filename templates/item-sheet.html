@@ -13,7 +13,7 @@
     <section class="sheet-body" data-scrollable data-scroll-id="item-body">
         <div class="flexcol">
             {{!-- Common Physical Fields --}}
-            {{#if (or (eq item.type 'weapon') (eq item.type 'equipment') (eq item.type 'armor') (eq item.type 'consumable') (eq item.type 'tool') (eq item.type 'questItem') (eq item.type 'backpack'))}}
+            {{#if (or (eq item.type 'weapon') (eq item.type 'equipment') (eq item.type 'armor') (eq item.type 'consumable') (eq item.type 'tool') (eq item.type 'shield') (eq item.type 'questItem') (eq item.type 'backpack'))}}
             <div class="flexrow">
                 <label>{{localize 'TAMS.Quantity'}}</label>
                 <input type="number" name="system.quantity" value="{{system.quantity}}"/>
@@ -218,6 +218,17 @@
             </div>
             {{/if}}
 
+            {{#if (eq item.type "shield")}}
+            <div class="flexrow">
+                <label>{{localize 'TAMS.EquippedQ'}}</label>
+                <input type="checkbox" name="system.equipped" {{checked system.equipped}}/>
+            </div>
+            <div class="flexrow">
+                <label>{{localize 'TAMS.ArmorValue'}}</label>
+                <input type="number" name="system.armorValue" value="{{system.armorValue}}"/>
+            </div>
+            {{/if}}
+
             {{#if (eq item.type "backpack")}}
             <div class="flexrow">
                 <label>{{localize 'TAMS.EquippedQ'}}</label>
@@ -259,7 +270,7 @@
             </div>
             {{/if}}
 
-            {{#if (or (eq item.type "equipment") (eq item.type "tool") (eq item.type "questItem") (eq item.type "consumable") (eq item.type "armor") (eq item.type "backpack"))}}
+            {{#if (or (eq item.type "equipment") (eq item.type "tool") (eq item.type "shield") (eq item.type "questItem") (eq item.type "consumable") (eq item.type "armor") (eq item.type "backpack"))}}
             {{!-- Physical item fields already shown above --}}
             {{/if}}
 
