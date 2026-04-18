@@ -261,7 +261,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         targetLimb: new fields.StringField({initial: "none"}),
         fireRate: new fields.StringField({initial: "single"}),
         multiAttackHits: new fields.NumberField({initial: 0, integer: true, nullable: true}),
-        damageStatFraction: new fields.NumberField({initial: 0, step: 0.25, nullable: true}),
+        damageStatFraction: new fields.StringField({initial: "0"}),
         stun: new fields.StringField({initial: "none"}),
         healing: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         drType: new fields.StringField({initial: "none"}),
@@ -285,7 +285,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     if ( !this.isAttack ) return 0;
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
-    
+
     if (this.damageStat === "custom") {
       return (this.damage || 0) + (this.damageBonus || 0);
     }
@@ -295,66 +295,45 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
   }
 
   /**
-   * The calculated resource cost of the ability.
+   * The calculated resource cost of the ability, derived from calculator fields.
    * @type {number}
    */
   get calculatedCost() {
     const c = this.calculator;
     let cost = 0;
-
-    // Part 1: Effects
     cost += (c.effects || 0) * 1;
     cost += (c.guaranteedMax || 0) * 2;
     cost -= (c.detriments || 0) * 1;
-    
     if (c.movementDoubleOwn) cost += 2;
     if (c.movementHalveEnemy) cost += 4;
     cost += (c.movementFlat || 0) * 2;
-
     cost += Math.floor((c.rollBonus || 0) / 5) * 1;
-    
     if (c.ignoreArmor > 0) {
       cost += 1;
       if (c.ignoreArmor > 1) cost += (c.ignoreArmor - 1) * 2;
     }
-
     if (c.bodyPart !== "none") cost += 2;
     if (c.targetLimb !== "none") cost += 4;
-
     if (c.fireRate === "burst") cost += 2;
-    else if (c.fireRate === "fullAuto") cost += 4;
-
+    else if (c.fireRate === "auto") cost += 4;
     cost += (c.multiAttackHits || 0) * 2;
-
-    if (c.damageStatFraction > 0) {
-      cost += (c.damageStatFraction / 0.25) * 1;
-    }
-
-    if (c.stun === "minor") cost += 1;
-    else if (c.stun === "major") cost += 2;
-
+    const dsf = parseFloat(c.damageStatFraction) || 0;
+    if (dsf > 0) cost += (dsf / 0.25) * 1;
+    if (c.stun === "crit") cost += 1;
+    else if (c.stun === "guaranteed") cost += 2;
     cost += (c.healing || 0) * 1;
-
-    if (c.drType !== "none") {
-      cost += (c.drValue || 0) * 1;
-    }
-
+    if (c.drType !== "none") cost += (c.drValue || 0) * 1;
     if (c.bypassDodge) cost *= 2;
     if (c.bypassRetaliation) cost *= 2;
-
-    // Part 2: Targets
     if (c.isUtility && c.targetType === "multiple") {
       cost *= 1.5;
     } else if (c.targetType === "multiple") {
       cost *= 2;
     }
-
     if (c.aoeRadius >= 1) {
       cost += 2;
-      if (c.aoeRadius > 3) cost += (c.aoeRadius - 3);
+      if (c.aoeRadius > 3) cost += c.aoeRadius - 3;
     }
-
-    // Part 3: Range
     if (c.isUtility) {
       if (c.range >= 100 && c.range < 1000) cost += 1;
       else if (c.range >= 1000 && c.range < 10000) cost += 2;
@@ -369,8 +348,6 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         cost += Math.floor((c.range - 100) / 50);
       }
     }
-
-    // Part 4: Duration
     if (c.isUtility) {
       if (c.duration === "utility1") cost += 1;
       else if (c.duration === "utility2") cost += 2;
@@ -381,9 +358,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       else if (c.duration === "2rounds") cost += 2;
       else if (c.duration === "3rounds") cost += 4;
     }
-
     if (c.isStackable) cost *= 2;
-
     return Math.max(1, Math.floor(cost));
   }
 

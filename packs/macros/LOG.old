@@ -1,5 +1,3 @@
-2026/04/18-01:15:10.054457 7f07abfec6c0 Recovering log #3
-2026/04/18-01:15:10.054476 7f07abfec6c0 Level-0 table #5: started
-2026/04/18-01:15:10.061034 7f07abfec6c0 Level-0 table #5: 568 bytes OK
-2026/04/18-01:15:10.086273 7f07abfec6c0 Delete type=0 #3
-2026/04/18-01:15:10.086294 7f07abfec6c0 Delete type=3 #2
+2026/04/18-03:44:29.376526 7fb20c8bd6c0 Recovering log #8
+2026/04/18-03:44:29.393611 7fb20c8bd6c0 Delete type=0 #8
+2026/04/18-03:44:29.393632 7fb20c8bd6c0 Delete type=3 #7

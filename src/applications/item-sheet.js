@@ -125,9 +125,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
                 "none": "TAMS.CalculatorOptions.None",
                 "head": "TAMS.CalculatorOptions.Head",
                 "thorax": "TAMS.CalculatorOptions.ThoraxStomach",
-                "stomach": "TAMS.CalculatorOptions.ThoraxStomach",
-                "arms": "TAMS.CalculatorOptions.ArmsLegs",
-                "legs": "TAMS.CalculatorOptions.ArmsLegs"
+                "arms": "TAMS.CalculatorOptions.ArmsLegs"
             },
             fireRates: {
                 "single": "TAMS.CalculatorOptions.Single",
