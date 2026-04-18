@@ -105,7 +105,23 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         retaliation: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
         perception: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) })
       }),
-      currencies: new fields.ObjectField({initial: {}})
+      currencies: new fields.ObjectField({initial: {}}),
+      downtime: new fields.SchemaField({
+        days: new fields.NumberField({initial: 0, min: 0}),
+        daysRemaining: new fields.NumberField({initial: 0, min: 0}),
+        isSafe: new fields.BooleanField({initial: true}),
+        notes: new fields.HTMLField({initial: ""}),
+        trackers: new fields.SchemaField({
+          ability: new fields.NumberField({initial: 0, integer: true, min: 0}),
+          skill: new fields.NumberField({initial: 0, integer: true, min: 0}),
+          weapon: new fields.NumberField({initial: 0, integer: true, min: 0}),
+          statistic: new fields.NumberField({initial: 0, integer: true, min: 0}),
+          crafting: new fields.NumberField({initial: 0, integer: true, min: 0}),
+          resting: new fields.NumberField({initial: 0, integer: true, min: 0}),
+          healing: new fields.NumberField({initial: 0, integer: true, min: 0}),
+          working: new fields.NumberField({initial: 0, integer: true, min: 0})
+        })
+      })
     };
   }
 
@@ -118,6 +134,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this._prepareStamina();
     this._prepareCustomResources();
     this._prepareInventoryCapacity();
+    this._prepareDowntime();
   }
 
   /**
@@ -293,5 +310,18 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         this.backpackPenalties.movement += (pen.movement || 0);
       }
     }
+  }
+
+  /**
+   * Calculate downtime days remaining.
+   * @protected
+   */
+  _prepareDowntime() {
+    const downtime = this.downtime;
+    if (!downtime) return;
+
+    const trackers = downtime.trackers || {};
+    const usedDays = Object.values(trackers).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    downtime.daysRemaining = Math.max(0, downtime.days - usedDays);
   }
 }

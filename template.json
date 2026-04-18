@@ -1,6 +1,6 @@
 {
   "Actor": {
-    "types": ["character"],
+    "types": ["character", "downtime"],
     "character": {
       "stats": {
         "strength": { "value": 10, "mod": 0, "label": "TAMS.StatStrength" },
@@ -48,7 +48,88 @@
         "retaliation": { "value": 0 },
         "perception": { "value": 0 }
       },
-      "currencies": {}
+      "currencies": {},
+      "downtime": {
+        "days": 0,
+        "daysRemaining": 0,
+        "isSafe": true,
+        "notes": "",
+        "trackers": {
+          "ability": 0,
+          "skill": 0,
+          "weapon": 0,
+          "statistic": 0,
+          "crafting": 0,
+          "resting": 0,
+          "healing": 0,
+          "working": 0
+        }
+      }
+    },
+    "downtime": {
+      "stats": {
+        "strength": { "value": 10, "mod": 0, "label": "TAMS.StatStrength" },
+        "dexterity": { "value": 10, "mod": 0, "label": "TAMS.StatDexterity" },
+        "endurance": { "value": 10, "mod": 0, "label": "TAMS.StatEndurance" },
+        "wisdom": { "value": 10, "mod": 0, "label": "TAMS.StatWisdom" },
+        "intelligence": { "value": 10, "mod": 0, "label": "TAMS.StatIntelligence" },
+        "bravery": { "value": 10, "mod": 0, "label": "TAMS.StatBravery" }
+      },
+      "limbs": {
+        "head": { "value": 5, "max": 5, "mult": 0.5, "armor": 0, "armorMax": 0, "label": "Head", "injured": false, "criticallyInjured": false },
+        "thorax": { "value": 10, "max": 10, "mult": 1.0, "armor": 0, "armorMax": 0, "label": "Thorax", "injured": false, "criticallyInjured": false },
+        "stomach": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Stomach", "injured": false, "criticallyInjured": false },
+        "leftArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Left Arm", "injured": false, "criticallyInjured": false },
+        "rightArm": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Right Arm", "injured": false, "criticallyInjured": false },
+        "leftLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Left Leg", "injured": false, "criticallyInjured": false },
+        "rightLeg": { "value": 7, "max": 7, "mult": 0.75, "armor": 0, "armorMax": 0, "label": "Right Leg", "injured": false, "criticallyInjured": false }
+      },
+      "stamina": { "value": 10, "max": 10, "mult": 1.0, "color": "#66bb6a" },
+      "hp": { "value": 0, "max": 0, "color": "#e74c3c" },
+      "inventory": { "usedCapacity": 0, "maxCapacity": 0, "hasBackpack": false, "isEncumbered": false, "equippedBackpackId": "", "color": "#f1c40f" },
+      "customResources": [],
+      "theme": "default",
+      "physicalNotes": "",
+      "traits": "",
+      "description": "",
+      "behindMult": 0.5,
+      "settings": {
+        "alternateArmour": false,
+        "isNPC": false,
+        "npcType": "individual",
+        "npcRank": "mook",
+        "squadSize": 1,
+        "enabledCurrencies": {}
+      },
+      "upgradePoints": {
+        "stats": 0,
+        "weapons": 0,
+        "skills": 0,
+        "abilities": 0,
+        "traits": 0
+      },
+      "specialSkills": {
+        "dodge": { "value": 0 },
+        "retaliation": { "value": 0 },
+        "perception": { "value": 0 }
+      },
+      "currencies": {},
+      "downtime": {
+        "days": 0,
+        "daysRemaining": 0,
+        "isSafe": true,
+        "notes": "",
+        "trackers": {
+          "ability": 0,
+          "skill": 0,
+          "weapon": 0,
+          "statistic": 0,
+          "crafting": 0,
+          "resting": 0,
+          "healing": 0,
+          "working": 0
+        }
+      }
     }
   },
   "Item": {

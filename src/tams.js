@@ -3,6 +3,7 @@ import { TAMSWeaponData, TAMSSkillData, TAMSEquipmentData, TAMSArmorData, TAMSCo
 import { TAMSActor } from './documents/actor.js';
 import { TAMSItem } from './documents/item.js';
 import { TAMSActorSheet } from './applications/actor-sheet.js';
+import { TAMSDowntimeSheet } from './applications/downtime-sheet.js';
 import { TAMSLootSheet } from './applications/loot-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
@@ -35,6 +36,7 @@ Hooks.once("init", async function() {
   });
 
   CONFIG.Actor.dataModels.character = TAMSCharacterData;
+  CONFIG.Actor.dataModels.downtime = TAMSCharacterData;
   CONFIG.Item.dataModels.weapon = TAMSWeaponData;
   CONFIG.Item.dataModels.skill = TAMSSkillData;
   CONFIG.Item.dataModels.ability = TAMSAbilityData;
@@ -65,6 +67,16 @@ Hooks.once("init", async function() {
 
   foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
   foundry.documents.collections.Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
+  foundry.documents.collections.Actors.registerSheet("tams", TAMSDowntimeSheet, {
+    types: ["downtime"],
+    makeDefault: true,
+    label: "TAMS.DowntimeSheet"
+  });
+  foundry.documents.collections.Actors.registerSheet("tams", TAMSDowntimeSheet, {
+    types: ["character"],
+    makeDefault: false,
+    label: "TAMS.DowntimeSheet"
+  });
   foundry.documents.collections.Actors.registerSheet("tams", TAMSLootSheet, { 
     types: ["character"],
     makeDefault: false,

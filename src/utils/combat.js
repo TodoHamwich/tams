@@ -386,6 +386,28 @@ export async function tamsRenderChatMessage(message, html, data) {
         btn.innerText = "Applied";
     }));
 
+    // Apply Downtime Award button
+    root.querySelectorAll('.tams-apply-downtime').forEach(el => el.addEventListener("click", async ev => {
+        ev.preventDefault();
+        const btn = ev.currentTarget;
+        const days = parseInt(btn.dataset.days) || 0;
+        
+        const actors = canvas.tokens.controlled.map(t => t.actor).filter(a => a);
+        if (actors.length === 0) {
+            return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTokensDowntime"));
+        }
+        
+        let count = 0;
+        for (let actor of actors) {
+            if (actor.system.downtime !== undefined) {
+                await actor.update({"system.downtime.days": days});
+                count++;
+            }
+        }
+        
+        ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.DowntimeApplied", {days, count}));
+    }));
+
     // Dodge button
     root.querySelectorAll('.tams-dodge').forEach(el => el.addEventListener("click", async ev => {
       ev.preventDefault();

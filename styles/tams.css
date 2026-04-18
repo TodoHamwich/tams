@@ -117,6 +117,156 @@
   display: block;
 }
 
+/* Downtime Sheet Styles */
+.tams.downtime .safe-status {
+  font-weight: bold;
+}
+.tams.downtime .safe-status.safe {
+  color: #2e7d32;
+}
+.tams.downtime .safe-status.unsafe {
+  color: #c62828;
+}
+
+.tams.downtime .downtime-rules-section {
+  margin-top: 10px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: rgba(0,0,0,0.03);
+  border-radius: 5px;
+  border-left: 4px solid #7a7971;
+}
+.tams.downtime .downtime-rules-section.safe {
+  border-left-color: #2e7d32;
+}
+.tams.downtime .downtime-rules-section.unsafe {
+  border-left-color: #c62828;
+}
+.tams.downtime .downtime-rules-section h4 {
+  margin: 0 0 5px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+.tams.downtime .downtime-rules-section p {
+  margin: 0 0 5px 0;
+  font-size: 0.9em;
+}
+.tams.downtime .downtime-rules-section .trait-hint {
+  margin: 0;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.tams.downtime .downtime-main-trackers {
+  margin-bottom: 15px;
+  gap: 20px;
+  background: rgba(0,0,0,0.05);
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(0,0,0,0.1);
+  justify-content: center;
+}
+
+.tams.downtime .tracker-item {
+  align-items: center;
+  gap: 2px;
+}
+.tams.downtime .tracker-item label {
+  font-weight: bold;
+  font-size: 0.9em;
+}
+.tams.downtime .tracker-item input {
+  width: 60px;
+  text-align: center;
+}
+
+.tams.downtime .downtime-toolbar {
+  margin-bottom: 15px;
+  gap: 10px;
+}
+.tams.downtime .downtime-toolbar button {
+  flex: 1;
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
+}
+.tams.downtime .downtime-gm-tools {
+  margin-bottom: 15px;
+  gap: 10px;
+  background: rgba(46, 125, 50, 0.1);
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px dashed #2e7d32;
+}
+.tams.downtime .downtime-gm-tools input {
+  width: 80px;
+  text-align: center;
+}
+.tams.downtime .downtime-gm-tools button {
+  flex: 1;
+  background: #2e7d32;
+  color: white;
+  border: 1px solid #1b5e20;
+}
+.tams.downtime .downtime-gm-tools button:hover {
+  background: #388e3c;
+}
+
+.tams.downtime .downtime-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.tams.downtime .action-tracker {
+  background: rgba(0,0,0,0.03);
+  padding: 8px;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+.tams.downtime .action-tracker:hover {
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.tams.downtime .action-tracker label {
+  font-size: 0.85em;
+  font-weight: bold;
+  text-align: center;
+  margin: 0;
+  line-height: 1.2;
+}
+.tams.downtime .action-tracker input {
+  width: 50px;
+  height: 26px;
+  text-align: center;
+}
+.tams.downtime .action-tracker.disabled {
+  opacity: 0.4;
+  filter: grayscale(100%);
+  pointer-events: none;
+  background: rgba(0,0,0,0.08);
+}
+
+.tams.downtime .notes-container {
+  margin-top: 15px;
+}
+.tams.downtime .notes-container label {
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-family: "Roboto Condensed", sans-serif;
+  text-transform: uppercase;
+  font-size: 13px;
+  border-bottom: 1px solid #7a7971;
+}
+
 .tams .profile-img-container {
   position: relative;
   width: 100px;

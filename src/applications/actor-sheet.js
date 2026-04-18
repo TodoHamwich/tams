@@ -72,6 +72,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     // Base context properties
     context.actor = this.document;
     context.system = this.document.system;
+    context.user = game.user;
     context.activeTab = this._activeTab;
     context.editable = this.isEditable;
     context.owner = this.document.isOwner;

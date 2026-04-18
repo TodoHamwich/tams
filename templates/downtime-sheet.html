@@ -1,0 +1,122 @@
+<section class="tams-actor-form flexcol downtime-sheet">
+    <header class="sheet-header">
+        <div class="profile-img-container" data-action="editImage" data-edit="img">
+            <img class="profile-img" src="{{document.img}}" title="{{document.name}}" height="100" width="100"/>
+            <input type="hidden" name="img" value="{{document.img}}"/>
+            <div class="image-edit-overlay">
+                <i class="fas fa-edit"></i>
+                <span>{{localize 'TAMS.ChangeImage'}}</span>
+            </div>
+        </div>
+        <div class="header-details">
+            <h1 class="charname">
+                <input name="name" type="text" value="{{document.name}}" placeholder="Name"/>
+            </h1>
+            <div class="header-row" style="margin-top: 5px;">
+                <div class="theme-selector">
+                    <label>{{localize 'TAMS.Theme'}}</label>
+                    <select name="system.theme">
+                        {{selectOptions themeOptions selected=system.theme localize=true}}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="sheet-body downtime-scroll">
+        <div class="downtime-rules-section {{#if system.downtime.isSafe}}safe{{else}}unsafe{{/if}}">
+            <h4>{{localize 'TAMS.DowntimeRulesTitle'}}</h4>
+            <p>
+                {{#if system.downtime.isSafe}}
+                    {{localize 'TAMS.DowntimeRuleSafeActions'}}
+                {{else}}
+                    {{localize 'TAMS.DowntimeRuleUnsafeActions'}}
+                {{/if}}
+            </p>
+            <p class="trait-hint">{{localize 'TAMS.DowntimeRuleTraitPoints'}}</p>
+        </div>
+
+        <div class="downtime-section">
+            <h3 class="section-header">{{localize 'TAMS.DowntimeTracking'}}</h3>
+            
+        <div class="downtime-main-trackers flexrow">
+            <div class="tracker-item flexcol">
+                <label>{{localize 'TAMS.DowntimeDays'}}</label>
+                <input type="number" name="system.downtime.days" value="{{system.downtime.days}}" min="0"/>
+            </div>
+            <div class="tracker-item flexcol">
+                <label>{{localize 'TAMS.DowntimeDaysRemaining'}}</label>
+                <input type="number" name="system.downtime.daysRemaining" value="{{system.downtime.daysRemaining}}" min="0" readonly/>
+            </div>
+            <div class="tracker-item flexcol">
+                <label>{{localize 'TAMS.DowntimeIsSafe'}}</label>
+                <div class="flexrow">
+                    <input type="checkbox" name="system.downtime.isSafe" {{checked system.downtime.isSafe}}/>
+                    <span class="safe-status {{#if system.downtime.isSafe}}safe{{else}}unsafe{{/if}}">
+                        {{#if system.downtime.isSafe}}{{localize 'TAMS.DowntimeSafe'}}{{else}}{{localize 'TAMS.DowntimeUnsafe'}}{{/if}}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="downtime-toolbar flexrow">
+            <button type="button" data-action="outputDowntime">
+                <i class="fas fa-comment-dots"></i> {{localize 'TAMS.DowntimeOutputChat'}}
+            </button>
+            <button type="button" data-action="resetDowntime">
+                <i class="fas fa-undo"></i> {{localize 'TAMS.DowntimeReset'}}
+            </button>
+        </div>
+
+        {{#if @root.user.isGM}}
+        <div class="downtime-gm-tools flexrow">
+            <input type="number" class="award-days" value="0" min="0" placeholder="Days"/>
+            <button type="button" data-action="sendAwardToChat">
+                <i class="fas fa-gift"></i> {{localize 'TAMS.DowntimeAwardToChat'}}
+            </button>
+        </div>
+        {{/if}}
+
+            <div class="downtime-actions-grid">
+                <div class="action-tracker {{#unless system.downtime.isSafe}}disabled{{/unless}}">
+                    <label>{{localize 'TAMS.DowntimeTrackerAbility'}}</label>
+                    <input type="number" name="system.downtime.trackers.ability" value="{{system.downtime.trackers.ability}}" min="0"/>
+                </div>
+                <div class="action-tracker {{#unless system.downtime.isSafe}}disabled{{/unless}}">
+                    <label>{{localize 'TAMS.DowntimeTrackerSkill'}}</label>
+                    <input type="number" name="system.downtime.trackers.skill" value="{{system.downtime.trackers.skill}}" min="0"/>
+                </div>
+                <div class="action-tracker {{#unless system.downtime.isSafe}}disabled{{/unless}}">
+                    <label>{{localize 'TAMS.DowntimeTrackerWeapon'}}</label>
+                    <input type="number" name="system.downtime.trackers.weapon" value="{{system.downtime.trackers.weapon}}" min="0"/>
+                </div>
+                <div class="action-tracker {{#unless system.downtime.isSafe}}disabled{{/unless}}">
+                    <label>{{localize 'TAMS.DowntimeTrackerStatistic'}}</label>
+                    <input type="number" name="system.downtime.trackers.statistic" value="{{system.downtime.trackers.statistic}}" min="0"/>
+                </div>
+                <div class="action-tracker">
+                    <label>{{localize 'TAMS.DowntimeTrackerCrafting'}}</label>
+                    <input type="number" name="system.downtime.trackers.crafting" value="{{system.downtime.trackers.crafting}}" min="0"/>
+                </div>
+                <div class="action-tracker">
+                    <label>{{localize 'TAMS.DowntimeTrackerResting'}}</label>
+                    <input type="number" name="system.downtime.trackers.resting" value="{{system.downtime.trackers.resting}}" min="0"/>
+                </div>
+                <div class="action-tracker">
+                    <label>{{localize 'TAMS.DowntimeTrackerHealing'}}</label>
+                    <input type="number" name="system.downtime.trackers.healing" value="{{system.downtime.trackers.healing}}" min="0"/>
+                </div>
+                <div class="action-tracker {{#unless system.downtime.isSafe}}disabled{{/unless}}">
+                    <label>{{localize 'TAMS.DowntimeTrackerWorking'}}</label>
+                    <input type="number" name="system.downtime.trackers.working" value="{{system.downtime.trackers.working}}" min="0"/>
+                </div>
+            </div>
+
+        <div class="notes-container flexcol">
+            <label>{{localize 'TAMS.DowntimeNotes'}}</label>
+            <textarea name="system.downtime.notes" rows="8">{{system.downtime.notes}}</textarea>
+        </div>
+        </div>
+
+    </section>
+</section>
