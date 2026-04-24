@@ -90,90 +90,14 @@ describe('TAMSAbilityData', () => {
 
   beforeEach(() => {
     abilityData = new TAMSAbilityData();
-    abilityData.calculator = {
-      enabled: true,
-      effects: 0,
-      guaranteedMax: 0,
-      detriments: 0,
-      movementDoubleOwn: false,
-      movementHalveEnemy: false,
-      movementFlat: 0,
-      rollBonus: 0,
-      ignoreArmor: 0,
-      bodyPart: "none",
-      targetLimb: "none",
-      fireRate: "single",
-      multiAttackHits: 0,
-      damageStatFraction: 0,
-      stun: "none",
-      healing: 0,
-      drType: "none",
-      drValue: 0,
-      bypassDodge: false,
-      bypassRetaliation: false,
-      targetType: "single",
-      aoeRadius: 0,
-      range: 0,
-      duration: "instant",
-      isStackable: false,
-      isUtility: false
-    };
   });
 
-  describe('calculatedCost', () => {
+  describe('ifStatement and ifCost', () => {
     it('can have ifStatement and ifCost', () => {
       abilityData.ifStatement = "If in cover";
       abilityData.ifCost = 5;
       expect(abilityData.ifStatement).toBe("If in cover");
       expect(abilityData.ifCost).toBe(5);
-    });
-
-    it('has a minimum cost of 1', () => {
-      expect(abilityData.calculatedCost).toBe(1);
-    });
-
-    it('increases cost with effects', () => {
-      abilityData.calculator.effects = 3;
-      expect(abilityData.calculatedCost).toBe(3);
-    });
-
-    it('doubles cost if bypassDodge is true', () => {
-      abilityData.calculator.effects = 2;
-      abilityData.calculator.bypassDodge = true;
-      expect(abilityData.calculatedCost).toBe(4);
-    });
-
-    it('multiplies cost for multiple targets', () => {
-      abilityData.calculator.effects = 2;
-      abilityData.calculator.targetType = "multiple";
-      expect(abilityData.calculatedCost).toBe(4);
-    });
-
-    it('handles range costs correctly', () => {
-      abilityData.calculator.effects = 2;
-      abilityData.calculator.range = 50; // +2 cost
-      expect(abilityData.calculatedCost).toBe(4);
-    });
-
-    it('combines multiple modifiers correctly', () => {
-      abilityData.calculator.effects = 3;
-      abilityData.calculator.bypassDodge = true; // *2
-      abilityData.calculator.targetType = "multiple"; // *2
-      abilityData.calculator.range = 100; // +4
-      // floor((3 * 2 * 2) + 4) = 16
-      expect(abilityData.calculatedCost).toBe(16);
-    });
-
-    it('applies detriments correctly', () => {
-      abilityData.calculator.effects = 10;
-      abilityData.calculator.detriments = 5;
-      expect(abilityData.calculatedCost).toBe(5);
-    });
-
-    it('never drops below 1 even with many detriments', () => {
-      abilityData.calculator.effects = 1;
-      abilityData.calculator.detriments = 100;
-      expect(abilityData.calculatedCost).toBe(1);
     });
   });
 

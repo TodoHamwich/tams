@@ -922,7 +922,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             statValue = stat ? stat.value : 0;
             statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         }
-        const cost = item.system.calculator?.enabled ? item.system.calculatedCost : (parseInt(item.system.cost) || 0);
+        const cost = (parseInt(item.system.cost) || 0);
         const usesMax = parseInt(item.system.uses.max) || 0;
         const usesVal = parseInt(item.system.uses.value) || 0;
         const isLimited = usesMax > 0;
