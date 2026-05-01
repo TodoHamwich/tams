@@ -297,10 +297,12 @@ export class TAMSActor extends Actor {
     const hasSquadSize = foundry.utils.hasProperty(updateData, "system.settings.squadSize");
 
     if (hasEndValue || hasEndMod || hasSquadSize) {
-      const oldEnd = stats.endurance.value + (stats.endurance.mod || 0);
+      const traitBonus = stats.endurance.traitBonus || 0;
+      const oldEnd = stats.endurance.total;
       const newEnd = (hasEndValue ? foundry.utils.getProperty(updateData, "system.stats.endurance.value") : stats.endurance.value) +
-                     (hasEndMod ? foundry.utils.getProperty(updateData, "system.stats.endurance.mod") : (stats.endurance.mod || 0));
-      
+                     (hasEndMod ? foundry.utils.getProperty(updateData, "system.stats.endurance.mod") : (stats.endurance.mod || 0)) +
+                     traitBonus;
+
       const newSquadSize = hasSquadSize ? foundry.utils.getProperty(updateData, "system.settings.squadSize") : oldSquadSize;
 
       if (newEnd !== oldEnd || newSquadSize !== oldSquadSize) {
@@ -315,10 +317,10 @@ export class TAMSActor extends Actor {
 
           const oldIndMax = Math.floor(oldEnd * limb.mult);
           const newIndMax = Math.floor(newEnd * limb.mult);
-          
+
           const oldMax = isSquadOrHorde ? (oldIndMax * oldSquadSize) : oldIndMax;
           const newMax = isSquadOrHorde ? (newIndMax * newSquadSize) : newIndMax;
-          
+
           const deltaMax = newMax - oldMax;
           if (deltaMax !== 0) {
             foundry.utils.setProperty(updateData, currentPath, limb.value + deltaMax);
@@ -327,5 +329,67 @@ export class TAMSActor extends Actor {
       }
     }
     return res;
+  }
+
+  /**
+   * Adjust all limb current HP values when endurance total changes by a delta.
+   * Called after trait items are added or removed.
+   * @param {number} endDelta - The change in endurance total (positive = added, negative = removed)
+   */
+  async _adjustLimbHPForEnduranceDelta(endDelta) {
+    if (endDelta === 0) return;
+    const currentTotal = this.system.stats.endurance.total;
+    const oldTotal = currentTotal - endDelta;
+    const isSquadOrHorde = this.system.settings?.isNPC &&
+      (this.system.settings.npcType === "squad" || this.system.settings.npcType === "horde");
+    const squadSize = this.system.settings?.squadSize || 1;
+
+    const updates = {};
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    for (const key of limbKeys) {
+      const limb = this.system.limbs[key];
+      if (!limb) continue;
+      const oldIndMax = Math.floor(oldTotal * limb.mult);
+      const newIndMax = Math.floor(currentTotal * limb.mult);
+      const oldMax = isSquadOrHorde ? (oldIndMax * squadSize) : oldIndMax;
+      const newMax = isSquadOrHorde ? (newIndMax * squadSize) : newIndMax;
+      const delta = newMax - oldMax;
+      if (delta !== 0) {
+        updates[`system.limbs.${key}.value`] = limb.value + delta;
+      }
+    }
+    if (Object.keys(updates).length > 0) {
+      await this.update(updates);
+    }
+  }
+
+  /** @override */
+  async _onCreateDescendantDocuments(parent, collection, documents, data, options, userId) {
+    await super._onCreateDescendantDocuments(parent, collection, documents, data, options, userId);
+    if (collection !== "items" || game.userId !== userId) return;
+
+    let endDelta = 0;
+    for (const doc of documents) {
+      if (doc.type !== "trait") continue;
+      for (const mod of (doc.system?.modifiers || [])) {
+        if (mod.target === "stats.endurance") endDelta += (mod.value || 0);
+      }
+    }
+    if (endDelta !== 0) await this._adjustLimbHPForEnduranceDelta(endDelta);
+  }
+
+  /** @override */
+  async _onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId) {
+    await super._onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId);
+    if (collection !== "items" || game.userId !== userId) return;
+
+    let endDelta = 0;
+    for (const doc of documents) {
+      if (doc.type !== "trait") continue;
+      for (const mod of (doc.system?.modifiers || [])) {
+        if (mod.target === "stats.endurance") endDelta -= (mod.value || 0);
+      }
+    }
+    if (endDelta !== 0) await this._adjustLimbHPForEnduranceDelta(endDelta);
   }
 }

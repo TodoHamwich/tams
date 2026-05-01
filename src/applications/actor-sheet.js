@@ -134,10 +134,18 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     for (let i of this.document.items) {
       let isGreyedOut = false;
-      if (i.system.location === "backpack") {
-        isGreyedOut = !hasBackpack;
-      } else if (i.system.location && i.system.location !== "stowed" && i.system.location !== "hand") {
-        const container = this.document.items.get(i.system.location);
+      let effectiveLocation = i.system.location;
+
+      if (effectiveLocation === "backpack") {
+        if (!hasBackpack) {
+            isGreyedOut = false; // Treat as stowed if no backpack
+        } else {
+            // Find the first equipped backpack to see if it's greyed out (shouldn't be since it's equipped, but for consistency)
+            const firstBP = this.document.items.find(bp => bp.type === "backpack" && bp.system.equipped);
+            isGreyedOut = !firstBP; 
+        }
+      } else if (effectiveLocation && effectiveLocation !== "stowed" && effectiveLocation !== "hand") {
+        const container = this.document.items.get(effectiveLocation);
         if (container && container.type === "backpack") {
           isGreyedOut = !container.system.equipped;
         }
@@ -265,7 +273,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     };
     context.sizeOptions = { "small": "TAMS.SizeOptions.Small", "medium": "TAMS.SizeOptions.Medium", "large": "TAMS.SizeOptions.Large" };
 
-    const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.BackpackLegacy" };
+    const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.Backpack" };
     for (const bp of context.inventoryBackpacks || []) {
         locationOptions[bp.id] = game.i18n.format("TAMS.LocationOptions.InContainer", {name: bp.name});
     }

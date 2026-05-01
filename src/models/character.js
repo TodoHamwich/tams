@@ -262,6 +262,12 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   _prepareInventoryCapacity() {
     let usedUnits = 0;
     const end = this.stats.endurance.total;
+    
+    // Automatically find equipped backpack
+    const equippedBackpacks = this.parent.items.filter(i => i.type === "backpack" && i.system.equipped);
+    this.inventory.hasBackpack = equippedBackpacks.length > 0;
+    this.inventory.equippedBackpackId = equippedBackpacks[0]?.id || "";
+
     const hasBackpack = this.inventory.hasBackpack;
     const backpackId = this.inventory.equippedBackpackId;
     const backpackItem = backpackId ? this.parent.items.get(backpackId) : null;
@@ -270,7 +276,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     for (const item of this.parent.items) {
       const system = item.system;
       const location = system.location;
-      if (location === "stowed" || location === "hand" || allBackpackIds.has(location)) {
+      if (location === "stowed" || location === "hand" || location === "backpack" || allBackpackIds.has(location)) {
         let itemSize = 0;
         switch(system.size) {
           case "small": itemSize = 1; break;
@@ -279,11 +285,19 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         }
 
         if (item.id !== backpackId) {
-          const container = this.parent.items.find(i => i.type === "backpack" && i.id === location);
-          if (container && container.system.equipped) {
-            itemSize *= (container.system.modifier ?? 0.5);
-          } else if (container && !container.system.equipped) {
-            itemSize = 0; // Not carried if backpack is not equipped
+          if (location === "backpack") {
+            if (backpackItem && backpackItem.system.equipped) {
+              itemSize *= (backpackItem.system.modifier ?? 0.5);
+            }
+          } else {
+            const container = this.parent.items.get(location);
+            if (container && container.type === "backpack") {
+              if (container.system.equipped) {
+                itemSize *= (container.system.modifier ?? 0.5);
+              } else {
+                itemSize = 0; // Not carried if backpack is not equipped
+              }
+            }
           }
         }
 
@@ -299,7 +313,6 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
 
     // Calculate backpack penalties
     this.backpackPenalties = { strength: 0, dexterity: 0, dodge: 0, attack: 0, movement: 0 };
-    const equippedBackpacks = this.parent.items.filter(i => i.type === "backpack" && i.system.equipped);
     for (const backpack of equippedBackpacks) {
       const pen = backpack.system.penalties;
       if (pen && pen.active) {

@@ -152,6 +152,7 @@
       "fireRate": "1",
       "fireRateCustom": 1,
       "attackStat": "default",
+      "damageStat": "default",
       "consumeAmmo": false,
       "isAoE": false,
       "special": "",

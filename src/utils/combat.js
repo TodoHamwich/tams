@@ -701,12 +701,19 @@ export async function tamsRenderChatMessage(message, html, data) {
       let cap = 0;
       let balancedBonus = 0;
       if (weapon.type === 'weapon') {
-          cap = (weapon.system.isRanged && !weapon.system.isThrown) || weapon.system.isLight ? actor.system.stats.dexterity.total : actor.system.stats.strength.total;
+          let statId = weapon.system.attackStat;
+          if (statId === 'default' || !statId) {
+              statId = (weapon.system.isRanged && !weapon.system.isThrown) || weapon.system.isLight ? 'dexterity' : 'strength';
+          }
+          cap = actor.system.stats[statId]?.total || 0;
+
           if (weapon.system.tags.toLowerCase().includes("balanced") && !weapon.system.isRanged) {
               balancedBonus = 10;
           }
       } else {
-          cap = actor.system.stats[weapon.system.attackStat]?.total || 0;
+          // Ability
+          const capStat = weapon.system.capStat || weapon.system.attackStat;
+          cap = actor.system.stats[capStat]?.total || 0;
       }
       if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
       if (isUnaware) cap = Math.floor(cap * 0.5);
@@ -729,7 +736,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       const threshold = isRanged ? 20 : 10;
       const isMutual = Math.abs(attackerTotal - total) <= threshold;
 
-      if (isAoEFromData) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
+      if (isAoEFromData && isRanged) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
 
       let critInfo = "";
       if (raw >= (attackerRaw * 2)) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", {raw, attacker: attackerRaw})}</div>`;

@@ -25,6 +25,7 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       fireRate: new fields.StringField({initial: "1"}),
       fireRateCustom: new fields.NumberField({initial: 1, nullable: true}),
       attackStat: new fields.StringField({initial: "default"}),
+      damageStat: new fields.StringField({initial: "default"}),
       consumeAmmo: new fields.BooleanField({initial: false}),
       special: new fields.StringField({initial: ""}),
       isAoE: new fields.BooleanField({initial: false}),
@@ -44,7 +45,9 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     if ( !actor ) return 0;
     
     let statKey = "strength";
-    if (this.attackStat && this.attackStat !== "default") {
+    if (this.damageStat && this.damageStat !== "default") {
+        statKey = this.damageStat;
+    } else if (this.attackStat && this.attackStat !== "default") {
         statKey = this.attackStat;
     } else {
         statKey = this.isLight ? "dexterity" : "strength";

@@ -358,7 +358,7 @@
                     
                     <ol class="items-list">
                         {{#each section.categories as |category|}}
-                        <li class="inventory-category-header">{{category.label}}</li>
+                        <li class="inventory-category-header {{#if (eq section.type 'container')}}nested-item{{/if}}">{{category.label}}</li>
                         {{#each category.items as |item|}}
                         <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}} {{#if (eq section.type 'container')}}nested-item{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                             <img src="{{item.img}}" title="{{item.name}}" width="32" height="32" style="border-radius: 3px; border: 1px solid #7a7971;"/>
@@ -391,7 +391,7 @@
                         {{/each}}
                         {{#unless section.categories.length}}
                         {{#if (eq section.type 'container')}}
-                        <li class="item empty-notice">{{localize 'TAMS.Empty'}}</li>
+                        <li class="item empty-notice {{#if (eq section.type 'container')}}nested-item{{/if}}">{{localize 'TAMS.Empty'}}</li>
                         {{/if}}
                         {{/unless}}
                     </ol>

@@ -77,7 +77,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     
     const locationOptions = {
         "stowed": "TAMS.LocationOptions.Stowed",
-        "backpack": "TAMS.LocationOptions.BackpackLegacy",
+        "backpack": "TAMS.LocationOptions.Backpack",
         "hand": "TAMS.LocationOptions.Hand"
     };
     if (this.document.actor) {

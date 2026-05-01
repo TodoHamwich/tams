@@ -50,6 +50,15 @@ describe('TAMSWeaponData', () => {
       expect(weaponData.calculatedDamage).toBe(20); // 40 * 0.5
     });
 
+    it('uses explicit damageStat for melee damage scaling, overriding attackStat', () => {
+      weaponData.isRanged = false;
+      weaponData.attackStat = "intelligence";
+      weaponData.damageStat = "wisdom";
+      mockActor.system.stats.intelligence = { total: 40 };
+      mockActor.system.stats.wisdom = { total: 30 };
+      expect(weaponData.calculatedDamage).toBe(15); // 30 * 0.5
+    });
+
     it('defaults to strength if attackStat is set to "default"', () => {
       weaponData.isRanged = false;
       weaponData.attackStat = "default";
