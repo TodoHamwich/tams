@@ -141,4 +141,20 @@ describe('TAMSAbilityData', () => {
       expect(abilityData.calculatedDamage).toBe(15);
     });
   });
+
+  describe('calculatedCost targeting', () => {
+    it('adds no targeting cost in normal mode defaults', () => {
+      expect(abilityData.calculatedCost).toBe(0);
+    });
+
+    it('adds +2 when targeting a limb group', () => {
+      abilityData.calculator.bodyPart = 'thorax';
+      expect(abilityData.calculatedCost).toBe(2);
+    });
+
+    it('adds +4 when targeting a specific limb', () => {
+      abilityData.calculator.targetLimb = 'leftArm';
+      expect(abilityData.calculatedCost).toBe(4);
+    });
+  });
 });

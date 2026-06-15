@@ -112,6 +112,10 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     }
 
     if (this.document.type === 'ability') {
+        const calculator = this.document.system.calculator || {};
+        const selectedTargetingMode = calculator.targetingMode
+            || (calculator.targetLimb !== "none" ? "specific" : (calculator.bodyPart !== "none" ? "group" : "normal"));
+
         const resources = { "stamina": "TAMS.Stamina" };
         if (this.document.actor) {
             this.document.actor.system.customResources.forEach((res, index) => {
@@ -119,8 +123,14 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
             });
         }
         context.resourceOptions = resources;
+        context.selectedTargetingMode = selectedTargetingMode;
 
         context.calculatorOptions = {
+            targetingModes: {
+                "normal": "TAMS.CalculatorOptions.TargetingModeNormal",
+                "group": "TAMS.CalculatorOptions.TargetingModeGroup",
+                "specific": "TAMS.CalculatorOptions.TargetingModeSpecific"
+            },
             bodyParts: {
                 "none": "TAMS.CalculatorOptions.None",
                 "head": "TAMS.CalculatorOptions.Head",
@@ -234,6 +244,28 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     }
     
     await this.document.update({ "system.tags": tagsArray.filter(t => t).join(", ") });
+  }
+
+  /** @override */
+  _prepareSubmitData(event, form, formData) {
+    const data = super._prepareSubmitData(event, form, formData);
+
+    if (this.document.type !== "ability") return data;
+
+    const mode = foundry.utils.getProperty(data, "system.calculator.targetingMode")
+      ?? this.document.system.calculator?.targetingMode
+      ?? "normal";
+
+    if (mode === "normal") {
+      foundry.utils.setProperty(data, "system.calculator.bodyPart", "none");
+      foundry.utils.setProperty(data, "system.calculator.targetLimb", "none");
+    } else if (mode === "group") {
+      foundry.utils.setProperty(data, "system.calculator.targetLimb", "none");
+    } else if (mode === "specific") {
+      foundry.utils.setProperty(data, "system.calculator.bodyPart", "none");
+    }
+
+    return data;
   }
 }
 

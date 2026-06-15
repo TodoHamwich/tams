@@ -260,6 +260,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         movementFlat: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         rollBonus: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         ignoreArmor: new fields.NumberField({initial: 0, integer: true, nullable: true}),
+        targetingMode: new fields.StringField({initial: "normal"}),
         bodyPart: new fields.StringField({initial: "none"}),
         targetLimb: new fields.StringField({initial: "none"}),
         fireRate: new fields.StringField({initial: "single"}),

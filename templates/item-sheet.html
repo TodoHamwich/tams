@@ -397,17 +397,27 @@
                         <input type="number" name="system.calculator.ignoreArmor" value="{{system.calculator.ignoreArmor}}" min="0" style="width: 50px;"/>
                     </div>
                     <div class="flexrow">
+                        <label>{{localize 'TAMS.CalculatorOptions.TargetingMode'}}</label>
+                        <select name="system.calculator.targetingMode" style="flex: 1;">
+                            {{selectOptions calculatorOptions.targetingModes selected=selectedTargetingMode localize=true}}
+                        </select>
+                    </div>
+                    {{#if (eq selectedTargetingMode "group")}}
+                    <div class="flexrow">
                         <label title="+2">{{localize 'TAMS.CalculatorOptions.BodyPart'}}</label>
                         <select name="system.calculator.bodyPart" style="flex: 1;">
                             {{selectOptions calculatorOptions.bodyParts selected=system.calculator.bodyPart localize=true}}
                         </select>
                     </div>
+                    {{/if}}
+                    {{#if (eq selectedTargetingMode "specific")}}
                     <div class="flexrow">
                         <label title="+4">{{localize 'TAMS.CalculatorOptions.TargetLimb'}}</label>
                         <select name="system.calculator.targetLimb" style="flex: 1;">
                             {{selectOptions limbOptions selected=system.calculator.targetLimb localize=true}}
                         </select>
                     </div>
+                    {{/if}}
                     <div class="flexrow">
                         <label>{{localize 'TAMS.CalculatorOptions.FireRate'}}</label>
                         <select name="system.calculator.fireRate" style="flex: 1;">
