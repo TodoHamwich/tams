@@ -1,6 +1,133 @@
 var __defProp = Object.defineProperty;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+const SIZE_WEIGHTS = { small: 1, medium: 10, large: 50 };
+const LARGE_SLOTS_DEFAULT = 2;
+const LARGE_SLOTS_MIN = 2;
+const LARGE_SLOTS_MAX = 10;
+const SMALL_STACK_PER_SLOT = 10;
+function clampLargeSlots(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return LARGE_SLOTS_DEFAULT;
+  return Math.min(LARGE_SLOTS_MAX, Math.max(LARGE_SLOTS_MIN, Math.round(n)));
+}
+function unitWeight(size) {
+  return SIZE_WEIGHTS[size] ?? 0;
+}
+function stackSlots(size, quantity, largeSlots = LARGE_SLOTS_DEFAULT) {
+  const qty = Math.max(0, Number(quantity) || 0);
+  if (qty === 0) return 0;
+  switch (size) {
+    case "small":
+      return Math.ceil(qty / SMALL_STACK_PER_SLOT);
+    case "medium":
+      return qty;
+    case "large":
+      return qty * clampLargeSlots(largeSlots);
+    default:
+      return 0;
+  }
+}
+function resolveCarryChain(item, itemsById) {
+  var _a, _b, _c;
+  const get = (id) => typeof (itemsById == null ? void 0 : itemsById.get) === "function" ? itemsById.get(id) : itemsById == null ? void 0 : itemsById[id];
+  let location = (_a = item == null ? void 0 : item.system) == null ? void 0 : _a.location;
+  let immediateContainer = null;
+  let guard = 0;
+  while (location && location !== "stowed" && location !== "hand" && location !== "backpack") {
+    const container2 = get(location);
+    if (!container2 || container2.type !== "backpack") break;
+    if (guard === 0) immediateContainer = container2;
+    if (!((_b = container2.system) == null ? void 0 : _b.equipped)) return { carried: false, container: immediateContainer };
+    location = (_c = container2.system) == null ? void 0 : _c.location;
+    if (++guard > 25) break;
+  }
+  return { carried: true, container: immediateContainer };
+}
+function computeEncumbrance(items, {
+  itemsById,
+  endurance = 0,
+  mode = "weight",
+  equippedBackpackId = "",
+  largeSlots = LARGE_SLOTS_DEFAULT
+} = {}) {
+  var _a, _b, _c, _d;
+  const get = (id) => typeof (itemsById == null ? void 0 : itemsById.get) === "function" ? itemsById.get(id) : itemsById == null ? void 0 : itemsById[id];
+  const allBackpackIds = /* @__PURE__ */ new Set();
+  for (const it of items) if (it.type === "backpack") allBackpackIds.add(it.id);
+  let used = 0;
+  for (const item of items) {
+    const system = item.system || {};
+    const location = system.location;
+    const carried = location === "stowed" || location === "hand" || location === "backpack" || allBackpackIds.has(location);
+    if (!carried) continue;
+    const quantity = Math.max(0, Number(system.quantity) || 0);
+    let cost = mode === "slots" ? stackSlots(system.size, quantity, system.slots ?? largeSlots) : unitWeight(system.size) * quantity;
+    if (location === "backpack") {
+      const bp = equippedBackpackId ? get(equippedBackpackId) : null;
+      if (bp && ((_a = bp.system) == null ? void 0 : _a.equipped)) {
+        if (mode === "weight") cost *= bp.system.modifier ?? 0.5;
+      }
+    } else if (allBackpackIds.has(location) && item.id !== equippedBackpackId) {
+      const { carried: chainCarried, container: container2 } = resolveCarryChain(item, itemsById);
+      if (!chainCarried) {
+        cost = 0;
+      } else if (mode === "weight" && container2 && container2.type === "backpack") {
+        cost *= ((_b = container2.system) == null ? void 0 : _b.modifier) ?? 0.5;
+      }
+    }
+    used += cost;
+  }
+  let max;
+  if (mode === "slots") {
+    max = Math.max(0, Math.floor(5 + endurance));
+    const bp = equippedBackpackId ? get(equippedBackpackId) : null;
+    if (bp && ((_c = bp.system) == null ? void 0 : _c.equipped)) max += bp.system.capacity || 0;
+  } else {
+    const baseCapacity = Math.max(0, Math.floor(endurance / 10)) * 100;
+    const bp = equippedBackpackId ? get(equippedBackpackId) : null;
+    const backpackExtra = bp && ((_d = bp.system) == null ? void 0 : _d.equipped) ? (bp.system.capacity || 0) * 10 : 0;
+    max = baseCapacity + backpackExtra;
+  }
+  return { used, max, isEncumbered: used > max, mode };
+}
+function computeArmorRepair({ value, max, rollTotal, alternate = false }) {
+  const divisor = alternate ? 10 : 5;
+  const curMax = Math.max(0, Number(max) || 0);
+  const curVal = Math.max(0, Number(value) || 0);
+  const missing = Math.max(0, curMax - curVal);
+  const difficulty = divisor * missing;
+  const total = Number(rollTotal) || 0;
+  const shortfall = Math.max(0, difficulty - total);
+  let maxLost = Math.ceil(shortfall / divisor);
+  if (maxLost > missing) maxLost = missing;
+  const newMax = Math.max(0, curMax - maxLost);
+  const newValue = newMax;
+  return {
+    missing,
+    divisor,
+    difficulty,
+    shortfall,
+    maxLost,
+    newMax,
+    newValue,
+    success: shortfall === 0
+  };
+}
+function getCapacityMode() {
+  try {
+    return game.settings.get("tams", "capacityMode") || "weight";
+  } catch (e) {
+    return "weight";
+  }
+}
+function getLargeSlots() {
+  try {
+    return game.settings.get("tams", "largeItemSlots") || 2;
+  } catch (e) {
+    return 2;
+  }
+}
 class StatModifier extends foundry.abstract.DataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
@@ -43,6 +170,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       inventory: new fields.SchemaField({
         usedCapacity: new fields.NumberField({ initial: 0 }),
         maxCapacity: new fields.NumberField({ initial: 0 }),
+        usedSlots: new fields.NumberField({ initial: 0 }),
+        maxSlots: new fields.NumberField({ initial: 0 }),
         hasBackpack: new fields.BooleanField({ initial: false }),
         isEncumbered: new fields.BooleanField({ initial: false }),
         equippedBackpackId: new fields.StringField({ initial: "" }),
@@ -97,7 +226,23 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         retaliation: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }) }),
         perception: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }) })
       }),
-      currencies: new fields.ObjectField({ initial: {} })
+      currencies: new fields.ObjectField({ initial: {} }),
+      downtime: new fields.SchemaField({
+        days: new fields.NumberField({ initial: 0, min: 0 }),
+        daysRemaining: new fields.NumberField({ initial: 0, min: 0 }),
+        isSafe: new fields.BooleanField({ initial: true }),
+        notes: new fields.HTMLField({ initial: "" }),
+        trackers: new fields.SchemaField({
+          ability: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+          skill: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+          weapon: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+          statistic: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+          crafting: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+          resting: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+          healing: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+          working: new fields.NumberField({ initial: 0, integer: true, min: 0 })
+        })
+      })
     };
   }
   /** @override */
@@ -109,6 +254,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this._prepareStamina();
     this._prepareCustomResources();
     this._prepareInventoryCapacity();
+    this._prepareDowntime();
   }
   /**
    * Iterate over traits and calculate bonuses for stats and rolls.
@@ -225,46 +371,33 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    * @protected
    */
   _prepareInventoryCapacity() {
-    let usedUnits = 0;
+    var _a;
     const end = this.stats.endurance.total;
-    const hasBackpack = this.inventory.hasBackpack;
-    const backpackId = this.inventory.equippedBackpackId;
-    const backpackItem = backpackId ? this.parent.items.get(backpackId) : null;
-    const allBackpackIds = new Set(this.parent.items.filter((i) => i.type === "backpack").map((i) => i.id));
-    for (const item of this.parent.items) {
-      const system = item.system;
-      const location = system.location;
-      if (location === "stowed" || location === "hand" || allBackpackIds.has(location)) {
-        let itemSize = 0;
-        switch (system.size) {
-          case "small":
-            itemSize = 1;
-            break;
-          case "medium":
-            itemSize = 10;
-            break;
-          case "large":
-            itemSize = 50;
-            break;
-        }
-        if (item.id !== backpackId) {
-          const container2 = this.parent.items.find((i) => i.type === "backpack" && i.id === location);
-          if (container2 && container2.system.equipped) {
-            itemSize *= container2.system.modifier ?? 0.5;
-          } else if (container2 && !container2.system.equipped) {
-            itemSize = 0;
-          }
-        }
-        usedUnits += itemSize * (system.quantity || 1);
-      }
-    }
-    this.inventory.usedCapacity = usedUnits;
-    const baseCapacity = Math.max(0, Math.floor(end / 10)) * 100;
-    const backpackExtra = hasBackpack && backpackItem ? (backpackItem.system.capacity || 0) * 10 : 0;
-    this.inventory.maxCapacity = baseCapacity + backpackExtra;
-    this.inventory.isEncumbered = this.inventory.usedCapacity > this.inventory.maxCapacity;
-    this.backpackPenalties = { strength: 0, dexterity: 0, dodge: 0, attack: 0, movement: 0 };
     const equippedBackpacks = this.parent.items.filter((i) => i.type === "backpack" && i.system.equipped);
+    this.inventory.hasBackpack = equippedBackpacks.length > 0;
+    this.inventory.equippedBackpackId = ((_a = equippedBackpacks[0]) == null ? void 0 : _a.id) || "";
+    const mode = getCapacityMode();
+    const largeSlots = getLargeSlots();
+    const options = {
+      itemsById: this.parent.items,
+      endurance: end,
+      equippedBackpackId: this.inventory.equippedBackpackId,
+      largeSlots
+    };
+    const weight = computeEncumbrance(this.parent.items, { ...options, mode: "weight" });
+    this.inventory.usedCapacity = weight.used;
+    this.inventory.maxCapacity = weight.max;
+    if (mode === "slots") {
+      const slots = computeEncumbrance(this.parent.items, { ...options, mode: "slots" });
+      this.inventory.usedSlots = slots.used;
+      this.inventory.maxSlots = slots.max;
+      this.inventory.isEncumbered = slots.isEncumbered;
+    } else {
+      this.inventory.usedSlots = 0;
+      this.inventory.maxSlots = 0;
+      this.inventory.isEncumbered = weight.isEncumbered;
+    }
+    this.backpackPenalties = { strength: 0, dexterity: 0, dodge: 0, attack: 0, movement: 0 };
     for (const backpack of equippedBackpacks) {
       const pen = backpack.system.penalties;
       if (pen && pen.active) {
@@ -276,6 +409,17 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       }
     }
   }
+  /**
+   * Calculate downtime days remaining.
+   * @protected
+   */
+  _prepareDowntime() {
+    const downtime = this.downtime;
+    if (!downtime) return;
+    const trackers = downtime.trackers || {};
+    const usedDays = Object.values(trackers).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    downtime.daysRemaining = Math.max(0, downtime.days - usedDays);
+  }
 }
 class TAMSWeaponData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
@@ -285,6 +429,7 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "medium" }),
       location: new fields.StringField({ initial: "hand" }),
+      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
       equipped: new fields.BooleanField({ initial: false }),
       isHeavy: new fields.BooleanField({ initial: false }),
       isTwoHanded: new fields.BooleanField({ initial: false }),
@@ -301,6 +446,7 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       fireRate: new fields.StringField({ initial: "1" }),
       fireRateCustom: new fields.NumberField({ initial: 1, nullable: true }),
       attackStat: new fields.StringField({ initial: "default" }),
+      damageStat: new fields.StringField({ initial: "default" }),
       consumeAmmo: new fields.BooleanField({ initial: false }),
       special: new fields.StringField({ initial: "" }),
       isAoE: new fields.BooleanField({ initial: false }),
@@ -318,7 +464,9 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     const actor = (_a = this.parent) == null ? void 0 : _a.actor;
     if (!actor) return 0;
     let statKey = "strength";
-    if (this.attackStat && this.attackStat !== "default") {
+    if (this.damageStat && this.damageStat !== "default") {
+      statKey = this.damageStat;
+    } else if (this.attackStat && this.attackStat !== "default") {
       statKey = this.attackStat;
     } else {
       statKey = this.isLight ? "dexterity" : "strength";
@@ -350,6 +498,7 @@ class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "small" }),
       location: new fields.StringField({ initial: "stowed" }),
+      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
@@ -362,6 +511,7 @@ class TAMSArmorData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "large" }),
       location: new fields.StringField({ initial: "stowed" }),
+      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
       equipped: new fields.BooleanField({ initial: false }),
       limbs: new fields.SchemaField({
         head: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }), max: new fields.NumberField({ initial: 0 }) }),
@@ -384,6 +534,7 @@ class TAMSConsumableData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "small" }),
       location: new fields.StringField({ initial: "stowed" }),
+      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
       uses: new fields.SchemaField({
         value: new fields.NumberField({ initial: 0 }),
         max: new fields.NumberField({ initial: 0 })
@@ -400,6 +551,7 @@ class TAMSToolData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "medium" }),
       location: new fields.StringField({ initial: "stowed" }),
+      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
@@ -414,6 +566,7 @@ class TAMSShieldData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "medium" }),
       location: new fields.StringField({ initial: "hand" }),
+      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
@@ -426,6 +579,7 @@ class TAMSQuestItemData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "small" }),
       location: new fields.StringField({ initial: "stowed" }),
+      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
@@ -438,6 +592,7 @@ class TAMSBackpackData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "medium" }),
       location: new fields.StringField({ initial: "stowed" }),
+      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
       equipped: new fields.BooleanField({ initial: false }),
       capacity: new fields.NumberField({ initial: 10, integer: true, min: 0 }),
       modifier: new fields.NumberField({ initial: 0.5, step: 0.1, min: 0 }),
@@ -494,11 +649,12 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         movementFlat: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
         rollBonus: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
         ignoreArmor: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
+        targetingMode: new fields.StringField({ initial: "normal" }),
         bodyPart: new fields.StringField({ initial: "none" }),
         targetLimb: new fields.StringField({ initial: "none" }),
         fireRate: new fields.StringField({ initial: "single" }),
         multiAttackHits: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
-        damageStatFraction: new fields.NumberField({ initial: 0, step: 0.25, nullable: true }),
+        damageStatFraction: new fields.StringField({ initial: "0" }),
         stun: new fields.StringField({ initial: "none" }),
         healing: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
         drType: new fields.StringField({ initial: "none" }),
@@ -529,7 +685,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     return Math.floor(damageStatValue * this.damageMult) + this.damageBonus + (this.damage || 0);
   }
   /**
-   * The calculated resource cost of the ability.
+   * The calculated resource cost of the ability, derived from calculator fields.
    * @type {number}
    */
   get calculatedCost() {
@@ -549,17 +705,14 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     if (c.bodyPart !== "none") cost += 2;
     if (c.targetLimb !== "none") cost += 4;
     if (c.fireRate === "burst") cost += 2;
-    else if (c.fireRate === "fullAuto") cost += 4;
+    else if (c.fireRate === "auto") cost += 4;
     cost += (c.multiAttackHits || 0) * 2;
-    if (c.damageStatFraction > 0) {
-      cost += c.damageStatFraction / 0.25 * 1;
-    }
-    if (c.stun === "minor") cost += 1;
-    else if (c.stun === "major") cost += 2;
+    const dsf = parseFloat(c.damageStatFraction) || 0;
+    if (dsf > 0) cost += dsf / 0.25 * 1;
+    if (c.stun === "crit") cost += 1;
+    else if (c.stun === "guaranteed") cost += 2;
     cost += (c.healing || 0) * 1;
-    if (c.drType !== "none") {
-      cost += (c.drValue || 0) * 1;
-    }
+    if (c.drType !== "none") cost += (c.drValue || 0) * 1;
     if (c.bypassDodge) cost *= 2;
     if (c.bypassRetaliation) cost *= 2;
     if (c.isUtility && c.targetType === "multiple") {
@@ -955,6 +1108,23 @@ async function tamsRenderChatMessage(message, html, data) {
     btn.disabled = true;
     btn.innerText = "Applied";
   }));
+  root.querySelectorAll(".tams-apply-downtime").forEach((el) => el.addEventListener("click", async (ev) => {
+    ev.preventDefault();
+    const btn = ev.currentTarget;
+    const days = parseInt(btn.dataset.days) || 0;
+    const actors = canvas.tokens.controlled.map((t) => t.actor).filter((a) => a);
+    if (actors.length === 0) {
+      return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTokensDowntime"));
+    }
+    let count = 0;
+    for (let actor of actors) {
+      if (actor.system.downtime !== void 0) {
+        await actor.update({ "system.downtime.days": days });
+        count++;
+      }
+    }
+    ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.DowntimeApplied", { days, count }));
+  }));
   root.querySelectorAll(".tams-dodge").forEach((el) => el.addEventListener("click", async (ev) => {
     var _a, _b, _c;
     ev.preventDefault();
@@ -1150,7 +1320,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (message2) await tamsUpdateMessage(message2, { content: container2.outerHTML });
   }));
   root.querySelectorAll(".tams-retaliate").forEach((el) => el.addEventListener("click", async (ev) => {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     ev.preventDefault();
     const btn = ev.currentTarget;
     const attackerRaw = parseInt(btn.dataset.raw);
@@ -1229,12 +1399,17 @@ async function tamsRenderChatMessage(message, html, data) {
     let cap = 0;
     let balancedBonus = 0;
     if (weapon.type === "weapon") {
-      cap = weapon.system.isRanged && !weapon.system.isThrown || weapon.system.isLight ? actor.system.stats.dexterity.total : actor.system.stats.strength.total;
+      let statId = weapon.system.attackStat;
+      if (statId === "default" || !statId) {
+        statId = weapon.system.isRanged && !weapon.system.isThrown || weapon.system.isLight ? "dexterity" : "strength";
+      }
+      cap = ((_d = actor.system.stats[statId]) == null ? void 0 : _d.total) || 0;
       if (weapon.system.tags.toLowerCase().includes("balanced") && !weapon.system.isRanged) {
         balancedBonus = 10;
       }
     } else {
-      cap = ((_d = actor.system.stats[weapon.system.attackStat]) == null ? void 0 : _d.total) || 0;
+      const capStat = weapon.system.capStat || weapon.system.attackStat;
+      cap = ((_e = actor.system.stats[capStat]) == null ? void 0 : _e.total) || 0;
     }
     if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
     if (isUnaware) cap = Math.floor(cap * 0.5);
@@ -1253,14 +1428,14 @@ async function tamsRenderChatMessage(message, html, data) {
     const total = capped + fam;
     const threshold = isRanged ? 20 : 10;
     const isMutual = Math.abs(attackerTotal - total) <= threshold;
-    if (isAoEFromData) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
+    if (isAoEFromData && isRanged) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
     let critInfo = "";
     if (raw >= attackerRaw * 2) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", { raw, attacker: attackerRaw })}</div>`;
     else if (attackerRaw >= raw * 2) critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { attacker: attackerRaw, raw })}</div>`;
     let multiVal = weapon.type === "weapon" ? weapon.system.fireRate === "3" ? 3 : weapon.system.fireRate === "auto" ? 10 : weapon.system.fireRate === "custom" ? weapon.system.fireRateCustom : 1 : weapon.system.multiAttack || 1;
     const damage = weapon.system.calculatedDamage;
     const armourPen = weapon.type === "weapon" && weapon.system.hasArmourPen ? weapon.system.armourPenetration || 0 : weapon.system.armourPenetration || 0;
-    const defenderTargetLimb = weapon.type === "ability" && ((_e = weapon.system.calculator) == null ? void 0 : _e.enabled) ? weapon.system.calculator.targetLimb : "none";
+    const defenderTargetLimb = weapon.type === "ability" && ((_f = weapon.system.calculator) == null ? void 0 : _f.enabled) ? weapon.system.calculator.targetLimb : "none";
     let hitsScored = total >= attackerTotal || isMutual ? Math.min(1 + Math.floor(Math.max(0, total - attackerTotal) / 5), multiVal) : 0;
     let retLocations = [];
     const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
@@ -1836,8 +2011,9 @@ class TAMSActor extends Actor {
     const hasEndMod = foundry.utils.hasProperty(updateData, "system.stats.endurance.mod");
     const hasSquadSize = foundry.utils.hasProperty(updateData, "system.settings.squadSize");
     if (hasEndValue || hasEndMod || hasSquadSize) {
-      const oldEnd = stats.endurance.value + (stats.endurance.mod || 0);
-      const newEnd = (hasEndValue ? foundry.utils.getProperty(updateData, "system.stats.endurance.value") : stats.endurance.value) + (hasEndMod ? foundry.utils.getProperty(updateData, "system.stats.endurance.mod") : stats.endurance.mod || 0);
+      const traitBonus = stats.endurance.traitBonus || 0;
+      const oldEnd = stats.endurance.total;
+      const newEnd = (hasEndValue ? foundry.utils.getProperty(updateData, "system.stats.endurance.value") : stats.endurance.value) + (hasEndMod ? foundry.utils.getProperty(updateData, "system.stats.endurance.mod") : stats.endurance.mod || 0) + traitBonus;
       const newSquadSize = hasSquadSize ? foundry.utils.getProperty(updateData, "system.settings.squadSize") : oldSquadSize;
       if (newEnd !== oldEnd || newSquadSize !== oldSquadSize) {
         const limbKeys2 = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
@@ -1858,6 +2034,64 @@ class TAMSActor extends Actor {
       }
     }
     return res;
+  }
+  /**
+   * Adjust all limb current HP values when endurance total changes by a delta.
+   * Called after trait items are added or removed.
+   * @param {number} endDelta - The change in endurance total (positive = added, negative = removed)
+   */
+  async _adjustLimbHPForEnduranceDelta(endDelta) {
+    var _a, _b;
+    if (endDelta === 0) return;
+    const currentTotal = this.system.stats.endurance.total;
+    const oldTotal = currentTotal - endDelta;
+    const isSquadOrHorde = ((_a = this.system.settings) == null ? void 0 : _a.isNPC) && (this.system.settings.npcType === "squad" || this.system.settings.npcType === "horde");
+    const squadSize = ((_b = this.system.settings) == null ? void 0 : _b.squadSize) || 1;
+    const updates = {};
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    for (const key of limbKeys) {
+      const limb = this.system.limbs[key];
+      if (!limb) continue;
+      const oldIndMax = Math.floor(oldTotal * limb.mult);
+      const newIndMax = Math.floor(currentTotal * limb.mult);
+      const oldMax = isSquadOrHorde ? oldIndMax * squadSize : oldIndMax;
+      const newMax = isSquadOrHorde ? newIndMax * squadSize : newIndMax;
+      const delta = newMax - oldMax;
+      if (delta !== 0) {
+        updates[`system.limbs.${key}.value`] = limb.value + delta;
+      }
+    }
+    if (Object.keys(updates).length > 0) {
+      await this.update(updates);
+    }
+  }
+  /** @override */
+  async _onCreateDescendantDocuments(parent, collection, documents, data, options, userId) {
+    var _a;
+    await super._onCreateDescendantDocuments(parent, collection, documents, data, options, userId);
+    if (collection !== "items" || game.userId !== userId) return;
+    let endDelta = 0;
+    for (const doc of documents) {
+      if (doc.type !== "trait") continue;
+      for (const mod of ((_a = doc.system) == null ? void 0 : _a.modifiers) || []) {
+        if (mod.target === "stats.endurance") endDelta += mod.value || 0;
+      }
+    }
+    if (endDelta !== 0) await this._adjustLimbHPForEnduranceDelta(endDelta);
+  }
+  /** @override */
+  async _onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId) {
+    var _a;
+    await super._onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId);
+    if (collection !== "items" || game.userId !== userId) return;
+    let endDelta = 0;
+    for (const doc of documents) {
+      if (doc.type !== "trait") continue;
+      for (const mod of ((_a = doc.system) == null ? void 0 : _a.modifiers) || []) {
+        if (mod.target === "stats.endurance") endDelta -= mod.value || 0;
+      }
+    }
+    if (endDelta !== 0) await this._adjustLimbHPForEnduranceDelta(endDelta);
   }
 }
 class TAMSItem extends Item {
@@ -2036,7 +2270,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         fullHeal: _TAMSActorSheet.prototype._onFullHeal,
         itemGive: _TAMSActorSheet.prototype._onItemGive,
         itemExport: _TAMSActorSheet.prototype._onItemExport,
-        toggleLimbMultipliers: _TAMSActorSheet.prototype._onToggleLimbMultipliers
+        toggleLimbMultipliers: _TAMSActorSheet.prototype._onToggleLimbMultipliers,
+        itemEquip: _TAMSActorSheet.prototype._onItemEquip,
+        itemStow: _TAMSActorSheet.prototype._onItemStow,
+        itemQtyDelta: _TAMSActorSheet.prototype._onItemQtyDelta,
+        itemRepair: _TAMSActorSheet.prototype._onItemRepair,
+        toggleItemDetails: _TAMSActorSheet.prototype._onToggleItemDetails,
+        setInventorySort: _TAMSActorSheet.prototype._onSetInventorySort,
+        setInventoryFilter: _TAMSActorSheet.prototype._onSetInventoryFilter
       }
     }, { inplace: false });
   }
@@ -2060,6 +2301,20 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         await this._onUpdateItemField(ev, ev.currentTarget);
       });
     });
+    const searchInput = this.element.querySelector("input.inventory-search");
+    if (searchInput) {
+      searchInput.addEventListener("input", (ev) => {
+        this._inventorySearch = ev.currentTarget.value;
+        clearTimeout(this._inventorySearchTimer);
+        this._inventorySearchTimer = setTimeout(() => this.render(), 250);
+      });
+    }
+    this.element.querySelectorAll("select.inventory-sort").forEach((el) => {
+      el.addEventListener("change", (ev) => this._onSetInventorySort(ev, ev.currentTarget));
+    });
+    this.element.querySelectorAll("select.inventory-filter").forEach((el) => {
+      el.addEventListener("change", (ev) => this._onSetInventoryFilter(ev, ev.currentTarget));
+    });
   }
   /** @override */
   async _prepareContext(options) {
@@ -2067,6 +2322,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     this._activeTab ?? (this._activeTab = "stats");
     context.actor = this.document;
     context.system = this.document.system;
+    context.user = game.user;
     context.activeTab = this._activeTab;
     context.editable = this.isEditable;
     context.owner = this.document.isOwner;
@@ -2102,6 +2358,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   _prepareItemCollections(context) {
+    var _a, _b;
     const weapons = [];
     const skills = [];
     const abilities = [];
@@ -2115,14 +2372,38 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const traits = [];
     const allItems = [];
     const hasBackpack = !!this.document.system.inventory.hasBackpack;
+    this._expandedItems ?? (this._expandedItems = /* @__PURE__ */ new Set());
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    const limbLabels = this.document.system.limbs;
     for (let i of this.document.items) {
       let isGreyedOut = false;
-      if (i.system.location === "backpack") {
-        isGreyedOut = !hasBackpack;
-      } else if (i.system.location && i.system.location !== "stowed" && i.system.location !== "hand") {
-        const container2 = this.document.items.get(i.system.location);
+      let effectiveLocation = i.system.location;
+      if (effectiveLocation === "backpack") {
+        if (!hasBackpack) {
+          isGreyedOut = false;
+        } else {
+          const firstBP = this.document.items.find((bp) => bp.type === "backpack" && bp.system.equipped);
+          isGreyedOut = !firstBP;
+        }
+      } else if (effectiveLocation && effectiveLocation !== "stowed" && effectiveLocation !== "hand") {
+        const container2 = this.document.items.get(effectiveLocation);
         if (container2 && container2.type === "backpack") {
           isGreyedOut = !container2.system.equipped;
+        }
+      }
+      let armorZones = null;
+      if (i.type === "armor") {
+        armorZones = [];
+        for (const key of limbKeys) {
+          const zone = (_a = i.system.limbs) == null ? void 0 : _a[key];
+          if (!zone || (zone.max || 0) <= 0) continue;
+          armorZones.push({
+            key,
+            label: ((_b = limbLabels[key]) == null ? void 0 : _b.label) || key,
+            value: zone.value || 0,
+            max: zone.max || 0,
+            missing: Math.max(0, (zone.max || 0) - (zone.value || 0))
+          });
         }
       }
       const itemData = {
@@ -2133,7 +2414,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         system: i.system,
         type: i.type,
         isGreyedOut,
-        isEquipped: i.type === "weapon" && i.system.location === "hand" || ["armor", "backpack", "shield"].includes(i.type) && i.system.equipped
+        isEquipped: i.type === "weapon" && i.system.location === "hand" || ["armor", "backpack", "shield"].includes(i.type) && i.system.equipped,
+        canEquip: ["weapon", "armor", "shield", "backpack"].includes(i.type),
+        isArmor: i.type === "armor",
+        armorZones,
+        expanded: this._expandedItems.has(i.id)
       };
       allItems.push(itemData);
       if (i.type === "weapon") {
@@ -2187,20 +2472,65 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const rawSections = [equippedSection, ...Object.values(containerSectionMap), stowedSection];
     const typeLabels = { weapon: "Weapons", armor: "Armor", consumable: "Consumables", tool: "Tools", questItem: "Quest Items", equipment: "Miscellaneous" };
     const typeOrder = ["Weapons", "Armor", "Consumables", "Tools", "Quest Items", "Miscellaneous"];
+    const sortKey = this._inventorySort || "name";
+    const filterType = this._inventoryFilter || "all";
+    const search = (this._inventorySearch || "").trim().toLowerCase();
+    const sizeRank = { small: 0, medium: 1, large: 2 };
+    const matchesFilters = (item) => {
+      if (filterType !== "all" && item.type !== filterType) return false;
+      if (search && !item.name.toLowerCase().includes(search)) return false;
+      return true;
+    };
+    const sortItems = (items) => items.sort((a, b) => {
+      switch (sortKey) {
+        case "type":
+          return a.type.localeCompare(b.type) || a.name.localeCompare(b.name);
+        case "size":
+          return (sizeRank[a.system.size] ?? 0) - (sizeRank[b.system.size] ?? 0) || a.name.localeCompare(b.name);
+        case "quantity":
+          return (b.system.quantity || 0) - (a.system.quantity || 0) || a.name.localeCompare(b.name);
+        case "name":
+        default:
+          return a.name.localeCompare(b.name);
+      }
+    });
     for (const s of rawSections) {
       const groups = {};
       for (const item of s.items) {
+        if (!matchesFilters(item)) continue;
         const label = typeLabels[item.type] || "Other";
         if (!groups[label]) groups[label] = { label, items: [] };
         groups[label].items.push(item);
       }
+      for (const g of Object.values(groups)) sortItems(g.items);
       s.categories = Object.values(groups).sort((a, b) => {
         let indexA = typeOrder.indexOf(a.label);
         let indexB = typeOrder.indexOf(b.label);
         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
       });
+      s.visibleCount = s.categories.reduce((n, c) => n + c.items.length, 0);
     }
-    context.inventorySections = rawSections.filter((s) => s.items.length > 0 || s.type === "container");
+    context.inventorySort = sortKey;
+    context.inventoryFilter = filterType;
+    context.inventorySearch = this._inventorySearch || "";
+    context.inventorySortOptions = {
+      name: "TAMS.Inventory.SortName",
+      type: "TAMS.Inventory.SortType",
+      size: "TAMS.Inventory.SortSize",
+      quantity: "TAMS.Inventory.SortQuantity"
+    };
+    context.inventoryFilterOptions = {
+      all: "TAMS.Inventory.FilterAll",
+      weapon: "TAMS.Weapon",
+      armor: "TAMS.Armor",
+      shield: "TAMS.Shield",
+      consumable: "TAMS.Consumable",
+      tool: "TAMS.Tool",
+      questItem: "TAMS.QuestItem",
+      backpack: "TAMS.Container",
+      equipment: "TAMS.Misc"
+    };
+    context.inventorySections = rawSections.filter((s) => s.visibleCount > 0 || s.type === "container");
     context.weapons = weapons;
     context.inventoryWeapons = inventoryWeapons;
     context.inventoryArmor = inventoryArmor;
@@ -2242,7 +2572,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       "rightLeg": "TAMS.HitLocations.RightLeg"
     };
     context.sizeOptions = { "small": "TAMS.SizeOptions.Small", "medium": "TAMS.SizeOptions.Medium", "large": "TAMS.SizeOptions.Large" };
-    const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.BackpackLegacy" };
+    const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.Backpack" };
     for (const bp of context.inventoryBackpacks || []) {
       locationOptions[bp.id] = game.i18n.format("TAMS.LocationOptions.InContainer", { name: bp.name });
     }
@@ -2291,11 +2621,23 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
       }
     }
+    let capacityMode = "weight";
+    try {
+      capacityMode = game.settings.get("tams", "capacityMode") || "weight";
+    } catch (e) {
+    }
+    const inv = this.document.system.inventory;
     context.inventory = {
-      ...this.document.system.inventory,
-      usedMedium: (this.document.system.inventory.usedCapacity / 10).toFixed(1).replace(/\.0$/, ""),
-      maxMedium: (this.document.system.inventory.maxCapacity / 10).toFixed(1).replace(/\.0$/, "")
+      ...inv,
+      usedMedium: (inv.usedCapacity / 10).toFixed(1).replace(/\.0$/, ""),
+      maxMedium: (inv.maxCapacity / 10).toFixed(1).replace(/\.0$/, ""),
+      capacityMode
     };
+    context.capacityMode = capacityMode;
+    context.isSlotMode = capacityMode === "slots";
+    if (capacityMode === "slots") {
+      context.capacityPercentage = Math.clamp(inv.usedSlots / (inv.maxSlots || 1) * 100, 0, 100);
+    }
   }
   /**
    * Handle creating a new item on the actor.
@@ -2573,6 +2915,197 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (item) await item.update({ [field]: value });
   }
   /**
+   * Resolve the item id from a clicked control or its containing row.
+   * @param {HTMLElement} target The clicked element.
+   * @returns {string|undefined} The resolved item id.
+   * @protected
+   */
+  _resolveItemId(target) {
+    var _a;
+    return target.dataset.itemId || ((_a = target.closest(".item")) == null ? void 0 : _a.dataset.itemId);
+  }
+  /**
+   * Check whether the configured equip (hand) limit has been reached.
+   * @param {string} kind The slot kind being filled (currently only "hand").
+   * @returns {boolean} True when the limit is enforced and already reached.
+   * @protected
+   */
+  _equipLimitReached(kind) {
+    var _a;
+    let enforce = false;
+    let maxHands = 2;
+    try {
+      enforce = game.settings.get("tams", "enforceEquipLimit");
+      maxHands = game.settings.get("tams", "maxHands") || 2;
+    } catch (e) {
+    }
+    if (!enforce) return false;
+    if (kind === "hand") {
+      let used = 0;
+      for (const it of this.document.items) {
+        if (it.type === "weapon" && it.system.location === "hand") used += it.system.isTwoHanded ? 2 : 1;
+        else if (it.type === "shield" && it.system.equipped) used += 1;
+      }
+      if (used >= maxHands) {
+        (_a = ui.notifications) == null ? void 0 : _a.warn(game.i18n.format("TAMS.Checks.Notifications.HandsFull", { max: maxHands }));
+        return true;
+      }
+    }
+    return false;
+  }
+  /**
+   * Quick-action: toggle whether an item is equipped / held in hand.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onItemEquip(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+    if (item.type === "weapon") {
+      const toHand = item.system.location !== "hand";
+      if (toHand && this._equipLimitReached("hand")) return;
+      return item.update({ "system.location": toHand ? "hand" : "stowed" });
+    }
+    if (["armor", "shield", "backpack"].includes(item.type)) {
+      const equip = !item.system.equipped;
+      if (equip && item.type === "shield" && this._equipLimitReached("hand")) return;
+      return item.update({ "system.equipped": equip });
+    }
+  }
+  /**
+   * Quick-action: stow an item back to the loose pile (unequip / remove from bag).
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onItemStow(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+    const updates = { "system.location": "stowed" };
+    if (foundry.utils.hasProperty(item, "system.equipped")) updates["system.equipped"] = false;
+    return item.update(updates);
+  }
+  /**
+   * Quick-action: increment/decrement an item's quantity.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element carrying `data-delta`.
+   * @protected
+   */
+  async _onItemQtyDelta(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+    const delta = parseInt(target.dataset.delta) || 0;
+    const qty = Math.max(0, (Number(item.system.quantity) || 0) + delta);
+    return item.update({ "system.quantity": qty });
+  }
+  /**
+   * Toggle the inline detail/edit panel for an inventory row.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  _onToggleItemDetails(event, target) {
+    const itemId = this._resolveItemId(target);
+    if (!itemId) return;
+    this._expandedItems ?? (this._expandedItems = /* @__PURE__ */ new Set());
+    if (this._expandedItems.has(itemId)) this._expandedItems.delete(itemId);
+    else this._expandedItems.add(itemId);
+    this.render();
+  }
+  /**
+   * Set the active inventory sort key.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The select element.
+   * @protected
+   */
+  _onSetInventorySort(event, target) {
+    this._inventorySort = target.value || "name";
+    this.render();
+  }
+  /**
+   * Set the active inventory type filter.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The select element.
+   * @protected
+   */
+  _onSetInventoryFilter(event, target) {
+    this._inventoryFilter = target.value || "all";
+    this.render();
+  }
+  /**
+   * Handle an armor repair check. Each covered zone with missing points rolls
+   * its own check; falling short permanently reduces that zone's max armor.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onItemRepair(event, target) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item || item.type !== "armor") return;
+    const skills = this.document.items.filter((i) => i.type === "skill");
+    let optionsHtml = `<option value="int">${game.i18n.localize("TAMS.StatIntelligence")}</option>`;
+    for (const s of skills) optionsHtml += `<option value="${s.id}">${s.name}</option>`;
+    const choice = await new Promise((resolve) => {
+      new Dialog({
+        title: game.i18n.format("TAMS.Repair.Title", { name: item.name }),
+        content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Repair.SelectSkill")}</label><select name="skill" style="width:100%">${optionsHtml}</select></div>`,
+        buttons: {
+          repair: { icon: '<i class="fas fa-hammer"></i>', label: game.i18n.localize("TAMS.Repair.Action"), callback: (html) => resolve(html.find('[name="skill"]').val()) },
+          cancel: { icon: '<i class="fas fa-times"></i>', label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+        },
+        default: "repair"
+      }).render(true);
+    });
+    if (!choice) return;
+    let checkLabel;
+    let checkValue;
+    if (choice === "int") {
+      checkLabel = game.i18n.localize("TAMS.StatIntelligence");
+      checkValue = ((_a = this.document.system.stats.intelligence) == null ? void 0 : _a.total) || 0;
+    } else {
+      const skill = this.document.items.get(choice);
+      checkLabel = (skill == null ? void 0 : skill.name) || game.i18n.localize("TAMS.Skill");
+      const statKey = ((_b = skill == null ? void 0 : skill.system) == null ? void 0 : _b.stat) || "intelligence";
+      checkValue = (((_c = this.document.system.stats[statKey]) == null ? void 0 : _c.total) || 0) + (((_d = skill == null ? void 0 : skill.system) == null ? void 0 : _d.familiarity) || 0) + (((_e = skill == null ? void 0 : skill.system) == null ? void 0 : _e.bonus) || 0);
+    }
+    const alternate = !!((_f = this.document.system.settings) == null ? void 0 : _f.alternateArmour);
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    const itemUpdates = {};
+    const actorUpdates = {};
+    let report = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Repair.Title", { name: item.name })}</h3>`;
+    report += `<div class="roll-row"><small>${game.i18n.localize("TAMS.Repair.Using")}:</small><span>${checkLabel} (${checkValue})</span></div>`;
+    let repaired = false;
+    for (const key of limbKeys) {
+      const zone = (_g = item.system.limbs) == null ? void 0 : _g[key];
+      if (!zone || (zone.max || 0) <= 0) continue;
+      const missing = Math.max(0, (zone.max || 0) - (zone.value || 0));
+      if (missing <= 0) continue;
+      repaired = true;
+      const roll = await new Roll("1d100").evaluate();
+      const capped = Math.min(roll.total, checkValue);
+      const result = computeArmorRepair({ value: zone.value, max: zone.max, rollTotal: capped, alternate });
+      itemUpdates[`system.limbs.${key}.value`] = result.newValue;
+      itemUpdates[`system.limbs.${key}.max`] = result.newMax;
+      if (((_h = this.document.system.limbs[key]) == null ? void 0 : _h.equippedArmorId) === item.id) {
+        actorUpdates[`system.limbs.${key}.armor`] = result.newValue;
+        actorUpdates[`system.limbs.${key}.armorMax`] = result.newMax;
+      }
+      const label = ((_i = this.document.system.limbs[key]) == null ? void 0 : _i.label) || key;
+      report += `<div class="roll-row"><b>${label}</b><span>${game.i18n.format("TAMS.Repair.ZoneResult", { roll: capped, difficulty: result.difficulty })}</span></div>`;
+      report += `<div class="roll-row-detail"><small>${result.success ? game.i18n.localize("TAMS.Repair.FullyRepaired") : game.i18n.format("TAMS.Repair.MaxLost", { lost: result.maxLost, newMax: result.newMax })}</small></div>`;
+    }
+    if (!repaired) {
+      (_j = ui.notifications) == null ? void 0 : _j.info(game.i18n.localize("TAMS.Repair.NothingToRepair"));
+      return;
+    }
+    report += `</div>`;
+    await item.update(itemUpdates);
+    if (Object.keys(actorUpdates).length > 0) await this.document.update(actorUpdates);
+    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content: report });
+  }
+  /**
    * Handle changing the actor or item image.
    * @param {Event} event The originating click event.
    * @param {HTMLElement} target The clickable element.
@@ -2683,7 +3216,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   async _onRoll(event, target) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
     const dataset = target.dataset;
     const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
     const tToken = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0] ?? null;
@@ -2829,7 +3362,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         statValue = stat ? stat.value : 0;
         statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
       }
-      const cost = ((_c = item.system.calculator) == null ? void 0 : _c.enabled) ? item.system.calculatedCost : parseInt(item.system.cost) || 0;
+      const cost = parseInt(item.system.cost) || 0;
       const usesMax = parseInt(item.system.uses.max) || 0;
       const usesVal = parseInt(item.system.uses.value) || 0;
       const isLimited = usesMax > 0;
@@ -2983,7 +3516,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let squadBonus = 0;
     let maxSquadTargets = 1;
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
-      item.type === "weapon" ? !!item.system.isRanged : ((_d = item.system.calculator) == null ? void 0 : _d.range) > 10;
+      item.type === "weapon" ? !!item.system.isRanged : ((_c = item.system.calculator) == null ? void 0 : _c.range) > 10;
       if (isSquadOrHorde) {
         maxSquadTargets = squadSize;
         maxSquadTargets = Math.max(1, maxSquadTargets);
@@ -3039,7 +3572,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let damageInfo = "";
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
       let damage = item.system.calculatedDamage;
-      const isRanged = item.type === "weapon" ? !!item.system.isRanged : ((_e = item.system.calculator) == null ? void 0 : _e.range) > 10;
+      const isRanged = item.type === "weapon" ? !!item.system.isRanged : ((_d = item.system.calculator) == null ? void 0 : _d.range) > 10;
       const isCrit = difficulty > 0 && dcTotal >= difficulty * 2;
       let forceCrit = false;
       if (item && item.system.tags) {
@@ -3057,7 +3590,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         else if (item.system.fireRate === "auto") multiVal = 10;
         else if (item.system.fireRate === "custom") multiVal = item.system.fireRateCustom || 1;
         if (item.system.consumeAmmo) {
-          const currentAmmo = ((_f = item.system.ammo) == null ? void 0 : _f.current) || 0;
+          const currentAmmo = ((_e = item.system.ammo) == null ? void 0 : _e.current) || 0;
           if (currentAmmo < multiVal) {
             if (currentAmmo <= 0) {
               return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", { item: item.name }));
@@ -3070,14 +3603,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       } else if (item.type === "ability") {
         multiVal = item.system.multiAttack || 1;
       }
-      const targetLimb = item.type === "ability" && ((_g = item.system.calculator) == null ? void 0 : _g.enabled) ? item.system.calculator.targetLimb : "none";
+      const targetLimb = item.type === "ability" && ((_f = item.system.calculator) == null ? void 0 : _f.enabled) ? item.system.calculator.targetLimb : "none";
       let armourPen = 0;
       if (item.type === "weapon" && item.system.hasArmourPen) {
         armourPen = item.system.armourPenetration || 0;
       } else if (item.type === "ability") {
         armourPen = item.system.armourPenetration || 0;
       }
-      const isAoE = !!item.system.isAoE || ((_h = item.system.calculator) == null ? void 0 : _h.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
+      const isAoE = !!item.system.isAoE || ((_g = item.system.calculator) == null ? void 0 : _g.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
       let targets = isAoE ? [...game.user.targets] : tToken ? [tToken] : [];
       if (isSquadOrHorde) {
         targets = [...game.user.targets].slice(0, maxSquadTargets);
@@ -3085,7 +3618,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
       if (targets.length > 0) {
         let hitLocation;
-        if (item.type === "ability" && ((_i = item.system.calculator) == null ? void 0 : _i.enabled) && ((_j = item.system.calculator) == null ? void 0 : _j.targetLimb) && item.system.calculator.targetLimb !== "none") {
+        if (item.type === "ability" && ((_h = item.system.calculator) == null ? void 0 : _h.enabled) && ((_i = item.system.calculator) == null ? void 0 : _i.targetLimb) && item.system.calculator.targetLimb !== "none") {
           const limbKey = item.system.calculator.targetLimb;
           const limbOptions = {
             "head": "Head",
@@ -3346,6 +3879,136 @@ __publicField(_TAMSActorSheet, "PARTS", {
   }
 });
 let TAMSActorSheet = _TAMSActorSheet;
+const _TAMSDowntimeSheet = class _TAMSDowntimeSheet extends TAMSActorSheet {
+  /** @override */
+  static get DEFAULT_OPTIONS() {
+    return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
+      classes: ["tams", "sheet", "actor", "downtime"],
+      position: { width: 500, height: 650 },
+      window: { resizable: true, scrollable: [".downtime-scroll"] },
+      actions: {
+        outputDowntime: _TAMSDowntimeSheet.prototype._onOutputDowntime,
+        resetDowntime: _TAMSDowntimeSheet.prototype._onResetDowntime,
+        sendAwardToChat: _TAMSDowntimeSheet.prototype._onSendAwardToChat
+      }
+    }, { inplace: false });
+  }
+  /** @override */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    return context;
+  }
+  /**
+   * Handle outputting downtime trackers to chat.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onOutputDowntime(event, target) {
+    const actor = this.document;
+    const downtime = actor.system.downtime;
+    const trackers = downtime.trackers;
+    const isSafe = downtime.isSafe;
+    const labels = {
+      ability: "TAMS.DowntimeTrackerAbility",
+      skill: "TAMS.DowntimeTrackerSkill",
+      weapon: "TAMS.DowntimeTrackerWeapon",
+      statistic: "TAMS.DowntimeTrackerStatistic",
+      crafting: "TAMS.DowntimeTrackerCrafting",
+      resting: "TAMS.DowntimeTrackerResting",
+      healing: "TAMS.DowntimeTrackerHealing",
+      working: "TAMS.DowntimeTrackerWorking"
+    };
+    let content = `
+      <div class="tams-roll">
+        <h3 class="roll-label">${game.i18n.localize("TAMS.DowntimeTracking")}: ${actor.name}</h3>
+        <div class="roll-row">
+          <span>${game.i18n.localize("TAMS.DowntimeDays")}:</span>
+          <span class="roll-value">${downtime.days}</span>
+        </div>
+        <div class="roll-row">
+          <span>${game.i18n.localize("TAMS.DowntimeIsSafe")}:</span>
+          <span class="roll-value">${isSafe ? game.i18n.localize("TAMS.DowntimeSafe") : game.i18n.localize("TAMS.DowntimeUnsafe")}</span>
+        </div>
+        <hr>
+    `;
+    let hasTrackers = false;
+    for (const [key, value] of Object.entries(trackers)) {
+      if (value > 0) {
+        hasTrackers = true;
+        content += `
+          <div class="roll-row">
+            <span>${game.i18n.localize(labels[key])}:</span>
+            <span class="roll-value">${value} ${game.i18n.localize("TAMS.Days")}</span>
+          </div>
+        `;
+      }
+    }
+    if (!hasTrackers) {
+      content += `<p><i>No downtime activities tracked.</i></p>`;
+    }
+    if (downtime.notes) {
+      content += `<hr><div class="roll-description">${downtime.notes}</div>`;
+    }
+    content += `</div>`;
+    ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content
+    });
+  }
+  /**
+   * Handle resetting all downtime trackers to 0.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onResetDowntime(event, target) {
+    const confirmed = await Dialog.confirm({
+      title: game.i18n.localize("TAMS.DowntimeReset"),
+      content: `<p>Are you sure you want to reset all downtime trackers to 0 for ${this.document.name}?</p>`,
+      yes: () => true,
+      no: () => false,
+      defaultYes: false
+    });
+    if (confirmed) {
+      const updates = {};
+      for (const key of Object.keys(this.document.system.downtime.trackers)) {
+        updates[`system.downtime.trackers.${key}`] = 0;
+      }
+      await this.document.update(updates);
+    }
+  }
+  /**
+   * Send a downtime award button to chat.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onSendAwardToChat(event, target) {
+    const input = target.parentElement.querySelector(".award-days");
+    const days = parseInt(input.value) || 0;
+    const content = `
+      <div class="tams-roll">
+        <h3 class="roll-label">${game.i18n.localize("TAMS.DowntimeAwardTitle")}</h3>
+        <p>${game.i18n.format("TAMS.DowntimeAwardDescription", { days })}</p>
+        <button class="tams-apply-downtime" data-days="${days}">
+            ${game.i18n.localize("TAMS.DowntimeApplyAward")}
+        </button>
+      </div>
+    `;
+    await ChatMessage.create({
+      user: game.user.id,
+      content,
+      speaker: ChatMessage.getSpeaker({ actor: this.document })
+    });
+  }
+};
+__publicField(_TAMSDowntimeSheet, "PARTS", {
+  form: {
+    template: "systems/tams/templates/downtime-sheet.html"
+  }
+});
+let TAMSDowntimeSheet = _TAMSDowntimeSheet;
 class TAMSLootSheet extends TAMSActorSheet {
   static get DEFAULT_OPTIONS() {
     return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
@@ -3365,7 +4028,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
       tag: "form",
       classes: ["tams", "sheet", "item"],
-      position: { width: 500, height: 700 },
+      position: { width: 560, height: 750 },
       window: { resizable: true, scrollable: [".sheet-body"] },
       form: { submitOnChange: true, closeOnSubmit: false },
       actions: {
@@ -3422,7 +4085,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     };
     const locationOptions = {
       "stowed": "TAMS.LocationOptions.Stowed",
-      "backpack": "TAMS.LocationOptions.BackpackLegacy",
+      "backpack": "TAMS.LocationOptions.Backpack",
       "hand": "TAMS.LocationOptions.Hand"
     };
     if (this.document.actor) {
@@ -3454,6 +4117,8 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       }));
     }
     if (this.document.type === "ability") {
+      const calculator = this.document.system.calculator || {};
+      const selectedTargetingMode = calculator.targetingMode || (calculator.targetLimb !== "none" ? "specific" : calculator.bodyPart !== "none" ? "group" : "normal");
       const resources = { "stamina": "TAMS.Stamina" };
       if (this.document.actor) {
         this.document.actor.system.customResources.forEach((res, index) => {
@@ -3461,14 +4126,20 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         });
       }
       context.resourceOptions = resources;
+      context.selectedTargetingMode = selectedTargetingMode;
       context.calculatorOptions = {
+        targetingModes: {
+          "normal": "TAMS.CalculatorOptions.TargetingModeNormal",
+          "group": "TAMS.CalculatorOptions.TargetingModeGroup",
+          "specific": "TAMS.CalculatorOptions.TargetingModeSpecific"
+        },
         bodyParts: {
           "none": "TAMS.CalculatorOptions.None",
           "head": "TAMS.CalculatorOptions.Head",
-          "thorax": "TAMS.CalculatorOptions.ThoraxStomach",
-          "stomach": "TAMS.CalculatorOptions.ThoraxStomach",
-          "arms": "TAMS.CalculatorOptions.ArmsLegs",
-          "legs": "TAMS.CalculatorOptions.ArmsLegs"
+          "thorax": "TAMS.CalculatorOptions.Thorax",
+          "stomach": "TAMS.CalculatorOptions.Stomach",
+          "arms": "TAMS.CalculatorOptions.Arms",
+          "legs": "TAMS.CalculatorOptions.Legs"
         },
         fireRates: {
           "single": "TAMS.CalculatorOptions.Single",
@@ -3571,6 +4242,22 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       tagsArray.push(tag.toLowerCase());
     }
     await this.document.update({ "system.tags": tagsArray.filter((t) => t).join(", ") });
+  }
+  /** @override */
+  _prepareSubmitData(event, form, formData) {
+    var _a;
+    const data = super._prepareSubmitData(event, form, formData);
+    if (this.document.type !== "ability") return data;
+    const mode = foundry.utils.getProperty(data, "system.calculator.targetingMode") ?? ((_a = this.document.system.calculator) == null ? void 0 : _a.targetingMode) ?? "normal";
+    if (mode === "normal") {
+      foundry.utils.setProperty(data, "system.calculator.bodyPart", "none");
+      foundry.utils.setProperty(data, "system.calculator.targetLimb", "none");
+    } else if (mode === "group") {
+      foundry.utils.setProperty(data, "system.calculator.targetLimb", "none");
+    } else if (mode === "specific") {
+      foundry.utils.setProperty(data, "system.calculator.bodyPart", "none");
+    }
+    return data;
   }
 };
 __publicField(_TAMSItemSheet, "PARTS", {
@@ -4006,7 +4693,47 @@ Hooks.once("init", async function() {
     type: String,
     default: "Gold, Silver, Copper"
   });
+  game.settings.register("tams", "capacityMode", {
+    name: "TAMS.Settings.CapacityMode",
+    hint: "TAMS.Settings.CapacityModeHint",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: {
+      weight: "TAMS.Settings.CapacityModeWeight",
+      slots: "TAMS.Settings.CapacityModeSlots"
+    },
+    default: "weight",
+    requiresReload: true
+  });
+  game.settings.register("tams", "largeItemSlots", {
+    name: "TAMS.Settings.LargeItemSlots",
+    hint: "TAMS.Settings.LargeItemSlotsHint",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 2, max: 10, step: 1 },
+    default: 2
+  });
+  game.settings.register("tams", "enforceEquipLimit", {
+    name: "TAMS.Settings.EnforceEquipLimit",
+    hint: "TAMS.Settings.EnforceEquipLimitHint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+  game.settings.register("tams", "maxHands", {
+    name: "TAMS.Settings.MaxHands",
+    hint: "TAMS.Settings.MaxHandsHint",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 1, max: 6, step: 1 },
+    default: 2
+  });
   CONFIG.Actor.dataModels.character = TAMSCharacterData;
+  CONFIG.Actor.dataModels.downtime = TAMSCharacterData;
   CONFIG.Item.dataModels.weapon = TAMSWeaponData;
   CONFIG.Item.dataModels.skill = TAMSSkillData;
   CONFIG.Item.dataModels.ability = TAMSAbilityData;
@@ -4032,6 +4759,16 @@ Hooks.once("init", async function() {
   };
   foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
   foundry.documents.collections.Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
+  foundry.documents.collections.Actors.registerSheet("tams", TAMSDowntimeSheet, {
+    types: ["downtime"],
+    makeDefault: true,
+    label: "TAMS.DowntimeSheet"
+  });
+  foundry.documents.collections.Actors.registerSheet("tams", TAMSDowntimeSheet, {
+    types: ["character"],
+    makeDefault: false,
+    label: "TAMS.DowntimeSheet"
+  });
   foundry.documents.collections.Actors.registerSheet("tams", TAMSLootSheet, {
     types: ["character"],
     makeDefault: false,
@@ -4062,5 +4799,39 @@ Hooks.once("init", async function() {
     return str.toUpperCase();
   });
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
+  const encumberedEffect = {
+    id: "encumbered",
+    name: "TAMS.Encumbered",
+    label: "TAMS.Encumbered",
+    img: "icons/svg/anchor.svg",
+    icon: "icons/svg/anchor.svg"
+  };
+  if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some((e) => e.id === "encumbered")) {
+    CONFIG.statusEffects.push(encumberedEffect);
+  }
+  const tamsSyncEncumbrance = (actor) => {
+    var _a, _b, _c, _d;
+    if (!actor || actor.type !== "character") return;
+    if (!actor.isOwner) return;
+    if (typeof actor.toggleStatusEffect !== "function") return;
+    const encumbered = !!((_b = (_a = actor.system) == null ? void 0 : _a.inventory) == null ? void 0 : _b.isEncumbered);
+    const hasStatus = ((_d = (_c = actor.statuses) == null ? void 0 : _c.has) == null ? void 0 : _d.call(_c, "encumbered")) ?? false;
+    if (encumbered !== hasStatus) {
+      actor.toggleStatusEffect("encumbered", { active: encumbered });
+    }
+  };
+  Hooks.on("updateActor", (actor) => tamsSyncEncumbrance(actor));
+  Hooks.on("createItem", (item) => {
+    if (item.parent) tamsSyncEncumbrance(item.parent);
+  });
+  Hooks.on("updateItem", (item) => {
+    if (item.parent) tamsSyncEncumbrance(item.parent);
+  });
+  Hooks.on("deleteItem", (item) => {
+    if (item.parent) tamsSyncEncumbrance(item.parent);
+  });
+  Hooks.once("ready", () => {
+    for (const actor of game.actors) tamsSyncEncumbrance(actor);
+  });
 });
 //# sourceMappingURL=tams.js.map

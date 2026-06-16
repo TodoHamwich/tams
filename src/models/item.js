@@ -9,6 +9,7 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "medium"}),
       location: new fields.StringField({initial: "hand"}),
+      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
       equipped: new fields.BooleanField({initial: false}),
       isHeavy: new fields.BooleanField({initial: false}),
       isTwoHanded: new fields.BooleanField({initial: false}),
@@ -88,6 +89,7 @@ export class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "small"}),
       location: new fields.StringField({initial: "stowed"}),
+      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -104,6 +106,7 @@ export class TAMSArmorData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "large"}),
       location: new fields.StringField({initial: "stowed"}),
+      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
       equipped: new fields.BooleanField({initial: false}),
       limbs: new fields.SchemaField({
         head: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
@@ -130,6 +133,7 @@ export class TAMSConsumableData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "small"}),
       location: new fields.StringField({initial: "stowed"}),
+      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
       uses: new fields.SchemaField({
         value: new fields.NumberField({initial: 0}),
         max: new fields.NumberField({initial: 0})
@@ -150,6 +154,7 @@ export class TAMSToolData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "medium"}),
       location: new fields.StringField({initial: "stowed"}),
+      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -168,6 +173,7 @@ export class TAMSShieldData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "medium"}),
       location: new fields.StringField({initial: "hand"}),
+      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -184,6 +190,7 @@ export class TAMSQuestItemData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "small"}),
       location: new fields.StringField({initial: "stowed"}),
+      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -200,6 +207,7 @@ export class TAMSBackpackData extends foundry.abstract.TypeDataModel {
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "medium"}),
       location: new fields.StringField({initial: "stowed"}),
+      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
       equipped: new fields.BooleanField({initial: false}),
       capacity: new fields.NumberField({initial: 10, integer: true, min: 0}),
       modifier: new fields.NumberField({initial: 0.5, step: 0.1, min: 0}),

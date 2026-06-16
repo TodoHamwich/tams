@@ -1,4 +1,5 @@
 import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog } from '../utils/helpers.js';
+import { computeArmorRepair } from '../utils/inventory.js';
 
 /**
  * The TAMS Actor Sheet Application.
@@ -29,7 +30,14 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         fullHeal: TAMSActorSheet.prototype._onFullHeal,
         itemGive: TAMSActorSheet.prototype._onItemGive,
         itemExport: TAMSActorSheet.prototype._onItemExport,
-        toggleLimbMultipliers: TAMSActorSheet.prototype._onToggleLimbMultipliers
+        toggleLimbMultipliers: TAMSActorSheet.prototype._onToggleLimbMultipliers,
+        itemEquip: TAMSActorSheet.prototype._onItemEquip,
+        itemStow: TAMSActorSheet.prototype._onItemStow,
+        itemQtyDelta: TAMSActorSheet.prototype._onItemQtyDelta,
+        itemRepair: TAMSActorSheet.prototype._onItemRepair,
+        toggleItemDetails: TAMSActorSheet.prototype._onToggleItemDetails,
+        setInventorySort: TAMSActorSheet.prototype._onSetInventorySort,
+        setInventoryFilter: TAMSActorSheet.prototype._onSetInventoryFilter
       }
     }, { inplace: false });
   }
@@ -61,6 +69,24 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         ev.stopPropagation();
         await this._onUpdateItemField(ev, ev.currentTarget);
       });
+    });
+
+    // Live inventory search box (debounced re-render, preserving focus).
+    const searchInput = this.element.querySelector('input.inventory-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', (ev) => {
+        this._inventorySearch = ev.currentTarget.value;
+        clearTimeout(this._inventorySearchTimer);
+        this._inventorySearchTimer = setTimeout(() => this.render(), 250);
+      });
+    }
+
+    // Inventory sort/filter dropdowns.
+    this.element.querySelectorAll('select.inventory-sort').forEach(el => {
+      el.addEventListener('change', (ev) => this._onSetInventorySort(ev, ev.currentTarget));
+    });
+    this.element.querySelectorAll('select.inventory-filter').forEach(el => {
+      el.addEventListener('change', (ev) => this._onSetInventoryFilter(ev, ev.currentTarget));
     });
   }
 
@@ -131,6 +157,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const allItems = [];
 
     const hasBackpack = !!this.document.system.inventory.hasBackpack;
+    this._expandedItems ??= new Set();
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    const limbLabels = this.document.system.limbs;
 
     for (let i of this.document.items) {
       let isGreyedOut = false;
@@ -151,6 +180,23 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
       }
 
+      // Build per-zone armor data for inline editing/repair (armor items only).
+      let armorZones = null;
+      if (i.type === 'armor') {
+        armorZones = [];
+        for (const key of limbKeys) {
+          const zone = i.system.limbs?.[key];
+          if (!zone || (zone.max || 0) <= 0) continue;
+          armorZones.push({
+            key,
+            label: limbLabels[key]?.label || key,
+            value: zone.value || 0,
+            max: zone.max || 0,
+            missing: Math.max(0, (zone.max || 0) - (zone.value || 0))
+          });
+        }
+      }
+
       const itemData = {
         id: i.id,
         uuid: i.uuid,
@@ -159,7 +205,11 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         system: i.system,
         type: i.type,
         isGreyedOut: isGreyedOut,
-        isEquipped: (i.type === 'weapon' && i.system.location === 'hand') || (['armor', 'backpack', 'shield'].includes(i.type) && i.system.equipped)
+        isEquipped: (i.type === 'weapon' && i.system.location === 'hand') || (['armor', 'backpack', 'shield'].includes(i.type) && i.system.equipped),
+        canEquip: ['weapon', 'armor', 'shield', 'backpack'].includes(i.type),
+        isArmor: i.type === 'armor',
+        armorZones: armorZones,
+        expanded: this._expandedItems.has(i.id)
       };
 
       allItems.push(itemData);
@@ -221,21 +271,66 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const typeLabels = { weapon: "Weapons", armor: "Armor", consumable: "Consumables", tool: "Tools", questItem: "Quest Items", equipment: "Miscellaneous" };
     const typeOrder = ["Weapons", "Armor", "Consumables", "Tools", "Quest Items", "Miscellaneous"];
 
+    // --- Sorting / filtering / search state ---
+    const sortKey = this._inventorySort || "name";
+    const filterType = this._inventoryFilter || "all";
+    const search = (this._inventorySearch || "").trim().toLowerCase();
+    const sizeRank = { small: 0, medium: 1, large: 2 };
+
+    const matchesFilters = (item) => {
+      if (filterType !== "all" && item.type !== filterType) return false;
+      if (search && !item.name.toLowerCase().includes(search)) return false;
+      return true;
+    };
+    const sortItems = (items) => items.sort((a, b) => {
+      switch (sortKey) {
+        case "type": return a.type.localeCompare(b.type) || a.name.localeCompare(b.name);
+        case "size": return (sizeRank[a.system.size] ?? 0) - (sizeRank[b.system.size] ?? 0) || a.name.localeCompare(b.name);
+        case "quantity": return (b.system.quantity || 0) - (a.system.quantity || 0) || a.name.localeCompare(b.name);
+        case "name":
+        default: return a.name.localeCompare(b.name);
+      }
+    });
+
     for (const s of rawSections) {
       const groups = {};
       for (const item of s.items) {
+        if (!matchesFilters(item)) continue;
         const label = typeLabels[item.type] || "Other";
         if (!groups[label]) groups[label] = { label, items: [] };
         groups[label].items.push(item);
       }
+      for (const g of Object.values(groups)) sortItems(g.items);
       s.categories = Object.values(groups).sort((a, b) => {
         let indexA = typeOrder.indexOf(a.label);
         let indexB = typeOrder.indexOf(b.label);
         return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
       });
+      s.visibleCount = s.categories.reduce((n, c) => n + c.items.length, 0);
     }
 
-    context.inventorySections = rawSections.filter(s => s.items.length > 0 || s.type === "container");
+    context.inventorySort = sortKey;
+    context.inventoryFilter = filterType;
+    context.inventorySearch = this._inventorySearch || "";
+    context.inventorySortOptions = {
+      name: "TAMS.Inventory.SortName",
+      type: "TAMS.Inventory.SortType",
+      size: "TAMS.Inventory.SortSize",
+      quantity: "TAMS.Inventory.SortQuantity"
+    };
+    context.inventoryFilterOptions = {
+      all: "TAMS.Inventory.FilterAll",
+      weapon: "TAMS.Weapon",
+      armor: "TAMS.Armor",
+      shield: "TAMS.Shield",
+      consumable: "TAMS.Consumable",
+      tool: "TAMS.Tool",
+      questItem: "TAMS.QuestItem",
+      backpack: "TAMS.Container",
+      equipment: "TAMS.Misc"
+    };
+
+    context.inventorySections = rawSections.filter(s => s.visibleCount > 0 || s.type === "container");
     context.weapons = weapons;
     context.inventoryWeapons = inventoryWeapons;
     context.inventoryArmor = inventoryArmor;
@@ -326,11 +421,20 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     }
 
     // Additional inventory data
+    let capacityMode = "weight";
+    try { capacityMode = game.settings.get("tams", "capacityMode") || "weight"; } catch (e) { /* default */ }
+    const inv = this.document.system.inventory;
     context.inventory = {
-        ...this.document.system.inventory,
-        usedMedium: (this.document.system.inventory.usedCapacity / 10).toFixed(1).replace(/\.0$/, ""),
-        maxMedium: (this.document.system.inventory.maxCapacity / 10).toFixed(1).replace(/\.0$/, "")
+        ...inv,
+        usedMedium: (inv.usedCapacity / 10).toFixed(1).replace(/\.0$/, ""),
+        maxMedium: (inv.maxCapacity / 10).toFixed(1).replace(/\.0$/, ""),
+        capacityMode
     };
+    context.capacityMode = capacityMode;
+    context.isSlotMode = capacityMode === "slots";
+    if (capacityMode === "slots") {
+        context.capacityPercentage = Math.clamp((inv.usedSlots / (inv.maxSlots || 1)) * 100, 0, 100);
+    }
   }
 
   /**
@@ -634,6 +738,219 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (target.type === "checkbox") value = target.checked;
     const item = this.document.items.get(itemId);
     if (item) await item.update({ [field]: value });
+  }
+
+  /**
+   * Resolve the item id from a clicked control or its containing row.
+   * @param {HTMLElement} target The clicked element.
+   * @returns {string|undefined} The resolved item id.
+   * @protected
+   */
+  _resolveItemId(target) {
+    return target.dataset.itemId || target.closest(".item")?.dataset.itemId;
+  }
+
+  /**
+   * Check whether the configured equip (hand) limit has been reached.
+   * @param {string} kind The slot kind being filled (currently only "hand").
+   * @returns {boolean} True when the limit is enforced and already reached.
+   * @protected
+   */
+  _equipLimitReached(kind) {
+    let enforce = false;
+    let maxHands = 2;
+    try {
+      enforce = game.settings.get("tams", "enforceEquipLimit");
+      maxHands = game.settings.get("tams", "maxHands") || 2;
+    } catch (e) { /* settings unavailable */ }
+    if (!enforce) return false;
+
+    if (kind === "hand") {
+      let used = 0;
+      for (const it of this.document.items) {
+        if (it.type === "weapon" && it.system.location === "hand") used += (it.system.isTwoHanded ? 2 : 1);
+        else if (it.type === "shield" && it.system.equipped) used += 1;
+      }
+      if (used >= maxHands) {
+        ui.notifications?.warn(game.i18n.format("TAMS.Checks.Notifications.HandsFull", { max: maxHands }));
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Quick-action: toggle whether an item is equipped / held in hand.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onItemEquip(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+
+    if (item.type === "weapon") {
+      const toHand = item.system.location !== "hand";
+      if (toHand && this._equipLimitReached("hand")) return;
+      return item.update({ "system.location": toHand ? "hand" : "stowed" });
+    }
+    if (["armor", "shield", "backpack"].includes(item.type)) {
+      const equip = !item.system.equipped;
+      if (equip && item.type === "shield" && this._equipLimitReached("hand")) return;
+      return item.update({ "system.equipped": equip });
+    }
+  }
+
+  /**
+   * Quick-action: stow an item back to the loose pile (unequip / remove from bag).
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onItemStow(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+    const updates = { "system.location": "stowed" };
+    if (foundry.utils.hasProperty(item, "system.equipped")) updates["system.equipped"] = false;
+    return item.update(updates);
+  }
+
+  /**
+   * Quick-action: increment/decrement an item's quantity.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element carrying `data-delta`.
+   * @protected
+   */
+  async _onItemQtyDelta(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+    const delta = parseInt(target.dataset.delta) || 0;
+    const qty = Math.max(0, (Number(item.system.quantity) || 0) + delta);
+    return item.update({ "system.quantity": qty });
+  }
+
+  /**
+   * Toggle the inline detail/edit panel for an inventory row.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  _onToggleItemDetails(event, target) {
+    const itemId = this._resolveItemId(target);
+    if (!itemId) return;
+    this._expandedItems ??= new Set();
+    if (this._expandedItems.has(itemId)) this._expandedItems.delete(itemId);
+    else this._expandedItems.add(itemId);
+    this.render();
+  }
+
+  /**
+   * Set the active inventory sort key.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The select element.
+   * @protected
+   */
+  _onSetInventorySort(event, target) {
+    this._inventorySort = target.value || "name";
+    this.render();
+  }
+
+  /**
+   * Set the active inventory type filter.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The select element.
+   * @protected
+   */
+  _onSetInventoryFilter(event, target) {
+    this._inventoryFilter = target.value || "all";
+    this.render();
+  }
+
+  /**
+   * Handle an armor repair check. Each covered zone with missing points rolls
+   * its own check; falling short permanently reduces that zone's max armor.
+   * @param {Event} event The originating event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onItemRepair(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item || item.type !== "armor") return;
+
+    const skills = this.document.items.filter(i => i.type === "skill");
+    let optionsHtml = `<option value="int">${game.i18n.localize("TAMS.StatIntelligence")}</option>`;
+    for (const s of skills) optionsHtml += `<option value="${s.id}">${s.name}</option>`;
+
+    const choice = await new Promise(resolve => {
+      new Dialog({
+        title: game.i18n.format("TAMS.Repair.Title", { name: item.name }),
+        content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Repair.SelectSkill")}</label><select name="skill" style="width:100%">${optionsHtml}</select></div>`,
+        buttons: {
+          repair: { icon: '<i class="fas fa-hammer"></i>', label: game.i18n.localize("TAMS.Repair.Action"), callback: (html) => resolve(html.find('[name="skill"]').val()) },
+          cancel: { icon: '<i class="fas fa-times"></i>', label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+        },
+        default: "repair"
+      }).render(true);
+    });
+    if (!choice) return;
+
+    let checkLabel;
+    let checkValue;
+    if (choice === "int") {
+      checkLabel = game.i18n.localize("TAMS.StatIntelligence");
+      checkValue = this.document.system.stats.intelligence?.total || 0;
+    } else {
+      const skill = this.document.items.get(choice);
+      checkLabel = skill?.name || game.i18n.localize("TAMS.Skill");
+      const statKey = skill?.system?.stat || "intelligence";
+      checkValue = (this.document.system.stats[statKey]?.total || 0) + (skill?.system?.familiarity || 0) + (skill?.system?.bonus || 0);
+    }
+
+    const alternate = !!this.document.system.settings?.alternateArmour;
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+
+    const itemUpdates = {};
+    const actorUpdates = {};
+    let report = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Repair.Title", { name: item.name })}</h3>`;
+    report += `<div class="roll-row"><small>${game.i18n.localize("TAMS.Repair.Using")}:</small><span>${checkLabel} (${checkValue})</span></div>`;
+    let repaired = false;
+
+    for (const key of limbKeys) {
+      const zone = item.system.limbs?.[key];
+      if (!zone || (zone.max || 0) <= 0) continue;
+      const missing = Math.max(0, (zone.max || 0) - (zone.value || 0));
+      if (missing <= 0) continue;
+      repaired = true;
+
+      const roll = await new Roll("1d100").evaluate();
+      const capped = Math.min(roll.total, checkValue);
+      const result = computeArmorRepair({ value: zone.value, max: zone.max, rollTotal: capped, alternate });
+
+      itemUpdates[`system.limbs.${key}.value`] = result.newValue;
+      itemUpdates[`system.limbs.${key}.max`] = result.newMax;
+
+      // Mirror onto the actor's limb when this armor is currently equipped there.
+      if (this.document.system.limbs[key]?.equippedArmorId === item.id) {
+        actorUpdates[`system.limbs.${key}.armor`] = result.newValue;
+        actorUpdates[`system.limbs.${key}.armorMax`] = result.newMax;
+      }
+
+      const label = this.document.system.limbs[key]?.label || key;
+      report += `<div class="roll-row"><b>${label}</b><span>${game.i18n.format("TAMS.Repair.ZoneResult", { roll: capped, difficulty: result.difficulty })}</span></div>`;
+      report += `<div class="roll-row-detail"><small>${result.success
+        ? game.i18n.localize("TAMS.Repair.FullyRepaired")
+        : game.i18n.format("TAMS.Repair.MaxLost", { lost: result.maxLost, newMax: result.newMax })}</small></div>`;
+    }
+
+    if (!repaired) {
+      ui.notifications?.info(game.i18n.localize("TAMS.Repair.NothingToRepair"));
+      return;
+    }
+    report += `</div>`;
+
+    await item.update(itemUpdates);
+    if (Object.keys(actorUpdates).length > 0) await this.document.update(actorUpdates);
+    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content: report });
   }
 
   /**

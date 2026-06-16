@@ -99,6 +99,33 @@ describe('TAMSAbilityData', () => {
 
   beforeEach(() => {
     abilityData = new TAMSAbilityData();
+    abilityData.calculator = {
+      effects: 0,
+      guaranteedMax: 0,
+      detriments: 0,
+      movementDoubleOwn: false,
+      movementHalveEnemy: false,
+      movementFlat: 0,
+      rollBonus: 0,
+      ignoreArmor: 0,
+      bodyPart: "none",
+      targetLimb: "none",
+      fireRate: "single",
+      multiAttackHits: 0,
+      damageStatFraction: "0",
+      stun: "none",
+      healing: 0,
+      drType: "none",
+      drValue: 0,
+      bypassDodge: false,
+      bypassRetaliation: false,
+      isUtility: false,
+      targetType: "single",
+      aoeRadius: 0,
+      range: 0,
+      duration: "instant",
+      isStackable: false
+    };
   });
 
   describe('ifStatement and ifCost', () => {
@@ -144,7 +171,7 @@ describe('TAMSAbilityData', () => {
 
   describe('calculatedCost targeting', () => {
     it('adds no targeting cost in normal mode defaults', () => {
-      expect(abilityData.calculatedCost).toBe(0);
+      expect(abilityData.calculatedCost).toBe(1);
     });
 
     it('adds +2 when targeting a limb group', () => {

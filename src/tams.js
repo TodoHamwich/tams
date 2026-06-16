@@ -35,6 +35,53 @@ Hooks.once("init", async function() {
     default: "Gold, Silver, Copper"
   });
 
+  // Inventory: capacity mode (weight vs slots)
+  game.settings.register("tams", "capacityMode", {
+    name: "TAMS.Settings.CapacityMode",
+    hint: "TAMS.Settings.CapacityModeHint",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: {
+      weight: "TAMS.Settings.CapacityModeWeight",
+      slots: "TAMS.Settings.CapacityModeSlots"
+    },
+    default: "weight",
+    requiresReload: true
+  });
+
+  // Inventory: default slot cost for large items (slot mode only)
+  game.settings.register("tams", "largeItemSlots", {
+    name: "TAMS.Settings.LargeItemSlots",
+    hint: "TAMS.Settings.LargeItemSlotsHint",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 2, max: 10, step: 1 },
+    default: 2
+  });
+
+  // Inventory: enforce a maximum number of equipped/in-hand weapons & shields
+  game.settings.register("tams", "enforceEquipLimit", {
+    name: "TAMS.Settings.EnforceEquipLimit",
+    hint: "TAMS.Settings.EnforceEquipLimitHint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+
+  // Inventory: number of hands available when the equip limit is enforced
+  game.settings.register("tams", "maxHands", {
+    name: "TAMS.Settings.MaxHands",
+    hint: "TAMS.Settings.MaxHandsHint",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 1, max: 6, step: 1 },
+    default: 2
+  });
+
   CONFIG.Actor.dataModels.character = TAMSCharacterData;
   CONFIG.Actor.dataModels.downtime = TAMSCharacterData;
   CONFIG.Item.dataModels.weapon = TAMSWeaponData;
@@ -130,4 +177,41 @@ Hooks.once("init", async function() {
   });
 
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
+
+  // --- Encumbrance status effect ---
+  // Register a custom "encumbered" condition so it can be shown on tokens.
+  const encumberedEffect = {
+    id: "encumbered",
+    name: "TAMS.Encumbered",
+    label: "TAMS.Encumbered",
+    img: "icons/svg/anchor.svg",
+    icon: "icons/svg/anchor.svg"
+  };
+  if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some(e => e.id === "encumbered")) {
+    CONFIG.statusEffects.push(encumberedEffect);
+  }
+
+  /**
+   * Keep the token "encumbered" status in sync with the actor's derived
+   * encumbrance flag. Idempotent: only toggles when the state actually changes.
+   * @param {Actor} actor The actor to synchronize.
+   */
+  const tamsSyncEncumbrance = (actor) => {
+    if (!actor || actor.type !== "character") return;
+    if (!actor.isOwner) return;
+    if (typeof actor.toggleStatusEffect !== "function") return;
+    const encumbered = !!actor.system?.inventory?.isEncumbered;
+    const hasStatus = actor.statuses?.has?.("encumbered") ?? false;
+    if (encumbered !== hasStatus) {
+      actor.toggleStatusEffect("encumbered", { active: encumbered });
+    }
+  };
+
+  Hooks.on("updateActor", (actor) => tamsSyncEncumbrance(actor));
+  Hooks.on("createItem", (item) => { if (item.parent) tamsSyncEncumbrance(item.parent); });
+  Hooks.on("updateItem", (item) => { if (item.parent) tamsSyncEncumbrance(item.parent); });
+  Hooks.on("deleteItem", (item) => { if (item.parent) tamsSyncEncumbrance(item.parent); });
+  Hooks.once("ready", () => {
+    for (const actor of game.actors) tamsSyncEncumbrance(actor);
+  });
 });

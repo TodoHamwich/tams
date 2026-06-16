@@ -120,6 +120,47 @@
     "EditContainer": "Edit Container",
     "DeleteContainer": "Delete Container",
     "Empty": "Empty",
+    "Equipped": "Equipped",
+    "Tool": "Tool",
+    "QuestItem": "Quest Item",
+    "Skill": "Skill",
+    "Inventory": {
+      "Slots": "Slots:",
+      "Search": "Search...",
+      "SortBy": "Sort by",
+      "FilterBy": "Filter by type",
+      "SortName": "Sort: Name",
+      "SortType": "Sort: Type",
+      "SortSize": "Sort: Size",
+      "SortQuantity": "Sort: Quantity",
+      "FilterAll": "All Types",
+      "Stow": "Stow (to loose)"
+    },
+    "Repair": {
+      "Title": "Repair: {name}",
+      "Action": "Repair",
+      "SelectSkill": "Select a skill or Intelligence to use:",
+      "Using": "Using",
+      "ZoneResult": "Roll {roll} vs DC {difficulty}",
+      "FullyRepaired": "Fully repaired.",
+      "MaxLost": "Lost {lost} max armour (new max {newMax}).",
+      "NothingToRepair": "This armour has no damage to repair.",
+      "ArmorZones": "Armour Zones (Current / Max)",
+      "Current": "Current",
+      "Max": "Max"
+    },
+    "Settings": {
+      "CapacityMode": "Inventory Capacity Mode",
+      "CapacityModeHint": "Choose how carrying capacity is calculated: by item weight or by inventory slots.",
+      "CapacityModeWeight": "Weight (size-based)",
+      "CapacityModeSlots": "Slots",
+      "LargeItemSlots": "Default Large-Item Slots",
+      "LargeItemSlotsHint": "How many slots a large item occupies by default in Slot mode (2-10).",
+      "EnforceEquipLimit": "Enforce Equip (Hand) Limit",
+      "EnforceEquipLimitHint": "When enabled, limit how many weapons/shields can be held at once.",
+      "MaxHands": "Number of Hands",
+      "MaxHandsHint": "Maximum hands available when the equip limit is enforced."
+    },
     "Yes": "Yes",
     "No": "No",
     "None": "None",
@@ -303,11 +344,13 @@
     "SuccessVsDiff": "Success vs Diff {difficulty}",
     "FailureVsDiff": "Failure vs Diff {difficulty}",
     "LocationOptions": {
+      "Location": "Location",
       "Stowed": "Stowed",
       "Backpack": "Backpack",
       "Hand": "In Hand",
       "InContainer": "In {name}"
     },
+    "Encumbered": "Encumbered",
     "SizeOptions": {
       "Small": "Small",
       "Medium": "Medium",
@@ -340,8 +383,10 @@
       "TargetingModeSpecific": "Target Specific Limb",
       "BodyPart": "Body Part",
       "Head": "Head",
-      "ThoraxStomach": "Thorax/Stomach",
-      "ArmsLegs": "Arms/Legs",
+      "Thorax": "Thorax",
+      "Stomach": "Stomach",
+      "Arms": "Arms",
+      "Legs": "Legs",
       "TargetLimb": "Target Limb",
       "FireRate": "Fire Rate",
       "Single": "Single",
@@ -532,7 +577,8 @@
         "NotEnoughToBoost": "Not enough resource to boost!",
         "NotEnoughAmmo": "Not enough ammo! Using only {count} ammo.",
         "Jammed": "JAMMED",
-        "ReliableReroll": "Reliable Reroll (Original: {original})"
+        "ReliableReroll": "Reliable Reroll (Original: {original})",
+        "HandsFull": "Your hands are full (max {max})."
       }
     }
   },

@@ -670,8 +670,8 @@ describe('TAMSAbilityData — realistic ability builds', () => {
     a.calculator.fireRate = 'burst';
     a.calculator.targetType = 'multiple';
     a.calculator.aoeRadius = 5;
-    // cost before multiply: 2+2+4 = 8; *2 (multiple) = 16
-    expect(a.calculatedCost).toBe(16);
+    // cost before multiply: 2(effects)+2(burst) = 4; *2 (multiple) = 8; +2(aoeBase)+2(aoeExtra) = 12
+    expect(a.calculatedCost).toBe(12);
   });
 
   it('Utility heal ability: healing + duration + utility range', () => {

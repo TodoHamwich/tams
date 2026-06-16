@@ -1,3 +1,30 @@
+import { computeEncumbrance } from '../utils/inventory.js';
+
+/**
+ * Read the configured capacity mode safely, defaulting to "weight" when the
+ * setting (or Foundry's settings API) is unavailable, e.g. during tests.
+ * @returns {"weight"|"slots"} The active capacity mode.
+ */
+function getCapacityMode() {
+  try {
+    return game.settings.get("tams", "capacityMode") || "weight";
+  } catch (e) {
+    return "weight";
+  }
+}
+
+/**
+ * Read the configured default slot cost for large items, with a safe fallback.
+ * @returns {number} The configured large-item slot cost.
+ */
+function getLargeSlots() {
+  try {
+    return game.settings.get("tams", "largeItemSlots") || 2;
+  } catch (e) {
+    return 2;
+  }
+}
+
 /**
  * A sub-model for handling stat values and their modifiers.
  * @property {number} value The base value of the stat.
@@ -51,6 +78,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       inventory: new fields.SchemaField({
         usedCapacity: new fields.NumberField({initial: 0}),
         maxCapacity: new fields.NumberField({initial: 0}),
+        usedSlots: new fields.NumberField({initial: 0}),
+        maxSlots: new fields.NumberField({initial: 0}),
         hasBackpack: new fields.BooleanField({initial: false}),
         isEncumbered: new fields.BooleanField({initial: false}),
         equippedBackpackId: new fields.StringField({initial: ""}),
@@ -260,56 +289,38 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    * @protected
    */
   _prepareInventoryCapacity() {
-    let usedUnits = 0;
     const end = this.stats.endurance.total;
-    
+
     // Automatically find equipped backpack
     const equippedBackpacks = this.parent.items.filter(i => i.type === "backpack" && i.system.equipped);
     this.inventory.hasBackpack = equippedBackpacks.length > 0;
     this.inventory.equippedBackpackId = equippedBackpacks[0]?.id || "";
 
-    const hasBackpack = this.inventory.hasBackpack;
-    const backpackId = this.inventory.equippedBackpackId;
-    const backpackItem = backpackId ? this.parent.items.get(backpackId) : null;
-    const allBackpackIds = new Set(this.parent.items.filter(i => i.type === "backpack").map(i => i.id));
+    const mode = getCapacityMode();
+    const largeSlots = getLargeSlots();
+    const options = {
+      itemsById: this.parent.items,
+      endurance: end,
+      equippedBackpackId: this.inventory.equippedBackpackId,
+      largeSlots
+    };
 
-    for (const item of this.parent.items) {
-      const system = item.system;
-      const location = system.location;
-      if (location === "stowed" || location === "hand" || location === "backpack" || allBackpackIds.has(location)) {
-        let itemSize = 0;
-        switch(system.size) {
-          case "small": itemSize = 1; break;
-          case "medium": itemSize = 10; break;
-          case "large": itemSize = 50; break;
-        }
+    // Always compute weight figures (used for the weight-mode display) and, when
+    // in slot mode, compute the slot figures too. Encumbrance follows the active mode.
+    const weight = computeEncumbrance(this.parent.items, { ...options, mode: "weight" });
+    this.inventory.usedCapacity = weight.used;
+    this.inventory.maxCapacity = weight.max;
 
-        if (item.id !== backpackId) {
-          if (location === "backpack") {
-            if (backpackItem && backpackItem.system.equipped) {
-              itemSize *= (backpackItem.system.modifier ?? 0.5);
-            }
-          } else {
-            const container = this.parent.items.get(location);
-            if (container && container.type === "backpack") {
-              if (container.system.equipped) {
-                itemSize *= (container.system.modifier ?? 0.5);
-              } else {
-                itemSize = 0; // Not carried if backpack is not equipped
-              }
-            }
-          }
-        }
-
-        usedUnits += (itemSize * (system.quantity || 1));
-      }
+    if (mode === "slots") {
+      const slots = computeEncumbrance(this.parent.items, { ...options, mode: "slots" });
+      this.inventory.usedSlots = slots.used;
+      this.inventory.maxSlots = slots.max;
+      this.inventory.isEncumbered = slots.isEncumbered;
+    } else {
+      this.inventory.usedSlots = 0;
+      this.inventory.maxSlots = 0;
+      this.inventory.isEncumbered = weight.isEncumbered;
     }
-
-    this.inventory.usedCapacity = usedUnits;
-    const baseCapacity = Math.max(0, Math.floor(end / 10)) * 100;
-    const backpackExtra = (hasBackpack && backpackItem) ? ((backpackItem.system.capacity || 0) * 10) : 0;
-    this.inventory.maxCapacity = baseCapacity + backpackExtra;
-    this.inventory.isEncumbered = this.inventory.usedCapacity > this.inventory.maxCapacity;
 
     // Calculate backpack penalties
     this.backpackPenalties = { strength: 0, dexterity: 0, dodge: 0, attack: 0, movement: 0 };

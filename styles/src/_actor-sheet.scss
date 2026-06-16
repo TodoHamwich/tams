@@ -443,3 +443,120 @@
         }
     }
 }
+
+/* --- Reworked Inventory UI --- */
+.tams {
+    .inventory-toolbar {
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin: 4px 0 6px;
+
+        .inventory-add-menu {
+            gap: 4px;
+            flex-wrap: wrap;
+            flex: 1 1 auto;
+
+            a {
+                font-size: 0.75em;
+                padding: 2px 6px;
+                border: 1px solid #7a7971;
+                border-radius: 3px;
+                white-space: nowrap;
+                cursor: pointer;
+                &:hover { background: rgba(0, 0, 0, 0.08); }
+            }
+        }
+
+        .inventory-filters {
+            gap: 4px;
+            align-items: center;
+            flex: 0 0 auto;
+
+            input.inventory-search {
+                height: 22px;
+                font-size: 0.8em;
+                width: 110px;
+            }
+            select.inventory-filter,
+            select.inventory-sort {
+                height: 22px;
+                font-size: 0.8em;
+            }
+        }
+    }
+
+    .item-qty-stepper {
+        align-items: center;
+        gap: 2px;
+        flex: 0 0 84px;
+
+        .qty-btn {
+            width: 18px;
+            height: 18px;
+            line-height: 16px;
+            text-align: center;
+            border: 1px solid #7a7971;
+            border-radius: 3px;
+            cursor: pointer;
+            user-select: none;
+            &:hover { background: rgba(0, 0, 0, 0.08); }
+        }
+        .small-input { width: 38px; text-align: center; }
+    }
+
+    .item-controls .item-control.active {
+        color: $color-active;
+    }
+
+    .prop-tag.equipped-tag {
+        background: $color-active;
+        color: #fff;
+    }
+
+    .item-details {
+        padding: 6px 10px;
+        background: rgba(0, 0, 0, 0.05);
+        border-left: 3px solid $color-active;
+        margin: 0 0 4px;
+
+        .item-details-row {
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+            select { flex: 1; height: 22px; font-size: 0.8em; }
+        }
+
+        .armor-zones {
+            .armor-zones-title {
+                font-weight: bold;
+                font-size: 0.8em;
+                text-transform: uppercase;
+                margin: 4px 0 2px;
+            }
+            .armor-zone-row {
+                align-items: center;
+                gap: 4px;
+                margin-bottom: 2px;
+                .zone-label { flex: 1; font-size: 0.85em; }
+                .small-input { width: 42px; text-align: center; }
+                .zone-sep { opacity: 0.6; }
+                .zone-missing { color: #c0392b; font-size: 0.8em; font-weight: bold; }
+            }
+            .repair-button {
+                display: inline-block;
+                margin-top: 4px;
+                padding: 2px 8px;
+                font-size: 0.8em;
+                border: 1px solid #7a7971;
+                border-radius: 3px;
+                cursor: pointer;
+                &:hover { background: rgba(0, 0, 0, 0.08); }
+            }
+        }
+    }
+
+    .carry-weight .fill.over-capacity {
+        background: #c0392b !important;
+    }
+}

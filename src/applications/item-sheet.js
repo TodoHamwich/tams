@@ -8,7 +8,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
       tag: "form",
       classes: ["tams", "sheet", "item"],
-      position: { width: 500, height: 700 },
+      position: { width: 560, height: 750 },
       window: { resizable: true, scrollable: [".sheet-body"] },
       form: { submitOnChange: true, closeOnSubmit: false },
       actions: {
@@ -134,8 +134,10 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
             bodyParts: {
                 "none": "TAMS.CalculatorOptions.None",
                 "head": "TAMS.CalculatorOptions.Head",
-                "thorax": "TAMS.CalculatorOptions.ThoraxStomach",
-                "arms": "TAMS.CalculatorOptions.ArmsLegs"
+                "thorax": "TAMS.CalculatorOptions.Thorax",
+                "stomach": "TAMS.CalculatorOptions.Stomach",
+                "arms": "TAMS.CalculatorOptions.Arms",
+                "legs": "TAMS.CalculatorOptions.Legs"
             },
             fireRates: {
                 "single": "TAMS.CalculatorOptions.Single",

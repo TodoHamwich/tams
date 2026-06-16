@@ -314,18 +314,22 @@
         <div class="tab inventory {{#if (eq activeTab 'inventory')}}active{{/if}}" data-group="primary" data-tab="inventory">
             <div class="carry-weight flexcol">
                 <div class="flexrow">
+                    {{#if isSlotMode}}
+                    <span>{{localize 'TAMS.Inventory.Slots'}} <b>{{inventory.usedSlots}}</b> / <b>{{inventory.maxSlots}}</b></span>
+                    {{else}}
                     <span>{{localize 'TAMS.CarryCapacity'}} <b>{{inventory.usedMedium}}</b> / <b>{{inventory.maxMedium}}</b> {{localize 'TAMS.MediumItems'}}</span>
+                    {{/if}}
                     {{#if inventory.isEncumbered}} <span class="encumbered">{{localize 'TAMS.EncumberedWarning'}}</span>{{/if}}
                 </div>
                 <div class="bar-container" style="height: 8px; margin-top: 2px;">
                     <div class="bar">
-                        <div class="fill" style="width: {{capacityPercentage}}%; background: {{system.inventory.color}} !important;"></div>
+                        <div class="fill {{#if inventory.isEncumbered}}over-capacity{{/if}}" style="width: {{capacityPercentage}}%; background: {{system.inventory.color}} !important;"></div>
                     </div>
                 </div>
             </div>
 
-            <div class="inventory-scroll" data-scrollable data-scroll-id="tab-inventory-scroll">
-                <div class="inventory-controls-global flexrow">
+            <div class="inventory-toolbar flexrow">
+                <div class="inventory-add-menu flexrow">
                     <a data-action="itemCreate" data-type="weapon" title="{{localize 'TAMS.AddWeapon'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Weapon'}}</a>
                     <a data-action="itemCreate" data-type="armor" title="{{localize 'TAMS.AddArmor'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Armor'}}</a>
                     <a data-action="itemCreate" data-type="shield" title="{{localize 'TAMS.AddShield'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Shield'}}</a>
@@ -333,7 +337,18 @@
                     <a data-action="itemCreate" data-type="equipment" title="{{localize 'TAMS.AddMisc'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Misc'}}</a>
                     <a data-action="itemCreate" data-type="backpack" title="{{localize 'TAMS.AddBackpack'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Container'}}</a>
                 </div>
+                <div class="inventory-filters flexrow">
+                    <input type="text" class="inventory-search" placeholder="{{localize 'TAMS.Inventory.Search'}}" value="{{inventorySearch}}"/>
+                    <select class="inventory-filter" title="{{localize 'TAMS.Inventory.FilterBy'}}">
+                        {{selectOptions inventoryFilterOptions selected=inventoryFilter localize=true}}
+                    </select>
+                    <select class="inventory-sort" title="{{localize 'TAMS.Inventory.SortBy'}}">
+                        {{selectOptions inventorySortOptions selected=inventorySort localize=true}}
+                    </select>
+                </div>
+            </div>
 
+            <div class="inventory-scroll" data-scrollable data-scroll-id="tab-inventory-scroll">
                 {{#each inventorySections as |section|}}
                 <div class="inventory-section" data-section-id="{{section.id}}">
                     <h4 class="inventory-section-header {{#if (eq section.type 'container')}}container-header{{/if}} {{#if section.isEquipped}}equipped{{/if}}">
@@ -348,45 +363,74 @@
                         </div>
                         <div class="header-controls">
                             {{#if (eq section.type 'container')}}
-                            <label style="font-size: 10px; text-transform: uppercase; color: white;">{{localize 'TAMS.Equip'}}</label>
-                            <input type="checkbox" data-action="updateItemField" data-item-id="{{section.id}}" data-field="system.equipped" {{checked section.isEquipped}}/>
+                            <a class="item-control {{#if section.isEquipped}}active{{/if}}" data-action="itemEquip" data-item-id="{{section.id}}" title="{{localize 'TAMS.Equip'}}" style="color: white;"><i class="fas fa-shirt"></i></a>
                             <a class="item-control" data-action="itemEdit" data-item-id="{{section.id}}" title="{{localize 'TAMS.EditContainer'}}" style="color: white; margin-left: 5px;"><i class="fas fa-edit"></i></a>
                             <a class="item-control" data-action="itemDelete" data-item-id="{{section.id}}" title="{{localize 'TAMS.DeleteContainer'}}" style="color: white; margin-left: 5px;"><i class="fas fa-trash"></i></a>
                             {{/if}}
                         </div>
                     </h4>
-                    
+
                     <ol class="items-list">
                         {{#each section.categories as |category|}}
                         <li class="inventory-category-header {{#if (eq section.type 'container')}}nested-item{{/if}}">{{category.label}}</li>
                         {{#each category.items as |item|}}
                         <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}} {{#if (eq section.type 'container')}}nested-item{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
-                            <img src="{{item.img}}" title="{{item.name}}" width="32" height="32" style="border-radius: 3px; border: 1px solid #7a7971;"/>
-                            <div class="item-name-col" style="padding-left: 10px;">
+                            <img src="{{item.img}}" title="{{item.name}}" width="32" height="32" style="border-radius: 3px; border: 1px solid #7a7971; cursor: pointer;" data-action="toggleItemDetails" data-item-id="{{item.id}}"/>
+                            <div class="item-name-col" style="padding-left: 10px;" data-action="toggleItemDetails" data-item-id="{{item.id}}">
                                 <h4 class="item-name" style="font-family: 'MedievalSharp', serif; margin: 0;">{{item.name}}</h4>
                                 <div class="item-sub-props">
                                     <span class="prop-tag">{{capitalize item.type}}</span>
                                     <span class="prop-tag">{{item.system.size}}</span>
+                                    {{#if item.isEquipped}}<span class="prop-tag equipped-tag">{{localize 'TAMS.Equipped'}}</span>{{/if}}
                                 </div>
                             </div>
-                            <div class="item-stat" style="flex: 0 0 50px;">
+                            <div class="item-qty-stepper flexrow">
+                                <a class="qty-btn" data-action="itemQtyDelta" data-item-id="{{item.id}}" data-delta="-1" title="-1">&minus;</a>
                                 <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
-                            </div>
-                            <div class="item-stat" style="flex: 0 0 100px;">
-                                <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" style="height: 20px; font-size: 0.8em; width: 100%;">
-                                    {{selectOptions ../../../locationOptions selected=item.system.location localize=true}}
-                                </select>
+                                <a class="qty-btn" data-action="itemQtyDelta" data-item-id="{{item.id}}" data-delta="1" title="+1">+</a>
                             </div>
                             <div class="item-controls">
-                                <a class="item-control" data-action="itemGive" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
-                                <a class="item-control" data-action="itemExport" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
-                                {{#if (eq item.type 'consumable')}}
-                                <a class="item-control" data-action="itemUseCharge" title="{{localize 'TAMS.UseCharge'}}"><i class="fas fa-flask"></i></a>
+                                {{#if item.canEquip}}
+                                <a class="item-control {{#if item.isEquipped}}active{{/if}}" data-action="itemEquip" data-item-id="{{item.id}}" title="{{localize 'TAMS.Equip'}}"><i class="fas fa-hand-fist"></i></a>
                                 {{/if}}
-                                <a class="item-control" data-action="itemEdit" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
-                                <a class="item-control" data-action="itemDelete" title="{{localize 'TAMS.DeleteItem'}}"><i class="fas fa-trash"></i></a>
+                                <a class="item-control" data-action="itemStow" data-item-id="{{item.id}}" title="{{localize 'TAMS.Inventory.Stow'}}"><i class="fas fa-box-archive"></i></a>
+                                {{#if item.isArmor}}
+                                <a class="item-control" data-action="itemRepair" data-item-id="{{item.id}}" title="{{localize 'TAMS.Repair.Action'}}"><i class="fas fa-hammer"></i></a>
+                                {{/if}}
+                                <a class="item-control" data-action="itemGive" data-item-id="{{item.id}}" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
+                                {{#if (eq item.type 'consumable')}}
+                                <a class="item-control" data-action="itemUseCharge" data-item-id="{{item.id}}" title="{{localize 'TAMS.UseCharge'}}"><i class="fas fa-flask"></i></a>
+                                {{/if}}
+                                <a class="item-control" data-action="itemEdit" data-item-id="{{item.id}}" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
+                                <a class="item-control" data-action="itemDelete" data-item-id="{{item.id}}" title="{{localize 'TAMS.DeleteItem'}}"><i class="fas fa-trash"></i></a>
                             </div>
                         </li>
+                        {{#if item.expanded}}
+                        <li class="item-details {{#if (eq section.type 'container')}}nested-item{{/if}}" data-item-id="{{item.id}}">
+                            <div class="item-details-row flexrow">
+                                <label>{{localize 'TAMS.LocationOptions.Location'}}</label>
+                                <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location">
+                                    {{selectOptions ../../../locationOptions selected=item.system.location localize=true}}
+                                </select>
+                                <a class="item-control" data-action="itemExport" data-item-id="{{item.id}}" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
+                            </div>
+                            {{#if item.isArmor}}
+                            <div class="armor-zones">
+                                <div class="armor-zones-title">{{localize 'TAMS.Repair.ArmorZones'}}</div>
+                                {{#each item.armorZones as |zone|}}
+                                <div class="armor-zone-row flexrow">
+                                    <span class="zone-label">{{zone.label}}</span>
+                                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{../item.id}}" data-field="system.limbs.{{zone.key}}.value" value="{{zone.value}}" title="{{localize 'TAMS.Repair.Current'}}"/>
+                                    <span class="zone-sep">/</span>
+                                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{../item.id}}" data-field="system.limbs.{{zone.key}}.max" value="{{zone.max}}" title="{{localize 'TAMS.Repair.Max'}}"/>
+                                    {{#if zone.missing}}<span class="zone-missing">-{{zone.missing}}</span>{{/if}}
+                                </div>
+                                {{/each}}
+                                <a class="repair-button" data-action="itemRepair" data-item-id="{{item.id}}"><i class="fas fa-hammer"></i> {{localize 'TAMS.Repair.Action'}}</a>
+                            </div>
+                            {{/if}}
+                        </li>
+                        {{/if}}
                         {{/each}}
                         {{/each}}
                         {{#unless section.categories.length}}
