@@ -7,6 +7,86 @@
     }
 }
 
+// ── Ability Sheet ────────────────────────────────────────────────────────────
+
+.ability-section {
+    margin: 6px 0;
+}
+
+.ability-flags {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin: 4px 0;
+}
+
+.conditional-cost-block {
+    border-left: 3px solid $color-border;
+    padding: 5px 8px;
+    margin: 6px 0;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 0 3px 3px 0;
+
+    label {
+        font-weight: bold;
+        font-size: 0.85em;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-bottom: 4px;
+        display: block;
+    }
+}
+
+.ability-calculator {
+    border: 1px solid $color-border;
+    border-radius: 3px;
+    padding: 6px;
+    margin: 6px 0;
+    background: rgba(0, 0, 0, 0.04);
+
+    &__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+
+        b {
+            font-size: 0.95em;
+        }
+    }
+
+    &__group {
+        margin-top: 6px;
+    }
+
+    &__group-title {
+        font-size: 0.78em;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #666;
+        border-bottom: 1px solid rgba($color-border, 0.5);
+        margin: 4px 0 3px;
+        padding-bottom: 2px;
+    }
+}
+
+.ability-attack-block {
+    border: 1px solid $color-border;
+    border-radius: 3px;
+    padding: 6px;
+    margin-top: 5px;
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.ability-cost-badge {
+    font-weight: bold;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 0.95em;
+}
+
 .tams.loot {
     min-width: 300px;
     min-height: 200px;

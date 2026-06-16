@@ -66,7 +66,7 @@
             <hr>
             {{/if}}
 
-            {{#if (or (eq item.type 'skill') (eq item.type 'ability'))}}
+            {{#if (eq item.type 'skill')}}
             <div class="flexrow">
                 <label>{{localize 'TAMS.Familiarity'}}</label>
                 <input type="number" name="system.familiarity" value="{{system.familiarity}}" data-dtype="Number"/>
@@ -280,7 +280,7 @@
             {{!-- Physical item fields already shown above --}}
             {{/if}}
 
-            {{#if (or (eq item.type "skill") (eq item.type "ability"))}}
+            {{#if (eq item.type "skill")}}
             <div class="flexrow">
                 <label>{{localize 'TAMS.UpgradePoints'}}</label>
                 <input type="number" name="system.upgradePoints" value="{{system.upgradePoints}}" data-dtype="Number"/>
@@ -289,7 +289,6 @@
                 <label>{{localize 'TAMS.Bonus'}}</label>
                 <input type="number" name="system.bonus" value="{{system.bonus}}" data-dtype="Number"/>
             </div>
-            {{#if (eq item.type "skill")}}
             <div class="flexrow">
                 <label>{{localize 'TAMS.LinkedStat'}}</label>
                 <select name="system.stat">
@@ -297,261 +296,340 @@
                 </select>
             </div>
             {{/if}}
-            {{/if}}
 
+            {{!-- ═══════════════════════════════════════════════════════════ --}}
+            {{!--  ABILITY SHEET                                              --}}
+            {{!-- ═══════════════════════════════════════════════════════════ --}}
             {{#if (eq item.type "ability")}}
-            <div class="flexrow">
-                <label>{{localize 'TAMS.IsApexQ'}}</label>
-                <input type="checkbox" name="system.isApex" {{checked system.isApex}}/>
-                <label>{{localize 'TAMS.IsReactionQ'}}</label>
-                <input type="checkbox" name="system.isReaction" {{checked system.isReaction}}/>
-            </div>
-            <div class="flexrow">
-                <label>{{localize 'TAMS.Uses'}}</label>
+
+            {{!-- Section 1: General --}}
+            <h3>{{localize 'TAMS.Abilities'}}</h3>
+            <div class="ability-section grid grid-3col">
                 <div class="flexrow">
-                    <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
-                    <span style="text-align: center; line-height: 24px;"> / </span>
-                    <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
+                    <label>{{localize 'TAMS.Familiarity'}}</label>
+                    <input type="number" name="system.familiarity" value="{{system.familiarity}}" data-dtype="Number"/>
+                </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.UpgradePoints'}}</label>
+                    <input type="number" name="system.upgradePoints" value="{{system.upgradePoints}}" data-dtype="Number"/>
+                </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.Bonus'}}</label>
+                    <input type="number" name="system.bonus" value="{{system.bonus}}" data-dtype="Number"/>
                 </div>
             </div>
+            <hr>
+
+            {{!-- Section 2: Classification --}}
+            <h3>{{localize 'TAMS.WeaponSheet.Properties'}}</h3>
+            <div class="ability-flags ability-section">
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.IsApexQ'}}</label>
+                    <input type="checkbox" name="system.isApex" {{checked system.isApex}}/>
+                </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.IsReactionQ'}}</label>
+                    <input type="checkbox" name="system.isReaction" {{checked system.isReaction}}/>
+                </div>
+            </div>
+            <hr>
 
             {{#unless system.isApex}}
-            <div class="flexrow">
-                {{#if system.calculator.enabled}}
-                <label>{{localize 'TAMS.Cost'}}</label>
-                <span class="value-badge">{{system.calculatedCost}}</span>
-                {{else}}
-                <label>{{localize 'TAMS.Cost'}}</label>
-                <input type="number" name="system.cost" value="{{system.cost}}"/>
-                {{/if}}
-                <label style="margin-left: 10px;">{{localize 'TAMS.Resource'}}</label>
-                <select name="system.resource">
-                    {{selectOptions resourceOptions selected=system.resource localize=true}}
-                </select>
-            </div>
 
-            <div class="flexcol" style="border: 1px solid #7a7971; padding: 5px; margin: 5px 0; background: rgba(0,0,0,0.05); border-radius: 3px;">
+            {{!-- Section 3: Usage --}}
+            <h3>{{localize 'TAMS.Uses'}}</h3>
+            <div class="ability-section flexrow">
+                <label>{{localize 'TAMS.Uses'}}</label>
+                <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
+                <span> / </span>
+                <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
+            </div>
+            <hr>
+
+            {{!-- Section 4: Cost & Resource --}}
+            <h3>{{localize 'TAMS.Cost'}}</h3>
+            <div class="ability-section grid grid-2col">
                 <div class="flexrow">
-                    <label style="flex: 1;">{{localize 'TAMS.IFStatement'}}</label>
-                    <input type="text" name="system.ifStatement" style="flex: 3;" value="{{system.ifStatement}}" placeholder="e.g. If in cover..."/>
+                    <label>{{localize 'TAMS.Resource'}}</label>
+                    <select name="system.resource">
+                        {{selectOptions resourceOptions selected=system.resource localize=true}}
+                    </select>
                 </div>
                 <div class="flexrow">
-                    <label style="flex: 1;">{{localize 'TAMS.IFCost'}}</label>
-                    <input type="number" name="system.ifCost" style="flex: 3;" value="{{system.ifCost}}"/>
+                    <label>{{localize 'TAMS.Cost'}}</label>
+                    {{#if system.calculator.enabled}}
+                    <span class="ability-cost-badge">{{system.calculatedCost}}</span>
+                    {{else}}
+                    <input type="number" name="system.cost" value="{{system.cost}}"/>
+                    {{/if}}
                 </div>
             </div>
 
-            <div class="flexrow" style="margin-top: 5px;">
+            <div class="conditional-cost-block">
+                <label>{{localize 'TAMS.ConditionalCost'}}</label>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.IFStatement'}}</label>
+                    <input type="text" name="system.ifStatement" value="{{system.ifStatement}}" placeholder="e.g. If in cover..."/>
+                </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.IFCost'}}</label>
+                    <input type="number" name="system.ifCost" value="{{system.ifCost}}"/>
+                </div>
+            </div>
+            <hr>
+
+            {{!-- Section 5: Cost Calculator --}}
+            <div class="ability-section flexrow">
                 <label><b>{{localize 'TAMS.CostCalculator'}}</b></label>
                 <input type="checkbox" name="system.calculator.enabled" {{checked system.calculator.enabled}}/>
             </div>
 
             {{#if system.calculator.enabled}}
-            <div class="flexcol" style="border: 1px solid #7a7971; padding: 5px; margin: 5px 0; border-radius: 3px;">
-                <div class="flexrow" style="justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <div class="ability-calculator">
+                <div class="ability-calculator__header">
                     <b>{{localize 'TAMS.CostColon'}} {{system.calculatedCost}}</b>
-                    <div class="flexrow" style="gap: 8px;">
+                    <div class="flexrow">
                         <label>{{localize 'TAMS.CalculatorOptions.IsUtility'}}</label>
                         <input type="checkbox" name="system.calculator.isUtility" {{checked system.calculator.isUtility}}/>
                     </div>
                 </div>
-                <hr style="margin: 3px 0;">
+                <hr>
 
-                <div class="grid grid-3col" style="gap: 3px;">
-                    <div class="flexrow">
-                        <label title="+1 per effect">{{localize 'TAMS.CalculatorOptions.Effects'}}</label>
-                        <input type="number" name="system.calculator.effects" value="{{system.calculator.effects}}" min="0" style="width: 50px;"/>
-                    </div>
-                    <div class="flexrow">
-                        <label title="+2 per guaranteed max">{{localize 'TAMS.CalculatorOptions.GuaranteedMax'}}</label>
-                        <input type="number" name="system.calculator.guaranteedMax" value="{{system.calculator.guaranteedMax}}" min="0" style="width: 50px;"/>
-                    </div>
-                    <div class="flexrow">
-                        <label title="-1 per detriment">{{localize 'TAMS.CalculatorOptions.Detriments'}}</label>
-                        <input type="number" name="system.calculator.detriments" value="{{system.calculator.detriments}}" min="0" style="width: 50px;"/>
+                <div class="ability-calculator__group">
+                    <p class="ability-calculator__group-title">Basic Costs</p>
+                    <div class="grid grid-3col">
+                        <div class="flexrow">
+                            <label title="+1 per effect">{{localize 'TAMS.CalculatorOptions.Effects'}}</label>
+                            <input type="number" name="system.calculator.effects" value="{{system.calculator.effects}}" min="0"/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+2 per guaranteed max">{{localize 'TAMS.CalculatorOptions.GuaranteedMax'}}</label>
+                            <input type="number" name="system.calculator.guaranteedMax" value="{{system.calculator.guaranteedMax}}" min="0"/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="-1 per detriment">{{localize 'TAMS.CalculatorOptions.Detriments'}}</label>
+                            <input type="number" name="system.calculator.detriments" value="{{system.calculator.detriments}}" min="0"/>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-3col" style="gap: 3px; margin-top: 3px;">
-                    <div class="flexrow">
-                        <label title="+2">{{localize 'TAMS.CalculatorOptions.MovDoubleOwn'}}</label>
-                        <input type="checkbox" name="system.calculator.movementDoubleOwn" {{checked system.calculator.movementDoubleOwn}}/>
-                    </div>
-                    <div class="flexrow">
-                        <label title="+4">{{localize 'TAMS.CalculatorOptions.MovHalveEnemy'}}</label>
-                        <input type="checkbox" name="system.calculator.movementHalveEnemy" {{checked system.calculator.movementHalveEnemy}}/>
-                    </div>
-                    <div class="flexrow">
-                        <label title="+2 per 5m">{{localize 'TAMS.CalculatorOptions.MovFlat'}}</label>
-                        <input type="number" name="system.calculator.movementFlat" value="{{system.calculator.movementFlat}}" min="0" style="width: 50px;"/>
-                    </div>
-                </div>
-
-                <div class="grid grid-2col" style="gap: 3px; margin-top: 3px;">
-                    <div class="flexrow">
-                        <label title="+1 per 5">{{localize 'TAMS.CalculatorOptions.RollBonus'}}</label>
-                        <input type="number" name="system.calculator.rollBonus" value="{{system.calculator.rollBonus}}" min="0" style="width: 50px;"/>
-                    </div>
-                    <div class="flexrow">
-                        <label title="+1 first, +2 each after">{{localize 'TAMS.CalculatorOptions.IgnoreArmor'}}</label>
-                        <input type="number" name="system.calculator.ignoreArmor" value="{{system.calculator.ignoreArmor}}" min="0" style="width: 50px;"/>
-                    </div>
-                    <div class="flexrow">
-                        <label>{{localize 'TAMS.CalculatorOptions.TargetingMode'}}</label>
-                        <select name="system.calculator.targetingMode" style="flex: 1;">
-                            {{selectOptions calculatorOptions.targetingModes selected=selectedTargetingMode localize=true}}
-                        </select>
-                    </div>
-                    {{#if (eq selectedTargetingMode "group")}}
-                    <div class="flexrow">
-                        <label title="+2">{{localize 'TAMS.CalculatorOptions.BodyPart'}}</label>
-                        <select name="system.calculator.bodyPart" style="flex: 1;">
-                            {{selectOptions calculatorOptions.bodyParts selected=system.calculator.bodyPart localize=true}}
-                        </select>
-                    </div>
-                    {{/if}}
-                    {{#if (eq selectedTargetingMode "specific")}}
-                    <div class="flexrow">
-                        <label title="+4">{{localize 'TAMS.CalculatorOptions.TargetLimb'}}</label>
-                        <select name="system.calculator.targetLimb" style="flex: 1;">
-                            {{selectOptions limbOptions selected=system.calculator.targetLimb localize=true}}
-                        </select>
-                    </div>
-                    {{/if}}
-                    <div class="flexrow">
-                        <label>{{localize 'TAMS.CalculatorOptions.FireRate'}}</label>
-                        <select name="system.calculator.fireRate" style="flex: 1;">
-                            {{selectOptions calculatorOptions.fireRates selected=system.calculator.fireRate localize=true}}
-                        </select>
-                    </div>
-                    <div class="flexrow">
-                        <label title="+2 each">{{localize 'TAMS.CalculatorOptions.MultiAttackHits'}}</label>
-                        <input type="number" name="system.calculator.multiAttackHits" value="{{system.calculator.multiAttackHits}}" min="0" style="width: 50px;"/>
-                    </div>
-                    <div class="flexrow">
-                        <label>{{localize 'TAMS.CalculatorOptions.DamageFraction'}}</label>
-                        <select name="system.calculator.damageStatFraction" style="flex: 1;">
-                            {{selectOptions calculatorOptions.damageFractions selected=system.calculator.damageStatFraction}}
-                        </select>
-                    </div>
-                    <div class="flexrow">
-                        <label>{{localize 'TAMS.CalculatorOptions.Stun'}}</label>
-                        <select name="system.calculator.stun" style="flex: 1;">
-                            {{selectOptions calculatorOptions.stunOptions selected=system.calculator.stun localize=true}}
-                        </select>
-                    </div>
-                    <div class="flexrow">
-                        <label title="+1 each">{{localize 'TAMS.CalculatorOptions.Healing'}}</label>
-                        <input type="number" name="system.calculator.healing" value="{{system.calculator.healing}}" min="0" style="width: 50px;"/>
-                    </div>
-                    <div class="flexrow">
-                        <label>{{localize 'TAMS.CalculatorOptions.DRType'}}</label>
-                        <select name="system.calculator.drType" style="flex: 1;">
-                            {{selectOptions calculatorOptions.drTypes selected=system.calculator.drType localize=true}}
-                        </select>
-                    </div>
-                    {{#unless (eq system.calculator.drType "none")}}
-                    <div class="flexrow">
-                        <label title="+1 each">{{localize 'TAMS.CalculatorOptions.DRValue'}}</label>
-                        <input type="number" name="system.calculator.drValue" value="{{system.calculator.drValue}}" min="0" style="width: 50px;"/>
-                    </div>
-                    {{/unless}}
-                    <div class="flexrow">
-                        <label>{{localize 'TAMS.CalculatorOptions.TargetType'}}</label>
-                        <select name="system.calculator.targetType" style="flex: 1;">
-                            {{selectOptions calculatorOptions.targetTypes selected=system.calculator.targetType localize=true}}
-                        </select>
-                    </div>
-                    <div class="flexrow">
-                        <label title="+2 base, +1 per m over 3">{{localize 'TAMS.CalculatorOptions.AoERadius'}}</label>
-                        <input type="number" name="system.calculator.aoeRadius" value="{{system.calculator.aoeRadius}}" min="0" style="width: 50px;"/>
-                    </div>
-                    <div class="flexrow">
-                        <label>{{localize 'TAMS.CalculatorOptions.Range'}}</label>
-                        <input type="number" name="system.calculator.range" value="{{system.calculator.range}}" min="0" style="width: 50px;"/>
-                    </div>
-                    <div class="flexrow">
-                        <label>{{localize 'TAMS.CalculatorOptions.Duration'}}</label>
-                        <select name="system.calculator.duration" style="flex: 1;">
-                            {{selectOptions calculatorOptions.durations selected=system.calculator.duration localize=true}}
-                        </select>
+                <div class="ability-calculator__group">
+                    <p class="ability-calculator__group-title">Movement</p>
+                    <div class="grid grid-3col">
+                        <div class="flexrow">
+                            <label title="+2">{{localize 'TAMS.CalculatorOptions.MovDoubleOwn'}}</label>
+                            <input type="checkbox" name="system.calculator.movementDoubleOwn" {{checked system.calculator.movementDoubleOwn}}/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+4">{{localize 'TAMS.CalculatorOptions.MovHalveEnemy'}}</label>
+                            <input type="checkbox" name="system.calculator.movementHalveEnemy" {{checked system.calculator.movementHalveEnemy}}/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+2 per 5m">{{localize 'TAMS.CalculatorOptions.MovFlat'}}</label>
+                            <input type="number" name="system.calculator.movementFlat" value="{{system.calculator.movementFlat}}" min="0"/>
+                        </div>
                     </div>
                 </div>
 
-                <div class="grid grid-3col" style="gap: 3px; margin-top: 3px;">
-                    <div class="flexrow">
-                        <label title="x2 cost">{{localize 'TAMS.CalculatorOptions.BypassDodge'}}</label>
-                        <input type="checkbox" name="system.calculator.bypassDodge" {{checked system.calculator.bypassDodge}}/>
+                <div class="ability-calculator__group">
+                    <p class="ability-calculator__group-title">Offense</p>
+                    <div class="grid grid-2col">
+                        <div class="flexrow">
+                            <label title="+1 per 5">{{localize 'TAMS.CalculatorOptions.RollBonus'}}</label>
+                            <input type="number" name="system.calculator.rollBonus" value="{{system.calculator.rollBonus}}" min="0"/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+1 first, +2 each after">{{localize 'TAMS.CalculatorOptions.IgnoreArmor'}}</label>
+                            <input type="number" name="system.calculator.ignoreArmor" value="{{system.calculator.ignoreArmor}}" min="0"/>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.CalculatorOptions.FireRate'}}</label>
+                            <select name="system.calculator.fireRate">
+                                {{selectOptions calculatorOptions.fireRates selected=system.calculator.fireRate localize=true}}
+                            </select>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+2 each">{{localize 'TAMS.CalculatorOptions.MultiAttackHits'}}</label>
+                            <input type="number" name="system.calculator.multiAttackHits" value="{{system.calculator.multiAttackHits}}" min="0"/>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.CalculatorOptions.DamageFraction'}}</label>
+                            <select name="system.calculator.damageStatFraction">
+                                {{selectOptions calculatorOptions.damageFractions selected=system.calculator.damageStatFraction}}
+                            </select>
+                        </div>
                     </div>
-                    <div class="flexrow">
-                        <label title="x2 cost">{{localize 'TAMS.CalculatorOptions.BypassRetaliation'}}</label>
-                        <input type="checkbox" name="system.calculator.bypassRetaliation" {{checked system.calculator.bypassRetaliation}}/>
+                </div>
+
+                <div class="ability-calculator__group">
+                    <p class="ability-calculator__group-title">Targeting</p>
+                    <div class="grid grid-2col">
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.CalculatorOptions.TargetingMode'}}</label>
+                            <select name="system.calculator.targetingMode">
+                                {{selectOptions calculatorOptions.targetingModes selected=selectedTargetingMode localize=true}}
+                            </select>
+                        </div>
+                        {{#if (eq selectedTargetingMode "group")}}
+                        <div class="flexrow">
+                            <label title="+2">{{localize 'TAMS.CalculatorOptions.BodyPart'}}</label>
+                            <select name="system.calculator.bodyPart">
+                                {{selectOptions calculatorOptions.bodyParts selected=system.calculator.bodyPart localize=true}}
+                            </select>
+                        </div>
+                        {{/if}}
+                        {{#if (eq selectedTargetingMode "specific")}}
+                        <div class="flexrow">
+                            <label title="+4">{{localize 'TAMS.CalculatorOptions.TargetLimb'}}</label>
+                            <select name="system.calculator.targetLimb">
+                                {{selectOptions limbOptions selected=system.calculator.targetLimb localize=true}}
+                            </select>
+                        </div>
+                        {{/if}}
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.CalculatorOptions.TargetType'}}</label>
+                            <select name="system.calculator.targetType">
+                                {{selectOptions calculatorOptions.targetTypes selected=system.calculator.targetType localize=true}}
+                            </select>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+2 base, +1 per m over 3">{{localize 'TAMS.CalculatorOptions.AoERadius'}}</label>
+                            <input type="number" name="system.calculator.aoeRadius" value="{{system.calculator.aoeRadius}}" min="0"/>
+                        </div>
                     </div>
-                    <div class="flexrow">
-                        <label title="x2 cost">{{localize 'TAMS.CalculatorOptions.Stackable'}}</label>
-                        <input type="checkbox" name="system.calculator.isStackable" {{checked system.calculator.isStackable}}/>
+                </div>
+
+                <div class="ability-calculator__group">
+                    <p class="ability-calculator__group-title">Effects</p>
+                    <div class="grid grid-2col">
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.CalculatorOptions.Stun'}}</label>
+                            <select name="system.calculator.stun">
+                                {{selectOptions calculatorOptions.stunOptions selected=system.calculator.stun localize=true}}
+                            </select>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+1 each">{{localize 'TAMS.CalculatorOptions.Healing'}}</label>
+                            <input type="number" name="system.calculator.healing" value="{{system.calculator.healing}}" min="0"/>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.CalculatorOptions.DRType'}}</label>
+                            <select name="system.calculator.drType">
+                                {{selectOptions calculatorOptions.drTypes selected=system.calculator.drType localize=true}}
+                            </select>
+                        </div>
+                        {{#unless (eq system.calculator.drType "none")}}
+                        <div class="flexrow">
+                            <label title="+1 each">{{localize 'TAMS.CalculatorOptions.DRValue'}}</label>
+                            <input type="number" name="system.calculator.drValue" value="{{system.calculator.drValue}}" min="0"/>
+                        </div>
+                        {{/unless}}
+                    </div>
+                </div>
+
+                <div class="ability-calculator__group">
+                    <p class="ability-calculator__group-title">Delivery</p>
+                    <div class="grid grid-2col">
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.CalculatorOptions.Range'}}</label>
+                            <input type="number" name="system.calculator.range" value="{{system.calculator.range}}" min="0"/>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.CalculatorOptions.Duration'}}</label>
+                            <select name="system.calculator.duration">
+                                {{selectOptions calculatorOptions.durations selected=system.calculator.duration localize=true}}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ability-calculator__group">
+                    <p class="ability-calculator__group-title">Multipliers</p>
+                    <div class="grid grid-3col">
+                        <div class="flexrow">
+                            <label title="x2 cost">{{localize 'TAMS.CalculatorOptions.BypassDodge'}}</label>
+                            <input type="checkbox" name="system.calculator.bypassDodge" {{checked system.calculator.bypassDodge}}/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="x2 cost">{{localize 'TAMS.CalculatorOptions.BypassRetaliation'}}</label>
+                            <input type="checkbox" name="system.calculator.bypassRetaliation" {{checked system.calculator.bypassRetaliation}}/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="x2 cost">{{localize 'TAMS.CalculatorOptions.Stackable'}}</label>
+                            <input type="checkbox" name="system.calculator.isStackable" {{checked system.calculator.isStackable}}/>
+                        </div>
                     </div>
                 </div>
             </div>
             {{/if}}
-            {{/unless}}
-
-            <div class="flexrow">
-                <label>Multi-Attack</label>
-                <input type="number" name="system.multiAttack" value="{{system.multiAttack}}"/>
-                <label>AoE Attack?</label>
-                <input type="checkbox" name="system.isAoE" {{checked system.isAoE}}/>
-            </div>
             <hr>
-            <div class="flexrow">
-                <label>Is Attack?</label>
-                <input type="checkbox" name="system.isAttack" {{checked system.isAttack}}/>
-            </div>
-            {{#if system.isAttack}}
-            <div class="flexcol" style="border: 1px solid #7a7971; padding: 5px; margin-top: 5px;">
+
+            {{!-- Section 6: Attack --}}
+            <h3>{{localize 'TAMS.WeaponSheet.Combat'}}</h3>
+            <div class="ability-section">
                 <div class="flexrow">
-                    <label>{{#if (eq system.damageStat "custom")}}Custom Damage{{else}}Base Damage{{/if}}</label>
-                    <input type="number" name="system.damage" value="{{system.damage}}" data-dtype="Number"/>
+                    <label>{{localize 'TAMS.IsAttackQ'}}</label>
+                    <input type="checkbox" name="system.isAttack" {{checked system.isAttack}}/>
                 </div>
+
+                {{#if system.isAttack}}
                 <div class="flexrow">
-                    <label>Armour Penetration</label>
-                    <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>
+                    <label>{{localize 'TAMS.MultiAttack'}}</label>
+                    <input type="number" name="system.multiAttack" value="{{system.multiAttack}}"/>
+                    <label>{{localize 'TAMS.IsAoE'}}</label>
+                    <input type="checkbox" name="system.isAoE" {{checked system.isAoE}}/>
                 </div>
+                <div class="ability-attack-block">
+                    <p class="ability-calculator__group-title">{{localize 'TAMS.AttackDetails'}}</p>
+                    <div class="grid grid-2col">
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.AttackStat'}}</label>
+                            <select name="system.attackStat">
+                                {{selectOptions statOptions selected=system.attackStat localize=true}}
+                            </select>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.DamageStat'}}</label>
+                            <select name="system.damageStat">
+                                {{selectOptions statOptions selected=system.damageStat localize=true}}
+                            </select>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{#if (eq system.damageStat "custom")}}{{localize 'TAMS.CustomDamage'}}{{else}}{{localize 'TAMS.BaseDamage'}}{{/if}}</label>
+                            <input type="number" name="system.damage" value="{{system.damage}}" data-dtype="Number"/>
+                        </div>
+                        {{#unless (eq system.damageStat "custom")}}
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.DamageMultiplier'}}</label>
+                            <input type="number" name="system.damageMult" value="{{system.damageMult}}" step="0.05"/>
+                        </div>
+                        {{/unless}}
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.DamageBonus'}}</label>
+                            <input type="number" name="system.damageBonus" value="{{system.damageBonus}}"/>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.ArmourPenetration'}}</label>
+                            <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.CalculatedDamage'}}</label>
+                            <span class="ability-cost-badge">{{system.calculatedDamage}}</span>
+                        </div>
+                    </div>
+                </div>
+                {{/if}}
+
+                {{#unless system.isAttack}}
                 <div class="flexrow">
-                    <label>Attack Stat</label>
-                    <select name="system.attackStat">
-                        {{selectOptions statOptions selected=system.attackStat localize=true}}
+                    <label>{{localize 'TAMS.StatCap'}}</label>
+                    <select name="system.capStat">
+                        {{selectOptions statOptionsNoCustom selected=system.capStat localize=true}}
                     </select>
-                </div>
-                <div class="flexrow">
-                    <label>Damage Stat</label>
-                    <select name="system.damageStat">
-                        {{selectOptions statOptions selected=system.damageStat localize=true}}
-                    </select>
-                </div>
-                {{#unless (eq system.damageStat "custom")}}
-                <div class="flexrow">
-                    <label>Damage Multiplier</label>
-                    <input type="number" name="system.damageMult" value="{{system.damageMult}}" step="0.05"/>
                 </div>
                 {{/unless}}
-                <div class="flexrow">
-                    <label>Damage Bonus</label>
-                    <input type="number" name="system.damageBonus" value="{{system.damageBonus}}"/>
-                </div>
-                <div class="flexrow">
-                    <label>Calculated Damage</label>
-                    <span>{{system.calculatedDamage}}</span>
-                </div>
             </div>
-            {{/if}}
-            {{#unless system.isAttack}}
-            <div class="flexrow">
-                <label>Stat Cap</label>
-                <select name="system.capStat">
-                    {{selectOptions statOptionsNoCustom selected=system.capStat localize=true}}
-                </select>
-            </div>
+
             {{/unless}}
             {{/if}}
 
