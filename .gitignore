@@ -14,3 +14,6 @@ package-lock.json
 
 # Foundry VTT specific (if any local testing artifacts)
 *.log
+
+# Proprietary documents
+TAMS Rulebook.md
