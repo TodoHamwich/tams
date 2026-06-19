@@ -221,11 +221,6 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         abilities: new fields.NumberField({ initial: 0 }),
         traits: new fields.NumberField({ initial: 0 })
       }),
-      specialSkills: new fields.SchemaField({
-        dodge: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }) }),
-        retaliation: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }) }),
-        perception: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }) })
-      }),
       currencies: new fields.ObjectField({ initial: {} }),
       downtime: new fields.SchemaField({
         days: new fields.NumberField({ initial: 0, min: 0 }),
@@ -3326,18 +3321,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         bonusSources.push({ label: game.i18n.localize("TAMS.WeaponTags.Accurate"), value: 5 });
       }
     }
-    if (!item && statId === "dodge") {
-      const dex = this.document.system.stats.dexterity;
-      familiarity = 0;
-      bonus = 0;
-      statValue = dex.value;
-      statMod = dex.mod;
-      addStatModSources("dexterity");
-    } else if (!item && statId) {
+    if (!item && statId) {
       addStatModSources(statId);
     }
     if (!item) {
-      if (statId !== "dodge") familiarity = 0;
+      familiarity = 0;
     }
     if (item && item.type === "weapon") {
       this.document.system.stats.strength;
@@ -3543,13 +3531,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (backpackPen) {
       if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
         const pen = backpackPen.attack || 0;
-        if (pen !== 0) {
-          bonus += pen;
-          bonusSources.push({ label: game.i18n.localize("TAMS.BackpackPenalty"), value: pen });
-        }
-      }
-      if (statId === "dodge") {
-        const pen = backpackPen.dodge || 0;
         if (pen !== 0) {
           bonus += pen;
           bonusSources.push({ label: game.i18n.localize("TAMS.BackpackPenalty"), value: pen });

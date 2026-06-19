@@ -1170,19 +1170,12 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
     }
 
-    if (!item && statId === 'dodge') {
-        const dex = this.document.system.stats.dexterity;
-        familiarity = 0;
-        bonus = 0;
-        statValue = dex.value;
-        statMod = dex.mod;
-        addStatModSources('dexterity');
-    } else if (!item && statId) {
+    if (!item && statId) {
         addStatModSources(statId);
     }
 
     if (!item) {
-        if (statId !== 'dodge') familiarity = 0; // Pure stat rolls don't include familiarity
+        familiarity = 0;
     }
 
     if (item && item.type === 'weapon') {
@@ -1408,13 +1401,6 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (backpackPen) {
         if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
             const pen = (backpackPen.attack || 0);
-            if (pen !== 0) {
-                bonus += pen;
-                bonusSources.push({ label: game.i18n.localize("TAMS.BackpackPenalty"), value: pen });
-            }
-        }
-        if (statId === 'dodge') {
-            const pen = (backpackPen.dodge || 0);
             if (pen !== 0) {
                 bonus += pen;
                 bonusSources.push({ label: game.i18n.localize("TAMS.BackpackPenalty"), value: pen });

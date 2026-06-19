@@ -129,11 +129,6 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         abilities: new fields.NumberField({initial: 0}),
         traits: new fields.NumberField({initial: 0})
       }),
-      specialSkills: new fields.SchemaField({
-        dodge: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
-        retaliation: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) }),
-        perception: new fields.SchemaField({ value: new fields.NumberField({initial: 0}) })
-      }),
       currencies: new fields.ObjectField({initial: {}}),
       downtime: new fields.SchemaField({
         days: new fields.NumberField({initial: 0, min: 0}),
