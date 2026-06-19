@@ -370,8 +370,13 @@
       "Description": "Traits & Bio",
       "Modifiers": "Modifiers",
       "Settings": "Settings",
-      "Resistances": "Resistances"
+      "Resistances": "Resistances",
+      "Scene": "Scene"
     },
+    "SceneUPPools": "Upgrade Point Pools",
+    "SceneUsed": "Used This Scene",
+    "SceneReset": "Reset Scene",
+    "FamShort": "Fam:",
     "NoResistances": "No resistances, immunities, or vulnerabilities set.",
     "CostCalculator": "Cost Calculator",
     "CalculatorOptions": {

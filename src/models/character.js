@@ -163,7 +163,6 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this._prepareStamina();
     this._prepareCustomResources();
     this._prepareInventoryCapacity();
-    this._prepareUpSpent();
     this._prepareDowntime();
   }
 
@@ -335,20 +334,6 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         this.backpackPenalties.movement += (pen.movement || 0);
       }
     }
-  }
-
-  /**
-   * Sum upgradePoints spent across all owned items, per category.
-   * @protected
-   */
-  _prepareUpSpent() {
-    const items = this.parent?.items ?? [];
-    this.upSpent = {
-      skills:    items.filter(i => i.type === 'skill')   .reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
-      abilities: items.filter(i => i.type === 'ability') .reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
-      traits:    items.filter(i => i.type === 'trait')   .reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
-      weapons:   items.filter(i => i.type === 'weapon')  .reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
-    };
   }
 
   /**

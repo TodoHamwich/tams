@@ -254,7 +254,6 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this._prepareStamina();
     this._prepareCustomResources();
     this._prepareInventoryCapacity();
-    this._prepareUpSpent();
     this._prepareDowntime();
   }
   /**
@@ -411,20 +410,6 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     }
   }
   /**
-   * Sum upgradePoints spent across all owned items, per category.
-   * @protected
-   */
-  _prepareUpSpent() {
-    var _a;
-    const items = ((_a = this.parent) == null ? void 0 : _a.items) ?? [];
-    this.upSpent = {
-      skills: items.filter((i) => i.type === "skill").reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
-      abilities: items.filter((i) => i.type === "ability").reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
-      traits: items.filter((i) => i.type === "trait").reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
-      weapons: items.filter((i) => i.type === "weapon").reduce((s, i) => s + (i.system.upgradePoints || 0), 0)
-    };
-  }
-  /**
    * Calculate downtime days remaining.
    * @protected
    */
@@ -441,7 +426,7 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({ initial: 0, nullable: true }),
-      upgradePoints: new fields.NumberField({ initial: 0, nullable: true }),
+      usedInScene: new fields.BooleanField({ initial: false }),
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "medium" }),
       location: new fields.StringField({ initial: "hand" }),
@@ -500,7 +485,7 @@ class TAMSSkillData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({ initial: 0, nullable: true }),
-      upgradePoints: new fields.NumberField({ initial: 0, nullable: true }),
+      usedInScene: new fields.BooleanField({ initial: false }),
       bonus: new fields.NumberField({ initial: 0, nullable: true }),
       stat: new fields.StringField({ initial: "strength" }),
       tags: new fields.StringField({ initial: "" }),
@@ -631,7 +616,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({ initial: 0, nullable: true }),
-      upgradePoints: new fields.NumberField({ initial: 0, nullable: true }),
+      usedInScene: new fields.BooleanField({ initial: false }),
       bonus: new fields.NumberField({ initial: 0, nullable: true }),
       cost: new fields.NumberField({ initial: 0, nullable: true }),
       resource: new fields.StringField({ initial: "stamina" }),
@@ -780,7 +765,6 @@ class TAMSTraitData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      upgradePoints: new fields.NumberField({ initial: 0, integer: true, min: 0, nullable: true }),
       isProfession: new fields.BooleanField({ initial: false }),
       profession: new fields.StringField({ initial: "" }),
       modifiers: new fields.ArrayField(new fields.SchemaField({
@@ -2323,7 +2307,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         setInventorySort: _TAMSActorSheet.prototype._onSetInventorySort,
         setInventoryFilter: _TAMSActorSheet.prototype._onSetInventoryFilter,
         resistanceAdd: _TAMSActorSheet.prototype._onResistanceAdd,
-        resistanceDelete: _TAMSActorSheet.prototype._onResistanceDelete
+        resistanceDelete: _TAMSActorSheet.prototype._onResistanceDelete,
+        sceneReset: _TAMSActorSheet.prototype._onSceneReset
       }
     }, { inplace: false });
   }
@@ -2588,6 +2573,12 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     context.skills = skills;
     context.abilities = abilities;
     context.traits = traits;
+    const sceneItems = [
+      ...weapons.map((i) => ({ ...i, sceneType: game.i18n.localize("TAMS.Weapon") })),
+      ...skills.map((i) => ({ ...i, sceneType: game.i18n.localize("TAMS.Skill") })),
+      ...abilities.map((i) => ({ ...i, sceneType: game.i18n.localize("TAMS.Ability") }))
+    ].sort((a, b) => (b.system.usedInScene ? 1 : 0) - (a.system.usedInScene ? 1 : 0) || a.name.localeCompare(b.name));
+    context.sceneItems = sceneItems;
   }
   /**
    * Prepare options for select fields.
@@ -3864,6 +3855,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       content: messageContent,
       rolls: [roll]
     });
+    if (item && ["weapon", "skill", "ability"].includes(item.type)) {
+      item.update({ "system.usedInScene": true });
+    }
   }
   /**
    * Handle toggling the limb multipliers section.
@@ -3930,6 +3924,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   _onSetTab(event, target) {
     this._activeTab = target.dataset.tab;
     this.render();
+  }
+  async _onSceneReset(event, target) {
+    const updates = this.document.items.filter((i) => ["weapon", "skill", "ability"].includes(i.type) && i.system.usedInScene).map((i) => ({ _id: i.id, "system.usedInScene": false }));
+    if (updates.length) await this.document.updateEmbeddedDocuments("Item", updates);
   }
 };
 __publicField(_TAMSActorSheet, "PARTS", {

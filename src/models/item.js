@@ -6,7 +6,7 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({initial: 0, nullable: true}),
-      upgradePoints: new fields.NumberField({initial: 0, nullable: true}),
+      usedInScene: new fields.BooleanField({initial: false}),
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "medium"}),
       location: new fields.StringField({initial: "hand"}),
@@ -72,7 +72,7 @@ export class TAMSSkillData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({initial: 0, nullable: true}),
-      upgradePoints: new fields.NumberField({initial: 0, nullable: true}),
+      usedInScene: new fields.BooleanField({initial: false}),
       bonus: new fields.NumberField({initial: 0, nullable: true}),
       stat: new fields.StringField({initial: "strength"}),
       tags: new fields.StringField({initial: ""}),
@@ -235,7 +235,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({initial: 0, nullable: true}),
-      upgradePoints: new fields.NumberField({initial: 0, nullable: true}),
+      usedInScene: new fields.BooleanField({initial: false}),
       bonus: new fields.NumberField({initial: 0, nullable: true}),
       cost: new fields.NumberField({initial: 0, nullable: true}),
       resource: new fields.StringField({initial: "stamina"}),
@@ -391,7 +391,6 @@ export class TAMSTraitData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      upgradePoints: new fields.NumberField({initial: 0, integer: true, min: 0, nullable: true}),
       isProfession: new fields.BooleanField({initial: false}),
       profession: new fields.StringField({initial: ""}),
       modifiers: new fields.ArrayField(new fields.SchemaField({

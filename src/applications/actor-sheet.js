@@ -39,7 +39,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         setInventorySort: TAMSActorSheet.prototype._onSetInventorySort,
         setInventoryFilter: TAMSActorSheet.prototype._onSetInventoryFilter,
         resistanceAdd: TAMSActorSheet.prototype._onResistanceAdd,
-        resistanceDelete: TAMSActorSheet.prototype._onResistanceDelete
+        resistanceDelete: TAMSActorSheet.prototype._onResistanceDelete,
+        sceneReset: TAMSActorSheet.prototype._onSceneReset
       }
     }, { inplace: false });
   }
@@ -344,6 +345,14 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     context.skills = skills;
     context.abilities = abilities;
     context.traits = traits;
+
+    // Scene tracker: weapons + skills + abilities, used items sorted to top
+    const sceneItems = [
+      ...weapons.map(i => ({ ...i, sceneType: game.i18n.localize("TAMS.Weapon") })),
+      ...skills.map(i => ({ ...i, sceneType: game.i18n.localize("TAMS.Skill") })),
+      ...abilities.map(i => ({ ...i, sceneType: game.i18n.localize("TAMS.Ability") }))
+    ].sort((a, b) => (b.system.usedInScene ? 1 : 0) - (a.system.usedInScene ? 1 : 0) || a.name.localeCompare(b.name));
+    context.sceneItems = sceneItems;
   }
 
   /**
@@ -1754,6 +1763,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       content: messageContent,
       rolls: [roll]
     });
+
+    if (item && ["weapon", "skill", "ability"].includes(item.type)) {
+      item.update({"system.usedInScene": true});
+    }
   }
 
   /**
@@ -1826,5 +1839,12 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
   _onSetTab(event, target) {
     this._activeTab = target.dataset.tab;
     this.render();
+  }
+
+  async _onSceneReset(event, target) {
+    const updates = this.document.items
+      .filter(i => ["weapon", "skill", "ability"].includes(i.type) && i.system.usedInScene)
+      .map(i => ({ _id: i.id, "system.usedInScene": false }));
+    if (updates.length) await this.document.updateEmbeddedDocuments("Item", updates);
   }
 }
