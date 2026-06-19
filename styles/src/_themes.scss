@@ -1,5 +1,497 @@
 @import 'variables';
 
+// ─── Grimdark / Military ──────────────────────────────────────────────────────
+.tams.theme-grimdark {
+    background: $gd-bg;
+    color: $gd-text;
+
+    .charname input {
+        color: $gd-text;
+        border-bottom-color: $gd-accent;
+        font-family: $font-condensed;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+
+    .sheet-header {
+        border-bottom-color: $gd-accent;
+        background: linear-gradient(180deg, $gd-surface 0%, $gd-bg 100%);
+        padding: 10px;
+    }
+
+    .profile-img {
+        border-color: $gd-accent;
+        filter: sepia(20%) contrast(110%);
+    }
+
+    h3 {
+        color: $gd-accent;
+        border-bottom-color: $gd-border;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    hr { border-color: $gd-border; }
+
+    input, select, textarea {
+        background: $gd-input;
+        color: $gd-text;
+        border: 1px solid $gd-border;
+
+        &:focus {
+            box-shadow: 0 0 4px $gd-accent;
+            border-color: $gd-accent;
+            outline: none;
+        }
+    }
+
+    select option { background: $gd-input; color: $gd-text; }
+
+    .sheet-tabs {
+        background: $gd-surface;
+        border-color: $gd-border;
+
+        .item {
+            border-right-color: $gd-border;
+            color: $gd-text;
+            font-family: $font-condensed;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 13px;
+
+            &:hover { background: rgba($gd-accent, 0.1); text-shadow: 0 0 6px $gd-accent; }
+            &.active {
+                background: rgba($gd-highlight, 0.25);
+                border-bottom: 2px solid $gd-highlight;
+                text-shadow: 0 0 8px $gd-accent;
+                color: $gd-accent;
+            }
+        }
+    }
+
+    .item { border-bottom-color: $gd-border; }
+    .item:nth-child(even) { background: rgba(255,255,255,0.02); }
+    .item:hover { background: rgba($gd-accent, 0.06); }
+
+    .item-header { color: $gd-accent; border-bottom-color: $gd-accent; }
+    .item-name { color: $gd-text; }
+
+    .inventory-section { border-color: $gd-border; }
+    .inventory-section-header { background: $gd-highlight; color: #d0cfc8; border-left: 4px solid $gd-accent; }
+    .inventory-category-header { background: darken($gd-highlight, 10%); color: $gd-text; }
+    .inventory-scroll .item-header { background: $gd-surface; color: $gd-accent; }
+
+    .prop-tag { background: rgba($gd-accent, 0.12); color: $gd-accent; border: 1px solid $gd-border; }
+    .prop-tag.equipped-tag { background: $gd-highlight; color: #fff; }
+
+    .bar { border-color: $gd-border; background: #111; }
+    .bar-container { background: rgba(0,0,0,0.4); border-color: $gd-border; }
+
+    .rollable:hover { color: $gd-accent; text-shadow: 0 0 8px rgba($gd-accent, 0.6); }
+
+    .limb-header { border-bottom-color: $gd-accent; color: $gd-accent; }
+    .limb-row { border-bottom-color: $gd-border; }
+    .limb-row:nth-child(even) { background: rgba(255,255,255,0.02); }
+    .limb-label { color: $gd-text; }
+
+    .mod-sep { color: $gd-accent; }
+
+    .inventory-controls a,
+    .inventory-controls-global a,
+    [data-action="resourceAdd"],
+    .tab.abilities [data-action="itemCreate"] {
+        background: $gd-surface;
+        border-color: $gd-accent;
+        color: $gd-accent !important;
+        &:hover { background: $gd-highlight; color: #fff !important; }
+    }
+
+    .resource-modifiers-list { border-color: $gd-border; }
+    .resource-modifiers-list .resource-header { background: $gd-surface; color: $gd-accent; border-bottom-color: $gd-accent; }
+    .resource-modifiers-list .modifier-row { border-bottom-color: $gd-border; }
+    .resource-modifiers-list .modifier-row:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+    .tag-button { background: $gd-surface; border-color: $gd-border; color: $gd-text; }
+    .tag-button:hover { background: rgba($gd-accent, 0.15); color: $gd-accent; }
+    .tag-button.active { background: $gd-highlight; border-color: $gd-highlight; color: #fff; }
+
+    .carry-weight { background: rgba(0,0,0,0.3); border-bottom-color: $gd-border; }
+    .currency-footer { background: $gd-surface; border-top-color: $gd-accent; }
+
+    .delete-resource:hover { color: $gd-highlight; }
+}
+
+// ─── Sci-fi / Cyberpunk ───────────────────────────────────────────────────────
+.tams.theme-cyberpunk {
+    background: $cp-bg;
+    color: $cp-text;
+    font-family: $font-condensed;
+
+    .charname input {
+        color: $cp-accent;
+        border-bottom: 2px solid $cp-accent;
+        text-shadow: 0 0 12px $cp-accent;
+        background: transparent;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+    }
+
+    .sheet-header {
+        border-bottom: 1px solid $cp-accent;
+        background: $cp-surface;
+        box-shadow: 0 2px 12px rgba($cp-accent, 0.15);
+        padding: 10px;
+    }
+
+    .profile-img {
+        border-color: $cp-accent;
+        box-shadow: 0 0 12px rgba($cp-accent, 0.5);
+        filter: saturate(70%) contrast(120%);
+    }
+
+    h3 {
+        color: $cp-accent;
+        border-bottom: 1px solid $cp-accent;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        text-shadow: 0 0 6px rgba($cp-accent, 0.5);
+    }
+
+    hr { border-color: $cp-border; }
+
+    input, select, textarea {
+        background: $cp-input;
+        color: $cp-text;
+        border: 1px solid $cp-border;
+
+        &:focus {
+            box-shadow: 0 0 8px $cp-accent;
+            border-color: $cp-accent;
+            outline: none;
+        }
+    }
+
+    select option { background: $cp-input; color: $cp-text; }
+
+    .sheet-tabs {
+        background: $cp-surface;
+        border-color: $cp-accent;
+
+        .item {
+            border-right-color: $cp-border;
+            color: $cp-text;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 12px;
+
+            &:hover {
+                background: rgba($cp-accent, 0.08);
+                text-shadow: 0 0 8px $cp-accent;
+                color: $cp-accent;
+            }
+            &.active {
+                background: rgba($cp-accent, 0.15);
+                border-bottom: 2px solid $cp-accent;
+                text-shadow: 0 0 10px $cp-accent;
+                color: $cp-accent;
+            }
+        }
+    }
+
+    .item { border-bottom-color: $cp-border; }
+    .item:nth-child(even) { background: rgba($cp-accent, 0.02); }
+    .item:hover { background: rgba($cp-accent, 0.06); }
+
+    .item-header { color: $cp-accent; border-bottom-color: $cp-accent; text-shadow: 0 0 4px rgba($cp-accent, 0.4); }
+    .item-name { color: $cp-text; }
+
+    .inventory-section { border: 1px solid $cp-border; }
+    .inventory-section-header { background: rgba($cp-accent, 0.12); color: $cp-accent; border-left: 3px solid $cp-accent; }
+    .inventory-category-header { background: rgba($cp-accent, 0.08); color: $cp-accent; }
+    .inventory-scroll .item-header { background: $cp-surface; color: $cp-accent; }
+
+    .prop-tag { background: rgba($cp-accent, 0.1); color: $cp-accent; border: 1px solid rgba($cp-accent, 0.3); }
+    .prop-tag.equipped-tag { background: $cp-highlight; color: #000; border-color: $cp-highlight; }
+
+    .bar { border-color: $cp-accent; background: rgba($cp-accent, 0.05); box-shadow: inset 0 0 8px rgba($cp-accent, 0.1); }
+    .bar .fill { box-shadow: 0 0 10px $cp-highlight; }
+    .bar-container { background: rgba(0,0,0,0.5); border-color: $cp-border; }
+
+    .rollable:hover { color: $cp-accent; text-shadow: 0 0 10px $cp-accent; }
+
+    .limb-header { border-bottom-color: $cp-accent; color: $cp-accent; }
+    .limb-row { border-bottom-color: $cp-border; }
+    .limb-label { color: $cp-text; }
+
+    .mod-sep { color: $cp-accent; }
+
+    .inventory-controls a,
+    .inventory-controls-global a,
+    [data-action="resourceAdd"],
+    .tab.abilities [data-action="itemCreate"] {
+        background: rgba($cp-accent, 0.1);
+        border-color: $cp-accent;
+        color: $cp-accent !important;
+        box-shadow: 0 0 6px rgba($cp-accent, 0.2);
+        &:hover { background: $cp-accent; color: #000 !important; box-shadow: 0 0 12px $cp-accent; }
+    }
+
+    .resource-modifiers-list { border-color: $cp-border; }
+    .resource-modifiers-list .resource-header { background: $cp-surface; color: $cp-accent; border-bottom-color: $cp-accent; }
+    .resource-modifiers-list .modifier-row { border-bottom-color: $cp-border; }
+
+    .tag-button { background: $cp-surface; border-color: $cp-border; color: $cp-text; }
+    .tag-button:hover { background: rgba($cp-accent, 0.1); color: $cp-accent; border-color: $cp-accent; }
+    .tag-button.active { background: rgba($cp-accent, 0.2); border-color: $cp-accent; color: $cp-accent; }
+
+    .carry-weight { background: rgba(0,0,0,0.3); border-bottom-color: $cp-border; }
+    .currency-footer { background: $cp-surface; border-top-color: $cp-accent; }
+
+    .delete-resource:hover { color: $cp-highlight; text-shadow: 0 0 6px $cp-highlight; }
+}
+
+// ─── Dark Leather / Gothic ────────────────────────────────────────────────────
+.tams.theme-gothic {
+    background: $go-bg;
+    color: $go-text;
+
+    .charname input {
+        color: $go-text;
+        border-bottom: 2px solid $go-accent;
+        background: transparent;
+        font-family: $font-header;
+        letter-spacing: 1px;
+    }
+
+    .sheet-header {
+        border-bottom: 2px solid $go-accent;
+        background: linear-gradient(180deg, $go-surface 0%, $go-bg 100%);
+        padding: 10px;
+    }
+
+    .profile-img {
+        border: 2px solid $go-accent;
+        box-shadow: 0 0 10px rgba($go-accent, 0.4), inset 0 0 5px rgba(0,0,0,0.5);
+        filter: sepia(30%);
+    }
+
+    h3 {
+        color: $go-accent;
+        border-bottom-color: $go-border;
+        font-family: $font-header;
+        text-transform: none;
+        letter-spacing: 1px;
+    }
+
+    hr { border-color: $go-border; }
+
+    input, select, textarea {
+        background: $go-input;
+        color: $go-text;
+        border: 1px solid $go-border;
+
+        &:focus {
+            box-shadow: 0 0 5px rgba($go-accent, 0.5);
+            border-color: $go-accent;
+            outline: none;
+        }
+    }
+
+    select option { background: $go-input; color: $go-text; }
+
+    .sheet-tabs {
+        background: $go-surface;
+        border-color: $go-border;
+
+        .item {
+            border-right-color: $go-border;
+            color: $go-text;
+            font-family: $font-header;
+            font-size: 13px;
+
+            &:hover { background: rgba($go-accent, 0.08); color: $go-accent; }
+            &.active {
+                background: rgba($go-highlight, 0.2);
+                border-bottom: 2px solid $go-accent;
+                color: $go-accent;
+                text-shadow: 0 0 8px rgba($go-accent, 0.4);
+            }
+        }
+    }
+
+    .item { border-bottom-color: $go-border; }
+    .item:nth-child(even) { background: rgba(255,255,255,0.02); }
+    .item:hover { background: rgba($go-accent, 0.05); }
+
+    .item-header { color: $go-accent; border-bottom-color: $go-border; }
+    .item-name { color: $go-text; }
+
+    .inventory-section { border: 1px solid $go-border; }
+    .inventory-section-header { background: $go-highlight; color: $go-text; border-left: 4px solid $go-accent; }
+    .inventory-category-header { background: darken($go-highlight, 8%); color: $go-text; }
+    .inventory-scroll .item-header { background: $go-surface; color: $go-accent; }
+
+    .prop-tag { background: rgba($go-accent, 0.1); color: $go-accent; border: 1px solid $go-border; }
+    .prop-tag.equipped-tag { background: $go-highlight; color: $go-text; }
+
+    .bar { border-color: $go-border; background: rgba(0,0,0,0.6); }
+    .bar .fill { box-shadow: 0 0 6px rgba($go-accent, 0.4); }
+    .bar-container { background: rgba(0,0,0,0.4); border-color: $go-border; }
+
+    .rollable:hover { color: $go-accent; text-shadow: 0 0 8px rgba($go-accent, 0.5); }
+
+    .limb-header { border-bottom-color: $go-accent; color: $go-accent; }
+    .limb-row { border-bottom-color: $go-border; }
+    .limb-label { color: $go-text; }
+
+    .mod-sep { color: $go-accent; }
+
+    .inventory-controls a,
+    .inventory-controls-global a,
+    [data-action="resourceAdd"],
+    .tab.abilities [data-action="itemCreate"] {
+        background: $go-surface;
+        border-color: $go-accent;
+        color: $go-accent !important;
+        &:hover { background: $go-highlight; color: $go-text !important; }
+    }
+
+    .resource-modifiers-list { border-color: $go-border; }
+    .resource-modifiers-list .resource-header { background: $go-surface; color: $go-accent; border-bottom-color: $go-accent; }
+    .resource-modifiers-list .modifier-row { border-bottom-color: $go-border; }
+    .resource-modifiers-list .modifier-row:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+    .tag-button { background: $go-surface; border-color: $go-border; color: $go-text; }
+    .tag-button:hover { background: rgba($go-accent, 0.1); color: $go-accent; }
+    .tag-button.active { background: $go-highlight; border-color: $go-highlight; color: $go-text; }
+
+    .carry-weight { background: rgba(0,0,0,0.3); border-bottom-color: $go-border; }
+    .currency-footer { background: $go-surface; border-top-color: $go-accent; }
+
+    .delete-resource:hover { color: $go-highlight; }
+}
+
+// ─── Slate / Tactical Map ─────────────────────────────────────────────────────
+.tams.theme-tactical {
+    background: $tc-bg;
+    color: $tc-text;
+
+    .charname input {
+        color: $tc-text;
+        border-bottom: 2px solid $tc-accent;
+        background: transparent;
+        font-family: $font-condensed;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+
+    .sheet-header {
+        border-bottom: 2px solid $tc-accent;
+        background: $tc-surface;
+        padding: 10px;
+    }
+
+    .profile-img {
+        border: 2px solid $tc-accent;
+        box-shadow: 0 0 8px rgba($tc-accent, 0.3);
+    }
+
+    h3 {
+        color: $tc-accent;
+        border-bottom-color: $tc-border;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    hr { border-color: $tc-border; }
+
+    input, select, textarea {
+        background: $tc-input;
+        color: $tc-text;
+        border: 1px solid $tc-border;
+
+        &:focus {
+            box-shadow: 0 0 5px rgba($tc-accent, 0.5);
+            border-color: $tc-accent;
+            outline: none;
+        }
+    }
+
+    select option { background: $tc-input; color: $tc-text; }
+
+    .sheet-tabs {
+        background: $tc-surface;
+        border-color: $tc-border;
+
+        .item {
+            border-right-color: $tc-border;
+            color: $tc-text;
+            font-family: $font-condensed;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 13px;
+
+            &:hover { background: rgba($tc-accent, 0.1); color: $tc-accent; }
+            &.active {
+                background: rgba($tc-highlight, 0.2);
+                border-bottom: 2px solid $tc-accent;
+                color: $tc-accent;
+            }
+        }
+    }
+
+    .item { border-bottom-color: $tc-border; }
+    .item:nth-child(even) { background: rgba(255,255,255,0.02); }
+    .item:hover { background: rgba($tc-accent, 0.05); }
+
+    .item-header { color: $tc-accent; border-bottom-color: $tc-accent; }
+    .item-name { color: $tc-text; }
+
+    .inventory-section { border: 1px solid $tc-border; }
+    .inventory-section-header { background: darken($tc-bg, 5%); color: $tc-accent; border-left: 4px solid $tc-accent; }
+    .inventory-category-header { background: $tc-highlight; color: #fff; }
+    .inventory-scroll .item-header { background: $tc-surface; color: $tc-accent; }
+
+    .prop-tag { background: rgba($tc-accent, 0.1); color: $tc-accent; border: 1px solid $tc-border; }
+    .prop-tag.equipped-tag { background: $tc-highlight; color: #fff; }
+
+    .bar { border-color: $tc-border; background: rgba(0,0,0,0.4); }
+    .bar .fill { box-shadow: 0 0 6px rgba($tc-accent, 0.4); }
+    .bar-container { background: rgba(0,0,0,0.3); border-color: $tc-border; }
+
+    .rollable:hover { color: $tc-accent; text-shadow: 0 0 8px rgba($tc-accent, 0.5); }
+
+    .limb-header { border-bottom-color: $tc-accent; color: $tc-accent; }
+    .limb-row { border-bottom-color: $tc-border; }
+    .limb-label { color: $tc-text; }
+
+    .mod-sep { color: $tc-accent; }
+
+    .inventory-controls a,
+    .inventory-controls-global a,
+    [data-action="resourceAdd"],
+    .tab.abilities [data-action="itemCreate"] {
+        background: $tc-surface;
+        border-color: $tc-accent;
+        color: $tc-accent !important;
+        &:hover { background: $tc-highlight; color: #fff !important; }
+    }
+
+    .resource-modifiers-list { border-color: $tc-border; }
+    .resource-modifiers-list .resource-header { background: $tc-surface; color: $tc-accent; border-bottom-color: $tc-accent; }
+    .resource-modifiers-list .modifier-row { border-bottom-color: $tc-border; }
+    .resource-modifiers-list .modifier-row:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+    .tag-button { background: $tc-surface; border-color: $tc-border; color: $tc-text; }
+    .tag-button:hover { background: rgba($tc-accent, 0.1); color: $tc-accent; }
+    .tag-button.active { background: $tc-highlight; border-color: $tc-highlight; color: #fff; }
+
+    .carry-weight { background: rgba(0,0,0,0.3); border-bottom-color: $tc-border; }
+    .currency-footer { background: $tc-surface; border-top-color: $tc-accent; }
+
+    .delete-resource:hover { color: $tc-highlight; }
+}
+
 // Dark Theme
 .tams.theme-dark {
     background: $color-dark-bg;
