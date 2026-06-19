@@ -363,8 +363,10 @@
       "Inventory": "Inventory",
       "Description": "Traits & Bio",
       "Modifiers": "Modifiers",
-      "Settings": "Settings"
+      "Settings": "Settings",
+      "Resistances": "Resistances"
     },
+    "NoResistances": "No resistances, immunities, or vulnerabilities set.",
     "CostCalculator": "Cost Calculator",
     "CalculatorOptions": {
       "None": "None",
@@ -494,8 +496,28 @@
       "ChooseLimbToBlock": "Choose a location to block with <b>{name}</b> (+{armor} Armor):",
       "ShieldBlockWith": "Shield Block — {name} with {shield}",
       "BlockReport": "Successfully blocked hit to {location} with shield (+{armor} Armor).",
-      "BlockHit": "Block Hit"
+      "BlockHit": "Block Hit",
+      "Immune": "Immune to {type} damage (negated)",
+      "Resisted": "Resisted {value} {type} damage",
+      "Vulnerable": "Vulnerable to {type} (+{value} damage)"
     },
+    "DamageType": {
+      "None": "None",
+      "blunt": "Blunt",
+      "piercing": "Piercing",
+      "slashing": "Slashing",
+      "fire": "Fire",
+      "magic": "Magic",
+      "psychic": "Psychic",
+      "acid": "Acid"
+    },
+    "Resistance": "Resistance",
+    "Immunity": "Immunity",
+    "Vulnerability": "Vulnerability",
+    "AddResistance": "Add Entry",
+    "ResistanceValue": "Value",
+    "DamageTypeLabel": "Damage Type",
+    "ResistanceCategoryLabel": "Category",
     "Checks": {
       "InjuryCheck": "INJURY CHECK: {loc}",
       "CritCheck": "Crit Check: {loc}",

@@ -186,11 +186,18 @@
                 </div>
                 <hr>
                 
+                <div class="flexrow" style="margin-top: 10px;">
+                    <label><b>{{localize 'TAMS.DamageTypeLabel'}}</b></label>
+                    <select name="system.damageType">
+                        {{selectOptions damageTypeOptions selected=system.damageType localize=true}}
+                    </select>
+                </div>
+
                 <div class="flexcol" style="margin-top: 10px;">
                     <label><b>{{localize 'TAMS.Special'}}</b></label>
                     <input type="text" name="system.special" value="{{system.special}}"/>
                 </div>
-                
+
                 <div class="flexcol" style="margin-top: 5px;">
                     <label><b>{{localize 'TAMS.Tags'}}</b></label>
                     <input type="text" name="system.tags" value="{{system.tags}}" placeholder="reliable, accurate, etc."/>
@@ -611,6 +618,12 @@
                         <div class="flexrow">
                             <label>{{localize 'TAMS.ArmourPenetration'}}</label>
                             <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.DamageTypeLabel'}}</label>
+                            <select name="system.damageType">
+                                {{selectOptions damageTypeOptions selected=system.damageType localize=true}}
+                            </select>
                         </div>
                         <div class="flexrow">
                             <label>{{localize 'TAMS.CalculatedDamage'}}</label>

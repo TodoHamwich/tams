@@ -150,7 +150,12 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
           healing: new fields.NumberField({initial: 0, integer: true, min: 0}),
           working: new fields.NumberField({initial: 0, integer: true, min: 0})
         })
-      })
+      }),
+      resistances: new fields.ArrayField(new fields.SchemaField({
+        damageType: new fields.StringField({initial: ""}),
+        category: new fields.StringField({initial: "resistance"}),
+        value: new fields.NumberField({initial: 0, integer: true, min: 0})
+      }))
     };
   }
 

@@ -133,6 +133,42 @@
                     {{/each}}
                 </section>
             </div>
+
+            {{!-- Resistances, Immunities, Vulnerabilities --}}
+            <div class="resistances-section" style="margin-top: 10px;">
+                <h3 class="small-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    {{localize 'TAMS.Tabs.Resistances'}}
+                    <a data-action="resistanceAdd" title="{{localize 'TAMS.AddResistance'}}"><i class="fas fa-plus"></i></a>
+                </h3>
+                {{#if system.resistances.length}}
+                <div class="resistance-header" style="display: grid; grid-template-columns: 2fr 2fr 1fr 24px; gap: 4px; font-size: 0.8em; font-weight: bold; padding: 2px 4px; color: #555;">
+                    <span>{{localize 'TAMS.DamageTypeLabel'}}</span>
+                    <span>{{localize 'TAMS.ResistanceCategoryLabel'}}</span>
+                    <span>{{localize 'TAMS.ResistanceValue'}}</span>
+                    <span></span>
+                </div>
+                {{#each system.resistances as |entry idx|}}
+                <div class="resistance-row" data-index="{{idx}}" style="display: grid; grid-template-columns: 2fr 2fr 1fr 24px; gap: 4px; align-items: center; margin-bottom: 2px;">
+                    <select name="system.resistances.{{idx}}.damageType">
+                        {{selectOptions ../damageTypeOptions selected=entry.damageType localize=true}}
+                    </select>
+                    <select name="system.resistances.{{idx}}.category">
+                        <option value="resistance" {{#if (eq entry.category 'resistance')}}selected{{/if}}>{{localize 'TAMS.Resistance'}}</option>
+                        <option value="immunity" {{#if (eq entry.category 'immunity')}}selected{{/if}}>{{localize 'TAMS.Immunity'}}</option>
+                        <option value="vulnerability" {{#if (eq entry.category 'vulnerability')}}selected{{/if}}>{{localize 'TAMS.Vulnerability'}}</option>
+                    </select>
+                    {{#if (eq entry.category 'immunity')}}
+                    <span style="text-align: center; color: #777;">—</span>
+                    {{else}}
+                    <input type="number" name="system.resistances.{{idx}}.value" value="{{entry.value}}" min="0" style="width: 100%;"/>
+                    {{/if}}
+                    <a data-action="resistanceDelete" data-index="{{idx}}" style="color: #c0392b; cursor: pointer;" title="Delete"><i class="fas fa-trash"></i></a>
+                </div>
+                {{/each}}
+                {{else}}
+                <p style="color: #888; font-style: italic; font-size: 0.85em; margin: 4px 0;">{{localize 'TAMS.NoResistances'}}</p>
+                {{/if}}
+            </div>
         </div>
 
         {{!-- Items Tab --}}

@@ -30,6 +30,7 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       consumeAmmo: new fields.BooleanField({initial: false}),
       special: new fields.StringField({initial: ""}),
       isAoE: new fields.BooleanField({initial: false}),
+      damageType: new fields.StringField({initial: ""}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -253,6 +254,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       damageBonus: new fields.NumberField({initial: 0, nullable: true}),
       multiAttack: new fields.NumberField({initial: 1, nullable: true}),
       isAoE: new fields.BooleanField({initial: false}),
+      damageType: new fields.StringField({initial: ""}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""}),
       ifStatement: new fields.StringField({initial: ""}),

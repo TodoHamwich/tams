@@ -112,3 +112,19 @@ UTILITIES
 
 * Ability Calculator:
   - A robust tool for GMs and players to define ability behavior, including AoE radius, range, duration, damage stats, and special effects like Stun or Healing.
+
+DAMAGE TYPES & RESISTANCES
+--------------------------------------------------------------------------------
+* Damage Types:
+  - Every weapon and attack ability can be assigned a damage type: Blunt, Piercing, Slashing, Fire, Magic, Psychic, or Acid.
+  - Damage type is set on the weapon or ability item and flows automatically through all rolls, dodges, and retaliations.
+  - Untyped attacks (no damage type set) bypass all resistance/immunity/vulnerability effects.
+
+* Resistances, Immunities, and Vulnerabilities:
+  - Characters and NPCs can have per-damage-type modifiers listed on their Stats & Limbs tab.
+  - Resistance: Reduces post-armor damage by a flat value (min 0).
+  - Immunity: Reduces post-armor damage to 0 regardless of attack strength.
+  - Vulnerability: Increases post-armor damage by a flat value.
+  - These modifiers are applied after all armor calculations, before squad/horde capping.
+  - Multiple modifiers for the same damage type are resolved by the first matching entry.
+  - The damage report in chat indicates when resistance, immunity, or vulnerability was applied.

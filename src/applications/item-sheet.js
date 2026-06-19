@@ -88,6 +88,17 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     }
     context.locationOptions = locationOptions;
     
+    context.damageTypeOptions = {
+      "": "TAMS.DamageType.None",
+      "blunt": "TAMS.DamageType.blunt",
+      "piercing": "TAMS.DamageType.piercing",
+      "slashing": "TAMS.DamageType.slashing",
+      "fire": "TAMS.DamageType.fire",
+      "magic": "TAMS.DamageType.magic",
+      "psychic": "TAMS.DamageType.psychic",
+      "acid": "TAMS.DamageType.acid"
+    };
+
     context.modifierTargetOptions = {
       "stats.strength.value": "TAMS.StatStrength",
       "stats.dexterity.value": "TAMS.StatDexterity",

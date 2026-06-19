@@ -68,6 +68,26 @@ export class TAMSActor extends Actor {
         const blocked = Math.min(incoming, effectiveArmor);
         let overflow = 0;
 
+        let resistanceLabel = "";
+        const damageType = hit.damageType || "";
+        if (damageType && this.system.resistances?.length) {
+            const match = this.system.resistances.find(r => r.damageType === damageType);
+            if (match) {
+                const typeName = game.i18n.localize(`TAMS.DamageType.${match.damageType}`);
+                if (match.category === "immunity") {
+                    effective = 0;
+                    resistanceLabel = game.i18n.format("TAMS.Combat.Immune", {type: typeName});
+                } else if (match.category === "resistance") {
+                    const reduced = Math.min(effective, match.value);
+                    effective = Math.max(0, effective - match.value);
+                    resistanceLabel = game.i18n.format("TAMS.Combat.Resisted", {value: reduced, type: typeName});
+                } else if (match.category === "vulnerability") {
+                    effective = effective + match.value;
+                    resistanceLabel = game.i18n.format("TAMS.Combat.Vulnerable", {value: match.value, type: typeName});
+                }
+            }
+        }
+
         if (isSquadOrHorde) {
             const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
             const limbCap = (isAoE ? multiplier : 1) * indMax; 
@@ -117,6 +137,7 @@ export class TAMSActor extends Actor {
         const overflowLabel = overflow > 0 ? game.i18n.format("TAMS.Checks.OverflowCapped", {overflow}) : "";
         const lossMsg = lossLabel ? `, ${lossLabel}` : "";
         report += `• ${game.i18n.format("TAMS.Checks.DamageReport", {loc, effective, blocked, penLabel, lossLabel: lossMsg, overflowLabel})}<br>`;
+        if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
 
         if (newHp <= -limb.max) {
             if (!limb.injured && !updates[`system.limbs.${limbKey}.injured`]) {

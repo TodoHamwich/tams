@@ -37,7 +37,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         itemRepair: TAMSActorSheet.prototype._onItemRepair,
         toggleItemDetails: TAMSActorSheet.prototype._onToggleItemDetails,
         setInventorySort: TAMSActorSheet.prototype._onSetInventorySort,
-        setInventoryFilter: TAMSActorSheet.prototype._onSetInventoryFilter
+        setInventoryFilter: TAMSActorSheet.prototype._onSetInventoryFilter,
+        resistanceAdd: TAMSActorSheet.prototype._onResistanceAdd,
+        resistanceDelete: TAMSActorSheet.prototype._onResistanceDelete
       }
     }, { inplace: false });
   }
@@ -367,6 +369,16 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       "leftArm": "TAMS.HitLocations.LeftArm", "rightArm": "TAMS.HitLocations.RightArm", "leftLeg": "TAMS.HitLocations.LeftLeg", "rightLeg": "TAMS.HitLocations.RightLeg"
     };
     context.sizeOptions = { "small": "TAMS.SizeOptions.Small", "medium": "TAMS.SizeOptions.Medium", "large": "TAMS.SizeOptions.Large" };
+    context.damageTypeOptions = {
+      "": "TAMS.DamageType.None",
+      "blunt": "TAMS.DamageType.blunt",
+      "piercing": "TAMS.DamageType.piercing",
+      "slashing": "TAMS.DamageType.slashing",
+      "fire": "TAMS.DamageType.fire",
+      "magic": "TAMS.DamageType.magic",
+      "psychic": "TAMS.DamageType.psychic",
+      "acid": "TAMS.DamageType.acid"
+    };
 
     const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.Backpack" };
     for (const bp of context.inventoryBackpacks || []) {
@@ -1524,6 +1536,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         } else if (item.type === 'ability') {
             armourPen = item.system.armourPenetration || 0;
         }
+        const damageType = item.system.damageType || "";
 
         const isAoE = !!item.system.isAoE || (item.system.calculator?.enabled && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === 'aoe'));
         let targets = isAoE ? [...game.user.targets] : (tToken ? [tToken] : []);
@@ -1575,37 +1588,40 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         <div class="roll-row"><b>Hit Locations: ${tHits.join(", ")}</b></div>
                         <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
                         <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
-                          <button class="tams-take-damage" 
-                                  data-damage="${damage}" 
-                                  data-armour-pen="${armourPen}" 
-                                  data-locations='${JSON.stringify(tHits)}' 
+                          <button class="tams-take-damage"
+                                  data-damage="${damage}"
+                                  data-armour-pen="${armourPen}"
+                                  data-damage-type="${damageType}"
+                                  data-locations='${JSON.stringify(tHits)}'
                                   data-target-limb="${targetLimb}"
                                   data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-force-crit="${forceCrit ? '1' : '0'}"
                                   data-target-token-id="${targetTokenId || ''}"
                                   data-target-actor-id="${targetActorId || ''}"
                                   data-target-actor-uuid="${targetActor?.uuid || ''}">Apply Damage</button>
-                          <button class="tams-dodge" 
-                                  data-raw="${rawResult}" 
-                                  data-total="${finalTotal}" 
-                                  data-multi="${multiVal}" 
-                                  data-location="${hitLocation}" 
-                                  data-damage="${damage}" 
-                                  data-armour-pen="${armourPen}" 
-                                  data-is-ranged="${isRanged ? '1' : '0'}" 
+                          <button class="tams-dodge"
+                                  data-raw="${rawResult}"
+                                  data-total="${finalTotal}"
+                                  data-multi="${multiVal}"
+                                  data-location="${hitLocation}"
+                                  data-damage="${damage}"
+                                  data-armour-pen="${armourPen}"
+                                  data-damage-type="${damageType}"
+                                  data-is-ranged="${isRanged ? '1' : '0'}"
                                   data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-target-limb="${targetLimb}"
                                   data-target-token-id="${targetTokenId || ''}"
                                   data-target-actor-id="${targetActorId || ''}"
                                   data-target-actor-uuid="${targetActor?.uuid || ''}">Dodge</button>
-                          <button class="tams-retaliate" 
-                                  data-raw="${rawResult}" 
-                                  data-total="${finalTotal}" 
-                                  data-multi="${multiVal}" 
-                                  data-location="${hitLocation}" 
-                                  data-damage="${damage}" 
-                                  data-armour-pen="${armourPen}" 
-                                  data-is-ranged="${isRanged ? '1' : '0'}" 
+                          <button class="tams-retaliate"
+                                  data-raw="${rawResult}"
+                                  data-total="${finalTotal}"
+                                  data-multi="${multiVal}"
+                                  data-location="${hitLocation}"
+                                  data-damage="${damage}"
+                                  data-armour-pen="${armourPen}"
+                                  data-damage-type="${damageType}"
+                                  data-is-ranged="${isRanged ? '1' : '0'}"
                                   data-is-aoe="${isAoE ? '1' : '0'}"
                                   data-target-limb="${targetLimb}"
                                   data-target-token-id="${targetTokenId || ''}"
@@ -1618,6 +1634,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-locations='${JSON.stringify(tHits)}'
                                   data-damage="${damage}"
                                   data-armour-pen="${armourPen}"
+                                  data-damage-type="${damageType}"
                                   data-target-actor-uuid="${targetActor?.uuid || ''}">Block</button>
                           <button class="tams-behind-toggle" style="background: #444; color: white;">Behind</button>
                           <button class="tams-unaware-toggle" style="background: #444; color: white;">Unaware</button>
@@ -1650,23 +1667,23 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         <span style="font-weight: bold; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;" title="${targetName}">${targetName}</span>
                         <div class="tams-npc-buttons" style="display: flex; gap: 2px;">
                             <button class="tams-take-damage" title="Apply Damage"
-                                    data-damage="${damage}" data-armour-pen="${armourPen}" data-locations='${JSON.stringify(tHits)}' data-target-limb="${targetLimb}"
+                                    data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-locations='${JSON.stringify(tHits)}' data-target-limb="${targetLimb}"
                                     data-is-aoe="${isAoE ? '1' : '0'}"
-                                    data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}" 
+                                    data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
                             <button class="tams-dodge" title="Dodge"
-                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">D</button>
                             <button class="tams-retaliate" title="Retaliate"
-                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
                             <button class="tams-block" title="Block"
-                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">Sh</button>
                             <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
@@ -1799,6 +1816,19 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const resources = [...(this.document.system.customResources || [])];
     resources.splice(index, 1);
     return this.document.update({"system.customResources": resources});
+  }
+
+  async _onResistanceAdd(event, target) {
+    const resistances = [...(this.document.system.resistances || [])];
+    resistances.push({ damageType: "", category: "resistance", value: 0 });
+    return this.document.update({"system.resistances": resistances});
+  }
+
+  async _onResistanceDelete(event, target) {
+    const index = parseInt(target.dataset.index);
+    const resistances = [...(this.document.system.resistances || [])];
+    resistances.splice(index, 1);
+    return this.document.update({"system.resistances": resistances});
   }
 
   /**
