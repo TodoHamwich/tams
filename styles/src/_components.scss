@@ -305,13 +305,40 @@
 // Upgrade points
 .tams .upgrade-pool {
     justify-content: flex-start;
-    gap: 10px;
+    gap: 6px;
     margin-bottom: 5px;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
 
-    label { flex: 0 0 auto; font-weight: bold; }
-    input { width: 55px !important; flex: 0 0 auto; text-align: center; }
+    .up-label { flex: 0 0 auto; font-weight: bold; font-size: 12px; }
+    input { width: 48px !important; flex: 0 0 auto; text-align: center; }
+
+    .up-sep { color: #aaa; font-size: 11px; }
+
+    .up-spent {
+        font-size: 11px;
+        color: #777;
+        white-space: nowrap;
+    }
+
+    .up-remaining {
+        font-size: 11px;
+        font-weight: bold;
+        white-space: nowrap;
+        color: #2e7d32;
+
+        &.negative-hp { color: #e74c3c; }
+    }
+}
+
+.tams .up-tag {
+    font-size: 9px;
+    background: rgba(0, 100, 200, 0.12);
+    color: #1a4a8a;
+    border: 1px solid rgba(0, 100, 200, 0.2);
+    vertical-align: middle;
+    margin-left: 4px;
 }
 
 .tams .tag-button {

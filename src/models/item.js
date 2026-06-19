@@ -6,6 +6,7 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({initial: 0, nullable: true}),
+      upgradePoints: new fields.NumberField({initial: 0, nullable: true}),
       quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
       size: new fields.StringField({initial: "medium"}),
       location: new fields.StringField({initial: "hand"}),

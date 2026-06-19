@@ -163,6 +163,9 @@ Hooks.once("init", async function() {
   
   /** logical NOT */
   Handlebars.registerHelper('not', (a) => !a);
+
+  /** Subtract b from a */
+  Handlebars.registerHelper('subtract', (a, b) => (Number(a) || 0) - (Number(b) || 0));
   
   /** Capitalize a string */
   Handlebars.registerHelper('capitalize', (str) => {

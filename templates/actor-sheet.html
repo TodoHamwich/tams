@@ -162,10 +162,20 @@
         {{!-- Items Tab --}}
         <div class="tab items {{#if (eq activeTab 'items')}}active{{/if}}" data-group="primary" data-tab="items" data-scrollable data-scroll-id="tab-items">
             <div class="upgrade-pool flexrow">
-                <label>{{localize 'TAMS.WeaponUpgradePoints'}}</label>
-                <input type="number" name="system.upgradePoints.weapons" value="{{system.upgradePoints.weapons}}"/>
-                <label>{{localize 'TAMS.SkillUpgradePoints'}}</label>
-                <input type="number" name="system.upgradePoints.skills" value="{{system.upgradePoints.skills}}"/>
+                <span class="up-label">{{localize 'TAMS.WeaponUpgradePoints'}}</span>
+                <input type="number" name="system.upgradePoints.weapons" value="{{system.upgradePoints.weapons}}" title="{{localize 'TAMS.UPEarned'}}"/>
+                <span class="up-sep">|</span>
+                <span class="up-spent" title="{{localize 'TAMS.UPSpent'}}">{{system.upSpent.weapons}} {{localize 'TAMS.UPSpent'}}</span>
+                <span class="up-sep">|</span>
+                <span class="up-remaining {{#if (lt (subtract system.upgradePoints.weapons system.upSpent.weapons) 0)}}negative-hp{{/if}}" title="{{localize 'TAMS.UPRemaining'}}">{{subtract system.upgradePoints.weapons system.upSpent.weapons}} {{localize 'TAMS.UPRemaining'}}</span>
+            </div>
+            <div class="upgrade-pool flexrow">
+                <span class="up-label">{{localize 'TAMS.SkillUpgradePoints'}}</span>
+                <input type="number" name="system.upgradePoints.skills" value="{{system.upgradePoints.skills}}" title="{{localize 'TAMS.UPEarned'}}"/>
+                <span class="up-sep">|</span>
+                <span class="up-spent" title="{{localize 'TAMS.UPSpent'}}">{{system.upSpent.skills}} {{localize 'TAMS.UPSpent'}}</span>
+                <span class="up-sep">|</span>
+                <span class="up-remaining {{#if (lt (subtract system.upgradePoints.skills system.upSpent.skills) 0)}}negative-hp{{/if}}" title="{{localize 'TAMS.UPRemaining'}}">{{subtract system.upgradePoints.skills system.upSpent.skills}} {{localize 'TAMS.UPRemaining'}}</span>
             </div>
             <h3>{{localize 'TAMS.Weapons'}} <a data-action="itemCreate" data-type="weapon"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
@@ -240,6 +250,7 @@
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
+                        {{#if item.system.upgradePoints}}<span class="prop-tag up-tag">{{item.system.upgradePoints}} UP</span>{{/if}}
                     </h4>
                     <div class="item-stat">
                         <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}"/>
@@ -298,15 +309,20 @@
             <hr>
 
             <div class="upgrade-pool flexrow">
-                <label>{{localize 'TAMS.AbilityUpgradePoints'}}</label>
-                <input type="number" name="system.upgradePoints.abilities" value="{{system.upgradePoints.abilities}}"/>
+                <span class="up-label">{{localize 'TAMS.AbilityUpgradePoints'}}</span>
+                <input type="number" name="system.upgradePoints.abilities" value="{{system.upgradePoints.abilities}}" title="{{localize 'TAMS.UPEarned'}}"/>
+                <span class="up-sep">|</span>
+                <span class="up-spent" title="{{localize 'TAMS.UPSpent'}}">{{system.upSpent.abilities}} {{localize 'TAMS.UPSpent'}}</span>
+                <span class="up-sep">|</span>
+                <span class="up-remaining {{#if (lt (subtract system.upgradePoints.abilities system.upSpent.abilities) 0)}}negative-hp{{/if}}" title="{{localize 'TAMS.UPRemaining'}}">{{subtract system.upgradePoints.abilities system.upSpent.abilities}} {{localize 'TAMS.UPRemaining'}}</span>
             </div>
             <h3>{{localize 'TAMS.Abilities'}} <a data-action="itemCreate" data-type="ability"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <ol class="items-list">
                 {{#each abilities as |item id|}}
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
-                        {{item.name}} 
+                        {{item.name}}
+                        {{#if item.system.upgradePoints}}<span class="prop-tag up-tag">{{item.system.upgradePoints}} UP</span>{{/if}}
                         {{#if item.system.isAttack}}
                         ({{localize 'TAMS.DmgColon'}} {{item.system.calculatedDamage}})
                         {{/if}}
@@ -486,8 +502,12 @@
         {{!-- Description Tab --}}
         <div class="tab description {{#if (eq activeTab 'description')}}active{{/if}}" data-group="primary" data-tab="description" data-scrollable data-scroll-id="tab-description">
             <div class="upgrade-pool flexrow">
-                <label>{{localize 'TAMS.TraitsUpgradePoints'}}</label>
-                <input type="number" name="system.upgradePoints.traits" value="{{system.upgradePoints.traits}}"/>
+                <span class="up-label">{{localize 'TAMS.TraitsUpgradePoints'}}</span>
+                <input type="number" name="system.upgradePoints.traits" value="{{system.upgradePoints.traits}}" title="{{localize 'TAMS.UPEarned'}}"/>
+                <span class="up-sep">|</span>
+                <span class="up-spent" title="{{localize 'TAMS.UPSpent'}}">{{system.upSpent.traits}} {{localize 'TAMS.UPSpent'}}</span>
+                <span class="up-sep">|</span>
+                <span class="up-remaining {{#if (lt (subtract system.upgradePoints.traits system.upSpent.traits) 0)}}negative-hp{{/if}}" title="{{localize 'TAMS.UPRemaining'}}">{{subtract system.upgradePoints.traits system.upSpent.traits}} {{localize 'TAMS.UPRemaining'}}</span>
             </div>
 
             <div class="flexrow" style="align-items: center; margin-bottom: 5px; margin-top: 10px;">
@@ -506,6 +526,7 @@
                         {{#if trait.system.isProfession}}
                         <span class="trait-profession" style="margin-left: 5px; font-style: italic; font-size: 11px; opacity: 0.8;">({{trait.system.profession}})</span>
                         {{/if}}
+                        {{#if trait.system.upgradePoints}}<span class="prop-tag up-tag" style="margin-left: 5px;">{{trait.system.upgradePoints}} UP</span>{{/if}}
                     </div>
                     <div class="item-controls" style="flex: 0 0 60px; text-align: right;">
                         <a class="item-control item-edit" title="{{localize 'TAMS.EditItem'}}" data-action="itemEdit"><i class="fas fa-edit"></i></a>

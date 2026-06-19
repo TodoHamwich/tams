@@ -254,6 +254,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this._prepareStamina();
     this._prepareCustomResources();
     this._prepareInventoryCapacity();
+    this._prepareUpSpent();
     this._prepareDowntime();
   }
   /**
@@ -410,6 +411,20 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     }
   }
   /**
+   * Sum upgradePoints spent across all owned items, per category.
+   * @protected
+   */
+  _prepareUpSpent() {
+    var _a;
+    const items = ((_a = this.parent) == null ? void 0 : _a.items) ?? [];
+    this.upSpent = {
+      skills: items.filter((i) => i.type === "skill").reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
+      abilities: items.filter((i) => i.type === "ability").reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
+      traits: items.filter((i) => i.type === "trait").reduce((s, i) => s + (i.system.upgradePoints || 0), 0),
+      weapons: items.filter((i) => i.type === "weapon").reduce((s, i) => s + (i.system.upgradePoints || 0), 0)
+    };
+  }
+  /**
    * Calculate downtime days remaining.
    * @protected
    */
@@ -426,6 +441,7 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       familiarity: new fields.NumberField({ initial: 0, nullable: true }),
+      upgradePoints: new fields.NumberField({ initial: 0, nullable: true }),
       quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
       size: new fields.StringField({ initial: "medium" }),
       location: new fields.StringField({ initial: "hand" }),
@@ -4843,6 +4859,7 @@ Hooks.once("init", async function() {
     return args.every((v) => !!v);
   });
   Handlebars.registerHelper("not", (a) => !a);
+  Handlebars.registerHelper("subtract", (a, b) => (Number(a) || 0) - (Number(b) || 0));
   Handlebars.registerHelper("capitalize", (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1);
