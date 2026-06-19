@@ -210,7 +210,22 @@ Hooks.once("init", async function() {
   Hooks.on("updateActor", (actor) => tamsSyncEncumbrance(actor));
   Hooks.on("createItem", (item) => { if (item.parent) tamsSyncEncumbrance(item.parent); });
   Hooks.on("updateItem", (item) => { if (item.parent) tamsSyncEncumbrance(item.parent); });
-  Hooks.on("deleteItem", (item) => { if (item.parent) tamsSyncEncumbrance(item.parent); });
+  Hooks.on("deleteItem", (item) => {
+    if (!item.parent) return;
+    tamsSyncEncumbrance(item.parent);
+    if (item.type !== "armor") return;
+    const actor = item.parent;
+    const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    const updates = {};
+    for (const key of limbKeys) {
+      if (actor.system.limbs?.[key]?.equippedArmorId === item.id) {
+        updates[`system.limbs.${key}.equippedArmorId`] = "";
+        updates[`system.limbs.${key}.armor`] = 0;
+        updates[`system.limbs.${key}.armorMax`] = 0;
+      }
+    }
+    if (Object.keys(updates).length > 0) actor.update(updates);
+  });
   Hooks.once("ready", () => {
     for (const actor of game.actors) tamsSyncEncumbrance(actor);
   });

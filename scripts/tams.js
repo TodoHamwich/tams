@@ -2609,14 +2609,15 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   _prepareLimbArmorOptions(context) {
-    var _a;
+    var _a, _b;
     const armorItems = this.document.items.filter((i) => i.type === "armor");
     context.limbArmorOptions = {};
     const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
     for (const limbKey of limbKeys) {
       context.limbArmorOptions[limbKey] = { "": "None" };
+      const currentArmorId = (_a = this.document.system.limbs[limbKey]) == null ? void 0 : _a.equippedArmorId;
       for (const armor of armorItems) {
-        if (((_a = armor.system.limbs[limbKey]) == null ? void 0 : _a.max) > 0) {
+        if (((_b = armor.system.limbs[limbKey]) == null ? void 0 : _b.max) > 0 || armor.id === currentArmorId) {
           context.limbArmorOptions[limbKey][armor.id] = armor.name;
         }
       }
@@ -4828,7 +4829,21 @@ Hooks.once("init", async function() {
     if (item.parent) tamsSyncEncumbrance(item.parent);
   });
   Hooks.on("deleteItem", (item) => {
-    if (item.parent) tamsSyncEncumbrance(item.parent);
+    var _a, _b;
+    if (!item.parent) return;
+    tamsSyncEncumbrance(item.parent);
+    if (item.type !== "armor") return;
+    const actor = item.parent;
+    const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    const updates = {};
+    for (const key of limbKeys) {
+      if (((_b = (_a = actor.system.limbs) == null ? void 0 : _a[key]) == null ? void 0 : _b.equippedArmorId) === item.id) {
+        updates[`system.limbs.${key}.equippedArmorId`] = "";
+        updates[`system.limbs.${key}.armor`] = 0;
+        updates[`system.limbs.${key}.armorMax`] = 0;
+      }
+    }
+    if (Object.keys(updates).length > 0) actor.update(updates);
   });
   Hooks.once("ready", () => {
     for (const actor of game.actors) tamsSyncEncumbrance(actor);

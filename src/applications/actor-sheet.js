@@ -413,8 +413,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
     for (const limbKey of limbKeys) {
         context.limbArmorOptions[limbKey] = { "": "None" };
+        const currentArmorId = this.document.system.limbs[limbKey]?.equippedArmorId;
         for (const armor of armorItems) {
-            if (armor.system.limbs[limbKey]?.max > 0) {
+            if (armor.system.limbs[limbKey]?.max > 0 || armor.id === currentArmorId) {
                 context.limbArmorOptions[limbKey][armor.id] = armor.name;
             }
         }
