@@ -1583,7 +1583,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         <div class="roll-row"><b>Damage: ${damage}</b></div>
                         <div class="roll-row"><b>Hit Locations: ${tHits.join(", ")}</b></div>
                         <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
-                        <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
+                        <div class="roll-row" style="gap:6px; flex-wrap: wrap; justify-content: flex-start;">
                           <button class="tams-take-damage"
                                   data-damage="${damage}"
                                   data-armour-pen="${armourPen}"

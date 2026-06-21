@@ -1062,27 +1062,6 @@ async function tamsCallGroupCheck() {
     flags: { tams: { isGroupCheck: true, label: rollLabel, difficulty, rollChoice, fallbackStatId, results } }
   });
 }
-async function tamsHandleGroupCheckResult(data) {
-  var _a, _b, _c, _d, _e, _f;
-  const message = game.messages.get(data.messageId);
-  if (!message) return;
-  const existing = ((_b = (_a = message.flags) == null ? void 0 : _a.tams) == null ? void 0 : _b.results) ?? [];
-  if (existing.some((r) => r.actorId === data.actorId)) return;
-  const difficulty = ((_d = (_c = message.flags) == null ? void 0 : _c.tams) == null ? void 0 : _d.difficulty) ?? 0;
-  const results = [...existing, {
-    actorId: data.actorId,
-    actorName: data.actorName,
-    skillName: data.skillName,
-    total: data.total,
-    raw: data.raw,
-    success: difficulty > 0 ? data.total >= difficulty : null
-  }];
-  const label = ((_f = (_e = message.flags) == null ? void 0 : _e.tams) == null ? void 0 : _f.label) ?? "";
-  await message.update({
-    content: buildGroupCheckContent(label, difficulty, results),
-    "flags.tams.results": results
-  });
-}
 async function tamsRenderChatMessage(message, html, data) {
   const root = html instanceof jQuery ? html[0] : html;
   root.querySelectorAll(".tams-roll").forEach((container2) => {
@@ -1108,7 +1087,7 @@ async function tamsRenderChatMessage(message, html, data) {
     }
     btn.textContent = game.i18n.format("TAMS.GroupCheck.JoinAs", { name: actor.name });
     btn.addEventListener("click", async (ev) => {
-      var _a2, _b2, _c, _d, _e, _f;
+      var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
       ev.preventDefault();
       const currentActor = game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
       if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.GroupCheck.NoCharacter"));
@@ -1162,19 +1141,25 @@ async function tamsRenderChatMessage(message, html, data) {
           skillDisplayName = statLabels[sId] ?? sId;
         }
       }
-      const resultData = {
-        messageId: message.id,
+      const difficulty = ((_h = (_g = message.flags) == null ? void 0 : _g.tams) == null ? void 0 : _h.difficulty) ?? 0;
+      const label = ((_j = (_i = message.flags) == null ? void 0 : _i.tams) == null ? void 0 : _j.label) ?? "";
+      const existing2 = ((_l = (_k = message.flags) == null ? void 0 : _k.tams) == null ? void 0 : _l.results) ?? [];
+      if (existing2.some((r) => r.actorId === currentActor.id)) {
+        return ui.notifications.info(game.i18n.localize("TAMS.GroupCheck.AlreadyRolled"));
+      }
+      const newEntry = {
         actorId: currentActor.id,
         actorName: currentActor.name,
         skillName: skillDisplayName,
         total,
-        raw
+        raw,
+        success: difficulty > 0 ? total >= difficulty : null
       };
-      if (game.user.isGM || message.isAuthor) {
-        await tamsHandleGroupCheckResult(resultData);
-      } else {
-        game.socket.emit("system.tams", { type: "groupCheckResult", ...resultData });
-      }
+      const newResults = [...existing2, newEntry];
+      await tamsUpdateMessage(message, {
+        content: buildGroupCheckContent(label, difficulty, newResults),
+        "flags.tams.results": newResults
+      });
     });
   });
   root.querySelectorAll(".tams-take-damage").forEach((el) => el.addEventListener("click", async (ev) => {
@@ -1743,7 +1728,7 @@ async function tamsRenderChatMessage(message, html, data) {
           <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.HitsTaken")} ${hitsScored} / ${multiVal}</b></div>
           <div class="roll-row"><b>${game.i18n.localize("TAMS.Location")}: ${retLocations[0] || "-"}</b></div>
           ${retLocations.length > 1 ? `<div class="roll-row"><small>Additional: ${retLocations.slice(1).join(", ")}</small></div>` : ""}
-          <div class="roll-row" style="gap:6px; flex-wrap: wrap;">${retButtons}</div>
+          <div class="roll-row" style="gap:6px; flex-wrap: wrap; justify-content: flex-start;">${retButtons}</div>
           <div class="roll-row"><span>${game.i18n.localize("TAMS.Combat.RawDiceResult")}</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>${game.i18n.format("TAMS.Combat.StatCapLabel", { name: "Cap", value: cap })}</small><span>${capped}</span></div>
           <div class="roll-row"><small>${game.i18n.localize("TAMS.Familiarity")}:</small><span>+${fam}</span></div>
@@ -3948,7 +3933,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                         <div class="roll-row"><b>Damage: ${damage}</b></div>
                         <div class="roll-row"><b>Hit Locations: ${tHits.join(", ")}</b></div>
                         <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
-                        <div class="roll-row" style="gap:6px; flex-wrap: wrap;">
+                        <div class="roll-row" style="gap:6px; flex-wrap: wrap; justify-content: flex-start;">
                           <button class="tams-take-damage"
                                   data-damage="${damage}"
                                   data-armour-pen="${armourPen}"
@@ -5031,8 +5016,6 @@ Hooks.once("init", async function() {
       tamsHandleLootDrop(data.lootData, data.x, data.y);
     } else if (data.type === "transferItem" && game.user.isGM) {
       tamsHandleItemTransfer(data);
-    } else if (data.type === "groupCheckResult" && game.user.isGM) {
-      tamsHandleGroupCheckResult(data);
     }
   });
   game.settings.register("tams", "currencies", {

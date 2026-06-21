@@ -336,29 +336,6 @@ export async function tamsCallGroupCheck() {
   });
 }
 
-export async function tamsHandleGroupCheckResult(data) {
-  const message = game.messages.get(data.messageId);
-  if (!message) return;
-
-  const existing = message.flags?.tams?.results ?? [];
-  if (existing.some(r => r.actorId === data.actorId)) return;
-
-  const difficulty = message.flags?.tams?.difficulty ?? 0;
-  const results = [...existing, {
-    actorId: data.actorId,
-    actorName: data.actorName,
-    skillName: data.skillName,
-    total: data.total,
-    raw: data.raw,
-    success: difficulty > 0 ? data.total >= difficulty : null
-  }];
-  const label = message.flags?.tams?.label ?? "";
-  await message.update({
-    content: buildGroupCheckContent(label, difficulty, results),
-    "flags.tams.results": results
-  });
-}
-
 // ======================================================================
 
 /**
@@ -455,20 +432,28 @@ export async function tamsRenderChatMessage(message, html, data) {
           }
         }
 
-        const resultData = {
-          messageId: message.id,
+        const difficulty = message.flags?.tams?.difficulty ?? 0;
+        const label = message.flags?.tams?.label ?? "";
+        const existing = message.flags?.tams?.results ?? [];
+
+        if (existing.some(r => r.actorId === currentActor.id)) {
+          return ui.notifications.info(game.i18n.localize("TAMS.GroupCheck.AlreadyRolled"));
+        }
+
+        const newEntry = {
           actorId: currentActor.id,
           actorName: currentActor.name,
           skillName: skillDisplayName,
           total,
-          raw
+          raw,
+          success: difficulty > 0 ? total >= difficulty : null
         };
+        const newResults = [...existing, newEntry];
 
-        if (game.user.isGM || message.isAuthor) {
-          await tamsHandleGroupCheckResult(resultData);
-        } else {
-          game.socket.emit("system.tams", { type: "groupCheckResult", ...resultData });
-        }
+        await tamsUpdateMessage(message, {
+          content: buildGroupCheckContent(label, difficulty, newResults),
+          "flags.tams.results": newResults
+        });
       });
     });
 
@@ -1091,7 +1076,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.HitsTaken")} ${hitsScored} / ${multiVal}</b></div>
           <div class="roll-row"><b>${game.i18n.localize("TAMS.Location")}: ${retLocations[0] || "-"}</b></div>
           ${retLocations.length > 1 ? `<div class="roll-row"><small>Additional: ${retLocations.slice(1).join(", ")}</small></div>` : ""}
-          <div class="roll-row" style="gap:6px; flex-wrap: wrap;">${retButtons}</div>
+          <div class="roll-row" style="gap:6px; flex-wrap: wrap; justify-content: flex-start;">${retButtons}</div>
           <div class="roll-row"><span>${game.i18n.localize("TAMS.Combat.RawDiceResult")}</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>${game.i18n.format("TAMS.Combat.StatCapLabel", {name: "Cap", value: cap})}</small><span>${capped}</span></div>
           <div class="roll-row"><small>${game.i18n.localize("TAMS.Familiarity")}:</small><span>+${fam}</span></div>

@@ -9,7 +9,7 @@ import { TAMSNPCSheet } from './applications/npc-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
-import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckResult } from './utils/combat.js';
+import { tamsRenderChatMessage, tamsCallGroupCheck } from './utils/combat.js';
 
 Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
@@ -23,8 +23,6 @@ Hooks.once("init", async function() {
         tamsHandleLootDrop(data.lootData, data.x, data.y);
     } else if (data.type === "transferItem" && game.user.isGM) {
         tamsHandleItemTransfer(data);
-    } else if (data.type === "groupCheckResult" && game.user.isGM) {
-        tamsHandleGroupCheckResult(data);
     }
   });
 
