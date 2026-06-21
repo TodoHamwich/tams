@@ -144,7 +144,7 @@
         </div>
 
         {{!-- Weapons --}}
-        <h3>{{localize 'TAMS.Weapons'}} <a data-action="itemCreate" data-type="weapon" title="{{localize 'TAMS.AddWeapon'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+        <h3>{{localize 'TAMS.Weapons'}}<span class="section-line"></span><a data-action="itemCreate" data-type="weapon" title="{{localize 'TAMS.AddWeapon'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
         <li class="item flexrow item-header">
             <div class="item-name">{{localize 'TAMS.Name'}}</div>
             <div class="item-stat">{{localize 'TAMS.Dmg'}}</div>
@@ -186,7 +186,7 @@
         </ol>
 
         {{!-- Skills --}}
-        <h3>{{localize 'TAMS.Skills'}} <a data-action="itemCreate" data-type="skill" title="{{localize 'TAMS.Add'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+        <h3>{{localize 'TAMS.Skills'}}<span class="section-line"></span><a data-action="itemCreate" data-type="skill" title="{{localize 'TAMS.Add'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
         <li class="item flexrow item-header">
             <div class="item-name">{{localize 'TAMS.Name'}}</div>
             <div class="item-stat">{{localize 'TAMS.Fam'}}</div>
@@ -214,7 +214,7 @@
         </ol>
 
         {{!-- Abilities --}}
-        <h3>{{localize 'TAMS.Abilities'}} <a data-action="itemCreate" data-type="ability" title="{{localize 'TAMS.Add'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+        <h3>{{localize 'TAMS.Abilities'}}<span class="section-line"></span><a data-action="itemCreate" data-type="ability" title="{{localize 'TAMS.Add'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
         <ol class="items-list">
             {{#each abilities as |item id|}}
             <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
@@ -244,7 +244,7 @@
         </ol>
 
         {{!-- Custom Resources --}}
-        <h3>{{localize 'TAMS.Resources'}} <a data-action="resourceAdd" title="{{localize 'TAMS.AddResource'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+        <h3>{{localize 'TAMS.Resources'}}<span class="section-line"></span><a data-action="resourceAdd" title="{{localize 'TAMS.AddResource'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
 
         {{!-- Current value bars --}}
         {{#if customResourceData.length}}

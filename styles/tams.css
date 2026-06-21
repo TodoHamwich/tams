@@ -521,6 +521,20 @@
   background: rgb(95.5234042553, 94.7404255319, 88.4765957447);
 }
 
+.tams .tab:not(.stats) > h3,
+.tams .sheet-body > h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tams .section-line {
+  flex: 1;
+  min-width: 0;
+  border-top: 1px solid currentColor;
+  opacity: 0.25;
+}
+
 .tams .tab.stats .grid-2col,
 .tams.npc .grid-2col {
   grid-template-columns: 180px 1fr;

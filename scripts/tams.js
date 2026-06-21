@@ -915,7 +915,8 @@ function buildGroupCheckContent(label, difficulty, results) {
   const difficultyRow = difficulty > 0 ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.GroupCheck.Difficulty")}:</span><span>${difficulty}</span></div>` : "";
   const resultsHtml = results.map((r) => {
     const passFailHtml = difficulty > 0 ? ` <b style="color:${r.success ? "#2e7d32" : "#c0392b"}">[${r.success ? game.i18n.localize("TAMS.GroupCheck.Pass") : game.i18n.localize("TAMS.GroupCheck.Fail")}]</b>` : "";
-    return `<div class="roll-row"><span>${r.actorName}: <em>${r.skillName}</em></span><span class="roll-value">${r.total}${passFailHtml}</span></div>`;
+    const rollDisplay = r.raw !== void 0 && r.raw !== r.total ? `${r.raw} → ${r.total}` : `${r.total}`;
+    return `<div class="roll-row"><span>${r.actorName}: <em>${r.skillName}</em></span><span class="roll-value">${rollDisplay}${passFailHtml}</span></div>`;
   }).join("");
   return `<div class="tams-roll tams-group-check">
     <h3 class="roll-label">${game.i18n.format("TAMS.GroupCheck.Title", { label })}</h3>
@@ -929,9 +930,6 @@ async function tamsCallGroupCheck() {
   var _a, _b, _c, _d;
   if (!game.user.isGM) return;
   const selectedTokens = (((_a = canvas == null ? void 0 : canvas.tokens) == null ? void 0 : _a.controlled) ?? []).filter((t) => t.actor);
-  if (selectedTokens.length === 0) {
-    return ui.notifications.warn(game.i18n.localize("TAMS.GroupCheck.NoTokensSelected"));
-  }
   const skillNames = /* @__PURE__ */ new Set();
   for (const token of selectedTokens) {
     for (const item of token.actor.items) {
@@ -968,7 +966,7 @@ async function tamsCallGroupCheck() {
           <label>${game.i18n.localize("TAMS.GroupCheck.Difficulty")}</label>
           <input type="number" id="gc-difficulty" value="0" min="0"/>
         </div>
-        <p><small>${game.i18n.format("TAMS.GroupCheck.RollingFor", { count: selectedTokens.length })}</small></p>
+        ${selectedTokens.length > 0 ? `<p><small>${game.i18n.format("TAMS.GroupCheck.RollingFor", { count: selectedTokens.length })}</small></p>` : ""}
       `,
       buttons: {
         roll: {
@@ -1097,7 +1095,7 @@ async function tamsRenderChatMessage(message, html, data) {
   });
   root.querySelectorAll(".tams-group-check-roll").forEach((btn) => {
     var _a, _b;
-    const actor = game.user.character;
+    const actor = game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
     const existing = ((_b = (_a = message.flags) == null ? void 0 : _a.tams) == null ? void 0 : _b.results) ?? [];
     if (!actor) {
       btn.style.display = "none";
@@ -1112,7 +1110,7 @@ async function tamsRenderChatMessage(message, html, data) {
     btn.addEventListener("click", async (ev) => {
       var _a2, _b2, _c, _d, _e, _f;
       ev.preventDefault();
-      const currentActor = game.user.character;
+      const currentActor = game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
       if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.GroupCheck.NoCharacter"));
       const currentExisting = ((_b2 = (_a2 = message.flags) == null ? void 0 : _a2.tams) == null ? void 0 : _b2.results) ?? [];
       if (currentExisting.some((r) => r.actorId === currentActor.id)) {
@@ -2217,7 +2215,7 @@ class TAMSActor extends Actor {
       if (currentVal <= 0 && currentVal > -limb.max && !original.injured && !limb.injured) {
         pendingChecks.push({ type: "injured", loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
       }
-      if (currentVal <= -limb.max && !original.criticallyInjured && original.value > -limb.max) {
+      if (currentVal <= -limb.max && !original.criticallyInjured && original.value >= -limb.max) {
         pendingChecks.push({ type: "crit", loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
       } else if (hits.some((h) => locationMap[h.location] === limbKey && h.forceCrit === "1")) {
         if (!original.criticallyInjured) {

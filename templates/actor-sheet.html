@@ -158,7 +158,7 @@
 
         {{!-- Items Tab --}}
         <div class="tab items {{#if (eq activeTab 'items')}}active{{/if}}" data-group="primary" data-tab="items" data-scrollable data-scroll-id="tab-items">
-            <h3>{{localize 'TAMS.Weapons'}} <a data-action="itemCreate" data-type="weapon"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+            <h3>{{localize 'TAMS.Weapons'}}<span class="section-line"></span><a data-action="itemCreate" data-type="weapon"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
                 <div class="item-name">{{localize 'TAMS.Name'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Dmg'}}</div>
@@ -219,7 +219,7 @@
                 {{/each}}
             </ol>
 
-            <h3>{{localize 'TAMS.Skills'}} <a data-action="itemCreate" data-type="skill"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+            <h3>{{localize 'TAMS.Skills'}}<span class="section-line"></span><a data-action="itemCreate" data-type="skill"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
                 <div class="item-name">{{localize 'TAMS.Name'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Fam'}}</div>
@@ -288,7 +288,7 @@
 
             <hr>
 
-            <h3>{{localize 'TAMS.Abilities'}} <a data-action="itemCreate" data-type="ability"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+            <h3>{{localize 'TAMS.Abilities'}}<span class="section-line"></span><a data-action="itemCreate" data-type="ability"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <ol class="items-list">
                 {{#each abilities as |item id|}}
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">

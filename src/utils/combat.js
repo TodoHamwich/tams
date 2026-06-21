@@ -172,7 +172,10 @@ function buildGroupCheckContent(label, difficulty, results) {
     const passFailHtml = difficulty > 0
       ? ` <b style="color:${r.success ? "#2e7d32" : "#c0392b"}">[${r.success ? game.i18n.localize("TAMS.GroupCheck.Pass") : game.i18n.localize("TAMS.GroupCheck.Fail")}]</b>`
       : "";
-    return `<div class="roll-row"><span>${r.actorName}: <em>${r.skillName}</em></span><span class="roll-value">${r.total}${passFailHtml}</span></div>`;
+    const rollDisplay = r.raw !== undefined && r.raw !== r.total
+      ? `${r.raw} → ${r.total}`
+      : `${r.total}`;
+    return `<div class="roll-row"><span>${r.actorName}: <em>${r.skillName}</em></span><span class="roll-value">${rollDisplay}${passFailHtml}</span></div>`;
   }).join("");
 
   return `<div class="tams-roll tams-group-check">
@@ -188,9 +191,6 @@ export async function tamsCallGroupCheck() {
   if (!game.user.isGM) return;
 
   const selectedTokens = (canvas?.tokens?.controlled ?? []).filter(t => t.actor);
-  if (selectedTokens.length === 0) {
-    return ui.notifications.warn(game.i18n.localize("TAMS.GroupCheck.NoTokensSelected"));
-  }
 
   // Collect unique skill names across all selected actors for the dropdown
   const skillNames = new Set();
@@ -234,7 +234,7 @@ export async function tamsCallGroupCheck() {
           <label>${game.i18n.localize("TAMS.GroupCheck.Difficulty")}</label>
           <input type="number" id="gc-difficulty" value="0" min="0"/>
         </div>
-        <p><small>${game.i18n.format("TAMS.GroupCheck.RollingFor", {count: selectedTokens.length})}</small></p>
+        ${selectedTokens.length > 0 ? `<p><small>${game.i18n.format("TAMS.GroupCheck.RollingFor", {count: selectedTokens.length})}</small></p>` : ""}
       `,
       buttons: {
         roll: {
@@ -382,7 +382,7 @@ export async function tamsRenderChatMessage(message, html, data) {
 
     // Group Check — Join button
     root.querySelectorAll(".tams-group-check-roll").forEach(btn => {
-      const actor = game.user.character;
+      const actor = game.user.character ?? game.actors.find(a => a.isOwner && a.type === "character");
       const existing = message.flags?.tams?.results ?? [];
 
       if (!actor) { btn.style.display = "none"; return; }
@@ -397,7 +397,7 @@ export async function tamsRenderChatMessage(message, html, data) {
 
       btn.addEventListener("click", async ev => {
         ev.preventDefault();
-        const currentActor = game.user.character;
+        const currentActor = game.user.character ?? game.actors.find(a => a.isOwner && a.type === "character");
         if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.GroupCheck.NoCharacter"));
 
         const currentExisting = message.flags?.tams?.results ?? [];
