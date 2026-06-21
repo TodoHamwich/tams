@@ -546,7 +546,8 @@
       "NoCharacter": "You have no assigned character.",
       "Title": "Group Check: {label}",
       "Pass": "Pass",
-      "Fail": "Fail"
+      "Fail": "Fail",
+      "Submitted": "Roll submitted!"
     },
     "Checks": {
       "InjuryCheck": "INJURY CHECK: {loc}",

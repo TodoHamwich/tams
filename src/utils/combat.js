@@ -187,6 +187,25 @@ function buildGroupCheckContent(label, difficulty, results) {
   </div>`;
 }
 
+export async function tamsHandleGroupCheckPending(msg) {
+  if (!msg.flags?.tams?.groupCheckPending) return;
+  const { targetMessageId, entry, label, difficulty } = msg.flags.tams;
+
+  const groupMsg = game.messages.get(targetMessageId);
+  if (!groupMsg) { await msg.delete(); return; }
+
+  const existing = groupMsg.flags?.tams?.results ?? [];
+  if (!existing.some(r => r.actorId === entry.actorId)) {
+    const newResults = [...existing, entry];
+    await groupMsg.update({
+      content: buildGroupCheckContent(label, difficulty, newResults),
+      "flags.tams.results": newResults
+    });
+  }
+
+  await msg.delete();
+}
+
 export async function tamsCallGroupCheck() {
   if (!game.user.isGM) return;
 
@@ -450,10 +469,29 @@ export async function tamsRenderChatMessage(message, html, data) {
         };
         const newResults = [...existing, newEntry];
 
-        await tamsUpdateMessage(message, {
-          content: buildGroupCheckContent(label, difficulty, newResults),
-          "flags.tams.results": newResults
-        });
+        if (game.user.isGM || message.isAuthor) {
+          await message.update({
+            content: buildGroupCheckContent(label, difficulty, newResults),
+            "flags.tams.results": newResults
+          });
+        } else {
+          const gmIds = game.users.filter(u => u.isGM).map(u => u.id);
+          await ChatMessage.create({
+            whisper: gmIds,
+            content: "",
+            speaker: ChatMessage.getSpeaker({ actor: currentActor }),
+            flags: {
+              tams: {
+                groupCheckPending: true,
+                targetMessageId: message.id,
+                entry: newEntry,
+                label,
+                difficulty
+              }
+            }
+          });
+          ui.notifications.info(game.i18n.localize("TAMS.GroupCheck.Submitted"));
+        }
       });
     });
 

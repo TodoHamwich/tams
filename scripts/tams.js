@@ -926,6 +926,25 @@ function buildGroupCheckContent(label, difficulty, results) {
     <div class="roll-row" style="margin-top:4px;"><button class="tams-group-check-roll">${game.i18n.localize("TAMS.GroupCheck.Join")}</button></div>
   </div>`;
 }
+async function tamsHandleGroupCheckPending(msg) {
+  var _a, _b, _c, _d;
+  if (!((_b = (_a = msg.flags) == null ? void 0 : _a.tams) == null ? void 0 : _b.groupCheckPending)) return;
+  const { targetMessageId, entry, label, difficulty } = msg.flags.tams;
+  const groupMsg = game.messages.get(targetMessageId);
+  if (!groupMsg) {
+    await msg.delete();
+    return;
+  }
+  const existing = ((_d = (_c = groupMsg.flags) == null ? void 0 : _c.tams) == null ? void 0 : _d.results) ?? [];
+  if (!existing.some((r) => r.actorId === entry.actorId)) {
+    const newResults = [...existing, entry];
+    await groupMsg.update({
+      content: buildGroupCheckContent(label, difficulty, newResults),
+      "flags.tams.results": newResults
+    });
+  }
+  await msg.delete();
+}
 async function tamsCallGroupCheck() {
   var _a, _b, _c, _d;
   if (!game.user.isGM) return;
@@ -1156,10 +1175,29 @@ async function tamsRenderChatMessage(message, html, data) {
         success: difficulty > 0 ? total >= difficulty : null
       };
       const newResults = [...existing2, newEntry];
-      await tamsUpdateMessage(message, {
-        content: buildGroupCheckContent(label, difficulty, newResults),
-        "flags.tams.results": newResults
-      });
+      if (game.user.isGM || message.isAuthor) {
+        await message.update({
+          content: buildGroupCheckContent(label, difficulty, newResults),
+          "flags.tams.results": newResults
+        });
+      } else {
+        const gmIds = game.users.filter((u) => u.isGM).map((u) => u.id);
+        await ChatMessage.create({
+          whisper: gmIds,
+          content: "",
+          speaker: ChatMessage.getSpeaker({ actor: currentActor }),
+          flags: {
+            tams: {
+              groupCheckPending: true,
+              targetMessageId: message.id,
+              entry: newEntry,
+              label,
+              difficulty
+            }
+          }
+        });
+        ui.notifications.info(game.i18n.localize("TAMS.GroupCheck.Submitted"));
+      }
     });
   });
   root.querySelectorAll(".tams-take-damage").forEach((el) => el.addEventListener("click", async (ev) => {
@@ -5139,6 +5177,10 @@ Hooks.once("init", async function() {
     return str.toUpperCase();
   });
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
+  Hooks.on("createChatMessage", async (msg) => {
+    if (!game.user.isGM) return;
+    await tamsHandleGroupCheckPending(msg);
+  });
   Hooks.on("renderChatLog", (app, html) => {
     if (!game.user.isGM) return;
     const root = html instanceof jQuery ? html[0] : html;

@@ -9,7 +9,7 @@ import { TAMSNPCSheet } from './applications/npc-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
-import { tamsRenderChatMessage, tamsCallGroupCheck } from './utils/combat.js';
+import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending } from './utils/combat.js';
 
 Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
@@ -187,6 +187,11 @@ Hooks.once("init", async function() {
   });
 
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
+
+  Hooks.on("createChatMessage", async (msg) => {
+    if (!game.user.isGM) return;
+    await tamsHandleGroupCheckPending(msg);
+  });
 
   Hooks.on("renderChatLog", (app, html) => {
     if (!game.user.isGM) return;
