@@ -5,6 +5,7 @@ import { TAMSItem } from './documents/item.js';
 import { TAMSActorSheet } from './applications/actor-sheet.js';
 import { TAMSDowntimeSheet } from './applications/downtime-sheet.js';
 import { TAMSLootSheet } from './applications/loot-sheet.js';
+import { TAMSNPCSheet } from './applications/npc-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
@@ -127,10 +128,15 @@ Hooks.once("init", async function() {
     makeDefault: false,
     label: "TAMS.DowntimeSheet"
   });
-  foundry.documents.collections.Actors.registerSheet("tams", TAMSLootSheet, { 
+  foundry.documents.collections.Actors.registerSheet("tams", TAMSLootSheet, {
     types: ["character"],
     makeDefault: false,
-    label: "TAMS.LootSheet" 
+    label: "TAMS.LootSheet"
+  });
+  foundry.documents.collections.Actors.registerSheet("tams", TAMSNPCSheet, {
+    types: ["character"],
+    makeDefault: false,
+    label: "TAMS.NPCSheet"
   });
   foundry.documents.collections.Items.unregisterSheet("core", foundry.appv1.sheets.ItemSheet);
   foundry.documents.collections.Items.registerSheet("tams", TAMSItemSheet, { makeDefault: true });

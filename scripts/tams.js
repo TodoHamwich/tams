@@ -2582,7 +2582,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   _onRender(context, options) {
     super._onRender(context, options);
     const theme = this.document.system.theme || "default";
-    this.element.classList.remove("theme-default", "theme-dark", "theme-parchment", "theme-grimdark", "theme-cyberpunk", "theme-gothic", "theme-tactical");
+    this.element.classList.remove("theme-default", "theme-dark", "theme-parchment", "theme-grimdark", "theme-cyberpunk", "theme-gothic", "theme-tactical", "theme-wip");
     this.element.classList.add(`theme-${theme}`);
     this.element.querySelectorAll('input[data-action="updateItemField"], select[data-action="updateItemField"]').forEach((el) => {
       el.addEventListener("change", async (ev) => {
@@ -2854,7 +2854,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       "bravery": "TAMS.StatBravery",
       "custom": "TAMS.StatCustom"
     };
-    context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical" };
+    context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical", "wip": "TAMS.ThemeWIP" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
     context.limbOptions = {
@@ -4341,6 +4341,26 @@ __publicField(TAMSLootSheet, "PARTS", {
     template: "systems/tams/templates/loot-sheet.html"
   }
 });
+class TAMSNPCSheet extends TAMSActorSheet {
+  static get DEFAULT_OPTIONS() {
+    return foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
+      classes: ["tams", "sheet", "actor", "npc"],
+      position: { width: 610, height: 760 }
+    }, { inplace: false });
+  }
+  async _onFirstRender(context, options) {
+    var _a;
+    await ((_a = super._onFirstRender) == null ? void 0 : _a.call(this, context, options));
+    if (!this.document.system.settings.isNPC) {
+      await this.document.update({ "system.settings.isNPC": true });
+    }
+  }
+}
+__publicField(TAMSNPCSheet, "PARTS", {
+  form: {
+    template: "systems/tams/templates/npc-sheet.html"
+  }
+});
 const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ItemSheetV2) {
   /** @override */
   static get DEFAULT_OPTIONS() {
@@ -5105,6 +5125,11 @@ Hooks.once("init", async function() {
     types: ["character"],
     makeDefault: false,
     label: "TAMS.LootSheet"
+  });
+  foundry.documents.collections.Actors.registerSheet("tams", TAMSNPCSheet, {
+    types: ["character"],
+    makeDefault: false,
+    label: "TAMS.NPCSheet"
   });
   foundry.documents.collections.Items.unregisterSheet("core", foundry.appv1.sheets.ItemSheet);
   foundry.documents.collections.Items.registerSheet("tams", TAMSItemSheet, { makeDefault: true });

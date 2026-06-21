@@ -63,7 +63,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
   _onRender(context, options) {
     super._onRender(context, options);
     const theme = this.document.system.theme || "default";
-    this.element.classList.remove("theme-default", "theme-dark", "theme-parchment", "theme-grimdark", "theme-cyberpunk", "theme-gothic", "theme-tactical");
+    this.element.classList.remove("theme-default", "theme-dark", "theme-parchment", "theme-grimdark", "theme-cyberpunk", "theme-gothic", "theme-tactical", "theme-wip");
     this.element.classList.add(`theme-${theme}`);
 
     // Fix for inline item updates (Familiarity, fire rate, etc on the tab)
@@ -371,7 +371,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       "bravery": "TAMS.StatBravery",
       "custom": "TAMS.StatCustom"
     };
-    context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical" };
+    context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical", "wip": "TAMS.ThemeWIP" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
     context.limbOptions = {

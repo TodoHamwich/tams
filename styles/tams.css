@@ -521,14 +521,18 @@
   background: rgb(95.5234042553, 94.7404255319, 88.4765957447);
 }
 
-.tams .tab.stats .grid-2col {
+.tams .tab.stats .grid-2col,
+.tams.npc .grid-2col {
   grid-template-columns: 180px 1fr;
   gap: 10px;
+  align-items: start;
 }
 
 .tams .stat label, .tams .limb label {
   flex: 1;
   font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .tams .stat-inputs {
@@ -2183,6 +2187,87 @@
 .tams.theme-parchment select option {
   background: #fdf6e3;
   color: #5c3b1e;
+}
+
+.tams.theme-wip .sheet-header {
+  border-bottom: 3px solid #7a7971;
+  padding-bottom: 8px;
+}
+.tams.theme-wip .sheet-tabs {
+  border-bottom: 2px solid #7a7971;
+}
+.tams.theme-wip .tab.stats .grid-2col,
+.tams.theme-wip .sheet-body > .grid-2col {
+  grid-template-columns: 210px 1fr;
+  align-items: start;
+}
+.tams.theme-wip .tab.stats .stats-list,
+.tams.theme-wip .sheet-body .stats-list {
+  border: 1px solid #7a7971;
+  border-radius: 3px;
+  padding: 6px 8px;
+}
+.tams.theme-wip .tab.stats .stats-list hr,
+.tams.theme-wip .sheet-body .stats-list hr {
+  display: none;
+}
+.tams.theme-wip .tab.stats .stats-list h3.small-header,
+.tams.theme-wip .sheet-body .stats-list h3.small-header {
+  margin: 8px -8px 6px;
+  padding: 3px 8px;
+}
+.tams.theme-wip .tab.stats .limbs-list,
+.tams.theme-wip .sheet-body .limbs-list {
+  border: 1px solid #7a7971;
+  border-radius: 3px;
+  padding: 4px 0;
+}
+.tams.theme-wip .tab.stats .limbs-list .resource-item.hp,
+.tams.theme-wip .sheet-body .limbs-list .resource-item.hp {
+  padding-left: 10px;
+}
+.tams.theme-wip .tab.stats .limbs-list h3.small-header,
+.tams.theme-wip .sheet-body .limbs-list h3.small-header {
+  margin: 4px 0;
+  padding: 3px 4px;
+}
+.tams.theme-wip h3.small-header {
+  border-top: 1px solid #7a7971;
+  border-bottom: 2px solid #7a7971;
+  background: rgba(0, 0, 0, 0.04);
+}
+.tams.theme-wip .tab:not(.stats) > h3,
+.tams.theme-wip .sheet-body > h3 {
+  border-top: 2px solid #7a7971;
+  border-bottom: 2px solid #7a7971;
+  padding: 3px 4px;
+  margin-top: 10px;
+  background: rgba(0, 0, 0, 0.04);
+}
+.tams.theme-wip .item-header {
+  border-bottom: 2px solid #7a7971;
+}
+.tams.theme-wip .items-list {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+  margin-bottom: 4px;
+}
+.tams.theme-wip .items-list .item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+.tams.theme-wip .items-list .item:last-child {
+  border-bottom: none;
+}
+.tams.theme-wip .carry-weight {
+  border: 1px solid #7a7971;
+  border-radius: 3px;
+  padding: 5px 8px;
+  margin-bottom: 6px;
+}
+.tams.theme-wip .inventory-category-header,
+.tams.theme-wip .inventory-section-header {
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 /*# sourceMappingURL=tams.css.map */

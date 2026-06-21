@@ -594,3 +594,101 @@
         color: #5c3b1e;
     }
 }
+
+// ─── WIP (structural layout dividers) ─────────────────────────────────────────
+.tams.theme-wip {
+    // ── Sheet header / tab-nav boundary ──
+    .sheet-header {
+        border-bottom: 3px solid $color-border;
+        padding-bottom: 8px;
+    }
+
+    .sheet-tabs {
+        border-bottom: 2px solid $color-border;
+    }
+
+    // ── Stats + limbs grid: full sheet (inside .tab.stats) and NPC sheet (inside .sheet-body) ──
+    // 210px column: content area = 210 - 16px padding = 194px; label gets ~98px for long names
+    .tab.stats .grid-2col,
+    .sheet-body > .grid-2col {
+        grid-template-columns: 210px 1fr;
+        align-items: start;
+    }
+
+    // Stats panel: has horizontal padding; h3 bleeds edge-to-edge via negative margin
+    .tab.stats .stats-list,
+    .sheet-body .stats-list {
+        border: 1px solid $color-border;
+        border-radius: 3px;
+        padding: 6px 8px;
+
+        hr { display: none; }
+
+        h3.small-header {
+            margin: 8px -8px 6px;
+            padding: 3px 8px;
+        }
+    }
+
+    // Limbs panel: NO horizontal padding — limb-row grids need every available pixel
+    .tab.stats .limbs-list,
+    .sheet-body .limbs-list {
+        border: 1px solid $color-border;
+        border-radius: 3px;
+        padding: 4px 0;
+
+        .resource-item.hp { padding-left: 10px; }
+
+        h3.small-header {
+            margin: 4px 0;
+            padding: 3px 4px;
+        }
+    }
+
+    // ── Section headers as internal dividers ──
+    h3.small-header {
+        border-top: 1px solid $color-border;
+        border-bottom: 2px solid $color-border;
+        background: rgba(0, 0, 0, 0.04);
+    }
+
+    // Top-level h3s (items/abilities tabs, and NPC sheet section headings)
+    .tab:not(.stats) > h3,
+    .sheet-body > h3 {
+        border-top: 2px solid $color-border;
+        border-bottom: 2px solid $color-border;
+        padding: 3px 4px;
+        margin-top: 10px;
+        background: rgba(0, 0, 0, 0.04);
+    }
+
+    // ── Items / Abilities: box the list under each section header ──
+    .item-header {
+        border-bottom: 2px solid $color-border;
+    }
+
+    .items-list {
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-top: none;
+        border-radius: 0 0 3px 3px;
+        margin-bottom: 4px;
+
+        .item {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+            &:last-child { border-bottom: none; }
+        }
+    }
+
+    // ── Inventory: carry-weight box ──
+    .carry-weight {
+        border: 1px solid $color-border;
+        border-radius: 3px;
+        padding: 5px 8px;
+        margin-bottom: 6px;
+    }
+
+    .inventory-category-header,
+    .inventory-section-header {
+        border-top: 1px solid rgba(0, 0, 0, 0.2);
+    }
+}

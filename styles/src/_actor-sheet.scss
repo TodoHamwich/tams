@@ -1,13 +1,17 @@
 @import 'variables';
 
-.tams .tab.stats .grid-2col {
+.tams .tab.stats .grid-2col,
+.tams.npc .grid-2col {
     grid-template-columns: 180px 1fr;
     gap: 10px;
+    align-items: start;
 }
 
 .tams .stat label, .tams .limb label {
     flex: 1;
     font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .tams .stat-inputs {

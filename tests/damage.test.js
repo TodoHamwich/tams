@@ -211,8 +211,34 @@ describe('TAMSActor applyDamage', () => {
         // Limb is not injured, but forceCrit is "1"
         const hits = [{ damage: 5, location: "Thorax", armourPen: 0, forceCrit: "1" }];
         const result = await actor.applyDamage(hits);
-        
+
         expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: 'crit', limbKey: "thorax" }));
+    });
+
+    it('triggers a crit check when a limb is at exactly -max and takes further damage', async () => {
+        // Bug: original.value === -limb.max caused `> -limb.max` to be false, silently dropping the crit check.
+        actor.system.limbs.leftArm.label = "Left Arm";
+        actor.system.limbs.leftArm.value = -7; // exactly at -max (max=7)
+        actor.system.limbs.leftArm.injured = true;
+        actor.system.limbs.leftArm.criticallyInjured = false;
+        const hits = [{ damage: 1, location: "Left Arm", armourPen: 0 }];
+        const result = await actor.applyDamage(hits);
+
+        expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: 'crit', limbKey: "leftArm" }));
+    });
+
+    it('auto-sets injured and triggers only a crit check when a single hit takes a healthy limb below -max', async () => {
+        actor.system.limbs.leftArm.label = "Left Arm";
+        // Full health: value=7, max=7, not injured. Hit for 20 → lands at -13, well below -max (-7).
+        const hits = [{ damage: 20, location: "Left Arm", armourPen: 0 }];
+        const result = await actor.applyDamage(hits);
+
+        // Injured status is auto-set (no injured roll queued)
+        expect(result.pendingChecks).not.toContainEqual(expect.objectContaining({ type: 'injured', limbKey: "leftArm" }));
+        // Crit check must be queued
+        expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: 'crit', limbKey: "leftArm" }));
+        // Injured flag set automatically
+        expect(actor.system.limbs.leftArm.injured).toBe(true);
     });
   });
 });

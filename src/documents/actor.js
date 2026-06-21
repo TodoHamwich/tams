@@ -221,7 +221,7 @@ export class TAMSActor extends Actor {
         if (currentVal <= 0 && currentVal > -limb.max && !original.injured && !limb.injured) {
             pendingChecks.push({ type: 'injured', loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
         }
-        if (currentVal <= -limb.max && !original.criticallyInjured && original.value > -limb.max) {
+        if (currentVal <= -limb.max && !original.criticallyInjured && original.value >= -limb.max) {
             pendingChecks.push({ type: 'crit', loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
         } else if (hits.some(h => locationMap[h.location] === limbKey && h.forceCrit === "1")) {
             // Brutal tag: force critical wound check
