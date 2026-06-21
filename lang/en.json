@@ -547,7 +547,8 @@
       "Title": "Group Check: {label}",
       "Pass": "Pass",
       "Fail": "Fail",
-      "Submitted": "Roll submitted!"
+      "Submitted": "Roll submitted!",
+      "JoinTitle": "Join Group Check"
     },
     "Checks": {
       "InjuryCheck": "INJURY CHECK: {loc}",

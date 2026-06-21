@@ -401,9 +401,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           return ui.notifications.info(game.i18n.localize("TAMS.GroupCheck.AlreadyRolled"));
         }
 
-        const rollChoice = message.flags?.tams?.rollChoice ?? "stat:strength";
-        const fallbackStatId = message.flags?.tams?.fallbackStatId ?? "strength";
-        const isStatRoll = rollChoice.startsWith("stat:");
+        const gmRollChoice = message.flags?.tams?.rollChoice ?? "stat:strength";
 
         const statLabels = {
           strength: game.i18n.localize("TAMS.StatStrength"),
@@ -414,10 +412,48 @@ export async function tamsRenderChatMessage(message, html, data) {
           bravery: game.i18n.localize("TAMS.StatBravery")
         };
 
+        const statDefs = Object.entries(statLabels).map(([id, label]) => ({ id: `stat:${id}`, label }));
+        const actorSkills = currentActor.items
+          .filter(i => i.type === "skill")
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map(i => ({ id: `skill:${i.name}`, label: i.name }));
+
+        const statOptions = statDefs.map(s =>
+          `<option value="${s.id}" ${gmRollChoice === s.id ? "selected" : ""}>${s.label}</option>`
+        ).join("");
+        const skillOptions = actorSkills.map(s =>
+          `<option value="${s.id}" ${gmRollChoice === s.id ? "selected" : ""}>${s.label}</option>`
+        ).join("");
+        const skillGroup = skillOptions
+          ? `<optgroup label="${game.i18n.localize("TAMS.Skills")}">${skillOptions}</optgroup>`
+          : "";
+
+        const chosenRollChoice = await new Promise(resolve => {
+          new Dialog({
+            title: game.i18n.localize("TAMS.GroupCheck.JoinTitle"),
+            content: `<div class="form-group">
+              <label>${game.i18n.localize("TAMS.GroupCheck.WhatToRoll")}</label>
+              <select id="gc-player-roll">
+                <optgroup label="${game.i18n.localize("TAMS.GroupCheck.Stats")}">${statOptions}</optgroup>
+                ${skillGroup}
+              </select>
+            </div>`,
+            buttons: {
+              roll: { label: game.i18n.localize("TAMS.GroupCheck.RollAll"), callback: html => resolve(html.find("#gc-player-roll").val()) },
+              cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+            },
+            default: "roll",
+            close: () => resolve(null)
+          }).render(true);
+        });
+
+        if (!chosenRollChoice) return;
+
+        const isStatRoll = chosenRollChoice.startsWith("stat:");
         let total, raw, skillDisplayName;
 
         if (isStatRoll) {
-          const sId = rollChoice.slice(5);
+          const sId = chosenRollChoice.slice(5);
           const stat = currentActor.system.stats[sId];
           const effectiveStat = stat ? stat.value + (stat.mod || 0) : 0;
           const roll = await new Roll("1d100").evaluate();
@@ -425,7 +461,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           total = Math.min(raw, effectiveStat);
           skillDisplayName = statLabels[sId] ?? sId;
         } else {
-          const skillName = rollChoice.slice(6);
+          const skillName = chosenRollChoice.slice(6);
           const skill = currentActor.items.find(i => i.type === "skill" && i.name.toLowerCase() === skillName.toLowerCase());
           if (skill) {
             const sId = skill.system.stat;
@@ -441,7 +477,7 @@ export async function tamsRenderChatMessage(message, html, data) {
             skillDisplayName = skill.name;
             await skill.update({ "system.usedInScene": true });
           } else {
-            const sId = fallbackStatId;
+            const sId = gmRollChoice.startsWith("stat:") ? gmRollChoice.slice(5) : (message.flags?.tams?.fallbackStatId ?? "strength");
             const stat = currentActor.system.stats[sId];
             const effectiveStat = stat ? stat.value + (stat.mod || 0) : 0;
             const roll = await new Roll("1d100").evaluate();
