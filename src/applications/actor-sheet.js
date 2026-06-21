@@ -40,7 +40,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         setInventoryFilter: TAMSActorSheet.prototype._onSetInventoryFilter,
         resistanceAdd: TAMSActorSheet.prototype._onResistanceAdd,
         resistanceDelete: TAMSActorSheet.prototype._onResistanceDelete,
-        sceneReset: TAMSActorSheet.prototype._onSceneReset
+        sceneReset: TAMSActorSheet.prototype._onSceneReset,
+        callGroupCheck: TAMSActorSheet.prototype._onCallGroupCheck
       }
     }, { inplace: false });
   }
@@ -1846,5 +1847,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       .filter(i => ["weapon", "skill", "ability"].includes(i.type) && i.system.usedInScene)
       .map(i => ({ _id: i.id, "system.usedInScene": false }));
     if (updates.length) await this.document.updateEmbeddedDocuments("Item", updates);
+  }
+
+  async _onCallGroupCheck(event, target) {
+    game.tams.groupCheck();
   }
 }

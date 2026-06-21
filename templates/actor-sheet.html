@@ -530,6 +530,13 @@
                 </div>
             </div>
 
+            {{#if user.isGM}}
+            <div style="margin-bottom: 6px;">
+                <button type="button" data-action="callGroupCheck" style="width:100%;">
+                    <i class="fas fa-users-cog"></i> {{localize 'TAMS.GroupCheck.CallForCheck'}}
+                </button>
+            </div>
+            {{/if}}
             <div class="scene-tracker">
                 <h3 class="small-header" style="display: flex; justify-content: space-between; align-items: center;">
                     {{localize 'TAMS.SceneUsed'}}

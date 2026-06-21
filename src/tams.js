@@ -8,7 +8,7 @@ import { TAMSLootSheet } from './applications/loot-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
-import { tamsRenderChatMessage } from './utils/combat.js';
+import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckResult } from './utils/combat.js';
 
 Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
@@ -22,6 +22,8 @@ Hooks.once("init", async function() {
         tamsHandleLootDrop(data.lootData, data.x, data.y);
     } else if (data.type === "transferItem" && game.user.isGM) {
         tamsHandleItemTransfer(data);
+    } else if (data.type === "groupCheckResult" && game.user.isGM) {
+        tamsHandleGroupCheckResult(data);
     }
   });
 
@@ -109,7 +111,8 @@ Hooks.once("init", async function() {
         game.tams._travelPaceApp = new TAMSTravelPaceApp();
       }
       game.tams._travelPaceApp.render(true, { focus: true });
-    }
+    },
+    groupCheck: () => tamsCallGroupCheck()
   };
 
   foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
@@ -180,6 +183,23 @@ Hooks.once("init", async function() {
   });
 
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
+
+  Hooks.on("renderChatLog", (app, html) => {
+    if (!game.user.isGM) return;
+    const root = (html instanceof jQuery) ? html[0] : html;
+    const controls = root.querySelector("#chat-controls")
+      ?? root.querySelector(".control-buttons")
+      ?? root.querySelector("#chat-form");
+    if (!controls) return;
+    if (root.querySelector(".tams-call-group-check")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tams-call-group-check";
+    btn.title = game.i18n.localize("TAMS.GroupCheck.CallForCheck");
+    btn.innerHTML = `<i class="fas fa-users-cog"></i> ${game.i18n.localize("TAMS.GroupCheck.CallForCheck")}`;
+    btn.addEventListener("click", () => tamsCallGroupCheck());
+    controls.prepend(btn);
+  });
 
   // --- Encumbrance status effect ---
   // Register a custom "encumbered" condition so it can be shown on tokens.

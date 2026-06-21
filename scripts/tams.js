@@ -911,6 +911,180 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
     }
   }).render(true);
 }
+function buildGroupCheckContent(label, difficulty, results) {
+  const difficultyRow = difficulty > 0 ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.GroupCheck.Difficulty")}:</span><span>${difficulty}</span></div>` : "";
+  const resultsHtml = results.map((r) => {
+    const passFailHtml = difficulty > 0 ? ` <b style="color:${r.success ? "#2e7d32" : "#c0392b"}">[${r.success ? game.i18n.localize("TAMS.GroupCheck.Pass") : game.i18n.localize("TAMS.GroupCheck.Fail")}]</b>` : "";
+    return `<div class="roll-row"><span>${r.actorName}: <em>${r.skillName}</em></span><span class="roll-value">${r.total}${passFailHtml}</span></div>`;
+  }).join("");
+  return `<div class="tams-roll tams-group-check">
+    <h3 class="roll-label">${game.i18n.format("TAMS.GroupCheck.Title", { label })}</h3>
+    ${difficultyRow}
+    <hr>
+    <div class="tams-group-check-results">${resultsHtml}</div>
+    <div class="roll-row" style="margin-top:4px;"><button class="tams-group-check-roll">${game.i18n.localize("TAMS.GroupCheck.Join")}</button></div>
+  </div>`;
+}
+async function tamsCallGroupCheck() {
+  var _a, _b, _c, _d;
+  if (!game.user.isGM) return;
+  const selectedTokens = (((_a = canvas == null ? void 0 : canvas.tokens) == null ? void 0 : _a.controlled) ?? []).filter((t) => t.actor);
+  if (selectedTokens.length === 0) {
+    return ui.notifications.warn(game.i18n.localize("TAMS.GroupCheck.NoTokensSelected"));
+  }
+  const skillNames = /* @__PURE__ */ new Set();
+  for (const token of selectedTokens) {
+    for (const item of token.actor.items) {
+      if (item.type === "skill") skillNames.add(item.name);
+    }
+  }
+  const statDefs = [
+    { id: "stat:strength", label: game.i18n.localize("TAMS.StatStrength") },
+    { id: "stat:dexterity", label: game.i18n.localize("TAMS.StatDexterity") },
+    { id: "stat:endurance", label: game.i18n.localize("TAMS.StatEndurance") },
+    { id: "stat:wisdom", label: game.i18n.localize("TAMS.StatWisdom") },
+    { id: "stat:intelligence", label: game.i18n.localize("TAMS.StatIntelligence") },
+    { id: "stat:bravery", label: game.i18n.localize("TAMS.StatBravery") }
+  ];
+  const statOptions = statDefs.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
+  const skillOptions = [...skillNames].sort().map((n) => `<option value="skill:${n}">${n}</option>`).join("");
+  const skillGroup = skillOptions ? `<optgroup label="${game.i18n.localize("TAMS.Skills")}">${skillOptions}</optgroup>` : "";
+  const config = await new Promise((resolve) => {
+    new Dialog({
+      title: game.i18n.localize("TAMS.GroupCheck.CallForCheck"),
+      content: `
+        <div class="form-group">
+          <label>${game.i18n.localize("TAMS.GroupCheck.Label")}</label>
+          <input type="text" id="gc-label" placeholder="${game.i18n.localize("TAMS.GroupCheck.LabelPlaceholder")}"/>
+        </div>
+        <div class="form-group">
+          <label>${game.i18n.localize("TAMS.GroupCheck.WhatToRoll")}</label>
+          <select id="gc-roll">
+            <optgroup label="${game.i18n.localize("TAMS.GroupCheck.Stats")}">${statOptions}</optgroup>
+            ${skillGroup}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>${game.i18n.localize("TAMS.GroupCheck.Difficulty")}</label>
+          <input type="number" id="gc-difficulty" value="0" min="0"/>
+        </div>
+        <p><small>${game.i18n.format("TAMS.GroupCheck.RollingFor", { count: selectedTokens.length })}</small></p>
+      `,
+      buttons: {
+        roll: {
+          label: game.i18n.localize("TAMS.GroupCheck.RollAll"),
+          callback: (html) => resolve({
+            label: html.find("#gc-label").val().trim(),
+            rollChoice: html.find("#gc-roll").val(),
+            difficulty: parseInt(html.find("#gc-difficulty").val()) || 0
+          })
+        },
+        cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+      },
+      default: "roll",
+      close: () => resolve(null)
+    }).render(true);
+  });
+  if (!config) return;
+  const { rollChoice, difficulty } = config;
+  const isStatRoll = rollChoice.startsWith("stat:");
+  const statId = isStatRoll ? rollChoice.slice(5) : null;
+  const skillName = !isStatRoll ? rollChoice.slice(6) : null;
+  const rollLabel = config.label || (isStatRoll ? (_b = statDefs.find((s) => s.id === rollChoice)) == null ? void 0 : _b.label : skillName) || "";
+  let fallbackStatId = "strength";
+  if (!isStatRoll) {
+    for (const token of selectedTokens) {
+      const ref = token.actor.items.find((i) => i.type === "skill" && i.name.toLowerCase() === skillName.toLowerCase());
+      if (ref) {
+        fallbackStatId = ref.system.stat;
+        break;
+      }
+    }
+  }
+  const results = [];
+  for (const token of selectedTokens) {
+    const actor = token.actor;
+    if (isStatRoll) {
+      const stat = actor.system.stats[statId];
+      const effectiveStat = stat ? stat.value + (stat.mod || 0) : 0;
+      const roll = await new Roll("1d100").evaluate();
+      const raw = roll.total;
+      const total = Math.min(raw, effectiveStat);
+      results.push({
+        actorId: actor.id,
+        actorName: token.name,
+        skillName: ((_c = statDefs.find((s) => s.id === rollChoice)) == null ? void 0 : _c.label) ?? statId,
+        total,
+        raw,
+        success: difficulty > 0 ? total >= difficulty : null
+      });
+    } else {
+      const skill = actor.items.find((i) => i.type === "skill" && i.name.toLowerCase() === skillName.toLowerCase());
+      if (skill) {
+        const sId = skill.system.stat;
+        const stat = actor.system.stats[sId];
+        const statValue = stat ? stat.value : 0;
+        const statMod = stat ? stat.mod || 0 : 0;
+        const fam = parseInt(skill.system.familiarity) || 0;
+        const bonus = parseInt(skill.system.bonus) || 0;
+        const roll = await new Roll("1d100").evaluate();
+        const raw = roll.total;
+        const capped = Math.min(raw, statValue + statMod);
+        const total = capped + fam + bonus;
+        await skill.update({ "system.usedInScene": true });
+        results.push({
+          actorId: actor.id,
+          actorName: token.name,
+          skillName: skill.name,
+          total,
+          raw,
+          success: difficulty > 0 ? total >= difficulty : null
+        });
+      } else {
+        const stat = actor.system.stats[fallbackStatId];
+        const effectiveStat = stat ? stat.value + (stat.mod || 0) : 0;
+        const roll = await new Roll("1d100").evaluate();
+        const raw = roll.total;
+        const total = Math.min(raw, effectiveStat);
+        const statLabel = ((_d = statDefs.find((s) => s.id === `stat:${fallbackStatId}`)) == null ? void 0 : _d.label) ?? fallbackStatId;
+        results.push({
+          actorId: actor.id,
+          actorName: token.name,
+          skillName: statLabel,
+          total,
+          raw,
+          success: difficulty > 0 ? total >= difficulty : null
+        });
+      }
+    }
+  }
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ alias: game.user.name }),
+    content: buildGroupCheckContent(rollLabel, difficulty, results),
+    flags: { tams: { isGroupCheck: true, label: rollLabel, difficulty, rollChoice, fallbackStatId, results } }
+  });
+}
+async function tamsHandleGroupCheckResult(data) {
+  var _a, _b, _c, _d, _e, _f;
+  const message = game.messages.get(data.messageId);
+  if (!message) return;
+  const existing = ((_b = (_a = message.flags) == null ? void 0 : _a.tams) == null ? void 0 : _b.results) ?? [];
+  if (existing.some((r) => r.actorId === data.actorId)) return;
+  const difficulty = ((_d = (_c = message.flags) == null ? void 0 : _c.tams) == null ? void 0 : _d.difficulty) ?? 0;
+  const results = [...existing, {
+    actorId: data.actorId,
+    actorName: data.actorName,
+    skillName: data.skillName,
+    total: data.total,
+    raw: data.raw,
+    success: difficulty > 0 ? data.total >= difficulty : null
+  }];
+  const label = ((_f = (_e = message.flags) == null ? void 0 : _e.tams) == null ? void 0 : _f.label) ?? "";
+  await message.update({
+    content: buildGroupCheckContent(label, difficulty, results),
+    "flags.tams.results": results
+  });
+}
 async function tamsRenderChatMessage(message, html, data) {
   const root = html instanceof jQuery ? html[0] : html;
   root.querySelectorAll(".tams-roll").forEach((container2) => {
@@ -919,6 +1093,90 @@ async function tamsRenderChatMessage(message, html, data) {
     });
     container2.querySelectorAll(".tams-unaware-toggle").forEach((btn) => {
       btn.style.background = container2.classList.contains("unaware-defender") ? "#2e7d32" : "#444";
+    });
+  });
+  root.querySelectorAll(".tams-group-check-roll").forEach((btn) => {
+    var _a, _b;
+    const actor = game.user.character;
+    const existing = ((_b = (_a = message.flags) == null ? void 0 : _a.tams) == null ? void 0 : _b.results) ?? [];
+    if (!actor) {
+      btn.style.display = "none";
+      return;
+    }
+    if (existing.some((r) => r.actorId === actor.id)) {
+      btn.disabled = true;
+      btn.textContent = game.i18n.localize("TAMS.GroupCheck.AlreadyRolled");
+      return;
+    }
+    btn.textContent = game.i18n.format("TAMS.GroupCheck.JoinAs", { name: actor.name });
+    btn.addEventListener("click", async (ev) => {
+      var _a2, _b2, _c, _d, _e, _f;
+      ev.preventDefault();
+      const currentActor = game.user.character;
+      if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.GroupCheck.NoCharacter"));
+      const currentExisting = ((_b2 = (_a2 = message.flags) == null ? void 0 : _a2.tams) == null ? void 0 : _b2.results) ?? [];
+      if (currentExisting.some((r) => r.actorId === currentActor.id)) {
+        return ui.notifications.info(game.i18n.localize("TAMS.GroupCheck.AlreadyRolled"));
+      }
+      const rollChoice = ((_d = (_c = message.flags) == null ? void 0 : _c.tams) == null ? void 0 : _d.rollChoice) ?? "stat:strength";
+      const fallbackStatId = ((_f = (_e = message.flags) == null ? void 0 : _e.tams) == null ? void 0 : _f.fallbackStatId) ?? "strength";
+      const isStatRoll = rollChoice.startsWith("stat:");
+      const statLabels = {
+        strength: game.i18n.localize("TAMS.StatStrength"),
+        dexterity: game.i18n.localize("TAMS.StatDexterity"),
+        endurance: game.i18n.localize("TAMS.StatEndurance"),
+        wisdom: game.i18n.localize("TAMS.StatWisdom"),
+        intelligence: game.i18n.localize("TAMS.StatIntelligence"),
+        bravery: game.i18n.localize("TAMS.StatBravery")
+      };
+      let total, raw, skillDisplayName;
+      if (isStatRoll) {
+        const sId = rollChoice.slice(5);
+        const stat = currentActor.system.stats[sId];
+        const effectiveStat = stat ? stat.value + (stat.mod || 0) : 0;
+        const roll = await new Roll("1d100").evaluate();
+        raw = roll.total;
+        total = Math.min(raw, effectiveStat);
+        skillDisplayName = statLabels[sId] ?? sId;
+      } else {
+        const skillName = rollChoice.slice(6);
+        const skill = currentActor.items.find((i) => i.type === "skill" && i.name.toLowerCase() === skillName.toLowerCase());
+        if (skill) {
+          const sId = skill.system.stat;
+          const stat = currentActor.system.stats[sId];
+          const statValue = stat ? stat.value : 0;
+          const statMod = stat ? stat.mod || 0 : 0;
+          const fam = parseInt(skill.system.familiarity) || 0;
+          const bonus = parseInt(skill.system.bonus) || 0;
+          const roll = await new Roll("1d100").evaluate();
+          raw = roll.total;
+          const capped = Math.min(raw, statValue + statMod);
+          total = capped + fam + bonus;
+          skillDisplayName = skill.name;
+          await skill.update({ "system.usedInScene": true });
+        } else {
+          const sId = fallbackStatId;
+          const stat = currentActor.system.stats[sId];
+          const effectiveStat = stat ? stat.value + (stat.mod || 0) : 0;
+          const roll = await new Roll("1d100").evaluate();
+          raw = roll.total;
+          total = Math.min(raw, effectiveStat);
+          skillDisplayName = statLabels[sId] ?? sId;
+        }
+      }
+      const resultData = {
+        messageId: message.id,
+        actorId: currentActor.id,
+        actorName: currentActor.name,
+        skillName: skillDisplayName,
+        total,
+        raw
+      };
+      if (game.user.isGM || message.isAuthor) {
+        await tamsHandleGroupCheckResult(resultData);
+      } else {
+        game.socket.emit("system.tams", { type: "groupCheckResult", ...resultData });
+      }
     });
   });
   root.querySelectorAll(".tams-take-damage").forEach((el) => el.addEventListener("click", async (ev) => {
@@ -2308,7 +2566,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         setInventoryFilter: _TAMSActorSheet.prototype._onSetInventoryFilter,
         resistanceAdd: _TAMSActorSheet.prototype._onResistanceAdd,
         resistanceDelete: _TAMSActorSheet.prototype._onResistanceDelete,
-        sceneReset: _TAMSActorSheet.prototype._onSceneReset
+        sceneReset: _TAMSActorSheet.prototype._onSceneReset,
+        callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck
       }
     }, { inplace: false });
   }
@@ -3929,6 +4188,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const updates = this.document.items.filter((i) => ["weapon", "skill", "ability"].includes(i.type) && i.system.usedInScene).map((i) => ({ _id: i.id, "system.usedInScene": false }));
     if (updates.length) await this.document.updateEmbeddedDocuments("Item", updates);
   }
+  async _onCallGroupCheck(event, target) {
+    game.tams.groupCheck();
+  }
 };
 __publicField(_TAMSActorSheet, "PARTS", {
   form: {
@@ -4750,6 +5012,8 @@ Hooks.once("init", async function() {
       tamsHandleLootDrop(data.lootData, data.x, data.y);
     } else if (data.type === "transferItem" && game.user.isGM) {
       tamsHandleItemTransfer(data);
+    } else if (data.type === "groupCheckResult" && game.user.isGM) {
+      tamsHandleGroupCheckResult(data);
     }
   });
   game.settings.register("tams", "currencies", {
@@ -4822,7 +5086,8 @@ Hooks.once("init", async function() {
         game.tams._travelPaceApp = new TAMSTravelPaceApp();
       }
       game.tams._travelPaceApp.render(true, { focus: true });
-    }
+    },
+    groupCheck: () => tamsCallGroupCheck()
   };
   foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
   foundry.documents.collections.Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
@@ -4867,6 +5132,20 @@ Hooks.once("init", async function() {
     return str.toUpperCase();
   });
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
+  Hooks.on("renderChatLog", (app, html) => {
+    if (!game.user.isGM) return;
+    const root = html instanceof jQuery ? html[0] : html;
+    const controls = root.querySelector("#chat-controls") ?? root.querySelector(".control-buttons") ?? root.querySelector("#chat-form");
+    if (!controls) return;
+    if (root.querySelector(".tams-call-group-check")) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tams-call-group-check";
+    btn.title = game.i18n.localize("TAMS.GroupCheck.CallForCheck");
+    btn.innerHTML = `<i class="fas fa-users-cog"></i> ${game.i18n.localize("TAMS.GroupCheck.CallForCheck")}`;
+    btn.addEventListener("click", () => tamsCallGroupCheck());
+    controls.prepend(btn);
+  });
   const encumberedEffect = {
     id: "encumbered",
     name: "TAMS.Encumbered",
