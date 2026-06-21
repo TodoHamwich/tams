@@ -5,6 +5,11 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    border-top: 2px solid $color-border;
+    border-bottom: 2px solid $color-border;
+    padding: 3px 4px;
+    margin-top: 10px;
+    background: rgba(0, 0, 0, 0.04);
 }
 
 .tams .section-line {
@@ -15,10 +20,75 @@
 }
 
 .tams .tab.stats .grid-2col,
-.tams.npc .grid-2col {
-    grid-template-columns: 180px 1fr;
+.tams.npc .grid-2col,
+.tams .sheet-body > .grid-2col {
+    grid-template-columns: 210px 1fr;
     gap: 10px;
     align-items: start;
+}
+
+.tams .sheet-header {
+    border-bottom: 3px solid $color-border;
+    padding-bottom: 8px;
+}
+
+.tams .sheet-tabs {
+    border-bottom: 2px solid $color-border;
+}
+
+.tams h3.small-header {
+    border-top: 1px solid $color-border;
+    border-bottom: 2px solid $color-border;
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.tams .tab.stats .stats-list,
+.tams .sheet-body .stats-list {
+    border: 1px solid $color-border;
+    border-radius: 3px;
+    padding: 6px 8px;
+
+    hr { display: none; }
+
+    h3.small-header {
+        margin: 8px -8px 6px;
+        padding: 3px 8px;
+    }
+}
+
+.tams .tab.stats .limbs-list,
+.tams .sheet-body .limbs-list {
+    border: 1px solid $color-border;
+    border-radius: 3px;
+    padding: 4px 0;
+
+    .resource-item.hp { padding-left: 10px; }
+
+    h3.small-header {
+        margin: 4px 0;
+        padding: 3px 4px;
+    }
+}
+
+.tams .item-header {
+    border-bottom: 2px solid $color-border;
+}
+
+.tams .items-list {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-top: none;
+    border-radius: 0 0 3px 3px;
+    margin-bottom: 4px;
+
+    .item {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+        &:last-child { border-bottom: none; }
+    }
+}
+
+.tams .inventory-category-header,
+.tams .inventory-section-header {
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .tams .stat label, .tams .limb label {
@@ -315,10 +385,11 @@
 
 .tams .carry-weight {
     flex: 0 0 auto;
-    padding: 5px;
+    padding: 5px 8px;
     background: rgba(0,0,0,0.05);
-    border-bottom: 1px solid $color-border;
-    margin-bottom: 5px;
+    border: 1px solid $color-border;
+    border-radius: 3px;
+    margin-bottom: 6px;
 
     .encumbered {
         color: #c62828;

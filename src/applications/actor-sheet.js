@@ -63,7 +63,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
   _onRender(context, options) {
     super._onRender(context, options);
     const theme = this.document.system.theme || "default";
-    this.element.classList.remove("theme-default", "theme-dark", "theme-parchment", "theme-grimdark", "theme-cyberpunk", "theme-gothic", "theme-tactical", "theme-wip");
+    this.element.classList.remove("theme-default", "theme-dark", "theme-parchment", "theme-grimdark", "theme-cyberpunk", "theme-gothic", "theme-tactical");
     this.element.classList.add(`theme-${theme}`);
 
     // Fix for inline item updates (Familiarity, fire rate, etc on the tab)
@@ -371,7 +371,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       "bravery": "TAMS.StatBravery",
       "custom": "TAMS.StatCustom"
     };
-    context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical", "wip": "TAMS.ThemeWIP" };
+    context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
     context.limbOptions = {
@@ -1622,7 +1622,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-target-limb="${targetLimb}"
                                   data-target-token-id="${targetTokenId || ''}"
                                   data-target-actor-id="${targetActorId || ''}"
-                                  data-target-actor-uuid="${targetActor?.uuid || ''}">Retaliate</button>
+                                  data-target-actor-uuid="${targetActor?.uuid || ''}"
+                                  data-attacker-name="${this.document.name}">Retaliate</button>
                           <button class="tams-block"
                                   data-raw="${rawResult}"
                                   data-total="${finalTotal}"
@@ -1677,6 +1678,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                     data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
+                                    data-attacker-name="${this.document.name}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
                             <button class="tams-block" title="Block"
                                     data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}"
