@@ -459,6 +459,11 @@
   padding: 0;
   margin: 0;
 }
+.tams .scene-tracker .scene-list-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+}
 .tams .scene-tracker .scene-item {
   display: flex;
   align-items: center;

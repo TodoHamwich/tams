@@ -359,6 +359,12 @@
 .tams .scene-tracker {
     .scene-list { list-style: none; padding: 0; margin: 0; }
 
+    .scene-list-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2px 8px;
+    }
+
     .scene-item {
         display: flex;
         align-items: center;
