@@ -363,6 +363,17 @@
       "Medium": "Medium",
       "Large": "Large"
     },
+    "CreatureSize": "Creature Size",
+    "SizeBonus": "Size Bonus",
+    "SizeStealthBonus": "Size (Stealth)",
+    "CreatureSizeOptions": {
+      "Tiny": "Tiny",
+      "Small": "Small",
+      "Normal": "Normal",
+      "Large": "Large",
+      "Huge": "Huge",
+      "Giant": "Giant"
+    },
     "Tabs": {
       "Stats": "Stats & Limbs",
       "Items": "Weapons & Skills",

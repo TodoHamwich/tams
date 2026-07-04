@@ -114,6 +114,7 @@ function computeArmorRepair({ value, max, rollTotal, alternate = false }) {
     success: shortfall === 0
   };
 }
+const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1, large: 1.5, huge: 2, giant: 2.5 };
 function getCapacityMode() {
   try {
     return game.settings.get("tams", "capacityMode") || "weight";
@@ -212,6 +213,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         npcType: new fields.StringField({ initial: "individual" }),
         npcRank: new fields.StringField({ initial: "mook" }),
         squadSize: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
+        creatureSize: new fields.StringField({ initial: "normal" }),
         enabledCurrencies: new fields.ObjectField({ initial: {} })
       }),
       upgradePoints: new fields.SchemaField({
@@ -302,11 +304,12 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const settings = this.settings;
     const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
     const squadSize = settings.squadSize || 1;
+    const sizeMult = SIZE_HP_MULT[settings.creatureSize] ?? 1;
     const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
     for (const key of limbKeys) {
       const limb = this.limbs[key];
       if (!limb) continue;
-      const individualMax = Math.floor(end * limb.mult);
+      const individualMax = Math.floor(end * limb.mult * sizeMult);
       limb.max = isSquadOrHorde ? individualMax * squadSize : individualMax;
       limb.individualMax = individualMax;
     }
@@ -2578,6 +2581,7 @@ Hooks.on("dropCanvasData", async (canvas2, data) => {
   }
   return tamsHandleLootDrop(data, data.x, data.y);
 });
+const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
 const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2) {
   /** @override */
   static get DEFAULT_OPTIONS() {
@@ -2904,6 +2908,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
+    context.creatureSizeOptions = { "tiny": "TAMS.CreatureSizeOptions.Tiny", "small": "TAMS.CreatureSizeOptions.Small", "normal": "TAMS.CreatureSizeOptions.Normal", "large": "TAMS.CreatureSizeOptions.Large", "huge": "TAMS.CreatureSizeOptions.Huge", "giant": "TAMS.CreatureSizeOptions.Giant" };
     context.limbOptions = {
       "none": "TAMS.CalculatorOptions.None",
       "head": "TAMS.HitLocations.Head",
@@ -3570,7 +3575,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   async _onRoll(event, target) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
     const dataset = target.dataset;
     const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
     const tToken = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0] ?? null;
@@ -3668,6 +3673,15 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       if (itemBonus !== 0) {
         bonus += itemBonus;
         bonusSources.push({ label: game.i18n.localize("TAMS.ItemBonus"), value: itemBonus });
+      }
+      const skillNameLower = name.toLowerCase();
+      if (skillNameLower.includes("stealth") || skillNameLower.includes("sneak")) {
+        const sizeStep = SIZE_STEPS[this.document.system.settings.creatureSize ?? "normal"] ?? 0;
+        if (sizeStep < 0) {
+          const stealthBonus = Math.abs(sizeStep) * 10;
+          bonus += stealthBonus;
+          bonusSources.push({ label: game.i18n.localize("TAMS.SizeStealthBonus"), value: stealthBonus });
+        }
       }
       addStatModSources(statId);
       const stat = this.document.system.stats[statId];
@@ -3850,13 +3864,27 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
       }
     }
+    const isAttackRoll = item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack);
+    if (!isAttackRoll && statId === "strength") {
+      const attackerSize = SIZE_STEPS[this.document.system.settings.creatureSize ?? "normal"] ?? 0;
+      const targets = [...game.user.targets];
+      if (targets.length > 0) {
+        const targetSize = SIZE_STEPS[((_e = (_d = (_c = targets[0].actor) == null ? void 0 : _c.system) == null ? void 0 : _d.settings) == null ? void 0 : _e.creatureSize) ?? "normal"] ?? 0;
+        const sizeDiff = attackerSize - targetSize;
+        if (sizeDiff !== 0) {
+          const sizeBonus = sizeDiff * 10;
+          bonus += sizeBonus;
+          bonusSources.push({ label: game.i18n.localize("TAMS.SizeBonus"), value: sizeBonus });
+        }
+      }
+    }
     const settings = this.document.system.settings;
     const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
     const squadSize = settings.squadSize || 1;
     let squadBonus = 0;
     let maxSquadTargets = 1;
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
-      item.type === "weapon" ? !!item.system.isRanged : ((_c = item.system.calculator) == null ? void 0 : _c.range) > 10;
+      item.type === "weapon" ? !!item.system.isRanged : ((_f = item.system.calculator) == null ? void 0 : _f.range) > 10;
       if (isSquadOrHorde) {
         maxSquadTargets = squadSize;
         maxSquadTargets = Math.max(1, maxSquadTargets);
@@ -3912,7 +3940,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let damageInfo = "";
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
       let damage = item.system.calculatedDamage;
-      const isRanged = item.type === "weapon" ? !!item.system.isRanged : ((_d = item.system.calculator) == null ? void 0 : _d.range) > 10;
+      const isRanged = item.type === "weapon" ? !!item.system.isRanged : ((_g = item.system.calculator) == null ? void 0 : _g.range) > 10;
       const isCrit = difficulty > 0 && dcTotal >= difficulty * 2;
       let forceCrit = false;
       if (item && item.system.tags) {
@@ -3930,7 +3958,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         else if (item.system.fireRate === "auto") multiVal = 10;
         else if (item.system.fireRate === "custom") multiVal = item.system.fireRateCustom || 1;
         if (item.system.consumeAmmo) {
-          const currentAmmo = ((_e = item.system.ammo) == null ? void 0 : _e.current) || 0;
+          const currentAmmo = ((_h = item.system.ammo) == null ? void 0 : _h.current) || 0;
           if (currentAmmo < multiVal) {
             if (currentAmmo <= 0) {
               return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", { item: item.name }));
@@ -3943,7 +3971,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       } else if (item.type === "ability") {
         multiVal = item.system.multiAttack || 1;
       }
-      const targetLimb = item.type === "ability" && ((_f = item.system.calculator) == null ? void 0 : _f.enabled) ? item.system.calculator.targetLimb : "none";
+      const targetLimb = item.type === "ability" && ((_i = item.system.calculator) == null ? void 0 : _i.enabled) ? item.system.calculator.targetLimb : "none";
       let armourPen = 0;
       if (item.type === "weapon" && item.system.hasArmourPen) {
         armourPen = item.system.armourPenetration || 0;
@@ -3951,7 +3979,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         armourPen = item.system.armourPenetration || 0;
       }
       const damageType = item.system.damageType || "";
-      const isAoE = !!item.system.isAoE || ((_g = item.system.calculator) == null ? void 0 : _g.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
+      const isAoE = !!item.system.isAoE || ((_j = item.system.calculator) == null ? void 0 : _j.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
       let targets = isAoE ? [...game.user.targets] : tToken ? [tToken] : [];
       if (isSquadOrHorde) {
         targets = [...game.user.targets].slice(0, maxSquadTargets);
@@ -3959,7 +3987,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
       if (targets.length > 0) {
         let hitLocation;
-        if (item.type === "ability" && ((_h = item.system.calculator) == null ? void 0 : _h.enabled) && ((_i = item.system.calculator) == null ? void 0 : _i.targetLimb) && item.system.calculator.targetLimb !== "none") {
+        if (item.type === "ability" && ((_k = item.system.calculator) == null ? void 0 : _k.enabled) && ((_l = item.system.calculator) == null ? void 0 : _l.targetLimb) && item.system.calculator.targetLimb !== "none") {
           const limbKey = item.system.calculator.targetLimb;
           const limbOptions = {
             "head": "Head",

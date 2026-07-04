@@ -1,5 +1,7 @@
 import { computeEncumbrance } from '../utils/inventory.js';
 
+const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1.0, large: 1.5, huge: 2.0, giant: 2.5 };
+
 /**
  * Read the configured capacity mode safely, defaulting to "weight" when the
  * setting (or Foundry's settings API) is unavailable, e.g. during tests.
@@ -120,6 +122,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         npcType: new fields.StringField({initial: "individual"}),
         npcRank: new fields.StringField({initial: "mook"}),
         squadSize: new fields.NumberField({initial: 1, integer: true, min: 0}),
+        creatureSize: new fields.StringField({initial: "normal"}),
         enabledCurrencies: new fields.ObjectField({initial: {}})
       }),
       upgradePoints: new fields.SchemaField({
@@ -215,12 +218,13 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const settings = this.settings;
     const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
     const squadSize = settings.squadSize || 1;
+    const sizeMult = SIZE_HP_MULT[settings.creatureSize] ?? 1.0;
 
     const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
     for (const key of limbKeys) {
       const limb = this.limbs[key];
       if (!limb) continue;
-      const individualMax = Math.floor(end * limb.mult);
+      const individualMax = Math.floor(end * limb.mult * sizeMult);
       limb.max = isSquadOrHorde ? (individualMax * squadSize) : individualMax;
       limb.individualMax = individualMax;
     }
