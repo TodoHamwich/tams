@@ -1494,7 +1494,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         const canBoost = actor.type === 'character';
 
         if (dcTotal >= (difficulty * 2)) {
-            critInfo = `<div class="tams-crit success">${game.i18n.format('TAMS.CritSuccess', {total: dcTotal, difficulty})}</div>`;
+            critInfo = `<div class="tams-crit success">${game.i18n.format('TAMS.CritSuccess', {name: this.document.name})}</div>`;
         } else if (dcTotal >= difficulty) {
             critInfo = `<div class="tams-success">${game.i18n.format('TAMS.SuccessVsDiff', {difficulty})}</div>`;
         } else {

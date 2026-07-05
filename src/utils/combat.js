@@ -996,9 +996,9 @@ export async function tamsRenderChatMessage(message, html, data) {
 
       let critInfo = "";
       if (raw >= (attackerRaw * 2)) {
-          critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", {raw, attacker: attackerRaw})}</div>`;
+          critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", {name: actor.name})}</div>`;
       } else if (attackerRaw >= (raw * 2)) {
-          critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", {attacker: attackerRaw, raw})}</div>`;
+          critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", {name: actor.name})}</div>`;
       }
 
       let hitsScored = 0;
@@ -1130,9 +1130,9 @@ export async function tamsRenderChatMessage(message, html, data) {
       const isAoEFromData = container.dataset.isAoe === '1';
 
       if (raw >= (attackerRaw * 2)) {
-          critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", {raw, attacker: attackerRaw})}</div>`;
+          critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", {name: actor.name})}</div>`;
       } else if (attackerRaw >= (raw * 2)) {
-          critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", {attacker: attackerRaw, raw})}</div>`;
+          critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", {name: actor.name})}</div>`;
       }
 
       if (attackerTotal > total) {
@@ -1290,8 +1290,8 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (isAoEFromData && isRanged) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
 
       let critInfo = "";
-      if (raw >= (attackerRaw * 2)) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", {raw, attacker: attackerRaw})}</div>`;
-      else if (attackerRaw >= (raw * 2)) critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", {attacker: attackerRaw, raw})}</div>`;
+      if (raw >= (attackerRaw * 2)) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", {name: actor.name})}</div>`;
+      else if (attackerRaw >= (raw * 2)) critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", {name: actor.name})}</div>`;
 
       let multiVal = weapon.type === 'weapon' ? (weapon.system.fireRate === '3' ? 3 : (weapon.system.fireRate === 'auto' ? 10 : (weapon.system.fireRate === 'custom' ? weapon.system.fireRateCustom : 1))) : (weapon.system.multiAttack || 1);
       const damage = weapon.system.calculatedDamage;
