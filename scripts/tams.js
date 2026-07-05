@@ -812,7 +812,7 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
       content += `
                 <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
                     <label><b>${game.i18n.format("TAMS.Checks.CritCheck", { loc: check.loc })}</b> (DC ${check.dc})</label>
-                    <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px;">${game.i18n.localize("TAMS.Checks.RollEndurance")}</button>
+                    <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px;">${game.i18n.localize("TAMS.Checks.RollVsCrit")}</button>
                 </div>`;
     } else if (check.type === "unconscious") {
       content += `
@@ -878,18 +878,24 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                     `;
         } else {
           report = `
-                        <div class="tams-roll">
+                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}">
                             <h3 class="roll-label" style="color: #8b0000;">${game.i18n.format("TAMS.Checks.SurvivalCheckLabel", { name: target.name })}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end })}</span><span>${capped}</span></div>
+                            <div class="roll-boost-container"></div>
                             <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total: capped, dc: check.dc })}</div>
                             ${success ? `<div class="tams-success" style="font-size:1.2em; font-weight:bold;">${game.i18n.localize("TAMS.Checks.Survived")}</div>` : `<div class="tams-crit failure" style="font-size:1.2em;">${game.i18n.localize("TAMS.Checks.FatalInjury")}</div>`}
+                            <div class="roll-row" style="margin-top: 5px;">
+                                <button class="tams-boost-survival">${game.i18n.localize("TAMS.Checks.SpendResourceToBoost")}</button>
+                            </div>
                         </div>
                     `;
         }
         ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: target }), content: report });
         btn.disabled = true;
-        btn.innerText = success ? game.i18n.localize("TAMS.Checks.Pass") : game.i18n.localize("TAMS.Checks.Fail");
+        const passKey = { crit: "TAMS.Checks.CritAvoided", unconscious: "TAMS.Checks.Conscious", survival: "TAMS.Checks.SurvivalPass" }[check.type];
+        const failKey = { crit: "TAMS.Checks.CritWound", unconscious: "TAMS.Checks.Unconscious", survival: "TAMS.Checks.SurvivalFail" }[check.type];
+        btn.innerText = success ? game.i18n.localize(passKey) : game.i18n.localize(failKey);
         btn.style.background = success ? "#2e7d32" : "#c62828";
       });
     }
@@ -2027,6 +2033,65 @@ async function tamsRenderChatMessage(message, html, data) {
     if (statusDiv) {
       statusDiv.className = success ? "tams-success" : "tams-crit failure";
       statusDiv.innerText = success ? game.i18n.localize("TAMS.Combat.RemainsConscious") : game.i18n.localize("TAMS.Combat.FallsUnconscious");
+    }
+    const messageId = (_a = btn.closest(".chat-message")) == null ? void 0 : _a.dataset.messageId;
+    btn.remove();
+    const message2 = game.messages.get(messageId);
+    if (message2) await tamsUpdateMessage(message2, { content: container2.outerHTML });
+  }));
+  root.querySelectorAll(".tams-boost-survival").forEach((el) => el.addEventListener("click", async (ev) => {
+    var _a;
+    ev.preventDefault();
+    const btn = ev.currentTarget;
+    const container2 = btn.closest(".tams-roll");
+    const actor = fromUuidSync(container2.dataset.actorUuid) || game.actors.get(container2.dataset.actorId);
+    if (!actor) return;
+    const dc = parseInt(container2.dataset.dc), raw = parseInt(container2.dataset.raw), end = parseInt(container2.dataset.end);
+    const capped = Math.min(raw, end), pointsNeeded = Math.max(0, Math.ceil((dc - capped) / 5));
+    const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
+    actor.system.customResources.forEach((res, idx) => resources.push({ id: idx.toString(), name: res.name, value: res.value }));
+    const options = resources.map((r) => `<option value="${r.id}">${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
+    const spending = await new Promise((resolve) => {
+      new Dialog({
+        title: game.i18n.localize("TAMS.Combat.BoostSurvivalTitle"),
+        content: `
+                    <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
+                    <div class="form-group">
+                        <label>${game.i18n.localize("TAMS.Combat.PointsSpentMax10")}</label>
+                        <input type="number" id="res-points" value="${Math.min(pointsNeeded, 10)}" min="0" max="10"/>
+                        <p><small>${game.i18n.localize("TAMS.Combat.BoostDodgeHint")}</small></p>
+                    </div>`,
+        buttons: {
+          go: { label: game.i18n.localize("TAMS.Combat.ApplyBoost"), callback: (html2) => {
+            const resId2 = html2.find("#res-type").val();
+            const res = resources.find((r) => r.id === resId2);
+            let pts2 = Math.clamp(parseInt(html2.find("#res-points").val()) || 0, 0, 10);
+            if (pts2 > res.value) pts2 = res.value;
+            resolve({ resId: resId2, pts: pts2 });
+          } },
+          cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+        },
+        default: "go"
+      }).render(true);
+    });
+    if (!spending) return;
+    const { resId, pts } = spending;
+    const bonus = pts * 5, total = capped + bonus, success = total >= dc;
+    if (pts > 0) {
+      if (resId === "stamina") await actor.update({ "system.stamina.value": actor.system.stamina.value - pts });
+      else {
+        const customResources = foundry.utils.duplicate(actor.system.customResources);
+        customResources[parseInt(resId)].value -= pts;
+        await actor.update({ "system.customResources": customResources });
+      }
+    }
+    const resName = resources.find((r) => r.id === resId).name;
+    container2.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><span>Boost (${resName}):</span><span>+${bonus}</span></div>`;
+    container2.querySelector(".roll-total b").innerText = total;
+    const statusDiv = container2.querySelector(".tams-success, .tams-crit.failure");
+    if (statusDiv) {
+      statusDiv.className = success ? "tams-success" : "tams-crit failure";
+      statusDiv.innerText = success ? game.i18n.localize("TAMS.Checks.Survived") : game.i18n.localize("TAMS.Checks.FatalInjury");
     }
     const messageId = (_a = btn.closest(".chat-message")) == null ? void 0 : _a.dataset.messageId;
     btn.remove();
