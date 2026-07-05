@@ -607,7 +607,12 @@ export async function tamsRenderChatMessage(message, html, data) {
       const flags = message.flags?.tams;
       if (!flags?.isContestedCheck) return;
 
-      const actor = game.user.character ?? game.actors.find(a => a.isOwner && a.type === "character");
+      const resolveContestActor = () =>
+        canvas.tokens?.controlled[0]?.actor ??
+        game.user.character ??
+        game.actors.find(a => a.isOwner && a.type === "character");
+
+      const actor = resolveContestActor();
       if (!actor) { btn.style.display = "none"; return; }
 
       if (actor.id === flags.initiatorId) {
@@ -626,7 +631,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       btn.addEventListener("click", async ev => {
         ev.preventDefault();
 
-        const currentActor = game.user.character ?? game.actors.find(a => a.isOwner && a.type === "character");
+        const currentActor = resolveContestActor();
         if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
 
         const currentFlags = message.flags?.tams;

@@ -1293,7 +1293,11 @@ async function tamsRenderChatMessage(message, html, data) {
     var _a, _b;
     const flags = (_a = message.flags) == null ? void 0 : _a.tams;
     if (!(flags == null ? void 0 : flags.isContestedCheck)) return;
-    const actor = game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
+    const resolveContestActor = () => {
+      var _a2, _b2;
+      return ((_b2 = (_a2 = canvas.tokens) == null ? void 0 : _a2.controlled[0]) == null ? void 0 : _b2.actor) ?? game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
+    };
+    const actor = resolveContestActor();
     if (!actor) {
       btn.style.display = "none";
       return;
@@ -1312,7 +1316,7 @@ async function tamsRenderChatMessage(message, html, data) {
     btn.addEventListener("click", async (ev) => {
       var _a2, _b2;
       ev.preventDefault();
-      const currentActor = game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
+      const currentActor = resolveContestActor();
       if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
       const currentFlags = (_a2 = message.flags) == null ? void 0 : _a2.tams;
       if ((_b2 = currentFlags == null ? void 0 : currentFlags.contests) == null ? void 0 : _b2.some((c) => c.actorId === currentActor.id)) {
