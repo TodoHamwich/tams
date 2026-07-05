@@ -139,10 +139,8 @@ export class TAMSActor extends Actor {
         report += `• ${game.i18n.format("TAMS.Checks.DamageReport", {loc, effective, blocked, penLabel, lossLabel: lossMsg, overflowLabel})}<br>`;
         if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
 
-        if (newHp <= -limb.max) {
-            if (!limb.injured && !updates[`system.limbs.${limbKey}.injured`]) {
-                report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", {limb: limb.label})} !!!</b><br>`;
-            }
+        if (newHp <= 0 && !original.injured && !updates[`system.limbs.${limbKey}.injured`]) {
+            report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", {limb: limb.label})} !!!</b><br>`;
             updates[`system.limbs.${limbKey}.injured`] = true;
         }
     }
@@ -218,19 +216,15 @@ export class TAMSActor extends Actor {
         const currentVal = limb.value;
         if (isSquadOrHorde) continue;
         
-        if (currentVal <= 0 && currentVal > -limb.max && !original.injured && !limb.injured) {
-            pendingChecks.push({ type: 'injured', loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
-        }
-        if (currentVal <= -limb.max && !original.criticallyInjured && original.value >= -limb.max) {
+        if (original.injured && damage > 0 && !original.criticallyInjured) {
             pendingChecks.push({ type: 'crit', loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
         } else if (hits.some(h => locationMap[h.location] === limbKey && h.forceCrit === "1")) {
-            // Brutal tag: force critical wound check
             if (!original.criticallyInjured) {
-                pendingChecks.push({ 
-                    type: 'crit', 
-                    loc: limb.label, 
-                    dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)), 
-                    limbKey 
+                pendingChecks.push({
+                    type: 'crit',
+                    loc: limb.label,
+                    dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)),
+                    limbKey
                 });
             }
         }

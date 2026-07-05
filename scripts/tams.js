@@ -808,13 +808,7 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
   let content = `<div class="tams-injury-dialog">
         <p><b>${target.name}</b> ${game.i18n.localize("TAMS.Checks.MustMakeChecks")}:</p>`;
   pendingChecks.forEach((check, i) => {
-    if (check.type === "injured") {
-      content += `
-                <div class="check-row" style="background: rgba(241, 196, 15, 0.1); padding: 5px; margin-top: 5px; border: 1px solid #f39c12; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
-                    <label><b>${game.i18n.format("TAMS.Checks.InjuryCheck", { loc: check.loc })}</b> (DC ${check.dc})</label>
-                    <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px; background: #f39c12; color: white;">${game.i18n.localize("TAMS.Checks.RollEndurance")}</button>
-                </div>`;
-    } else if (check.type === "crit") {
+    if (check.type === "crit") {
       content += `
                 <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
                     <label><b>${game.i18n.format("TAMS.Checks.CritCheck", { loc: check.loc })}</b> (DC ${check.dc})</label>
@@ -854,20 +848,7 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
         const total = capped + bonus;
         const success = total >= check.dc;
         let report = "";
-        if (check.type === "injured") {
-          report = `
-                        <div class="tams-roll">
-                            <h3 class="roll-label" style="color: #f39c12;">${game.i18n.format("TAMS.Checks.EnduranceCheckInjury", { loc: check.loc })}</h3>
-                            <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
-                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end })}</span><span>${capped}</span></div>
-                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total: capped, dc: check.dc })}</div>
-                            ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Checks.SuccessNotInjured")}</div>` : `<div class="tams-crit failure" style="background:#fff4cc; color:#856404; border-color:#ffeeba;">${game.i18n.localize("TAMS.Checks.FailedInjured")}</div>`}
-                        </div>
-                    `;
-          if (!success) {
-            await target.update({ [`system.limbs.${check.limbKey}.injured`]: true });
-          }
-        } else if (check.type === "crit") {
+        if (check.type === "crit") {
           report = `
                         <div class="tams-roll">
                             <h3 class="roll-label">${game.i18n.format("TAMS.Checks.EnduranceCheck", { loc: check.loc })}</h3>
@@ -2379,10 +2360,8 @@ class TAMSActor extends Actor {
       const lossMsg = lossLabel ? `, ${lossLabel}` : "";
       report += `• ${game.i18n.format("TAMS.Checks.DamageReport", { loc, effective, blocked, penLabel, lossLabel: lossMsg, overflowLabel })}<br>`;
       if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
-      if (newHp <= -limb.max) {
-        if (!limb.injured && !updates[`system.limbs.${limbKey}.injured`]) {
-          report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", { limb: limb.label })} !!!</b><br>`;
-        }
+      if (newHp <= 0 && !original.injured && !updates[`system.limbs.${limbKey}.injured`]) {
+        report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", { limb: limb.label })} !!!</b><br>`;
         updates[`system.limbs.${limbKey}.injured`] = true;
       }
     }
@@ -2443,21 +2422,18 @@ class TAMSActor extends Actor {
     await this.update(finalUpdates);
     for (let [limbKey, damage] of Object.entries(limbDamageReceived)) {
       if (damage === 0 && !hits.some((h) => locationMap[h.location] === limbKey && h.forceCrit)) continue;
-      const original = originalLimbStatus[limbKey];
+      const original2 = originalLimbStatus[limbKey];
       const limb = this.system.limbs[limbKey];
-      const currentVal = limb.value;
+      limb.value;
       if (isSquadOrHorde) continue;
-      if (currentVal <= 0 && currentVal > -limb.max && !original.injured && !limb.injured) {
-        pendingChecks.push({ type: "injured", loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
-      }
-      if (currentVal <= -limb.max && !original.criticallyInjured && original.value >= -limb.max) {
-        pendingChecks.push({ type: "crit", loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
+      if (original2.injured && damage > 0 && !original2.criticallyInjured) {
+        pendingChecks.push({ type: "crit", loc: limb.label, dc: damage + (original2.value < 0 ? Math.abs(original2.value) : 0), limbKey });
       } else if (hits.some((h) => locationMap[h.location] === limbKey && h.forceCrit === "1")) {
-        if (!original.criticallyInjured) {
+        if (!original2.criticallyInjured) {
           pendingChecks.push({
             type: "crit",
             loc: limb.label,
-            dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)),
+            dc: Math.max(10, damage + (original2.value < 0 ? Math.abs(original2.value) : 0)),
             limbKey
           });
         }
