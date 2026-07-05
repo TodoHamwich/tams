@@ -1,5 +1,6 @@
 import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog } from '../utils/helpers.js';
 import { computeArmorRepair } from '../utils/inventory.js';
+import { tamsCreateContestedCheck } from '../utils/combat.js';
 
 const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
 
@@ -1790,11 +1791,15 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       </div>
     `;
 
-    ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: this.document }),
-      content: messageContent,
-      rolls: [roll]
-    });
+    if (event.altKey) {
+      await tamsCreateContestedCheck(this.document, label, finalTotal, rawResult, roll, statId);
+    } else {
+      ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: this.document }),
+        content: messageContent,
+        rolls: [roll]
+      });
+    }
 
     if (item && ["weapon", "skill", "ability"].includes(item.type)) {
       item.update({"system.usedInScene": true});

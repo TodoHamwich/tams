@@ -914,6 +914,65 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
     }
   }).render(true);
 }
+function buildContestedCheckContent(initiatorName, label, initiatorTotal, initiatorRaw, contests) {
+  const contestRows = contests.map((c) => {
+    const win = c.total > initiatorTotal;
+    const tie = c.total === initiatorTotal;
+    const badge = tie ? `<span style="color:#888;">[TIE]</span>` : win ? `<span style="color:#2e7d32; font-weight:bold;">[WIN]</span>` : `<span style="color:#c0392b; font-weight:bold;">[LOSS]</span>`;
+    return `<div class="roll-row" style="border-bottom:1px solid #eee; padding:2px 0;">
+      <span style="flex:1;"><b>${c.actorName}</b> — ${c.label}</span>
+      <span>${c.total} <small style="color:#888;">(raw: ${c.raw})</small> ${badge}</span>
+    </div>`;
+  }).join("");
+  return `<div class="tams-roll tams-contested-check">
+    <h3 class="roll-label">${game.i18n.format("TAMS.ContestedCheck.Title", { label })}</h3>
+    <div class="roll-row" style="border-bottom:1px solid #eee; padding:2px 0;">
+      <span style="flex:1;"><b>${initiatorName}</b> — ${label}</span>
+      <span><b>${initiatorTotal}</b> <small style="color:#888;">(raw: ${initiatorRaw})</small></span>
+    </div>
+    ${contestRows}
+    <div class="roll-row" style="margin-top:6px;">
+      <button class="tams-contest-check-roll">${game.i18n.localize("TAMS.ContestedCheck.Contest")}</button>
+    </div>
+  </div>`;
+}
+async function tamsCreateContestedCheck(actor, label, total, raw, roll, statId) {
+  const content = buildContestedCheckContent(actor.name, label, total, raw, []);
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor }),
+    content,
+    rolls: [roll],
+    flags: {
+      tams: {
+        isContestedCheck: true,
+        initiatorId: actor.id,
+        initiatorName: actor.name,
+        label,
+        initiatorTotal: total,
+        initiatorRaw: raw,
+        statId: statId ?? "strength",
+        contests: []
+      }
+    }
+  });
+}
+async function tamsHandleContestedCheckPending(msg) {
+  var _a, _b, _c, _d;
+  if (!((_b = (_a = msg.flags) == null ? void 0 : _a.tams) == null ? void 0 : _b.contestedCheckPending)) return;
+  if (!game.user.isGM) return;
+  const { targetMessageId, entry } = msg.flags.tams;
+  const targetMsg = game.messages.get(targetMessageId);
+  if (!targetMsg) return;
+  const flags = (_c = targetMsg.flags) == null ? void 0 : _c.tams;
+  if (!(flags == null ? void 0 : flags.isContestedCheck)) return;
+  if ((_d = flags.contests) == null ? void 0 : _d.some((c) => c.actorId === entry.actorId)) return;
+  const newContests = [...flags.contests ?? [], entry];
+  await targetMsg.update({
+    content: buildContestedCheckContent(flags.initiatorName, flags.label, flags.initiatorTotal, flags.initiatorRaw, newContests),
+    "flags.tams.contests": newContests
+  });
+  await msg.delete();
+}
 function buildGroupCheckContent(label, difficulty, results) {
   const difficultyRow = difficulty > 0 ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.GroupCheck.Difficulty")}:</span><span>${difficulty}</span></div>` : "";
   const resultsHtml = results.map((r) => {
@@ -1227,6 +1286,126 @@ async function tamsRenderChatMessage(message, html, data) {
           }
         });
         ui.notifications.info(game.i18n.localize("TAMS.GroupCheck.Submitted"));
+      }
+    });
+  });
+  root.querySelectorAll(".tams-contest-check-roll").forEach((btn) => {
+    var _a, _b;
+    const flags = (_a = message.flags) == null ? void 0 : _a.tams;
+    if (!(flags == null ? void 0 : flags.isContestedCheck)) return;
+    const actor = game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
+    if (!actor) {
+      btn.style.display = "none";
+      return;
+    }
+    if (actor.id === flags.initiatorId) {
+      btn.disabled = true;
+      btn.textContent = game.i18n.localize("TAMS.ContestedCheck.YourRoll");
+      return;
+    }
+    if ((_b = flags.contests) == null ? void 0 : _b.some((c) => c.actorId === actor.id)) {
+      btn.disabled = true;
+      btn.textContent = game.i18n.localize("TAMS.ContestedCheck.AlreadyContested");
+      return;
+    }
+    btn.textContent = game.i18n.format("TAMS.ContestedCheck.ContestAs", { name: actor.name });
+    btn.addEventListener("click", async (ev) => {
+      var _a2, _b2;
+      ev.preventDefault();
+      const currentActor = game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
+      if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
+      const currentFlags = (_a2 = message.flags) == null ? void 0 : _a2.tams;
+      if ((_b2 = currentFlags == null ? void 0 : currentFlags.contests) == null ? void 0 : _b2.some((c) => c.actorId === currentActor.id)) {
+        return ui.notifications.info(game.i18n.localize("TAMS.ContestedCheck.AlreadyContested"));
+      }
+      const suggestedStatId = (currentFlags == null ? void 0 : currentFlags.statId) ?? "strength";
+      const statLabels = {
+        strength: game.i18n.localize("TAMS.StatStrength"),
+        dexterity: game.i18n.localize("TAMS.StatDexterity"),
+        endurance: game.i18n.localize("TAMS.StatEndurance"),
+        wisdom: game.i18n.localize("TAMS.StatWisdom"),
+        intelligence: game.i18n.localize("TAMS.StatIntelligence"),
+        bravery: game.i18n.localize("TAMS.StatBravery")
+      };
+      const statOptions = Object.entries(statLabels).map(
+        ([id, lbl]) => `<option value="stat:${id}" ${suggestedStatId === id ? "selected" : ""}>${lbl}</option>`
+      ).join("");
+      const actorSkills = currentActor.items.filter((i) => i.type === "skill").sort((a, b) => a.name.localeCompare(b.name));
+      const skillOptions = actorSkills.map((s) => `<option value="skill:${s.name}">${s.name}</option>`).join("");
+      const skillGroup = skillOptions ? `<optgroup label="${game.i18n.localize("TAMS.Skills")}">${skillOptions}</optgroup>` : "";
+      const chosenRollChoice = await new Promise((resolve) => {
+        new Dialog({
+          title: game.i18n.localize("TAMS.ContestedCheck.DialogTitle"),
+          content: `<div class="form-group">
+              <label>${game.i18n.localize("TAMS.ContestedCheck.WhatToRoll")}</label>
+              <select id="cc-roll-choice">
+                <optgroup label="${game.i18n.localize("TAMS.GroupCheck.Stats")}">${statOptions}</optgroup>
+                ${skillGroup}
+              </select>
+            </div>`,
+          buttons: {
+            roll: { label: game.i18n.localize("TAMS.ContestedCheck.Roll"), callback: (html2) => resolve(html2.find("#cc-roll-choice").val()) },
+            cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+          },
+          default: "roll",
+          close: () => resolve(null)
+        }).render(true);
+      });
+      if (!chosenRollChoice) return;
+      let total, raw, skillDisplayName;
+      if (chosenRollChoice.startsWith("stat:")) {
+        const sId = chosenRollChoice.slice(5);
+        const stat = currentActor.system.stats[sId];
+        const effectiveStat = stat ? stat.value + (stat.mod || 0) + (stat.traitBonus || 0) : 0;
+        const contestRoll = await new Roll("1d100").evaluate();
+        raw = contestRoll.total;
+        total = Math.min(raw, effectiveStat);
+        skillDisplayName = statLabels[sId] ?? sId;
+      } else {
+        const skillName = chosenRollChoice.slice(6);
+        const skill = currentActor.items.find((i) => i.type === "skill" && i.name.toLowerCase() === skillName.toLowerCase());
+        if (skill) {
+          const sId = skill.system.stat;
+          const stat = currentActor.system.stats[sId];
+          const statValue = stat ? stat.value : 0;
+          const statMod = stat ? (stat.mod || 0) + (stat.traitBonus || 0) : 0;
+          const fam = parseInt(skill.system.familiarity) || 0;
+          const bonus = parseInt(skill.system.bonus) || 0;
+          const contestRoll = await new Roll("1d100").evaluate();
+          raw = contestRoll.total;
+          const capped = Math.min(raw, statValue + statMod);
+          total = capped + fam + bonus;
+          skillDisplayName = skill.name;
+          await skill.update({ "system.usedInScene": true });
+        } else {
+          const stat = currentActor.system.stats[suggestedStatId];
+          const effectiveStat = stat ? stat.value + (stat.mod || 0) : 0;
+          const contestRoll = await new Roll("1d100").evaluate();
+          raw = contestRoll.total;
+          total = Math.min(raw, effectiveStat);
+          skillDisplayName = statLabels[suggestedStatId] ?? suggestedStatId;
+        }
+      }
+      const { initiatorName, label, initiatorTotal, initiatorRaw, contests: existing } = currentFlags;
+      if (existing == null ? void 0 : existing.some((c) => c.actorId === currentActor.id)) {
+        return ui.notifications.info(game.i18n.localize("TAMS.ContestedCheck.AlreadyContested"));
+      }
+      const newEntry = { actorId: currentActor.id, actorName: currentActor.name, label: skillDisplayName, total, raw };
+      const newContests = [...existing ?? [], newEntry];
+      if (game.user.isGM || message.isAuthor) {
+        await message.update({
+          content: buildContestedCheckContent(initiatorName, label, initiatorTotal, initiatorRaw, newContests),
+          "flags.tams.contests": newContests
+        });
+      } else {
+        const gmIds = game.users.filter((u) => u.isGM).map((u) => u.id);
+        await ChatMessage.create({
+          whisper: gmIds,
+          content: "",
+          speaker: ChatMessage.getSpeaker({ actor: currentActor }),
+          flags: { tams: { contestedCheckPending: true, targetMessageId: message.id, entry: newEntry } }
+        });
+        ui.notifications.info(game.i18n.localize("TAMS.ContestedCheck.Submitted"));
       }
     });
   });
@@ -4186,11 +4365,15 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         </div>
       </div>
     `;
-    ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor: this.document }),
-      content: messageContent,
-      rolls: [roll]
-    });
+    if (event.altKey) {
+      await tamsCreateContestedCheck(this.document, label, finalTotal, rawResult, roll, statId);
+    } else {
+      ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor: this.document }),
+        content: messageContent,
+        rolls: [roll]
+      });
+    }
     if (item && ["weapon", "skill", "ability"].includes(item.type)) {
       item.update({ "system.usedInScene": true });
     }
@@ -5235,6 +5418,7 @@ Hooks.once("init", async function() {
   Hooks.on("createChatMessage", async (msg) => {
     if (!game.user.isGM) return;
     await tamsHandleGroupCheckPending(msg);
+    await tamsHandleContestedCheckPending(msg);
   });
   Hooks.on("renderChatLog", (app, html) => {
     if (!game.user.isGM) return;

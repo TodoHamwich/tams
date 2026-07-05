@@ -363,6 +363,18 @@
       "Medium": "Medium",
       "Large": "Large"
     },
+    "ContestedCheck": {
+      "Title": "Contested Check: {label}",
+      "Contest": "Contest this Roll",
+      "ContestAs": "Contest as {name}",
+      "YourRoll": "Your Roll",
+      "AlreadyContested": "Already Contested",
+      "DialogTitle": "Contest this Roll",
+      "WhatToRoll": "Roll with:",
+      "Roll": "Roll",
+      "Submitted": "Contested roll submitted to GM.",
+      "NoCharacter": "No character found to roll with."
+    },
     "CreatureSize": "Creature Size",
     "SizeBonus": "Size Bonus",
     "SizeStealthBonus": "Size (Stealth)",
