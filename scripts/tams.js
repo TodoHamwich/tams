@@ -455,6 +455,7 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       special: new fields.StringField({ initial: "" }),
       isAoE: new fields.BooleanField({ initial: false }),
       damageType: new fields.StringField({ initial: "" }),
+      inflictsStatusId: new fields.StringField({ initial: "" }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
@@ -640,6 +641,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       multiAttack: new fields.NumberField({ initial: 1, nullable: true }),
       isAoE: new fields.BooleanField({ initial: false }),
       damageType: new fields.StringField({ initial: "" }),
+      inflictsStatusId: new fields.StringField({ initial: "" }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" }),
       ifStatement: new fields.StringField({ initial: "" }),
@@ -764,6 +766,17 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     }
   }
 }
+class TAMSStatusEffectData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      statusId: new fields.StringField({ initial: "" }),
+      mechanicalSummary: new fields.StringField({ initial: "" }),
+      durationRounds: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+      description: new fields.HTMLField({ initial: "" })
+    };
+  }
+}
 class TAMSTraitData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
@@ -828,6 +841,12 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                     <p style="font-size: 0.8em; margin: 2px 0;">${check.reasons.join("<br>")}</p>
                     <button class="roll-check" data-index="${i}" style="width: 100%; margin-top: 5px; background: #4a0000; color: white; font-size: 12px;">${game.i18n.localize("TAMS.Checks.RollSurvival")}</button>
                 </div>`;
+    } else if (check.type === "morale") {
+      content += `
+                <div class="check-row" style="background: rgba(52, 73, 94, 0.15); padding: 5px; margin-top: 5px; border: 1px solid #34495e; border-radius: 4px;">
+                    <label><b>${game.i18n.localize("TAMS.Checks.MoraleCheck")}</b> — ${check.statusName ?? check.statusId} (DC ${check.dc})</label>
+                    <button class="roll-check" data-index="${i}" style="width: 100%; margin-top: 5px; background: #34495e; color: white; font-size: 12px;">${game.i18n.localize("TAMS.Checks.RollMorale")}</button>
+                </div>`;
     }
   });
   content += `</div>`;
@@ -840,11 +859,11 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
         const btn = ev.currentTarget;
         const idx = parseInt(btn.dataset.index);
         const check = pendingChecks[idx];
-        const end = target.system.stats.endurance.total;
+        const statCap = check.type === "morale" ? target.system.stats.bravery.total : target.system.stats.endurance.total;
         let bonus = 0;
         const roll = await new Roll("1d100").evaluate();
         const raw = roll.total;
-        const capped = Math.min(raw, end);
+        const capped = Math.min(raw, statCap);
         const total = capped + bonus;
         const success = total >= check.dc;
         let report = "";
@@ -853,7 +872,7 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                         <div class="tams-roll">
                             <h3 class="roll-label">${game.i18n.format("TAMS.Checks.EnduranceCheck", { loc: check.loc })}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
-                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end })}</span><span>${capped}</span></div>
+                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end: statCap })}</span><span>${capped}</span></div>
                             <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total: capped, dc: check.dc })}</div>
                             ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Checks.Success")}</div>` : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Checks.FailedCrit")}</div>`}
                         </div>
@@ -863,10 +882,10 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
           }
         } else if (check.type === "unconscious") {
           report = `
-                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}" data-reasons='${JSON.stringify(check.reasons)}'>
+                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${statCap}" data-reasons='${JSON.stringify(check.reasons)}'>
                             <h3 class="roll-label" style="color: #2980b9;">${game.i18n.format("TAMS.Checks.UnconsciousCheckLabel", { name: target.name })}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
-                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end })}</span><span>${capped}</span></div>
+                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end: statCap })}</span><span>${capped}</span></div>
                             <div class="roll-boost-container"></div>
                             <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total: capped, dc: check.dc })}</div>
                             ${success ? `<div class="tams-success" style="font-size:1.1em; font-weight:bold;">${game.i18n.localize("TAMS.Checks.RemainsConscious")}</div>` : `<div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.localize("TAMS.Checks.FallsUnconscious")}</div>`}
@@ -876,12 +895,25 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                             </div>
                         </div>
                     `;
+        } else if (check.type === "morale") {
+          report = `
+                        <div class="tams-roll">
+                            <h3 class="roll-label" style="color: #34495e;">${game.i18n.format("TAMS.Checks.MoraleCheckLabel", { name: target.name })}</h3>
+                            <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
+                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end: statCap })}</span><span>${capped}</span></div>
+                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total: capped, dc: check.dc })}</div>
+                            ${success ? `<div class="tams-success" style="font-size:1.1em; font-weight:bold;">${game.i18n.format("TAMS.Checks.MoraleRecovery", { name: target.name })}</div>` : `<div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.format("TAMS.Checks.MoraleStillAffected", { name: target.name, status: check.statusName ?? check.statusId })}</div>`}
+                        </div>
+                    `;
+          if (success) {
+            await target.toggleStatusEffect(check.statusId, { active: false });
+          }
         } else {
           report = `
-                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}">
+                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${statCap}">
                             <h3 class="roll-label" style="color: #8b0000;">${game.i18n.format("TAMS.Checks.SurvivalCheckLabel", { name: target.name })}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
-                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end })}</span><span>${capped}</span></div>
+                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end: statCap })}</span><span>${capped}</span></div>
                             <div class="roll-boost-container"></div>
                             <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total: capped, dc: check.dc })}</div>
                             ${success ? `<div class="tams-success" style="font-size:1.2em; font-weight:bold;">${game.i18n.localize("TAMS.Checks.Survived")}</div>` : `<div class="tams-crit failure" style="font-size:1.2em;">${game.i18n.localize("TAMS.Checks.FatalInjury")}</div>`}
@@ -893,8 +925,8 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
         }
         ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: target }), content: report });
         btn.disabled = true;
-        const passKey = { crit: "TAMS.Checks.CritAvoided", unconscious: "TAMS.Checks.Conscious", survival: "TAMS.Checks.SurvivalPass" }[check.type];
-        const failKey = { crit: "TAMS.Checks.CritWound", unconscious: "TAMS.Checks.Unconscious", survival: "TAMS.Checks.SurvivalFail" }[check.type];
+        const passKey = { crit: "TAMS.Checks.CritAvoided", unconscious: "TAMS.Checks.Conscious", survival: "TAMS.Checks.SurvivalPass", morale: "TAMS.Checks.MoralePass" }[check.type];
+        const failKey = { crit: "TAMS.Checks.CritWound", unconscious: "TAMS.Checks.Unconscious", survival: "TAMS.Checks.SurvivalFail", morale: "TAMS.Checks.MoraleFail" }[check.type];
         btn.innerText = success ? game.i18n.localize(passKey) : game.i18n.localize(failKey);
         btn.style.background = success ? "#2e7d32" : "#c62828";
       });
@@ -1131,33 +1163,156 @@ async function tamsCallGroupCheck() {
   });
 }
 const LIMB_KEYS = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+const DOT_GROUPS = [
+  {
+    tiers: [
+      { id: "severe-bleeding", damage: 6, msgKey: "TAMS.TurnStart.SevereBleedingDamage" },
+      { id: "bleeding", damage: 2, msgKey: "TAMS.TurnStart.BleedingDamage" }
+    ],
+    getLimb: () => "thorax",
+    outKey: "TAMS.TurnStart.BledOut"
+  },
+  {
+    tiers: [
+      { id: "engulfed", damage: 8, msgKey: "TAMS.TurnStart.EngulfedDamage" },
+      { id: "on-fire", damage: 3, msgKey: "TAMS.TurnStart.FireDamage" }
+    ],
+    getLimb: () => "head",
+    outKey: "TAMS.TurnStart.BurnedOut"
+  },
+  {
+    tiers: [
+      { id: "severely-poisoned", damage: 5, msgKey: "TAMS.TurnStart.SeverePoisonDamage" },
+      { id: "poisoned", damage: 2, msgKey: "TAMS.TurnStart.PoisonDamage" }
+    ],
+    getLimb: () => "thorax",
+    outKey: "TAMS.TurnStart.PoisonedOut"
+  },
+  {
+    tiers: [
+      { id: "severely-irradiated", damage: 3, msgKey: "TAMS.TurnStart.SevereRadiationDamage", extraCheck: true },
+      { id: "irradiated", damage: 1, msgKey: "TAMS.TurnStart.RadiationDamage" }
+    ],
+    getLimb: () => "thorax",
+    outKey: "TAMS.TurnStart.RadiatedOut"
+  },
+  {
+    tiers: [
+      { id: "severe-acid-burn", damage: 5, msgKey: "TAMS.TurnStart.SevereAcidDamage" },
+      { id: "acid-burn", damage: 2, msgKey: "TAMS.TurnStart.AcidDamage" }
+    ],
+    // Target the arm with lower current HP (most exposed)
+    getLimb: (limbs) => {
+      var _a, _b;
+      const la = ((_a = limbs.leftArm) == null ? void 0 : _a.value) ?? Infinity;
+      const ra = ((_b = limbs.rightArm) == null ? void 0 : _b.value) ?? Infinity;
+      return la <= ra ? "leftArm" : "rightArm";
+    },
+    outKey: "TAMS.TurnStart.AcidOut"
+  }
+];
+function getWhisperIds(actor) {
+  const ownerIds = Object.entries(actor.ownership ?? {}).filter(([id, lvl]) => lvl >= 3 && id !== "default").map(([id]) => id);
+  const gmIds = game.users.filter((u) => u.isGM).map((u) => u.id);
+  return [.../* @__PURE__ */ new Set([...ownerIds, ...gmIds])];
+}
 async function tamsOnTurnStart(actor) {
+  var _a, _b;
   if (!actor || actor.type !== "character") return;
   const statuses = actor.statuses ?? /* @__PURE__ */ new Set();
-  const hasSevere = statuses.has("severe-bleeding");
-  const hasBleeding = statuses.has("bleeding");
-  const bleedDamage = hasSevere ? 6 : hasBleeding ? 2 : 0;
-  if (bleedDamage > 0) {
-    const thorax = actor.system.limbs.thorax;
-    const newThoraxVal = thorax.value - bleedDamage;
-    const otherHp = LIMB_KEYS.filter((k) => k !== "thorax").reduce((sum, k) => {
-      var _a;
-      return sum + (((_a = actor.system.limbs[k]) == null ? void 0 : _a.value) ?? 0);
-    }, 0);
-    const newTotalHp = newThoraxVal + otherHp;
-    await actor.update({ "system.limbs.thorax.value": newThoraxVal });
-    const msgKey = hasSevere ? "TAMS.TurnStart.SevereBleedingDamage" : "TAMS.TurnStart.BleedingDamage";
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<div class="tams-roll"><div class="tams-crit failure">${game.i18n.format(msgKey, { name: actor.name, damage: bleedDamage })}</div></div>`
-    });
-    if (newTotalHp <= 0) {
-      await actor.toggleStatusEffect("unconscious", { active: true });
+  const allPendingChecks = [];
+  const activeDotTiers = [];
+  for (const group of DOT_GROUPS) {
+    const tier = group.tiers.find((t) => statuses.has(t.id));
+    if (!tier) continue;
+    activeDotTiers.push({ ...tier, limbKey: group.getLimb(actor.system.limbs), outKey: group.outKey });
+  }
+  if (activeDotTiers.length > 0) {
+    const limbDamage = {};
+    for (const tier of activeDotTiers) {
+      limbDamage[tier.limbKey] = (limbDamage[tier.limbKey] ?? 0) + tier.damage;
+    }
+    const limbNewValues = Object.fromEntries(
+      Object.entries(limbDamage).map(([k, dmg]) => {
+        var _a2;
+        return [k, (((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0) - dmg];
+      })
+    );
+    const newTotalHp = LIMB_KEYS.reduce(
+      (sum, k) => {
+        var _a2;
+        return sum + (limbNewValues[k] ?? ((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0);
+      },
+      0
+    );
+    await actor.update(
+      Object.fromEntries(Object.entries(limbNewValues).map(([k, v]) => [`system.limbs.${k}.value`, v]))
+    );
+    for (const tier of activeDotTiers) {
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor }),
-        content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format("TAMS.TurnStart.BledOut", { name: actor.name })}</div></div>`
+        content: `<div class="tams-roll"><div class="tams-crit failure">${game.i18n.format(tier.msgKey, { name: actor.name, damage: tier.damage })}</div></div>`
       });
     }
+    if (activeDotTiers.find((t) => t.id === "severely-irradiated") && newTotalHp > 0) {
+      allPendingChecks.push({
+        type: "survival",
+        dc: 30,
+        reasons: [game.i18n.localize("TAMS.TurnStart.RadiationCheckReason")]
+      });
+    }
+    if (newTotalHp <= 0) {
+      await actor.toggleStatusEffect("unconscious", { active: true });
+      let runningHp = LIMB_KEYS.reduce((sum, k) => {
+        var _a2;
+        return sum + (((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0) + (limbDamage[k] ?? 0);
+      }, 0);
+      let outKey = activeDotTiers[0].outKey;
+      for (const tier of activeDotTiers) {
+        runningHp -= tier.damage;
+        if (runningHp <= 0) {
+          outKey = tier.outKey;
+          break;
+        }
+      }
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format(outKey, { name: actor.name })}</div></div>`
+      });
+      const dc = Math.max(1, Math.abs(newTotalHp));
+      allPendingChecks.push({
+        type: "survival",
+        dc,
+        reasons: [game.i18n.localize("TAMS.TurnStart.KnockedOutReason")]
+      });
+    }
+  }
+  if (statuses.has("stunned")) {
+    const whisper = getWhisperIds(actor);
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor }),
+      content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.format("TAMS.TurnStart.StunnedReminder", { name: actor.name })}</div></div>`,
+      whisper
+    });
+    await actor.toggleStatusEffect("stunned", { active: false });
+  }
+  if (statuses.has("frozen")) {
+    const def = (_a = CONFIG.statusEffects) == null ? void 0 : _a.find((e) => e.id === "frozen");
+    allPendingChecks.push({
+      type: "morale",
+      statusId: "frozen",
+      statusName: def ? game.i18n.localize(def.name) : "Frozen",
+      dc: 25
+    });
+  }
+  if (statuses.has("fleeing")) {
+    const def = (_b = CONFIG.statusEffects) == null ? void 0 : _b.find((e) => e.id === "fleeing");
+    allPendingChecks.push({
+      type: "morale",
+      statusId: "fleeing",
+      statusName: def ? game.i18n.localize(def.name) : "Fleeing",
+      dc: 20
+    });
   }
   const injuredLimbs = [], critLimbs = [];
   for (const key of LIMB_KEYS) {
@@ -1166,10 +1321,10 @@ async function tamsOnTurnStart(actor) {
     if (limb.criticallyInjured) critLimbs.push(limb.label);
     else if (limb.injured) injuredLimbs.push(limb.label);
   }
-  const skipStatuses = /* @__PURE__ */ new Set(["encumbered"]);
+  const skipStatuses = /* @__PURE__ */ new Set(["encumbered", "stunned", "frozen", "fleeing"]);
   const activeStatusNames = [...statuses].filter((s) => !skipStatuses.has(s)).map((s) => {
-    var _a;
-    const def = (_a = CONFIG.statusEffects) == null ? void 0 : _a.find((e) => e.id === s);
+    var _a2;
+    const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e) => e.id === s);
     return def ? game.i18n.localize(def.name) : s;
   });
   if (injuredLimbs.length || critLimbs.length || activeStatusNames.length) {
@@ -1181,15 +1336,60 @@ async function tamsOnTurnStart(actor) {
     if (activeStatusNames.length)
       content += `<div class="roll-row"><span>${game.i18n.format("TAMS.TurnStart.StatusReminder", { statuses: activeStatusNames.join(", ") })}</span></div>`;
     content += `</div>`;
-    const ownerIds = Object.entries(actor.ownership ?? {}).filter(([id, lvl]) => lvl >= 3 && id !== "default").map(([id]) => id);
-    const gmIds = game.users.filter((u) => u.isGM).map((u) => u.id);
-    const whisper = [.../* @__PURE__ */ new Set([...ownerIds, ...gmIds])];
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor }),
       content,
-      whisper
+      whisper: getWhisperIds(actor)
     });
   }
+  if (allPendingChecks.length > 0) showCombinedInjuryDialog(actor, allPendingChecks);
+}
+const TEMP_COMBAT_STATUSES = /* @__PURE__ */ new Set(["stunned", "fleeing", "frozen"]);
+async function tamsOnCombatEnd(combat) {
+  var _a;
+  const gmIds = game.users.filter((u) => u.isGM).map((u) => u.id);
+  const rows = [];
+  for (const combatant of combat.combatants) {
+    const actor = combatant.actor;
+    if (!actor || actor.type !== "character") continue;
+    const cleared = [];
+    for (const id of TEMP_COMBAT_STATUSES) {
+      if ((_a = actor.statuses) == null ? void 0 : _a.has(id)) {
+        await actor.toggleStatusEffect(id, { active: false });
+        cleared.push(id);
+      }
+    }
+    const totalHp = LIMB_KEYS.reduce((sum, k) => {
+      var _a2;
+      return sum + (((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0);
+    }, 0);
+    const persistentStatuses = [...actor.statuses ?? []].filter((s) => !TEMP_COMBAT_STATUSES.has(s) && s !== "encumbered").map((s) => {
+      var _a2;
+      const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e) => e.id === s);
+      return def ? game.i18n.localize(def.name) : s;
+    });
+    let row = `<div style="margin: 4px 0; padding: 4px; border-bottom: 1px solid #444;">`;
+    row += `<b>${actor.name}</b> — HP: ${totalHp}`;
+    if (persistentStatuses.length)
+      row += `<br><span style="color:#e67e22;">${persistentStatuses.join(", ")}</span>`;
+    if (cleared.length) {
+      const clearedNames = cleared.map((id) => {
+        var _a2;
+        const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e) => e.id === id);
+        return def ? game.i18n.localize(def.name) : id;
+      });
+      row += `<br><span style="color:#2e7d32;">Cleared: ${clearedNames.join(", ")}</span>`;
+    }
+    row += `</div>`;
+    rows.push(row);
+  }
+  if (rows.length === 0) return;
+  const content = `
+        <div class="tams-roll">
+            <h3 class="roll-label">${game.i18n.localize("TAMS.CombatEnd.Title")}</h3>
+            ${rows.join("")}
+        </div>`;
+  ChatMessage.create({ content, whisper: gmIds });
 }
 async function tamsRenderChatMessage(message, html, data) {
   const root = html instanceof jQuery ? html[0] : html;
@@ -2911,6 +3111,14 @@ class TAMSActor extends Actor {
     if (endDelta !== 0) await this._adjustLimbHPForEnduranceDelta(endDelta);
     if (Object.values(statDeltas).some((v) => v !== 0)) await this._adjustResourcesForStatDeltas(statDeltas);
   }
+  async _onDropItem(event, data) {
+    const item = await Item.fromDropData(data);
+    if ((item == null ? void 0 : item.type) === "statusEffect" && item.system.statusId) {
+      await this.toggleStatusEffect(item.system.statusId, { active: true });
+      return false;
+    }
+    return super._onDropItem(event, data);
+  }
 }
 class TAMSItem extends Item {
   /**
@@ -3138,6 +3346,12 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     this.element.querySelectorAll("select.inventory-filter").forEach((el) => {
       el.addEventListener("change", (ev) => this._onSetInventoryFilter(ev, ev.currentTarget));
     });
+    this.element.querySelectorAll(".tams-remove-status").forEach((btn) => {
+      btn.addEventListener("click", async (ev) => {
+        const statusId = ev.currentTarget.dataset.statusId;
+        await this.document.toggleStatusEffect(statusId, { active: false });
+      });
+    });
   }
   /** @override */
   async _prepareContext(options) {
@@ -3156,6 +3370,18 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     this._prepareSelectOptions(context);
     this._prepareCurrencyData(context);
     this._prepareLimbArmorOptions(context);
+    const skipDisplay = /* @__PURE__ */ new Set(["encumbered"]);
+    context.activeStatuses = [...this.document.statuses ?? []].filter((id) => !skipDisplay.has(id)).map((id) => {
+      var _a, _b;
+      const def = ((_a = CONFIG.statusEffects) == null ? void 0 : _a.find((e) => e.id === id)) ?? {};
+      const itemRef = (_b = game.items) == null ? void 0 : _b.find((i) => i.type === "statusEffect" && i.system.statusId === id);
+      return {
+        id,
+        name: def.name ? game.i18n.localize(def.name) : id,
+        icon: def.img ?? "icons/svg/skull.svg",
+        mechanicalSummary: (itemRef == null ? void 0 : itemRef.system.mechanicalSummary) ?? ""
+      };
+    });
     return context;
   }
   /**
@@ -5657,6 +5883,7 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.questItem = TAMSQuestItemData;
   CONFIG.Item.dataModels.backpack = TAMSBackpackData;
   CONFIG.Item.dataModels.trait = TAMSTraitData;
+  CONFIG.Item.dataModels.statusEffect = TAMSStatusEffectData;
   CONFIG.Item.systemDataModels = CONFIG.Item.dataModels;
   CONFIG.Actor.systemDataModels = CONFIG.Actor.dataModels;
   CONFIG.Actor.documentClass = TAMSActor;
@@ -5738,9 +5965,33 @@ Hooks.once("init", async function() {
     controls.prepend(btn);
   });
   const tamsStatusEffects = [
+    // Existing
     { id: "encumbered", name: "TAMS.Encumbered", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg" },
     { id: "bleeding", name: "TAMS.Status.Bleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
-    { id: "severe-bleeding", name: "TAMS.Status.SevereBleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" }
+    { id: "severe-bleeding", name: "TAMS.Status.SevereBleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
+    // Category 1 — Combat Conditions
+    { id: "stunned", name: "TAMS.Status.Stunned", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg" },
+    { id: "prone", name: "TAMS.Status.Prone", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg" },
+    { id: "suppressed", name: "TAMS.Status.Suppressed", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg" },
+    { id: "blinded", name: "TAMS.Status.Blinded", img: "icons/svg/blind.svg", icon: "icons/svg/blind.svg" },
+    { id: "deafened", name: "TAMS.Status.Deafened", img: "icons/svg/deaf.svg", icon: "icons/svg/deaf.svg" },
+    // Category 2 — Ongoing Damage (severity tiers)
+    { id: "on-fire", name: "TAMS.Status.OnFire", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg" },
+    { id: "engulfed", name: "TAMS.Status.Engulfed", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg" },
+    { id: "poisoned", name: "TAMS.Status.Poisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg" },
+    { id: "severely-poisoned", name: "TAMS.Status.SeverelyPoisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg" },
+    { id: "irradiated", name: "TAMS.Status.Irradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg" },
+    { id: "severely-irradiated", name: "TAMS.Status.SeverelyIrradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg" },
+    { id: "acid-burn", name: "TAMS.Status.AcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
+    { id: "severe-acid-burn", name: "TAMS.Status.SevereAcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
+    // Category 3 — Morale / Mental
+    { id: "fleeing", name: "TAMS.Status.Fleeing", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg" },
+    { id: "frozen", name: "TAMS.Status.Frozen", img: "icons/svg/frozen.svg", icon: "icons/svg/frozen.svg" },
+    { id: "charmed", name: "TAMS.Status.Charmed", img: "icons/svg/sleep.svg", icon: "icons/svg/sleep.svg" },
+    { id: "confused", name: "TAMS.Status.Confused", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg" },
+    // Category 4 — Limb-Specific
+    { id: "broken-arm", name: "TAMS.Status.BrokenArm", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
+    { id: "broken-leg", name: "TAMS.Status.BrokenLeg", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" }
   ];
   for (const effect of tamsStatusEffects) {
     if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some((e) => e.id === effect.id)) {
@@ -5792,5 +6043,9 @@ Hooks.on("updateCombat", async (combat, changed) => {
   const combatant = combat.combatant;
   if (!(combatant == null ? void 0 : combatant.actor)) return;
   await tamsOnTurnStart(combatant.actor);
+});
+Hooks.on("deleteCombat", async (combat) => {
+  if (!game.user.isGM) return;
+  await tamsOnCombatEnd(combat);
 });
 //# sourceMappingURL=tams.js.map

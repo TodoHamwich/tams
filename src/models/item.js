@@ -32,6 +32,7 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       special: new fields.StringField({initial: ""}),
       isAoE: new fields.BooleanField({initial: false}),
       damageType: new fields.StringField({initial: ""}),
+      inflictsStatusId: new fields.StringField({initial: ""}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -256,6 +257,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       multiAttack: new fields.NumberField({initial: 1, nullable: true}),
       isAoE: new fields.BooleanField({initial: false}),
       damageType: new fields.StringField({initial: ""}),
+      inflictsStatusId: new fields.StringField({initial: ""}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""}),
       ifStatement: new fields.StringField({initial: ""}),
@@ -381,6 +383,21 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     if (this.calculator?.enabled) {
       this.cost = this.calculatedCost;
     }
+  }
+}
+
+/**
+ * DataModel for StatusEffect items.
+ */
+export class TAMSStatusEffectData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      statusId:          new fields.StringField({initial: ""}),
+      mechanicalSummary: new fields.StringField({initial: ""}),
+      durationRounds:    new fields.NumberField({initial: 0, integer: true, min: 0}),
+      description:       new fields.HTMLField({initial: ""})
+    };
   }
 }
 

@@ -1,5 +1,5 @@
 import { TAMSCharacterData } from './models/character.js';
-import { TAMSWeaponData, TAMSSkillData, TAMSEquipmentData, TAMSArmorData, TAMSConsumableData, TAMSToolData, TAMSShieldData, TAMSQuestItemData, TAMSBackpackData, TAMSAbilityData, TAMSTraitData } from './models/item.js';
+import { TAMSWeaponData, TAMSSkillData, TAMSEquipmentData, TAMSArmorData, TAMSConsumableData, TAMSToolData, TAMSShieldData, TAMSQuestItemData, TAMSBackpackData, TAMSAbilityData, TAMSTraitData, TAMSStatusEffectData } from './models/item.js';
 import { TAMSActor } from './documents/actor.js';
 import { TAMSItem } from './documents/item.js';
 import { TAMSActorSheet } from './applications/actor-sheet.js';
@@ -9,7 +9,7 @@ import { TAMSNPCSheet } from './applications/npc-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
-import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending, tamsHandleContestedCheckPending, tamsOnTurnStart } from './utils/combat.js';
+import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending, tamsHandleContestedCheckPending, tamsOnTurnStart, tamsOnCombatEnd } from './utils/combat.js';
 
 Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
@@ -96,6 +96,7 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.questItem = TAMSQuestItemData;
   CONFIG.Item.dataModels.backpack = TAMSBackpackData;
   CONFIG.Item.dataModels.trait = TAMSTraitData;
+  CONFIG.Item.dataModels.statusEffect = TAMSStatusEffectData;
 
   // v12: Ensure types are also in systemDataModels if needed
   CONFIG.Item.systemDataModels = CONFIG.Item.dataModels;
@@ -213,9 +214,33 @@ Hooks.once("init", async function() {
 
   // --- Custom status effects ---
   const tamsStatusEffects = [
-    { id: "encumbered",      name: "TAMS.Encumbered",            img: "icons/svg/anchor.svg",      icon: "icons/svg/anchor.svg" },
-    { id: "bleeding",        name: "TAMS.Status.Bleeding",       img: "icons/svg/blood.svg",       icon: "icons/svg/blood.svg" },
-    { id: "severe-bleeding", name: "TAMS.Status.SevereBleeding", img: "icons/svg/blood.svg",       icon: "icons/svg/blood.svg" },
+    // Existing
+    { id: "encumbered",           name: "TAMS.Encumbered",                  img: "icons/svg/anchor.svg",  icon: "icons/svg/anchor.svg" },
+    { id: "bleeding",             name: "TAMS.Status.Bleeding",             img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
+    { id: "severe-bleeding",      name: "TAMS.Status.SevereBleeding",       img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
+    // Category 1 — Combat Conditions
+    { id: "stunned",              name: "TAMS.Status.Stunned",              img: "icons/svg/daze.svg",    icon: "icons/svg/daze.svg" },
+    { id: "prone",                name: "TAMS.Status.Prone",                img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg" },
+    { id: "suppressed",           name: "TAMS.Status.Suppressed",           img: "icons/svg/anchor.svg",  icon: "icons/svg/anchor.svg" },
+    { id: "blinded",              name: "TAMS.Status.Blinded",              img: "icons/svg/blind.svg",   icon: "icons/svg/blind.svg" },
+    { id: "deafened",             name: "TAMS.Status.Deafened",             img: "icons/svg/deaf.svg",    icon: "icons/svg/deaf.svg" },
+    // Category 2 — Ongoing Damage (severity tiers)
+    { id: "on-fire",              name: "TAMS.Status.OnFire",               img: "icons/svg/fire.svg",    icon: "icons/svg/fire.svg" },
+    { id: "engulfed",             name: "TAMS.Status.Engulfed",             img: "icons/svg/fire.svg",    icon: "icons/svg/fire.svg" },
+    { id: "poisoned",             name: "TAMS.Status.Poisoned",             img: "icons/svg/poison.svg",  icon: "icons/svg/poison.svg" },
+    { id: "severely-poisoned",    name: "TAMS.Status.SeverelyPoisoned",     img: "icons/svg/poison.svg",  icon: "icons/svg/poison.svg" },
+    { id: "irradiated",           name: "TAMS.Status.Irradiated",           img: "icons/svg/skull.svg",   icon: "icons/svg/skull.svg" },
+    { id: "severely-irradiated",  name: "TAMS.Status.SeverelyIrradiated",   img: "icons/svg/skull.svg",   icon: "icons/svg/skull.svg" },
+    { id: "acid-burn",            name: "TAMS.Status.AcidBurn",             img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
+    { id: "severe-acid-burn",     name: "TAMS.Status.SevereAcidBurn",       img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
+    // Category 3 — Morale / Mental
+    { id: "fleeing",              name: "TAMS.Status.Fleeing",              img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg" },
+    { id: "frozen",               name: "TAMS.Status.Frozen",               img: "icons/svg/frozen.svg",  icon: "icons/svg/frozen.svg" },
+    { id: "charmed",              name: "TAMS.Status.Charmed",              img: "icons/svg/sleep.svg",   icon: "icons/svg/sleep.svg" },
+    { id: "confused",             name: "TAMS.Status.Confused",             img: "icons/svg/daze.svg",    icon: "icons/svg/daze.svg" },
+    // Category 4 — Limb-Specific
+    { id: "broken-arm",           name: "TAMS.Status.BrokenArm",            img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
+    { id: "broken-leg",           name: "TAMS.Status.BrokenLeg",            img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
   ];
   for (const effect of tamsStatusEffects) {
     if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some(e => e.id === effect.id)) {
@@ -270,4 +295,10 @@ Hooks.on("updateCombat", async (combat, changed) => {
   const combatant = combat.combatant;
   if (!combatant?.actor) return;
   await tamsOnTurnStart(combatant.actor);
+});
+
+// --- End-of-combat cleanup ---
+Hooks.on("deleteCombat", async (combat) => {
+  if (!game.user.isGM) return;
+  await tamsOnCombatEnd(combat);
 });

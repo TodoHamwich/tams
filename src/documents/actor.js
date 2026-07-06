@@ -624,4 +624,13 @@ export class TAMSActor extends Actor {
     if (endDelta !== 0) await this._adjustLimbHPForEnduranceDelta(endDelta);
     if (Object.values(statDeltas).some(v => v !== 0)) await this._adjustResourcesForStatDeltas(statDeltas);
   }
+
+  async _onDropItem(event, data) {
+    const item = await Item.fromDropData(data);
+    if (item?.type === "statusEffect" && item.system.statusId) {
+      await this.toggleStatusEffect(item.system.statusId, { active: true });
+      return false;
+    }
+    return super._onDropItem(event, data);
+  }
 }

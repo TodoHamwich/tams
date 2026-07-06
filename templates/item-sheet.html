@@ -209,6 +209,11 @@
                         {{/each}}
                     </div>
                 </div>
+
+                <div class="flexrow" style="margin-top: 10px;">
+                    <label><b>{{localize 'TAMS.StatusEffect.InflictsStatus'}}</b></label>
+                    <input type="text" name="system.inflictsStatusId" value="{{system.inflictsStatusId}}" placeholder="e.g. on-fire"/>
+                </div>
             </div>
             {{/if}}
 
@@ -641,9 +646,34 @@
                     </select>
                 </div>
                 {{/unless}}
+
+                <div class="flexrow" style="margin-top: 8px;">
+                    <label><b>{{localize 'TAMS.StatusEffect.InflictsStatus'}}</b></label>
+                    <input type="text" name="system.inflictsStatusId" value="{{system.inflictsStatusId}}" placeholder="e.g. on-fire"/>
+                </div>
             </div>
 
             {{/unless}}
+            {{/if}}
+
+            {{!-- ═══════════════════════════════════════════════════════════ --}}
+            {{!--  STATUS EFFECT SHEET                                        --}}
+            {{!-- ═══════════════════════════════════════════════════════════ --}}
+            {{#if (eq item.type "statusEffect")}}
+            <div class="flexcol">
+                <div class="flexrow" style="margin-bottom: 8px;">
+                    <label><b>{{localize 'TAMS.StatusEffect.StatusId'}}</b></label>
+                    <input type="text" name="system.statusId" value="{{system.statusId}}" placeholder="e.g. on-fire"/>
+                </div>
+                <div class="flexrow" style="margin-bottom: 8px;">
+                    <label><b>{{localize 'TAMS.StatusEffect.MechanicalSummary'}}</b></label>
+                    <input type="text" name="system.mechanicalSummary" value="{{system.mechanicalSummary}}" placeholder="e.g. 3 fire damage/turn to Head"/>
+                </div>
+                <div class="flexrow" style="margin-bottom: 8px;">
+                    <label><b>{{localize 'TAMS.StatusEffect.DurationRounds'}}</b></label>
+                    <input type="number" name="system.durationRounds" value="{{system.durationRounds}}" min="0"/>
+                </div>
+            </div>
             {{/if}}
 
             {{#unless (eq item.type "weapon")}}

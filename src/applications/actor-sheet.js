@@ -95,6 +95,14 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     this.element.querySelectorAll('select.inventory-filter').forEach(el => {
       el.addEventListener('change', (ev) => this._onSetInventoryFilter(ev, ev.currentTarget));
     });
+
+    // Remove status effect buttons
+    this.element.querySelectorAll(".tams-remove-status").forEach(btn => {
+      btn.addEventListener("click", async (ev) => {
+        const statusId = ev.currentTarget.dataset.statusId;
+        await this.document.toggleStatusEffect(statusId, { active: false });
+      });
+    });
   }
 
   /** @override */
@@ -120,6 +128,21 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     this._prepareSelectOptions(context);
     this._prepareCurrencyData(context);
     this._prepareLimbArmorOptions(context);
+
+    // Active status effects panel
+    const skipDisplay = new Set(["encumbered"]);
+    context.activeStatuses = [...(this.document.statuses ?? [])]
+        .filter(id => !skipDisplay.has(id))
+        .map(id => {
+            const def = CONFIG.statusEffects?.find(e => e.id === id) ?? {};
+            const itemRef = game.items?.find(i => i.type === "statusEffect" && i.system.statusId === id);
+            return {
+                id,
+                name: def.name ? game.i18n.localize(def.name) : id,
+                icon: def.img ?? "icons/svg/skull.svg",
+                mechanicalSummary: itemRef?.system.mechanicalSummary ?? "",
+            };
+        });
 
     return context;
   }

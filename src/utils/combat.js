@@ -67,6 +67,12 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                     <p style="font-size: 0.8em; margin: 2px 0;">${check.reasons.join("<br>")}</p>
                     <button class="roll-check" data-index="${i}" style="width: 100%; margin-top: 5px; background: #4a0000; color: white; font-size: 12px;">${game.i18n.localize("TAMS.Checks.RollSurvival")}</button>
                 </div>`;
+        } else if (check.type === 'morale') {
+            content += `
+                <div class="check-row" style="background: rgba(52, 73, 94, 0.15); padding: 5px; margin-top: 5px; border: 1px solid #34495e; border-radius: 4px;">
+                    <label><b>${game.i18n.localize("TAMS.Checks.MoraleCheck")}</b> — ${check.statusName ?? check.statusId} (DC ${check.dc})</label>
+                    <button class="roll-check" data-index="${i}" style="width: 100%; margin-top: 5px; background: #34495e; color: white; font-size: 12px;">${game.i18n.localize("TAMS.Checks.RollMorale")}</button>
+                </div>`;
         }
     });
     content += `</div>`;
@@ -80,14 +86,16 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                 const btn = ev.currentTarget;
                 const idx = parseInt(btn.dataset.index);
                 const check = pendingChecks[idx];
-                const end = target.system.stats.endurance.total;
-                
+                const statCap = check.type === 'morale'
+                    ? target.system.stats.bravery.total
+                    : target.system.stats.endurance.total;
+
                 let bonus = 0;
                 let resourceSpent = null;
 
                 const roll = await new Roll("1d100").evaluate();
                 const raw = roll.total;
-                const capped = Math.min(raw, end);
+                const capped = Math.min(raw, statCap);
                 const total = capped + bonus;
                 const success = total >= check.dc;
 
@@ -97,7 +105,7 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                         <div class="tams-roll">
                             <h3 class="roll-label">${game.i18n.format("TAMS.Checks.EnduranceCheck", {loc: check.loc})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
-                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: end})}</span><span>${capped}</span></div>
+                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
                             <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total: capped, dc: check.dc})}</div>
                             ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Checks.Success")}</div>` : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Checks.FailedCrit")}</div>`}
                         </div>
@@ -107,10 +115,10 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                     }
                 } else if (check.type === 'unconscious') {
                     report = `
-                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}" data-reasons='${JSON.stringify(check.reasons)}'>
+                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${statCap}" data-reasons='${JSON.stringify(check.reasons)}'>
                             <h3 class="roll-label" style="color: #2980b9;">${game.i18n.format("TAMS.Checks.UnconsciousCheckLabel", {name: target.name})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
-                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: end})}</span><span>${capped}</span></div>
+                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
                             <div class="roll-boost-container"></div>
                             <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total: capped, dc: check.dc})}</div>
                             ${success ? `<div class="tams-success" style="font-size:1.1em; font-weight:bold;">${game.i18n.localize("TAMS.Checks.RemainsConscious")}</div>` : `<div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.localize("TAMS.Checks.FallsUnconscious")}</div>`}
@@ -120,12 +128,25 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                             </div>
                         </div>
                     `;
+                } else if (check.type === 'morale') {
+                    report = `
+                        <div class="tams-roll">
+                            <h3 class="roll-label" style="color: #34495e;">${game.i18n.format("TAMS.Checks.MoraleCheckLabel", {name: target.name})}</h3>
+                            <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
+                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
+                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total: capped, dc: check.dc})}</div>
+                            ${success ? `<div class="tams-success" style="font-size:1.1em; font-weight:bold;">${game.i18n.format("TAMS.Checks.MoraleRecovery", {name: target.name})}</div>` : `<div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.format("TAMS.Checks.MoraleStillAffected", {name: target.name, status: check.statusName ?? check.statusId})}</div>`}
+                        </div>
+                    `;
+                    if (success) {
+                        await target.toggleStatusEffect(check.statusId, { active: false });
+                    }
                 } else {
                     report = `
-                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${end}">
+                        <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${statCap}">
                             <h3 class="roll-label" style="color: #8b0000;">${game.i18n.format("TAMS.Checks.SurvivalCheckLabel", {name: target.name})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
-                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: end})}</span><span>${capped}</span></div>
+                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
                             <div class="roll-boost-container"></div>
                             <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total: capped, dc: check.dc})}</div>
                             ${success ? `<div class="tams-success" style="font-size:1.2em; font-weight:bold;">${game.i18n.localize("TAMS.Checks.Survived")}</div>` : `<div class="tams-crit failure" style="font-size:1.2em;">${game.i18n.localize("TAMS.Checks.FatalInjury")}</div>`}
@@ -135,12 +156,12 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                         </div>
                     `;
                 }
-                
+
                 ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor: target}), content: report });
-                
+
                 btn.disabled = true;
-                const passKey = { crit: "TAMS.Checks.CritAvoided", unconscious: "TAMS.Checks.Conscious", survival: "TAMS.Checks.SurvivalPass" }[check.type];
-                const failKey = { crit: "TAMS.Checks.CritWound", unconscious: "TAMS.Checks.Unconscious", survival: "TAMS.Checks.SurvivalFail" }[check.type];
+                const passKey = { crit: "TAMS.Checks.CritAvoided", unconscious: "TAMS.Checks.Conscious", survival: "TAMS.Checks.SurvivalPass", morale: "TAMS.Checks.MoralePass" }[check.type];
+                const failKey = { crit: "TAMS.Checks.CritWound", unconscious: "TAMS.Checks.Unconscious", survival: "TAMS.Checks.SurvivalFail", morale: "TAMS.Checks.MoraleFail" }[check.type];
                 btn.innerText = success ? game.i18n.localize(passKey) : game.i18n.localize(failKey);
                 btn.style.background = success ? "#2e7d32" : "#c62828";
             });
@@ -417,41 +438,165 @@ export async function tamsCallGroupCheck() {
 
 const LIMB_KEYS = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
 
+// Each group has two tiers (tier-2 listed first). Damage resolves at turn-start against the designated limb.
+const DOT_GROUPS = [
+    {
+        tiers: [
+            { id: "severe-bleeding", damage: 6, msgKey: "TAMS.TurnStart.SevereBleedingDamage" },
+            { id: "bleeding",        damage: 2, msgKey: "TAMS.TurnStart.BleedingDamage" },
+        ],
+        getLimb: () => "thorax",
+        outKey: "TAMS.TurnStart.BledOut",
+    },
+    {
+        tiers: [
+            { id: "engulfed", damage: 8, msgKey: "TAMS.TurnStart.EngulfedDamage" },
+            { id: "on-fire",  damage: 3, msgKey: "TAMS.TurnStart.FireDamage" },
+        ],
+        getLimb: () => "head",
+        outKey: "TAMS.TurnStart.BurnedOut",
+    },
+    {
+        tiers: [
+            { id: "severely-poisoned", damage: 5, msgKey: "TAMS.TurnStart.SeverePoisonDamage" },
+            { id: "poisoned",          damage: 2, msgKey: "TAMS.TurnStart.PoisonDamage" },
+        ],
+        getLimb: () => "thorax",
+        outKey: "TAMS.TurnStart.PoisonedOut",
+    },
+    {
+        tiers: [
+            { id: "severely-irradiated", damage: 3, msgKey: "TAMS.TurnStart.SevereRadiationDamage", extraCheck: true },
+            { id: "irradiated",          damage: 1, msgKey: "TAMS.TurnStart.RadiationDamage" },
+        ],
+        getLimb: () => "thorax",
+        outKey: "TAMS.TurnStart.RadiatedOut",
+    },
+    {
+        tiers: [
+            { id: "severe-acid-burn", damage: 5, msgKey: "TAMS.TurnStart.SevereAcidDamage" },
+            { id: "acid-burn",        damage: 2, msgKey: "TAMS.TurnStart.AcidDamage" },
+        ],
+        // Target the arm with lower current HP (most exposed)
+        getLimb: (limbs) => {
+            const la = limbs.leftArm?.value ?? Infinity;
+            const ra = limbs.rightArm?.value ?? Infinity;
+            return la <= ra ? "leftArm" : "rightArm";
+        },
+        outKey: "TAMS.TurnStart.AcidOut",
+    },
+];
+
+function getWhisperIds(actor) {
+    const ownerIds = Object.entries(actor.ownership ?? {})
+        .filter(([id, lvl]) => lvl >= 3 && id !== "default")
+        .map(([id]) => id);
+    const gmIds = game.users.filter(u => u.isGM).map(u => u.id);
+    return [...new Set([...ownerIds, ...gmIds])];
+}
+
 export async function tamsOnTurnStart(actor) {
     if (!actor || actor.type !== "character") return;
 
     const statuses = actor.statuses ?? new Set();
+    const allPendingChecks = [];
 
-    // --- Bleeding damage ---
-    const hasSevere = statuses.has("severe-bleeding");
-    const hasBleeding = statuses.has("bleeding");
-    const bleedDamage = hasSevere ? 6 : hasBleeding ? 2 : 0;
+    // --- DoT damage ---
+    const activeDotTiers = [];
+    for (const group of DOT_GROUPS) {
+        const tier = group.tiers.find(t => statuses.has(t.id));
+        if (!tier) continue;
+        activeDotTiers.push({ ...tier, limbKey: group.getLimb(actor.system.limbs), outKey: group.outKey });
+    }
 
-    if (bleedDamage > 0) {
-        const thorax = actor.system.limbs.thorax;
-        const newThoraxVal = thorax.value - bleedDamage;
+    if (activeDotTiers.length > 0) {
+        // Accumulate damage per limb (multiple DoT types can share a target)
+        const limbDamage = {};
+        for (const tier of activeDotTiers) {
+            limbDamage[tier.limbKey] = (limbDamage[tier.limbKey] ?? 0) + tier.damage;
+        }
 
-        // Compute new total HP without waiting for re-derive
-        const otherHp = LIMB_KEYS
-            .filter(k => k !== "thorax")
-            .reduce((sum, k) => sum + (actor.system.limbs[k]?.value ?? 0), 0);
-        const newTotalHp = newThoraxVal + otherHp;
+        // New HP per affected limb, and new total across all limbs
+        const limbNewValues = Object.fromEntries(
+            Object.entries(limbDamage).map(([k, dmg]) => [k, (actor.system.limbs[k]?.value ?? 0) - dmg])
+        );
+        const newTotalHp = LIMB_KEYS.reduce(
+            (sum, k) => sum + (limbNewValues[k] ?? actor.system.limbs[k]?.value ?? 0), 0
+        );
 
-        await actor.update({ "system.limbs.thorax.value": newThoraxVal });
+        await actor.update(
+            Object.fromEntries(Object.entries(limbNewValues).map(([k, v]) => [`system.limbs.${k}.value`, v]))
+        );
 
-        const msgKey = hasSevere ? "TAMS.TurnStart.SevereBleedingDamage" : "TAMS.TurnStart.BleedingDamage";
-        await ChatMessage.create({
-            speaker: ChatMessage.getSpeaker({ actor }),
-            content: `<div class="tams-roll"><div class="tams-crit failure">${game.i18n.format(msgKey, { name: actor.name, damage: bleedDamage })}</div></div>`
-        });
+        // Announce each active DoT type
+        for (const tier of activeDotTiers) {
+            await ChatMessage.create({
+                speaker: ChatMessage.getSpeaker({ actor }),
+                content: `<div class="tams-roll"><div class="tams-crit failure">${game.i18n.format(tier.msgKey, { name: actor.name, damage: tier.damage })}</div></div>`
+            });
+        }
+
+        // Severely irradiated triggers a survival check every turn regardless of HP
+        if (activeDotTiers.find(t => t.id === "severely-irradiated") && newTotalHp > 0) {
+            allPendingChecks.push({
+                type: "survival", dc: 30,
+                reasons: [game.i18n.localize("TAMS.TurnStart.RadiationCheckReason")]
+            });
+        }
 
         if (newTotalHp <= 0) {
             await actor.toggleStatusEffect("unconscious", { active: true });
+
+            // Attribute the knockout to the DoT type that pushed total HP to 0
+            let runningHp = LIMB_KEYS.reduce((sum, k) => sum + (actor.system.limbs[k]?.value ?? 0) + (limbDamage[k] ?? 0), 0);
+            let outKey = activeDotTiers[0].outKey;
+            for (const tier of activeDotTiers) {
+                runningHp -= tier.damage;
+                if (runningHp <= 0) { outKey = tier.outKey; break; }
+            }
+
             await ChatMessage.create({
                 speaker: ChatMessage.getSpeaker({ actor }),
-                content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format("TAMS.TurnStart.BledOut", { name: actor.name })}</div></div>`
+                content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format(outKey, { name: actor.name })}</div></div>`
+            });
+
+            const dc = Math.max(1, Math.abs(newTotalHp));
+            allPendingChecks.push({
+                type: "survival", dc,
+                reasons: [game.i18n.localize("TAMS.TurnStart.KnockedOutReason")]
             });
         }
+    }
+
+    // --- Stunned: announce restriction then clear for this turn ---
+    if (statuses.has("stunned")) {
+        const whisper = getWhisperIds(actor);
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.format("TAMS.TurnStart.StunnedReminder", { name: actor.name })}</div></div>`,
+            whisper
+        });
+        await actor.toggleStatusEffect("stunned", { active: false });
+    }
+
+    // --- Morale checks for frozen/fleeing ---
+    if (statuses.has("frozen")) {
+        const def = CONFIG.statusEffects?.find(e => e.id === "frozen");
+        allPendingChecks.push({
+            type: "morale",
+            statusId: "frozen",
+            statusName: def ? game.i18n.localize(def.name) : "Frozen",
+            dc: 25,
+        });
+    }
+    if (statuses.has("fleeing")) {
+        const def = CONFIG.statusEffects?.find(e => e.id === "fleeing");
+        allPendingChecks.push({
+            type: "morale",
+            statusId: "fleeing",
+            statusName: def ? game.i18n.localize(def.name) : "Fleeing",
+            dc: 20,
+        });
     }
 
     // --- Injury & status reminder (whispered to owners + GM) ---
@@ -463,7 +608,8 @@ export async function tamsOnTurnStart(actor) {
         else if (limb.injured) injuredLimbs.push(limb.label);
     }
 
-    const skipStatuses = new Set(["encumbered"]);
+    // Exclude encumbered/stunned (already handled), frozen/fleeing (in morale dialog)
+    const skipStatuses = new Set(["encumbered", "stunned", "frozen", "fleeing"]);
     const activeStatusNames = [...statuses]
         .filter(s => !skipStatuses.has(s))
         .map(s => {
@@ -481,18 +627,69 @@ export async function tamsOnTurnStart(actor) {
             content += `<div class="roll-row"><span>${game.i18n.format("TAMS.TurnStart.StatusReminder", { statuses: activeStatusNames.join(", ") })}</span></div>`;
         content += `</div>`;
 
-        const ownerIds = Object.entries(actor.ownership ?? {})
-            .filter(([id, lvl]) => lvl >= 3 && id !== "default")
-            .map(([id]) => id);
-        const gmIds = game.users.filter(u => u.isGM).map(u => u.id);
-        const whisper = [...new Set([...ownerIds, ...gmIds])];
-
         await ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor }),
             content,
-            whisper
+            whisper: getWhisperIds(actor)
         });
     }
+
+    // --- Show combined check dialog (DoT survival + morale) ---
+    if (allPendingChecks.length > 0) showCombinedInjuryDialog(actor, allPendingChecks);
+}
+
+// ======================================================================
+
+const TEMP_COMBAT_STATUSES = new Set(["stunned", "fleeing", "frozen"]);
+
+export async function tamsOnCombatEnd(combat) {
+    const gmIds = game.users.filter(u => u.isGM).map(u => u.id);
+    const rows = [];
+
+    for (const combatant of combat.combatants) {
+        const actor = combatant.actor;
+        if (!actor || actor.type !== "character") continue;
+
+        const cleared = [];
+        for (const id of TEMP_COMBAT_STATUSES) {
+            if (actor.statuses?.has(id)) {
+                await actor.toggleStatusEffect(id, { active: false });
+                cleared.push(id);
+            }
+        }
+
+        const totalHp = LIMB_KEYS.reduce((sum, k) => sum + (actor.system.limbs[k]?.value ?? 0), 0);
+        const persistentStatuses = [...(actor.statuses ?? [])]
+            .filter(s => !TEMP_COMBAT_STATUSES.has(s) && s !== "encumbered")
+            .map(s => {
+                const def = CONFIG.statusEffects?.find(e => e.id === s);
+                return def ? game.i18n.localize(def.name) : s;
+            });
+
+        let row = `<div style="margin: 4px 0; padding: 4px; border-bottom: 1px solid #444;">`;
+        row += `<b>${actor.name}</b> — HP: ${totalHp}`;
+        if (persistentStatuses.length)
+            row += `<br><span style="color:#e67e22;">${persistentStatuses.join(", ")}</span>`;
+        if (cleared.length) {
+            const clearedNames = cleared.map(id => {
+                const def = CONFIG.statusEffects?.find(e => e.id === id);
+                return def ? game.i18n.localize(def.name) : id;
+            });
+            row += `<br><span style="color:#2e7d32;">Cleared: ${clearedNames.join(", ")}</span>`;
+        }
+        row += `</div>`;
+        rows.push(row);
+    }
+
+    if (rows.length === 0) return;
+
+    const content = `
+        <div class="tams-roll">
+            <h3 class="roll-label">${game.i18n.localize("TAMS.CombatEnd.Title")}</h3>
+            ${rows.join("")}
+        </div>`;
+
+    ChatMessage.create({ content, whisper: gmIds });
 }
 
 // ======================================================================
