@@ -133,7 +133,7 @@
     }
   },
   "Item": {
-    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait"],
+    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect"],
     "weapon": {
       "familiarity": 0,
       "quantity": 1,
