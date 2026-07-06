@@ -358,6 +358,18 @@
       "InContainer": "In {name}"
     },
     "Encumbered": "Encumbered",
+    "Status": {
+      "Bleeding": "Bleeding",
+      "SevereBleeding": "Severe Bleeding"
+    },
+    "TurnStart": {
+      "BleedingDamage": "{name} takes {damage} bleeding damage.",
+      "SevereBleedingDamage": "{name} takes {damage} severe bleeding damage.",
+      "BledOut": "{name} has bled out!",
+      "InjuryReminder": "Injured: {limbs}",
+      "CritReminder": "Critically injured: {limbs}",
+      "StatusReminder": "Conditions: {statuses}"
+    },
     "SizeOptions": {
       "Small": "Small",
       "Medium": "Medium",

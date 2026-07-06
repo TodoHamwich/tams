@@ -413,6 +413,88 @@ export async function tamsCallGroupCheck() {
   });
 }
 
+// ========================== TURN START AUTOMATION ======================
+
+const LIMB_KEYS = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+
+export async function tamsOnTurnStart(actor) {
+    if (!actor || actor.type !== "character") return;
+
+    const statuses = actor.statuses ?? new Set();
+
+    // --- Bleeding damage ---
+    const hasSevere = statuses.has("severe-bleeding");
+    const hasBleeding = statuses.has("bleeding");
+    const bleedDamage = hasSevere ? 6 : hasBleeding ? 2 : 0;
+
+    if (bleedDamage > 0) {
+        const thorax = actor.system.limbs.thorax;
+        const newThoraxVal = thorax.value - bleedDamage;
+
+        // Compute new total HP without waiting for re-derive
+        const otherHp = LIMB_KEYS
+            .filter(k => k !== "thorax")
+            .reduce((sum, k) => sum + (actor.system.limbs[k]?.value ?? 0), 0);
+        const newTotalHp = newThoraxVal + otherHp;
+
+        await actor.update({ "system.limbs.thorax.value": newThoraxVal });
+
+        const msgKey = hasSevere ? "TAMS.TurnStart.SevereBleedingDamage" : "TAMS.TurnStart.BleedingDamage";
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            content: `<div class="tams-roll"><div class="tams-crit failure">${game.i18n.format(msgKey, { name: actor.name, damage: bleedDamage })}</div></div>`
+        });
+
+        if (newTotalHp <= 0) {
+            await actor.toggleStatusEffect("unconscious", { active: true });
+            await ChatMessage.create({
+                speaker: ChatMessage.getSpeaker({ actor }),
+                content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format("TAMS.TurnStart.BledOut", { name: actor.name })}</div></div>`
+            });
+        }
+    }
+
+    // --- Injury & status reminder (whispered to owners + GM) ---
+    const injuredLimbs = [], critLimbs = [];
+    for (const key of LIMB_KEYS) {
+        const limb = actor.system.limbs[key];
+        if (!limb) continue;
+        if (limb.criticallyInjured) critLimbs.push(limb.label);
+        else if (limb.injured) injuredLimbs.push(limb.label);
+    }
+
+    const skipStatuses = new Set(["encumbered"]);
+    const activeStatusNames = [...statuses]
+        .filter(s => !skipStatuses.has(s))
+        .map(s => {
+            const def = CONFIG.statusEffects?.find(e => e.id === s);
+            return def ? game.i18n.localize(def.name) : s;
+        });
+
+    if (injuredLimbs.length || critLimbs.length || activeStatusNames.length) {
+        let content = `<div class="tams-roll"><h3 class="roll-label">${actor.name}</h3>`;
+        if (critLimbs.length)
+            content += `<div class="tams-crit failure">${game.i18n.format("TAMS.TurnStart.CritReminder", { limbs: critLimbs.join(", ") })}</div>`;
+        if (injuredLimbs.length)
+            content += `<div class="roll-row"><span style="color:#f39c12;font-weight:bold;">${game.i18n.format("TAMS.TurnStart.InjuryReminder", { limbs: injuredLimbs.join(", ") })}</span></div>`;
+        if (activeStatusNames.length)
+            content += `<div class="roll-row"><span>${game.i18n.format("TAMS.TurnStart.StatusReminder", { statuses: activeStatusNames.join(", ") })}</span></div>`;
+        content += `</div>`;
+
+        const ownerIds = Object.entries(actor.ownership ?? {})
+            .filter(([id, lvl]) => lvl >= 3 && id !== "default")
+            .map(([id]) => id);
+        const gmIds = game.users.filter(u => u.isGM).map(u => u.id);
+        const whisper = [...new Set([...ownerIds, ...gmIds])];
+
+        await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor }),
+            content,
+            whisper
+        });
+    }
+}
+
 // ======================================================================
 
 /**
