@@ -358,6 +358,30 @@
       "InContainer": "In {name}"
     },
     "Encumbered": "Encumbered",
+    "Status": {
+      "Bleeding": "Bleeding",
+      "SevereBleeding": "Severe Bleeding"
+    },
+    "TurnStart": {
+      "BleedingDamage": "{name} takes {damage} bleeding damage.",
+      "SevereBleedingDamage": "{name} takes {damage} severe bleeding damage.",
+      "BledOut": "{name} has bled out!",
+      "InjuryReminder": "Injured: {limbs}",
+      "CritReminder": "Critically injured: {limbs}",
+      "StatusReminder": "Conditions: {statuses}"
+    },
+    "StaminaPayment": {
+      "Title": "Insufficient Resources",
+      "Prompt": "{resource} dropped to -{amount}. Spend {amount} Stamina to bring it back to 0?",
+      "Pay": "Pay Stamina",
+      "Decline": "Leave Negative"
+    },
+    "HPPayment": {
+      "Title": "Insufficient Stamina",
+      "Prompt": "Stamina dropped to -{amount}. Spend {hp} HP (5 per point, distributed across limbs) to bring Stamina back to 0?",
+      "Pay": "Pay HP",
+      "Decline": "Leave Negative"
+    },
     "SizeOptions": {
       "Small": "Small",
       "Medium": "Medium",

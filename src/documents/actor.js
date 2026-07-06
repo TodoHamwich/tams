@@ -343,6 +343,91 @@ export class TAMSActor extends Actor {
         }
       }
     }
+
+    // Adjust stamina and custom resource current values when any stat changes directly.
+    {
+      const ALL_STATS = ["strength", "dexterity", "endurance", "wisdom", "intelligence", "bravery"];
+      const warnings = [];
+      const customResources = foundry.utils.duplicate(this.system.customResources ?? []);
+      let customResourcesChanged = false;
+
+      for (const statKey of ALL_STATS) {
+        const hasVal = foundry.utils.hasProperty(updateData, `system.stats.${statKey}.value`);
+        const hasMod = foundry.utils.hasProperty(updateData, `system.stats.${statKey}.mod`);
+        if (!hasVal && !hasMod) continue;
+
+        const traitBonus = stats[statKey]?.traitBonus || 0;
+        const oldTotal = stats[statKey]?.total ?? 0;
+        const newTotal = (hasVal ? foundry.utils.getProperty(updateData, `system.stats.${statKey}.value`) : (stats[statKey]?.value ?? 0))
+                       + (hasMod ? foundry.utils.getProperty(updateData, `system.stats.${statKey}.mod`)  : (stats[statKey]?.mod  || 0))
+                       + traitBonus;
+        const statDelta = newTotal - oldTotal;
+        if (statDelta === 0) continue;
+
+        // Stamina is linked to endurance
+        if (statKey === "endurance") {
+          const staminaPath = "system.stamina.value";
+          if (!foundry.utils.hasProperty(updateData, staminaPath)) {
+            const mult = this.system.stamina?.mult ?? 1;
+            const staminaDelta = Math.floor(statDelta * mult);
+            if (staminaDelta !== 0) {
+              const newStamina = this.system.stamina.value + staminaDelta;
+              if (newStamina < 0) {
+                const deficit = Math.abs(newStamina);
+                const pay = await this._offerHPPaymentForStamina(deficit);
+                if (pay) {
+                  foundry.utils.setProperty(updateData, staminaPath, 0);
+                  const limbUpdates = this._computeLimbHPPayment(deficit);
+                  for (const [k, v] of Object.entries(limbUpdates))
+                    foundry.utils.setProperty(updateData, k, v);
+                } else {
+                  foundry.utils.setProperty(updateData, staminaPath, newStamina);
+                  warnings.push(`${this.name} — ${game.i18n.localize("TAMS.Stamina")}: ${newStamina}`);
+                }
+              } else {
+                foundry.utils.setProperty(updateData, staminaPath, newStamina);
+              }
+            }
+          }
+        }
+
+        // Custom resources linked to this stat
+        for (const [idx, res] of customResources.entries()) {
+          if (res.stat !== statKey || res.customValue) continue;
+          const resDelta = Math.floor(statDelta * (res.mult ?? 1));
+          if (resDelta === 0) continue;
+          const rawVal = (customResources[idx].value ?? 0) + resDelta;
+          if (rawVal < 0) {
+            const deficit = Math.abs(rawVal);
+            const pay = await this._offerStaminaPayment(res.name, deficit);
+            if (pay) {
+              customResources[idx].value = 0;
+              const staminaPath = "system.stamina.value";
+              const currentStamina = foundry.utils.getProperty(updateData, staminaPath) ?? this.system.stamina.value;
+              foundry.utils.setProperty(updateData, staminaPath, currentStamina - deficit);
+            } else {
+              customResources[idx].value = rawVal;
+              warnings.push(`${this.name} — ${res.name}: ${rawVal}`);
+            }
+          } else {
+            customResources[idx].value = rawVal;
+          }
+          customResourcesChanged = true;
+        }
+      }
+
+      if (customResourcesChanged && !foundry.utils.hasProperty(updateData, "system.customResources"))
+        foundry.utils.setProperty(updateData, "system.customResources", customResources);
+
+      if (warnings.length) {
+        const gmIds = game.users?.filter(u => u.isGM).map(u => u.id) ?? [];
+        ChatMessage.create({
+          whisper: gmIds,
+          content: `<div class="tams-roll">${warnings.map(w => `<div class="tams-crit failure">⚠ ${w} (insufficient resources)</div>`).join("")}</div>`
+        });
+      }
+    }
+
     return res;
   }
 
@@ -378,19 +463,144 @@ export class TAMSActor extends Actor {
     }
   }
 
+  _computeLimbHPPayment(deficit) {
+    const PAYMENT_LIMB_ORDER = ["leftArm", "rightArm", "leftLeg", "rightLeg", "stomach", "thorax"];
+    const total = 5 * deficit;
+    const base = Math.floor(total / PAYMENT_LIMB_ORDER.length);
+    const remainder = total % PAYMENT_LIMB_ORDER.length;
+    const updates = {};
+    PAYMENT_LIMB_ORDER.forEach((key, i) => {
+      const dmg = base + (i < remainder ? 1 : 0);
+      if (dmg > 0)
+        updates[`system.limbs.${key}.value`] = (this.system.limbs[key]?.value ?? 0) - dmg;
+    });
+    return updates;
+  }
+
+  async _offerHPPaymentForStamina(deficit) {
+    const hpCost = 5 * deficit;
+    return new Promise(resolve => {
+      new Dialog({
+        title: game.i18n.localize("TAMS.HPPayment.Title"),
+        content: `<p>${game.i18n.format("TAMS.HPPayment.Prompt", { amount: deficit, hp: hpCost })}</p>`,
+        buttons: {
+          yes: { label: game.i18n.localize("TAMS.HPPayment.Pay"),    callback: () => resolve(true)  },
+          no:  { label: game.i18n.localize("TAMS.HPPayment.Decline"), callback: () => resolve(false) }
+        },
+        default: "no",
+        close: () => resolve(false)
+      }).render(true);
+    });
+  }
+
+  async _offerStaminaPayment(resourceName, deficit) {
+    return new Promise(resolve => {
+      new Dialog({
+        title: game.i18n.localize("TAMS.StaminaPayment.Title"),
+        content: `<p>${game.i18n.format("TAMS.StaminaPayment.Prompt", { resource: resourceName, amount: deficit })}</p>`,
+        buttons: {
+          yes: { label: game.i18n.localize("TAMS.StaminaPayment.Pay"),    callback: () => resolve(true)  },
+          no:  { label: game.i18n.localize("TAMS.StaminaPayment.Decline"), callback: () => resolve(false) }
+        },
+        default: "no",
+        close: () => resolve(false)
+      }).render(true);
+    });
+  }
+
+  /**
+   * Adjust stamina and custom resource current values when stat totals change
+   * due to trait additions/removals.
+   * @param {object} statDeltas - Map of statKey → delta (positive = gained, negative = lost)
+   */
+  async _adjustResourcesForStatDeltas(statDeltas) {
+    const updates = {};
+    const warnings = [];
+
+    for (const [statKey, statDelta] of Object.entries(statDeltas)) {
+      if (statDelta === 0) continue;
+
+      if (statKey === "endurance") {
+        const mult = this.system.stamina?.mult ?? 1;
+        const delta = Math.floor(statDelta * mult);
+        if (delta !== 0) {
+          const newVal = this.system.stamina.value + delta;
+          if (newVal < 0) {
+            const deficit = Math.abs(newVal);
+            const pay = await this._offerHPPaymentForStamina(deficit);
+            if (pay) {
+              updates["system.stamina.value"] = 0;
+              const limbUpdates = this._computeLimbHPPayment(deficit);
+              Object.assign(updates, limbUpdates);
+            } else {
+              updates["system.stamina.value"] = newVal;
+              warnings.push(`${this.name} — ${game.i18n.localize("TAMS.Stamina")}: ${newVal}`);
+            }
+          } else {
+            updates["system.stamina.value"] = newVal;
+          }
+        }
+      }
+
+      const customResources = foundry.utils.duplicate(this.system.customResources ?? []);
+      let changed = false;
+      for (const [idx, res] of customResources.entries()) {
+        if (res.stat !== statKey || res.customValue) continue;
+        const delta = Math.floor(statDelta * (res.mult ?? 1));
+        if (delta === 0) continue;
+        const rawVal = (customResources[idx].value ?? 0) + delta;
+        if (rawVal < 0) {
+          const deficit = Math.abs(rawVal);
+          const pay = await this._offerStaminaPayment(res.name, deficit);
+          if (pay) {
+            customResources[idx].value = 0;
+            const newStamina = (updates["system.stamina.value"] ?? this.system.stamina.value) - deficit;
+            updates["system.stamina.value"] = newStamina;
+            if (newStamina < 0)
+              warnings.push(`${this.name} — ${game.i18n.localize("TAMS.Stamina")}: ${newStamina}`);
+          } else {
+            customResources[idx].value = rawVal;
+            warnings.push(`${this.name} — ${res.name}: ${rawVal}`);
+          }
+        } else {
+          customResources[idx].value = rawVal;
+        }
+        changed = true;
+      }
+      if (changed) updates["system.customResources"] = customResources;
+    }
+
+    if (Object.keys(updates).length) await this.update(updates);
+
+    if (warnings.length) {
+      const gmIds = game.users?.filter(u => u.isGM).map(u => u.id) ?? [];
+      await ChatMessage.create({
+        whisper: gmIds,
+        content: `<div class="tams-roll">${warnings.map(w => `<div class="tams-crit failure">⚠ ${w} (insufficient resources)</div>`).join("")}</div>`
+      });
+    }
+  }
+
   /** @override */
   async _onCreateDescendantDocuments(parent, collection, documents, data, options, userId) {
     await super._onCreateDescendantDocuments(parent, collection, documents, data, options, userId);
     if (collection !== "items" || game.userId !== userId) return;
 
     let endDelta = 0;
+    const statDeltas = {};
     for (const doc of documents) {
       if (doc.type !== "trait") continue;
       for (const mod of (doc.system?.modifiers || [])) {
-        if (mod.target === "stats.endurance") endDelta += (mod.value || 0);
+        const match = mod.target?.match(/^stats\.(\w+)$/);
+        if (!match) continue;
+        const key = match[1];
+        const val = mod.value || 0;
+        if (key === "endurance") endDelta += val;
+        statDeltas[key] = (statDeltas[key] || 0) + val;
       }
     }
     if (endDelta !== 0) await this._adjustLimbHPForEnduranceDelta(endDelta);
+    if (Object.values(statDeltas).some(v => v !== 0)) await this._adjustResourcesForStatDeltas(statDeltas);
   }
 
   /** @override */
@@ -399,12 +609,19 @@ export class TAMSActor extends Actor {
     if (collection !== "items" || game.userId !== userId) return;
 
     let endDelta = 0;
+    const statDeltas = {};
     for (const doc of documents) {
       if (doc.type !== "trait") continue;
       for (const mod of (doc.system?.modifiers || [])) {
-        if (mod.target === "stats.endurance") endDelta -= (mod.value || 0);
+        const match = mod.target?.match(/^stats\.(\w+)$/);
+        if (!match) continue;
+        const key = match[1];
+        const val = mod.value || 0;
+        if (key === "endurance") endDelta -= val;
+        statDeltas[key] = (statDeltas[key] || 0) - val;
       }
     }
     if (endDelta !== 0) await this._adjustLimbHPForEnduranceDelta(endDelta);
+    if (Object.values(statDeltas).some(v => v !== 0)) await this._adjustResourcesForStatDeltas(statDeltas);
   }
 }

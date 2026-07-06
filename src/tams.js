@@ -9,7 +9,7 @@ import { TAMSNPCSheet } from './applications/npc-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
-import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending, tamsHandleContestedCheckPending } from './utils/combat.js';
+import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending, tamsHandleContestedCheckPending, tamsOnTurnStart } from './utils/combat.js';
 
 Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
@@ -211,17 +211,16 @@ Hooks.once("init", async function() {
     controls.prepend(btn);
   });
 
-  // --- Encumbrance status effect ---
-  // Register a custom "encumbered" condition so it can be shown on tokens.
-  const encumberedEffect = {
-    id: "encumbered",
-    name: "TAMS.Encumbered",
-    label: "TAMS.Encumbered",
-    img: "icons/svg/anchor.svg",
-    icon: "icons/svg/anchor.svg"
-  };
-  if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some(e => e.id === "encumbered")) {
-    CONFIG.statusEffects.push(encumberedEffect);
+  // --- Custom status effects ---
+  const tamsStatusEffects = [
+    { id: "encumbered",      name: "TAMS.Encumbered",            img: "icons/svg/anchor.svg",      icon: "icons/svg/anchor.svg" },
+    { id: "bleeding",        name: "TAMS.Status.Bleeding",       img: "icons/svg/blood.svg",       icon: "icons/svg/blood.svg" },
+    { id: "severe-bleeding", name: "TAMS.Status.SevereBleeding", img: "icons/svg/blood.svg",       icon: "icons/svg/blood.svg" },
+  ];
+  for (const effect of tamsStatusEffects) {
+    if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some(e => e.id === effect.id)) {
+      CONFIG.statusEffects.push(effect);
+    }
   }
 
   /**
@@ -262,4 +261,13 @@ Hooks.once("init", async function() {
   Hooks.once("ready", () => {
     for (const actor of game.actors) tamsSyncEncumbrance(actor);
   });
+});
+
+// --- Turn-start automation ---
+Hooks.on("updateCombat", async (combat, changed) => {
+  if (!game.user.isGM) return;
+  if (!("turn" in changed)) return;
+  const combatant = combat.combatant;
+  if (!combatant?.actor) return;
+  await tamsOnTurnStart(combatant.actor);
 });
