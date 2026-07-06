@@ -228,6 +228,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         days: new fields.NumberField({ initial: 0, min: 0 }),
         daysRemaining: new fields.NumberField({ initial: 0, min: 0 }),
         isSafe: new fields.BooleanField({ initial: true }),
+        isTended: new fields.BooleanField({ initial: false }),
+        isBedRest: new fields.BooleanField({ initial: false }),
         notes: new fields.HTMLField({ initial: "" }),
         trackers: new fields.SchemaField({
           ability: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
@@ -674,7 +676,8 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         range: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
         duration: new fields.StringField({ initial: "instant" }),
         isStackable: new fields.BooleanField({ initial: false })
-      })
+      }),
+      rechargeType: new fields.StringField({ initial: "rest" })
     };
   }
   /**
@@ -1219,6 +1222,25 @@ function getWhisperIds(actor) {
 async function tamsOnTurnStart(actor) {
   var _a, _b;
   if (!actor || actor.type !== "character") return;
+  const statusTracking = actor.getFlag("tams", "statusTracking") ?? {};
+  if (Object.keys(statusTracking).length > 0 && game.combat) {
+    const updatedTracking = { ...statusTracking };
+    let trackingChanged = false;
+    for (const [statusId, roundApplied] of Object.entries(statusTracking)) {
+      const statusItem = actor.items.find((i) => i.type === "statusEffect" && i.system.statusId === statusId);
+      if (statusItem && statusItem.system.durationRounds > 0 && game.combat.round >= roundApplied + statusItem.system.durationRounds) {
+        await actor.toggleStatusEffect(statusId, { active: false });
+        delete updatedTracking[statusId];
+        trackingChanged = true;
+        await ChatMessage.create({
+          speaker: ChatMessage.getSpeaker({ actor }),
+          content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.StatusEffect.Expired", { name: actor.name, status: statusItem.name })}</div></div>`,
+          whisper: getWhisperIds(actor)
+        });
+      }
+    }
+    if (trackingChanged) await actor.setFlag("tams", "statusTracking", updatedTracking);
+  }
   const statuses = actor.statuses ?? /* @__PURE__ */ new Set();
   const allPendingChecks = [];
   const activeDotTiers = [];
@@ -1382,6 +1404,17 @@ async function tamsOnCombatEnd(combat) {
     }
     row += `</div>`;
     rows.push(row);
+  }
+  for (const combatant of combat.combatants) {
+    const actor = combatant.actor;
+    if (!actor || actor.type !== "character") continue;
+    const updates = [];
+    for (const item of actor.items) {
+      if (item.type === "ability" && item.system.rechargeType === "combat" && item.system.uses.max > 0 && item.system.uses.value < item.system.uses.max) {
+        updates.push({ _id: item.id, "system.uses.value": item.system.uses.max });
+      }
+    }
+    if (updates.length > 0) await actor.updateEmbeddedDocuments("Item", updates);
   }
   if (rows.length === 0) return;
   const content = `
@@ -1773,6 +1806,7 @@ async function tamsRenderChatMessage(message, html, data) {
         apply: {
           label: game.i18n.localize("TAMS.Checks.ApplyAllHits"),
           callback: async (html2) => {
+            var _a2;
             const multiplier = isAoEHit && isSquadOrHorde ? parseInt(html2.find("#aoe-targets-hit").val()) || 1 : 1;
             const dmgInputs = html2.find(".hit-dmg");
             const hits = [];
@@ -1791,6 +1825,15 @@ async function tamsRenderChatMessage(message, html, data) {
             const { pendingChecks, report } = await target.applyDamage(hits, { isAoE: isAoEHit, multiplier });
             ChatMessage.create({ content: report });
             if (pendingChecks.length > 0) showCombinedInjuryDialog(target, pendingChecks);
+            const inflictsStatusId = message.getFlag("tams", "inflictsStatusId");
+            if (inflictsStatusId && hits.length > 0) {
+              await target.toggleStatusEffect(inflictsStatusId, { active: true });
+              const currentTracking = await target.getFlag("tams", "statusTracking") ?? {};
+              await target.setFlag("tams", "statusTracking", {
+                ...currentTracking,
+                [inflictsStatusId]: ((_a2 = game.combat) == null ? void 0 : _a2.round) ?? 0
+              });
+            }
           }
         }
       },
@@ -4283,7 +4326,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   async _onRoll(event, target) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m;
     const dataset = target.dataset;
     const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
     const tToken = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0] ?? null;
@@ -4900,7 +4943,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor: this.document }),
         content: messageContent,
-        rolls: [roll]
+        rolls: [roll],
+        flags: {
+          tams: {
+            inflictsStatusId: ((_m = item == null ? void 0 : item.system) == null ? void 0 : _m.inflictsStatusId) || "",
+            attackerActorId: this.document.id,
+            attackerWeaponId: (item == null ? void 0 : item.id) || ""
+          }
+        }
       });
     }
     if (item && ["weapon", "skill", "ability"].includes(item.type)) {
@@ -4997,7 +5047,8 @@ const _TAMSDowntimeSheet = class _TAMSDowntimeSheet extends TAMSActorSheet {
       actions: {
         outputDowntime: _TAMSDowntimeSheet.prototype._onOutputDowntime,
         resetDowntime: _TAMSDowntimeSheet.prototype._onResetDowntime,
-        sendAwardToChat: _TAMSDowntimeSheet.prototype._onSendAwardToChat
+        sendAwardToChat: _TAMSDowntimeSheet.prototype._onSendAwardToChat,
+        completeDowntime: _TAMSDowntimeSheet.prototype._onCompleteDowntime
       }
     }, { inplace: false });
   }
@@ -5092,6 +5143,46 @@ const _TAMSDowntimeSheet = class _TAMSDowntimeSheet extends TAMSActorSheet {
    * @param {HTMLElement} target The clickable element.
    * @protected
    */
+  /**
+   * Apply healing from downtime and reset all trackers.
+   */
+  async _onCompleteDowntime(event, target) {
+    const actor = this.document;
+    const downtime = actor.system.downtime;
+    const healingDays = downtime.trackers.healing ?? 0;
+    const confirmed = await Dialog.confirm({
+      title: game.i18n.localize("TAMS.Downtime.CompleteDowntime"),
+      content: `<p>${game.i18n.format("TAMS.Downtime.CompleteDowntimeConfirm", { name: actor.name })}</p>`,
+      yes: () => true,
+      no: () => false,
+      defaultYes: false
+    });
+    if (!confirmed) return;
+    const updates = {};
+    if (healingDays > 0) {
+      const healPerDay = 1 + (downtime.isSafe ? 1 : 0) + (downtime.isTended ? 1 : 0) + (downtime.isTended && downtime.isBedRest ? 1 : 0);
+      const totalHeal = healPerDay * healingDays;
+      for (const [key, limb] of Object.entries(actor.system.limbs)) {
+        const healed = Math.min(limb.max, limb.value + totalHeal);
+        updates[`system.limbs.${key}.value`] = healed;
+      }
+    }
+    for (const key of Object.keys(downtime.trackers)) {
+      updates[`system.downtime.trackers.${key}`] = 0;
+    }
+    updates["system.downtime.days"] = 0;
+    updates["system.downtime.isTended"] = false;
+    updates["system.downtime.isBedRest"] = false;
+    await actor.update(updates);
+    const abilityUpdates = [];
+    for (const item of actor.items) {
+      if (item.type === "ability" && item.system.rechargeType === "rest" && item.system.uses.max > 0 && item.system.uses.value < item.system.uses.max) {
+        abilityUpdates.push({ _id: item.id, "system.uses.value": item.system.uses.max });
+      }
+    }
+    if (abilityUpdates.length > 0) await actor.updateEmbeddedDocuments("Item", abilityUpdates);
+    ui.notifications.info(game.i18n.format("TAMS.Downtime.CompleteDowntimeDone", { name: actor.name }));
+  }
   async _onSendAwardToChat(event, target) {
     const input = target.parentElement.querySelector(".award-days");
     const days = parseInt(input.value) || 0;
@@ -5254,6 +5345,11 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         active: activeTags.includes(t)
       }));
     }
+    context.rechargeTypeOptions = {
+      "combat": "TAMS.Ability.RechargeOnCombat",
+      "rest": "TAMS.Ability.RechargeOnRest",
+      "never": "TAMS.Ability.RechargeNever"
+    };
     if (this.document.type === "ability") {
       const calculator = this.document.system.calculator || {};
       const selectedTargetingMode = calculator.targetingMode || (calculator.targetLimb !== "none" ? "specific" : calculator.bodyPart !== "none" ? "group" : "normal");

@@ -356,6 +356,12 @@
                 <span> / </span>
                 <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
             </div>
+            <div class="ability-section flexrow">
+                <label>{{localize 'TAMS.Ability.RechargeType'}}</label>
+                <select name="system.rechargeType">
+                    {{selectOptions rechargeTypeOptions selected=system.rechargeType localize=true}}
+                </select>
+            </div>
             <hr>
 
             {{!-- Section 4: Cost & Resource --}}

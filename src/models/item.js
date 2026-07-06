@@ -290,7 +290,8 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         range: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         duration: new fields.StringField({initial: "instant"}),
         isStackable: new fields.BooleanField({initial: false})
-      })
+      }),
+      rechargeType: new fields.StringField({initial: "rest"})
     };
   }
 

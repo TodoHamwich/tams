@@ -1820,7 +1820,14 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor: this.document }),
         content: messageContent,
-        rolls: [roll]
+        rolls: [roll],
+        flags: {
+          tams: {
+            inflictsStatusId: item?.system?.inflictsStatusId || "",
+            attackerActorId: this.document.id,
+            attackerWeaponId: item?.id || ""
+          }
+        }
       });
     }
 

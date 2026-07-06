@@ -13,7 +13,8 @@ export class TAMSDowntimeSheet extends TAMSActorSheet {
       actions: {
         outputDowntime: TAMSDowntimeSheet.prototype._onOutputDowntime,
         resetDowntime: TAMSDowntimeSheet.prototype._onResetDowntime,
-        sendAwardToChat: TAMSDowntimeSheet.prototype._onSendAwardToChat
+        sendAwardToChat: TAMSDowntimeSheet.prototype._onSendAwardToChat,
+        completeDowntime: TAMSDowntimeSheet.prototype._onCompleteDowntime
       }
     }, { inplace: false });
   }
@@ -126,6 +127,58 @@ export class TAMSDowntimeSheet extends TAMSActorSheet {
    * @param {HTMLElement} target The clickable element.
    * @protected
    */
+  /**
+   * Apply healing from downtime and reset all trackers.
+   */
+  async _onCompleteDowntime(event, target) {
+    const actor = this.document;
+    const downtime = actor.system.downtime;
+    const healingDays = downtime.trackers.healing ?? 0;
+
+    const confirmed = await Dialog.confirm({
+      title: game.i18n.localize("TAMS.Downtime.CompleteDowntime"),
+      content: `<p>${game.i18n.format("TAMS.Downtime.CompleteDowntimeConfirm", { name: actor.name })}</p>`,
+      yes: () => true, no: () => false, defaultYes: false
+    });
+    if (!confirmed) return;
+
+    const updates = {};
+
+    // Apply limb healing
+    if (healingDays > 0) {
+      const healPerDay = 1
+        + (downtime.isSafe ? 1 : 0)
+        + (downtime.isTended ? 1 : 0)
+        + (downtime.isTended && downtime.isBedRest ? 1 : 0);
+      const totalHeal = healPerDay * healingDays;
+      for (const [key, limb] of Object.entries(actor.system.limbs)) {
+        const healed = Math.min(limb.max, limb.value + totalHeal);
+        updates[`system.limbs.${key}.value`] = healed;
+      }
+    }
+
+    // Reset all trackers and care flags
+    for (const key of Object.keys(downtime.trackers)) {
+      updates[`system.downtime.trackers.${key}`] = 0;
+    }
+    updates["system.downtime.days"] = 0;
+    updates["system.downtime.isTended"] = false;
+    updates["system.downtime.isBedRest"] = false;
+
+    await actor.update(updates);
+
+    // Recharge rest-type abilities
+    const abilityUpdates = [];
+    for (const item of actor.items) {
+      if (item.type === 'ability' && item.system.rechargeType === 'rest' && item.system.uses.max > 0 && item.system.uses.value < item.system.uses.max) {
+        abilityUpdates.push({ _id: item.id, "system.uses.value": item.system.uses.max });
+      }
+    }
+    if (abilityUpdates.length > 0) await actor.updateEmbeddedDocuments("Item", abilityUpdates);
+
+    ui.notifications.info(game.i18n.format("TAMS.Downtime.CompleteDowntimeDone", { name: actor.name }));
+  }
+
   async _onSendAwardToChat(event, target) {
     const input = target.parentElement.querySelector(".award-days");
     const days = parseInt(input.value) || 0;

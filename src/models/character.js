@@ -137,6 +137,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         days: new fields.NumberField({initial: 0, min: 0}),
         daysRemaining: new fields.NumberField({initial: 0, min: 0}),
         isSafe: new fields.BooleanField({initial: true}),
+        isTended: new fields.BooleanField({initial: false}),
+        isBedRest: new fields.BooleanField({initial: false}),
         notes: new fields.HTMLField({initial: ""}),
         trackers: new fields.SchemaField({
           ability: new fields.NumberField({initial: 0, integer: true, min: 0}),

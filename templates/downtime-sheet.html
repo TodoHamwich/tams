@@ -59,12 +59,26 @@
             </div>
         </div>
 
+        <div class="downtime-main-trackers flexrow" style="margin-top: 4px;">
+            <div class="tracker-item flexcol">
+                <label>{{localize 'TAMS.Downtime.IsTended'}}</label>
+                <input type="checkbox" name="system.downtime.isTended" {{checked system.downtime.isTended}}/>
+            </div>
+            <div class="tracker-item flexcol">
+                <label>{{localize 'TAMS.Downtime.IsBedRest'}}</label>
+                <input type="checkbox" name="system.downtime.isBedRest" {{checked system.downtime.isBedRest}}/>
+            </div>
+        </div>
+
         <div class="downtime-toolbar flexrow">
             <button type="button" data-action="outputDowntime">
                 <i class="fas fa-comment-dots"></i> {{localize 'TAMS.DowntimeOutputChat'}}
             </button>
             <button type="button" data-action="resetDowntime">
                 <i class="fas fa-undo"></i> {{localize 'TAMS.DowntimeReset'}}
+            </button>
+            <button type="button" data-action="completeDowntime" style="background: #2e7d32; color: white;">
+                <i class="fas fa-check-circle"></i> {{localize 'TAMS.Downtime.CompleteDowntime'}}
             </button>
         </div>
 

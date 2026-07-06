@@ -122,6 +122,12 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         }));
     }
 
+    context.rechargeTypeOptions = {
+      "combat": "TAMS.Ability.RechargeOnCombat",
+      "rest": "TAMS.Ability.RechargeOnRest",
+      "never": "TAMS.Ability.RechargeNever"
+    };
+
     if (this.document.type === 'ability') {
         const calculator = this.document.system.calculator || {};
         const selectedTargetingMode = calculator.targetingMode

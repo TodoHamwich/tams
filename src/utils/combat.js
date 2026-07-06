@@ -498,6 +498,27 @@ function getWhisperIds(actor) {
 export async function tamsOnTurnStart(actor) {
     if (!actor || actor.type !== "character") return;
 
+    // Expire duration-based status effects
+    const statusTracking = actor.getFlag('tams', 'statusTracking') ?? {};
+    if (Object.keys(statusTracking).length > 0 && game.combat) {
+        const updatedTracking = { ...statusTracking };
+        let trackingChanged = false;
+        for (const [statusId, roundApplied] of Object.entries(statusTracking)) {
+            const statusItem = actor.items.find(i => i.type === 'statusEffect' && i.system.statusId === statusId);
+            if (statusItem && statusItem.system.durationRounds > 0 && game.combat.round >= roundApplied + statusItem.system.durationRounds) {
+                await actor.toggleStatusEffect(statusId, { active: false });
+                delete updatedTracking[statusId];
+                trackingChanged = true;
+                await ChatMessage.create({
+                    speaker: ChatMessage.getSpeaker({ actor }),
+                    content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.StatusEffect.Expired", { name: actor.name, status: statusItem.name })}</div></div>`,
+                    whisper: getWhisperIds(actor)
+                });
+            }
+        }
+        if (trackingChanged) await actor.setFlag('tams', 'statusTracking', updatedTracking);
+    }
+
     const statuses = actor.statuses ?? new Set();
     const allPendingChecks = [];
 
@@ -679,6 +700,19 @@ export async function tamsOnCombatEnd(combat) {
         }
         row += `</div>`;
         rows.push(row);
+    }
+
+    // Recharge combat-type abilities for all combatants
+    for (const combatant of combat.combatants) {
+        const actor = combatant.actor;
+        if (!actor || actor.type !== "character") continue;
+        const updates = [];
+        for (const item of actor.items) {
+            if (item.type === 'ability' && item.system.rechargeType === 'combat' && item.system.uses.max > 0 && item.system.uses.value < item.system.uses.max) {
+                updates.push({ _id: item.id, "system.uses.value": item.system.uses.max });
+            }
+        }
+        if (updates.length > 0) await actor.updateEmbeddedDocuments("Item", updates);
     }
 
     if (rows.length === 0) return;
@@ -1148,6 +1182,17 @@ export async function tamsRenderChatMessage(message, html, data) {
               const { pendingChecks, report } = await target.applyDamage(hits, { isAoE: isAoEHit, multiplier });
               ChatMessage.create({ content: report });
               if (pendingChecks.length > 0) showCombinedInjuryDialog(target, pendingChecks);
+
+              // Apply status on hit
+              const inflictsStatusId = message.getFlag('tams', 'inflictsStatusId');
+              if (inflictsStatusId && hits.length > 0) {
+                await target.toggleStatusEffect(inflictsStatusId, { active: true });
+                const currentTracking = await target.getFlag('tams', 'statusTracking') ?? {};
+                await target.setFlag('tams', 'statusTracking', {
+                  ...currentTracking,
+                  [inflictsStatusId]: game.combat?.round ?? 0
+                });
+              }
             }
           }
         },

@@ -38,6 +38,13 @@
     "DowntimeTrackerWorking": "Working",
     "DowntimeReset": "Reset Sheet",
     "DowntimeOutputChat": "Output to Chat",
+    "Downtime": {
+      "IsTended": "Tended (Medical Skill)",
+      "IsBedRest": "Bed Rest (24hr + Tended)",
+      "CompleteDowntime": "Complete Downtime",
+      "CompleteDowntimeConfirm": "Apply healing and reset all trackers for {name}?",
+      "CompleteDowntimeDone": "Downtime complete for {name}. HP restored and abilities recharged."
+    },
     "DowntimeAwardToChat": "Award to Chat",
     "DowntimeAwardTitle": "Downtime Awarded",
     "DowntimeAwardDescription": "The GM is awarding <b>{days}</b> days of downtime.",
@@ -388,7 +395,14 @@
       "StatusId": "Status ID",
       "MechanicalSummary": "Mechanical Summary",
       "DurationRounds": "Duration (Rounds)",
-      "InflictsStatus": "Inflicts Status"
+      "InflictsStatus": "Inflicts Status",
+      "Expired": "{name}'s {status} has expired."
+    },
+    "Ability": {
+      "RechargeType": "Recharges On",
+      "RechargeOnCombat": "End of Combat",
+      "RechargeOnRest": "Rest",
+      "RechargeNever": "Never"
     },
     "TurnStart": {
       "BleedingDamage": "{name} takes {damage} bleeding damage.",
