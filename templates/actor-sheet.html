@@ -122,7 +122,7 @@
                         <div class="header-label">{{localize 'TAMS.Limb'}}</div>
                         <div class="header-hp">{{localize 'TAMS.HP'}}</div>
                         <div class="header-armor">{{localize 'TAMS.Armour'}}</div>
-                        <div class="header-status" title="{{localize 'TAMS.Status'}}"><i class="fas fa-notes-medical"></i></div>
+                        <div class="header-status" title="{{localize 'TAMS.StatusLabel'}}"><i class="fas fa-notes-medical"></i></div>
                     </div>
                     {{#each system.limbs as |limb id|}}
                     <div class="limb-row {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}}" data-limb="{{id}}">
@@ -614,7 +614,7 @@
                         </div>
                     </div>
                     <div class="modifier-group">
-                        <h3>{{localize 'TAMS.Combat'}}</h3>
+                        <h3>{{localize 'TAMS.CombatLabel'}}</h3>
                         <div class="flexrow">
                             <label>{{localize 'TAMS.BehindMult'}}</label>
                             <input type="number" name="system.behindMult" value="{{system.behindMult}}" step="0.05" style="width: 50px;"/>

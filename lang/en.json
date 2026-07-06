@@ -14,6 +14,7 @@
     "DeleteConfirmContent": "Are you sure you want to delete {name}?",
     "UseCharge": "Use Charge",
     "Recharge": "Recharge",
+    "RechargeUses": "Recharge Uses",
     "RechargeTitle": "Recharge {name}",
     "RechargeContent": "How many uses to recharge?",
     "Loot": "Loot",
@@ -55,7 +56,7 @@
     "LimbsHPAndArmor": "Limbs (HP / Armor)",
     "Limb": "Limb",
     "HP": "HP",
-    "Status": "Status",
+    "StatusLabel": "Status",
     "Armour": "Armour",
     "OtherArmour": "Other Armour (Magical/Temp)",
     "EquippedArmorItem": "Equipped Armour Item",
@@ -245,7 +246,7 @@
     "Multiplier": "Multiplier",
     "Color": "Color",
     "CapacityColor": "Capacity Color",
-    "Combat": "Combat",
+    "CombatLabel": "Combat",
     "BehindMult": "Behind Mult",
     "LimbMultipliers": "Limb Multipliers",
     "ResourceModifiers": "Resource Modifiers",
@@ -757,5 +758,6 @@
   "TYPES.Item.shield": "Shield",
   "TYPES.Item.questItem": "Quest Item",
   "TYPES.Item.backpack": "Backpack",
-  "TYPES.Item.trait": "Trait"
+  "TYPES.Item.trait": "Trait",
+  "TYPES.Item.statusEffect": "Status Effect"
 }
