@@ -212,7 +212,17 @@
 
                 <div class="flexrow" style="margin-top: 10px;">
                     <label><b>{{localize 'TAMS.StatusEffect.InflictsStatus'}}</b></label>
-                    <input type="text" name="system.inflictsStatusId" value="{{system.inflictsStatusId}}" placeholder="e.g. on-fire"/>
+                    <div class="status-effect-picker" style="display:flex; gap:4px; flex:1;">
+                        <select class="inflicts-status-preset">
+                            {{selectOptions statusEffectOptions selected=inflictsStatusPresetValue localize=true}}
+                        </select>
+                        <input type="text"
+                               name="system.inflictsStatusId"
+                               value="{{system.inflictsStatusId}}"
+                               placeholder="{{localize 'TAMS.StatusEffect.CustomPlaceholder'}}"
+                               class="inflicts-status-custom"
+                               {{#unless inflictsStatusIsCustom}}style="display:none"{{/unless}}/>
+                    </div>
                 </div>
             </div>
             {{/if}}
@@ -655,7 +665,17 @@
 
                 <div class="flexrow" style="margin-top: 8px;">
                     <label><b>{{localize 'TAMS.StatusEffect.InflictsStatus'}}</b></label>
-                    <input type="text" name="system.inflictsStatusId" value="{{system.inflictsStatusId}}" placeholder="e.g. on-fire"/>
+                    <div class="status-effect-picker" style="display:flex; gap:4px; flex:1;">
+                        <select class="inflicts-status-preset">
+                            {{selectOptions statusEffectOptions selected=inflictsStatusPresetValue localize=true}}
+                        </select>
+                        <input type="text"
+                               name="system.inflictsStatusId"
+                               value="{{system.inflictsStatusId}}"
+                               placeholder="{{localize 'TAMS.StatusEffect.CustomPlaceholder'}}"
+                               class="inflicts-status-custom"
+                               {{#unless inflictsStatusIsCustom}}style="display:none"{{/unless}}/>
+                    </div>
                 </div>
             </div>
 

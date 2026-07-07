@@ -1,5 +1,13 @@
 {
   "TAMS": {
+    "None": "— None —",
+    "Ranged": "Ranged",
+    "IsAttack": "Is Attack?",
+    "IsProfession": "Is Profession?",
+    "Damage": "Damage",
+    "AmmoMax": "Ammo Max",
+    "Capacity": "Capacity",
+    "BackpackModifier": "Carry Modifier",
     "StatStrength": "Strength",
     "StatDexterity": "Dexterity",
     "StatEndurance": "Endurance",
@@ -389,6 +397,14 @@
       "BrokenArm": "Broken Arm",
       "BrokenLeg": "Broken Leg"
     },
+    "ItemMaker": {
+      "Title": "Item Maker",
+      "ChangeImage": "Change image",
+      "NamePlaceholder": "Item name…",
+      "CreateItem": "Create Item",
+      "DefaultName": "New {type}",
+      "Created": "Created {name}"
+    },
     "StatusEffect": {
       "Conditions": "Conditions",
       "Remove": "Remove condition",
@@ -396,6 +412,8 @@
       "MechanicalSummary": "Mechanical Summary",
       "DurationRounds": "Duration (Rounds)",
       "InflictsStatus": "Inflicts Status",
+      "Custom": "Custom...",
+      "CustomPlaceholder": "e.g. my-custom-effect",
       "Expired": "{name}'s {status} has expired."
     },
     "Ability": {

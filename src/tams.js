@@ -8,6 +8,7 @@ import { TAMSLootSheet } from './applications/loot-sheet.js';
 import { TAMSNPCSheet } from './applications/npc-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
+import { TAMSItemMaker } from './applications/item-maker.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
 import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending, tamsHandleContestedCheckPending, tamsOnTurnStart, tamsOnCombatEnd } from './utils/combat.js';
 
@@ -112,7 +113,8 @@ Hooks.once("init", async function() {
       }
       game.tams._travelPaceApp.render(true, { focus: true });
     },
-    groupCheck: () => tamsCallGroupCheck()
+    groupCheck: () => tamsCallGroupCheck(),
+    openItemMaker: (actor = null) => TAMSItemMaker.open(actor)
   };
 
   foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);

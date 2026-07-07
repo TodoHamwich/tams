@@ -196,7 +196,43 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
             }
         };
     }
+
+    const sePresets = {};
+    for (const se of (CONFIG.statusEffects ?? [])) {
+      sePresets[se.id] = se.label ?? se.id;
+    }
+    const currentStatusId = this.document.system.inflictsStatusId ?? '';
+    const isKnownPreset = currentStatusId === '' || !!sePresets[currentStatusId];
+    context.statusEffectOptions = {
+      '': 'TAMS.None',
+      ...sePresets,
+      'custom': 'TAMS.StatusEffect.Custom'
+    };
+    context.inflictsStatusPresetValue = isKnownPreset ? currentStatusId : 'custom';
+    context.inflictsStatusIsCustom = !isKnownPreset && currentStatusId !== '';
+
     return context;
+  }
+
+  /** @override */
+  _onRender(context, options) {
+    super._onRender(context, options);
+    this.element.querySelectorAll('.inflicts-status-preset').forEach(select => {
+      select.addEventListener('change', event => {
+        const value = event.target.value;
+        const picker = event.target.closest('.status-effect-picker');
+        const customInput = picker?.querySelector('.inflicts-status-custom');
+        if (!customInput) return;
+        if (value === 'custom') {
+          customInput.style.display = '';
+          customInput.focus();
+        } else {
+          customInput.style.display = 'none';
+          customInput.value = value;
+          this.document.update({ 'system.inflictsStatusId': value });
+        }
+      });
+    });
   }
 
   /**

@@ -1,0 +1,223 @@
+<div class="item-maker-layout flexcol">
+
+    {{!-- Header: image + name --}}
+    <header class="item-maker-header">
+        <div class="profile-img-container" data-action="editImage">
+            <img src="{{imgSrc}}" title="{{localize 'TAMS.ItemMaker.ChangeImage'}}" height="52" width="52"/>
+            <div class="image-edit-overlay small"><i class="fas fa-edit"></i></div>
+        </div>
+        <input class="item-maker-name" type="text" value="{{itemName}}" placeholder="{{localize 'TAMS.ItemMaker.NamePlaceholder'}}"/>
+    </header>
+
+    {{!-- Type selector --}}
+    <div class="type-selector">
+        {{#each itemTypes}}
+        <button class="type-card {{#if (eq type ../selectedType)}}active{{/if}}"
+                data-action="selectType" data-type="{{type}}" type="button"
+                title="{{localize label}}">
+            <i class="{{icon}}"></i>
+            <span>{{localize label}}</span>
+        </button>
+        {{/each}}
+    </div>
+
+    <hr/>
+
+    {{!-- Per-type fields --}}
+    <div class="item-maker-fields flexcol">
+
+        {{!-- WEAPON --}}
+        {{#if (eq selectedType "weapon")}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.Size'}}</label>
+            <select data-field="size">{{selectOptions sizeOptions selected=f.size localize=true}}</select>
+            <label>{{localize 'TAMS.Ranged'}}</label>
+            <input type="checkbox" data-field="isRanged" data-rerender {{#if f.isRanged}}checked{{/if}}/>
+        </div>
+        <div class="flexrow">
+            <label>{{localize 'TAMS.AttackStat'}}</label>
+            <select data-field="attackStat">{{selectOptions statOptions selected=f.attackStat localize=true}}</select>
+            <label>{{localize 'TAMS.DamageStat'}}</label>
+            <select data-field="damageStat">{{selectOptions statOptions selected=f.damageStat localize=true}}</select>
+        </div>
+        <div class="flexrow">
+            <label>{{localize 'TAMS.DamageTypeLabel'}}</label>
+            <select data-field="damageType">{{selectOptions damageTypeOptions selected=f.damageType localize=true}}</select>
+            <label>{{localize 'TAMS.HasArmourPen'}}</label>
+            <input type="checkbox" data-field="hasArmourPen" {{#if f.hasArmourPen}}checked{{/if}}/>
+            <label>{{localize 'TAMS.ArmourPenetration'}}</label>
+            <input type="number" data-field="armourPen" value="{{f.armourPen}}" min="0"/>
+        </div>
+        {{#if f.isRanged}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.FireRate'}}</label>
+            <select data-field="fireRate">{{selectOptions fireRateOptions selected=f.fireRate localize=true}}</select>
+            <label>{{localize 'TAMS.AmmoMax'}}</label>
+            <input type="number" data-field="ammoTotal" value="{{f.ammoTotal}}" min="0"/>
+        </div>
+        {{/if}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.Tags'}}</label>
+            <input type="text" data-field="tags" value="{{f.tags}}" placeholder="accurate, reliable…"/>
+        </div>
+        {{/if}}
+
+        {{!-- SKILL --}}
+        {{#if (eq selectedType "skill")}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.LinkedStat'}}</label>
+            <select data-field="stat">{{selectOptions statOptions selected=f.stat localize=true}}</select>
+            <label>{{localize 'TAMS.Bonus'}}</label>
+            <input type="number" data-field="bonus" value="{{f.bonus}}"/>
+        </div>
+        {{/if}}
+
+        {{!-- ABILITY --}}
+        {{#if (eq selectedType "ability")}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.Resource'}}</label>
+            <select data-field="resource">{{selectOptions resourceOptions selected=f.resource localize=false}}</select>
+            <label>{{localize 'TAMS.Cost'}}</label>
+            <input type="number" data-field="cost" value="{{f.cost}}" min="0"/>
+        </div>
+        <div class="flexrow">
+            <label>{{localize 'TAMS.IsAttack'}}</label>
+            <input type="checkbox" data-field="isAttack" data-rerender {{#if f.isAttack}}checked{{/if}}/>
+        </div>
+        {{#if f.isAttack}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.AttackStat'}}</label>
+            <select data-field="attackStat">{{selectOptions statOptions selected=f.attackStat localize=true}}</select>
+            <label>{{localize 'TAMS.DamageStat'}}</label>
+            <select data-field="damageStat">{{selectOptions statOptions selected=f.damageStat localize=true}}</select>
+        </div>
+        <div class="flexrow">
+            <label>{{localize 'TAMS.Damage'}}</label>
+            <input type="number" data-field="damage" value="{{f.damage}}" min="0"/>
+            <label>{{localize 'TAMS.DamageTypeLabel'}}</label>
+            <select data-field="damageType">{{selectOptions damageTypeOptions selected=f.damageType localize=true}}</select>
+        </div>
+        {{/if}}
+        {{/if}}
+
+        {{!-- EQUIPMENT / TOOL / QUEST ITEM --}}
+        {{#if (or (eq selectedType "equipment") (eq selectedType "tool") (eq selectedType "questItem"))}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.Quantity'}}</label>
+            <input type="number" data-field="quantity" value="{{f.quantity}}" min="1"/>
+            <label>{{localize 'TAMS.Size'}}</label>
+            <select data-field="size">{{selectOptions sizeOptions selected=f.size localize=true}}</select>
+        </div>
+        {{/if}}
+
+        {{!-- ARMOR --}}
+        {{#if (eq selectedType "armor")}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.Size'}}</label>
+            <select data-field="size">{{selectOptions sizeOptions selected=f.size localize=true}}</select>
+        </div>
+        <div class="armor-limb-grid">
+            <div class="limb-row header-row">
+                <span></span>
+                <span>{{localize 'TAMS.ArmorValue'}}</span>
+            </div>
+            <div class="limb-row">
+                <label>{{localize 'TAMS.HitLocations.Head'}}</label>
+                <input type="number" data-field="head" value="{{f.head}}" min="0"/>
+            </div>
+            <div class="limb-row">
+                <label>{{localize 'TAMS.HitLocations.Thorax'}}</label>
+                <input type="number" data-field="thorax" value="{{f.thorax}}" min="0"/>
+            </div>
+            <div class="limb-row">
+                <label>{{localize 'TAMS.HitLocations.Stomach'}}</label>
+                <input type="number" data-field="stomach" value="{{f.stomach}}" min="0"/>
+            </div>
+            <div class="limb-row">
+                <label>{{localize 'TAMS.HitLocations.LeftArm'}}</label>
+                <input type="number" data-field="leftArm" value="{{f.leftArm}}" min="0"/>
+            </div>
+            <div class="limb-row">
+                <label>{{localize 'TAMS.HitLocations.RightArm'}}</label>
+                <input type="number" data-field="rightArm" value="{{f.rightArm}}" min="0"/>
+            </div>
+            <div class="limb-row">
+                <label>{{localize 'TAMS.HitLocations.LeftLeg'}}</label>
+                <input type="number" data-field="leftLeg" value="{{f.leftLeg}}" min="0"/>
+            </div>
+            <div class="limb-row">
+                <label>{{localize 'TAMS.HitLocations.RightLeg'}}</label>
+                <input type="number" data-field="rightLeg" value="{{f.rightLeg}}" min="0"/>
+            </div>
+        </div>
+        {{/if}}
+
+        {{!-- CONSUMABLE --}}
+        {{#if (eq selectedType "consumable")}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.Quantity'}}</label>
+            <input type="number" data-field="quantity" value="{{f.quantity}}" min="1"/>
+            <label>{{localize 'TAMS.Size'}}</label>
+            <select data-field="size">{{selectOptions sizeOptions selected=f.size localize=true}}</select>
+            <label>{{localize 'TAMS.Uses'}}</label>
+            <input type="number" data-field="usesMax" value="{{f.usesMax}}" min="1"/>
+        </div>
+        {{/if}}
+
+        {{!-- SHIELD --}}
+        {{#if (eq selectedType "shield")}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.ArmorValue'}}</label>
+            <input type="number" data-field="armorValue" value="{{f.armorValue}}" min="0"/>
+            <label>{{localize 'TAMS.Size'}}</label>
+            <select data-field="size">{{selectOptions sizeOptions selected=f.size localize=true}}</select>
+        </div>
+        {{/if}}
+
+        {{!-- BACKPACK --}}
+        {{#if (eq selectedType "backpack")}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.Capacity'}}</label>
+            <input type="number" data-field="capacity" value="{{f.capacity}}" min="0"/>
+            <label>{{localize 'TAMS.BackpackModifier'}}</label>
+            <input type="number" data-field="modifier" value="{{f.modifier}}" min="0" step="0.25"/>
+        </div>
+        {{/if}}
+
+        {{!-- TRAIT --}}
+        {{#if (eq selectedType "trait")}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.IsProfession'}}</label>
+            <input type="checkbox" data-field="isProfession" {{#if f.isProfession}}checked{{/if}}/>
+            <label>{{localize 'TAMS.Profession'}}</label>
+            <input type="text" data-field="profession" value="{{f.profession}}" placeholder="e.g. Soldier"/>
+        </div>
+        {{/if}}
+
+        {{!-- STATUS EFFECT --}}
+        {{#if (eq selectedType "statusEffect")}}
+        <div class="flexrow">
+            <label>{{localize 'TAMS.StatusEffect.StatusId'}}</label>
+            <input type="text" data-field="statusId" value="{{f.statusId}}" placeholder="e.g. on-fire"/>
+        </div>
+        <div class="flexrow">
+            <label>{{localize 'TAMS.StatusEffect.MechanicalSummary'}}</label>
+            <input type="text" data-field="mechanicalSummary" value="{{f.mechanicalSummary}}" placeholder="e.g. 3 fire damage/turn"/>
+        </div>
+        <div class="flexrow">
+            <label>{{localize 'TAMS.StatusEffect.DurationRounds'}}</label>
+            <input type="number" data-field="durationRounds" value="{{f.durationRounds}}" min="0"/>
+        </div>
+        {{/if}}
+
+    </div>{{!-- /.item-maker-fields --}}
+
+    {{!-- Footer buttons --}}
+    <footer class="item-maker-footer">
+        <button type="button" data-action="cancelMaker">{{localize 'Cancel'}}</button>
+        <button type="button" class="create-btn" data-action="createItem">
+            <i class="fa-solid fa-plus"></i> {{localize 'TAMS.ItemMaker.CreateItem'}}
+        </button>
+    </footer>
+
+</div>

@@ -1425,6 +1425,173 @@
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 }
 
+.item-maker .item-maker-layout {
+  gap: 0;
+}
+.item-maker .item-maker-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #7a7971;
+}
+.item-maker .item-maker-header .profile-img-container {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  cursor: pointer;
+}
+.item-maker .item-maker-header .profile-img-container img {
+  border-radius: 4px;
+}
+.item-maker .item-maker-header .profile-img-container .image-edit-overlay {
+  border-radius: 4px;
+}
+.item-maker .item-maker-header .profile-img-container .image-edit-overlay.small {
+  font-size: 0.75em;
+}
+.item-maker .item-maker-header .item-maker-name {
+  flex: 1;
+  font-size: 1.1em;
+  font-family: "MedievalSharp", serif;
+  border: 1px solid #7a7971;
+  border-radius: 3px;
+  padding: 4px 8px;
+  height: 36px;
+}
+.item-maker .type-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #7a7971;
+  background: rgba(0, 0, 0, 0.03);
+}
+.item-maker .type-selector .type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 72px;
+  min-height: 52px;
+  padding: 6px 4px;
+  border: 1px solid #7a7971;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.72em;
+  line-height: 1.2;
+  transition: background 0.1s, border-color 0.1s;
+  text-align: center;
+}
+.item-maker .type-selector .type-card i {
+  font-size: 1.3em;
+  margin-bottom: 2px;
+}
+.item-maker .type-selector .type-card span {
+  word-break: break-word;
+}
+.item-maker .type-selector .type-card:hover {
+  background: rgba(255, 0, 0, 0.1);
+  border-color: #ff0000;
+}
+.item-maker .type-selector .type-card.active {
+  background: rgba(255, 0, 0, 0.12);
+  border-color: #ff0000;
+  font-weight: 600;
+  color: #ff0000;
+}
+.item-maker .item-maker-fields {
+  padding: 10px 12px;
+  gap: 6px;
+}
+.item-maker .item-maker-fields .flexrow {
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.item-maker .item-maker-fields .flexrow label {
+  flex: 0 0 auto;
+  font-size: 0.8em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.item-maker .item-maker-fields .flexrow input[type=text],
+.item-maker .item-maker-fields .flexrow input[type=number],
+.item-maker .item-maker-fields .flexrow select {
+  flex: 1 1 60px;
+  min-width: 50px;
+  max-width: 160px;
+  height: 26px;
+  font-size: 0.85em;
+  border: 1px solid #7a7971;
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+.item-maker .item-maker-fields .flexrow input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.item-maker .item-maker-fields .armor-limb-grid {
+  display: grid;
+  grid-template-columns: 1fr 80px;
+  gap: 4px;
+  margin-top: 4px;
+}
+.item-maker .item-maker-fields .armor-limb-grid .limb-row {
+  display: contents;
+}
+.item-maker .item-maker-fields .armor-limb-grid .limb-row.header-row span {
+  font-size: 0.75em;
+  font-weight: 600;
+  text-align: center;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #7a7971;
+}
+.item-maker .item-maker-fields .armor-limb-grid .limb-row label {
+  font-size: 0.82em;
+  align-self: center;
+}
+.item-maker .item-maker-fields .armor-limb-grid .limb-row input[type=number] {
+  width: 100%;
+  height: 26px;
+  text-align: center;
+  border: 1px solid #7a7971;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+.item-maker .item-maker-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid #7a7971;
+  background: rgba(0, 0, 0, 0.03);
+}
+.item-maker .item-maker-footer button {
+  padding: 5px 14px;
+  font-size: 0.85em;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid #7a7971;
+  background: #fff;
+}
+.item-maker .item-maker-footer button:hover {
+  background: rgba(255, 0, 0, 0.1);
+}
+.item-maker .item-maker-footer button.create-btn {
+  background: rgba(255, 0, 0, 0.08);
+  border-color: #ff0000;
+  font-weight: 600;
+  color: #ff0000;
+}
+.item-maker .item-maker-footer button.create-btn:hover {
+  background: rgba(255, 0, 0, 0.18);
+}
+
 .tams.theme-grimdark {
   background: #1c1e21;
   color: #d0cfc8;
