@@ -1,0 +1,13 @@
+{
+  "name": "Severe Bleeding",
+  "type": "statusEffect",
+  "img": "icons/svg/blood.svg",
+  "system": {
+    "statusId": "severe-bleeding",
+    "mechanicalSummary": "6 bleeding damage/turn to Thorax",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusSevereBleeding"
+}

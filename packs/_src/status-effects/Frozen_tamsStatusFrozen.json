@@ -1,0 +1,13 @@
+{
+  "name": "Frozen",
+  "type": "statusEffect",
+  "img": "icons/svg/frozen.svg",
+  "system": {
+    "statusId": "frozen",
+    "mechanicalSummary": "Cannot act or move. Morale check DC 25 to recover.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusFrozen"
+}

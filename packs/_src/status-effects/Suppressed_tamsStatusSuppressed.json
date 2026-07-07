@@ -1,0 +1,13 @@
+{
+  "name": "Suppressed",
+  "type": "statusEffect",
+  "img": "icons/svg/anchor.svg",
+  "system": {
+    "statusId": "suppressed",
+    "mechanicalSummary": "Pinned by fire. Must take cover or pass a Bravery check to move or attack.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusSuppressed"
+}

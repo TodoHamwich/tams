@@ -1,0 +1,13 @@
+{
+  "name": "Blinded",
+  "type": "statusEffect",
+  "img": "icons/svg/blind.svg",
+  "system": {
+    "statusId": "blinded",
+    "mechanicalSummary": "Cannot see. All attack rolls halved. Automatically fails Perception checks.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusBlinded"
+}

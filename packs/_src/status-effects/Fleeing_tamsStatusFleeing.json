@@ -1,0 +1,13 @@
+{
+  "name": "Fleeing",
+  "type": "statusEffect",
+  "img": "icons/svg/falling.svg",
+  "system": {
+    "statusId": "fleeing",
+    "mechanicalSummary": "Cannot attack. Must move away from threat. Morale check DC 20 to recover.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusFleeing"
+}

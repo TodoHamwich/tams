@@ -1,0 +1,14 @@
+{
+  "name": "Group Check",
+  "type": "script",
+  "author": "tams-system",
+  "img": "icons/svg/d20-highlight.svg",
+  "command": "game.tams.groupCheck();",
+  "folder": null,
+  "sort": 200,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "_id": "tamsGroupCheck01"
+}

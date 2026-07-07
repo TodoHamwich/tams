@@ -1,0 +1,13 @@
+{
+  "name": "Charmed",
+  "type": "statusEffect",
+  "img": "icons/svg/sleep.svg",
+  "system": {
+    "statusId": "charmed",
+    "mechanicalSummary": "Regards the source as a trusted ally. Cannot attack the source.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusCharmed"
+}

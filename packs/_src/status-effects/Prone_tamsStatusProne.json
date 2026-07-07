@@ -1,0 +1,13 @@
+{
+  "name": "Prone",
+  "type": "statusEffect",
+  "img": "icons/svg/falling.svg",
+  "system": {
+    "statusId": "prone",
+    "mechanicalSummary": "On the ground. Ranged attackers have disadvantage; melee attackers have advantage.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusProne"
+}

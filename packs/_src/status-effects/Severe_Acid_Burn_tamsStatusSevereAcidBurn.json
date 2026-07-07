@@ -1,0 +1,13 @@
+{
+  "name": "Severe Acid Burn",
+  "type": "statusEffect",
+  "img": "icons/svg/blood.svg",
+  "system": {
+    "statusId": "severe-acid-burn",
+    "mechanicalSummary": "5 acid damage/turn to lowest HP arm",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusSevereAcidBurn"
+}

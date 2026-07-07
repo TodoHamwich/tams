@@ -1,0 +1,13 @@
+{
+  "name": "Poisoned",
+  "type": "statusEffect",
+  "img": "icons/svg/poison.svg",
+  "system": {
+    "statusId": "poisoned",
+    "mechanicalSummary": "2 poison damage/turn to Thorax",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusPoisoned"
+}

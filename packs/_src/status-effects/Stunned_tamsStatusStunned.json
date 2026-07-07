@@ -1,0 +1,13 @@
+{
+  "name": "Stunned",
+  "type": "statusEffect",
+  "img": "icons/svg/daze.svg",
+  "system": {
+    "statusId": "stunned",
+    "mechanicalSummary": "Cannot act this turn. Cleared at turn start.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusStunned"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Deafened",
+  "type": "statusEffect",
+  "img": "icons/svg/deaf.svg",
+  "system": {
+    "statusId": "deafened",
+    "mechanicalSummary": "Cannot hear. Fails Perception checks relying on sound.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusDeafened"
+}

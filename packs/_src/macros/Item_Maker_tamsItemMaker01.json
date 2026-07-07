@@ -1,0 +1,14 @@
+{
+  "name": "Item Maker",
+  "type": "script",
+  "author": "tams-system",
+  "img": "icons/svg/item-bag.svg",
+  "command": "const actor = canvas.tokens.controlled[0]?.actor ?? null; game.tams.openItemMaker(actor);",
+  "folder": null,
+  "sort": 100,
+  "ownership": {
+    "default": 0
+  },
+  "flags": {},
+  "_id": "tamsItemMaker01"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Engulfed",
+  "type": "statusEffect",
+  "img": "icons/svg/fire.svg",
+  "system": {
+    "statusId": "engulfed",
+    "mechanicalSummary": "8 fire damage/turn to Head",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusEngulfed"
+}

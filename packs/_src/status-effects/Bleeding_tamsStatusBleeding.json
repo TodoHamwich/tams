@@ -1,0 +1,13 @@
+{
+  "name": "Bleeding",
+  "type": "statusEffect",
+  "img": "icons/svg/blood.svg",
+  "system": {
+    "statusId": "bleeding",
+    "mechanicalSummary": "2 bleeding damage/turn to Thorax",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusBleeding"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Broken Arm",
+  "type": "statusEffect",
+  "img": "icons/svg/blood.svg",
+  "system": {
+    "statusId": "broken-arm",
+    "mechanicalSummary": "Arm is broken. Cannot use two-handed weapons. Attack rolls with that arm halved.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusBrokenArm"
+}

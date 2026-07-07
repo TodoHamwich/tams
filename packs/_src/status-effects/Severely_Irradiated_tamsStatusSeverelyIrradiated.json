@@ -1,0 +1,13 @@
+{
+  "name": "Severely Irradiated",
+  "type": "statusEffect",
+  "img": "icons/svg/skull.svg",
+  "system": {
+    "statusId": "severely-irradiated",
+    "mechanicalSummary": "3 radiation damage/turn to Thorax + Survival check every turn",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusSeverelyIrradiated"
+}

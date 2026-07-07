@@ -1,0 +1,13 @@
+{
+  "name": "Confused",
+  "type": "statusEffect",
+  "img": "icons/svg/daze.svg",
+  "system": {
+    "statusId": "confused",
+    "mechanicalSummary": "Disoriented. GM determines actions each turn.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusConfused"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Broken Leg",
+  "type": "statusEffect",
+  "img": "icons/svg/blood.svg",
+  "system": {
+    "statusId": "broken-leg",
+    "mechanicalSummary": "Leg is broken. Movement halved. Cannot sprint.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsStatusBrokenLeg"
+}

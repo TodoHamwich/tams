@@ -22,8 +22,10 @@ package-lock.json
 .claude/
 CLAUDE.md
 
-# Foundry compiled pack databases (LevelDB directories)
-packs/*/
+# LevelDB runtime noise (lock + write-ahead log; data files are tracked)
+packs/*/LOCK
+packs/*/LOG
+packs/*/LOG.old
 
 # Local dev / docs
 update-local.ps1
