@@ -140,6 +140,21 @@
                     </div>
                 </div>
                 {{/each}}
+
+                {{!-- Active Conditions Panel --}}
+                {{#if activeStatuses.length}}
+                <div class="status-effects-panel">
+                    <h4 class="small-header" style="margin-top: 8px;">{{localize 'TAMS.StatusEffect.Conditions'}}</h4>
+                    {{#each activeStatuses}}
+                    <div class="status-effect-row" style="display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,0.1);">
+                        <img src="{{icon}}" class="status-icon" style="width: 20px; height: 20px;" />
+                        <span class="status-name" style="font-weight: bold; flex: 1;">{{name}}</span>
+                        {{#if mechanicalSummary}}<span class="status-summary" style="font-size: 0.85em; color: #666; flex: 2;">{{mechanicalSummary}}</span>{{/if}}
+                        <button class="tams-remove-status" data-status-id="{{id}}" style="padding: 1px 5px; font-size: 0.8em;" title="{{localize 'TAMS.StatusEffect.Remove'}}">✕</button>
+                    </div>
+                    {{/each}}
+                </div>
+                {{/if}}
             </section>
         </div>
 
