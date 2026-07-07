@@ -15,5 +15,16 @@ package-lock.json
 # Foundry VTT specific (if any local testing artifacts)
 *.log
 
+# Build artefacts
+*.map
+
+# Claude Code
+.claude/
+
+# Local dev / docs
+update-local.ps1
+PROJECT_QUICK_REFERENCE.md
+SYSTEM_FEATURES.txt
+
 # Proprietary documents
 TAMS Rulebook.md
