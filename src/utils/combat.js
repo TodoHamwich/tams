@@ -199,12 +199,11 @@ function buildContestedCheckContent(initiatorName, label, initiatorTotal, initia
   </div>`;
 }
 
-export async function tamsCreateContestedCheck(actor, label, total, raw, roll, statId) {
+export async function tamsCreateContestedCheck(actor, label, total, raw, _roll, statId) {
   const content = buildContestedCheckContent(actor.name, label, total, raw, []);
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor }),
     content,
-    rolls: [roll],
     flags: {
       tams: {
         isContestedCheck: true,
@@ -1614,7 +1613,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (isAoEFromData && isRanged) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
 
       let critInfo = "";
-      if (raw >= (attackerRaw * 2)) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", {name: actor.name})}</div>`;
+      if (raw >= (attackerRaw * 2)) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalRetaliation", {name: actor.name})}</div>`;
       else if (attackerRaw >= (raw * 2)) critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", {name: actor.name})}</div>`;
 
       let multiVal = weapon.type === 'weapon' ? (weapon.system.fireRate === '3' ? 3 : (weapon.system.fireRate === 'auto' ? 10 : (weapon.system.fireRate === 'custom' ? weapon.system.fireRateCustom : 1))) : (weapon.system.multiAttack || 1);

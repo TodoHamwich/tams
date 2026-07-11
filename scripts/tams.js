@@ -958,12 +958,11 @@ function buildContestedCheckContent(initiatorName, label, initiatorTotal, initia
     </div>
   </div>`;
 }
-async function tamsCreateContestedCheck(actor, label, total, raw, roll, statId) {
+async function tamsCreateContestedCheck(actor, label, total, raw, _roll, statId) {
   const content = buildContestedCheckContent(actor.name, label, total, raw, []);
   await ChatMessage.create({
     speaker: ChatMessage.getSpeaker({ actor }),
     content,
-    rolls: [roll],
     flags: {
       tams: {
         isContestedCheck: true,
@@ -2216,7 +2215,7 @@ async function tamsRenderChatMessage(message, html, data) {
     const isMutual = Math.abs(attackerTotal - total) <= threshold;
     if (isAoEFromData && isRanged) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
     let critInfo = "";
-    if (raw >= attackerRaw * 2) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", { name: actor.name })}</div>`;
+    if (raw >= attackerRaw * 2) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalRetaliation", { name: actor.name })}</div>`;
     else if (attackerRaw >= raw * 2) critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { name: actor.name })}</div>`;
     let multiVal = weapon.type === "weapon" ? weapon.system.fireRate === "3" ? 3 : weapon.system.fireRate === "auto" ? 10 : weapon.system.fireRate === "custom" ? weapon.system.fireRateCustom : 1 : weapon.system.multiAttack || 1;
     const damage = weapon.system.calculatedDamage;
@@ -3179,7 +3178,8 @@ async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUu
   if (!target) return;
   const targetActor = target instanceof foundry.documents.BaseActor ? target : target.actor;
   if (!targetActor) return;
-  const sourceActor = sourceActorUuid ? await fromUuid(sourceActorUuid) : null;
+  const _sourceFull = sourceActorUuid ? await fromUuid(sourceActorUuid) : null;
+  const sourceActor = _sourceFull ? _sourceFull instanceof foundry.documents.BaseActor ? _sourceFull : _sourceFull.actor : null;
   const itemsToCreate = [];
   const itemsToDelete = [];
   const mainItemData = foundry.utils.duplicate(itemData);
@@ -3351,7 +3351,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         resistanceAdd: _TAMSActorSheet.prototype._onResistanceAdd,
         resistanceDelete: _TAMSActorSheet.prototype._onResistanceDelete,
         sceneReset: _TAMSActorSheet.prototype._onSceneReset,
-        callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck
+        callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck,
+        itemSendDescription: _TAMSActorSheet.prototype._onItemSendDescription
       }
     }, { inplace: false });
   }
@@ -3906,6 +3907,30 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       console.error("TAMS | Export failed", err);
       ui.notifications.error(game.i18n.format("TAMS.Checks.Notifications.ItemExportFailed", { item: item.name }));
     }
+  }
+  /**
+   * Post an item's description to chat.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onItemSendDescription(event, target) {
+    var _a;
+    const itemId = target.dataset.itemId || ((_a = target.closest(".item")) == null ? void 0 : _a.dataset.itemId);
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+    const content = `
+      <div class="tams-item-description">
+        <div class="item-desc-header" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.2); padding-bottom:4px;">
+          <img src="${item.img}" width="32" height="32" style="border-radius:3px;"/>
+          <strong style="font-size:1.1em;">${item.name}</strong>
+        </div>
+        ${item.system.description || `<em>${game.i18n.localize("TAMS.NoDescription")}</em>`}
+      </div>`;
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this.document }),
+      content
+    });
   }
   /**
    * Handle using a charge from an item.
@@ -6319,6 +6344,7 @@ Hooks.once("init", async function() {
   });
   Handlebars.registerHelper("not", (a) => !a);
   Handlebars.registerHelper("subtract", (a, b) => (Number(a) || 0) - (Number(b) || 0));
+  Handlebars.registerHelper("add", (a, b) => (Number(a) || 0) + (Number(b) || 0));
   Handlebars.registerHelper("capitalize", (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1);

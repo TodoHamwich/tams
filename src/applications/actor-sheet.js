@@ -44,7 +44,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         resistanceAdd: TAMSActorSheet.prototype._onResistanceAdd,
         resistanceDelete: TAMSActorSheet.prototype._onResistanceDelete,
         sceneReset: TAMSActorSheet.prototype._onSceneReset,
-        callGroupCheck: TAMSActorSheet.prototype._onCallGroupCheck
+        callGroupCheck: TAMSActorSheet.prototype._onCallGroupCheck,
+        itemSendDescription: TAMSActorSheet.prototype._onItemSendDescription
       }
     }, { inplace: false });
   }
@@ -659,6 +660,32 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       console.error("TAMS | Export failed", err);
       ui.notifications.error(game.i18n.format("TAMS.Checks.Notifications.ItemExportFailed", {item: item.name}));
     }
+  }
+
+  /**
+   * Post an item's description to chat.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onItemSendDescription(event, target) {
+    const itemId = target.dataset.itemId || target.closest(".item")?.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+
+    const content = `
+      <div class="tams-item-description">
+        <div class="item-desc-header" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.2); padding-bottom:4px;">
+          <img src="${item.img}" width="32" height="32" style="border-radius:3px;"/>
+          <strong style="font-size:1.1em;">${item.name}</strong>
+        </div>
+        ${item.system.description || `<em>${game.i18n.localize("TAMS.NoDescription")}</em>`}
+      </div>`;
+
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this.document }),
+      content
+    });
   }
 
   /**

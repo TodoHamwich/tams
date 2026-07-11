@@ -17,7 +17,8 @@ export async function tamsHandleItemTransfer({itemData, sourceActorUuid, targetA
   const targetActor = (target instanceof foundry.documents.BaseActor) ? target : target.actor;
   if (!targetActor) return;
 
-  const sourceActor = sourceActorUuid ? await fromUuid(sourceActorUuid) : null;
+  const _sourceFull = sourceActorUuid ? await fromUuid(sourceActorUuid) : null;
+  const sourceActor = _sourceFull ? ((_sourceFull instanceof foundry.documents.BaseActor) ? _sourceFull : _sourceFull.actor) : null;
   const itemsToCreate = [];
   const itemsToDelete = [];
 

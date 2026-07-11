@@ -176,6 +176,7 @@ Hooks.once("init", async function() {
 
   /** Subtract b from a */
   Handlebars.registerHelper('subtract', (a, b) => (Number(a) || 0) - (Number(b) || 0));
+  Handlebars.registerHelper('add', (a, b) => (Number(a) || 0) + (Number(b) || 0));
   
   /** Capitalize a string */
   Handlebars.registerHelper('capitalize', (str) => {
