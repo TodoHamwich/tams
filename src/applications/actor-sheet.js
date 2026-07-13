@@ -247,7 +247,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
       if (i.type === 'weapon') {
         weapons.push(itemData);
-        if (i.system.location === 'hand') equippedWeapons.push(itemData);
+        if (i.system.equipped) equippedWeapons.push(itemData);
         else inventoryWeapons.push(itemData);
       }
       else if (i.type === 'skill') skills.push(itemData);
@@ -363,6 +363,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     context.inventorySections = rawSections.filter(s => s.visibleCount > 0 || s.type === "container");
     context.weapons = weapons;
+    context.equippedWeapons = equippedWeapons;
     context.inventoryWeapons = inventoryWeapons;
     context.inventoryArmor = inventoryArmor;
     context.inventoryConsumables = inventoryConsumables;

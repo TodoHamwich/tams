@@ -3453,6 +3453,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   _prepareItemCollections(context) {
     var _a, _b;
     const weapons = [];
+    const equippedWeapons = [];
     const skills = [];
     const abilities = [];
     const inventoryArmor = [];
@@ -3516,7 +3517,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       allItems.push(itemData);
       if (i.type === "weapon") {
         weapons.push(itemData);
-        if (i.system.location === "hand") ;
+        if (i.system.equipped) equippedWeapons.push(itemData);
         else inventoryWeapons.push(itemData);
       } else if (i.type === "skill") skills.push(itemData);
       else if (i.type === "ability") abilities.push(itemData);
@@ -3625,6 +3626,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     };
     context.inventorySections = rawSections.filter((s) => s.visibleCount > 0 || s.type === "container");
     context.weapons = weapons;
+    context.equippedWeapons = equippedWeapons;
     context.inventoryWeapons = inventoryWeapons;
     context.inventoryArmor = inventoryArmor;
     context.inventoryConsumables = inventoryConsumables;
