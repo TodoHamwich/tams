@@ -10,5 +10,6 @@
     "default": 0
   },
   "flags": {},
-  "_id": "tamsItemMaker01"
+  "_id": "tamsItemMaker01",
+  "_key": "!macros.tamsItemMaker01"
 }

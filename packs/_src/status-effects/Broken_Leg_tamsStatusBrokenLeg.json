@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusBrokenLeg"
+  "_id": "tamsStatusBrokenLeg",
+  "_key": "!items.tamsStatusBrokenLeg"
 }

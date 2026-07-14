@@ -1226,6 +1226,32 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
     }
 
+    // Ability passive bonuses — tag-based
+    if (item?.system?.tags) {
+        const tags = item.system.tags.split(",").map(t => t.trim().toLowerCase());
+        const abilityPassiveBonuses = this.document.system.abilityPassiveBonuses || {};
+        for (const [tag, val] of Object.entries(abilityPassiveBonuses)) {
+            if (tags.includes(tag) && val !== 0) {
+                bonus += val;
+                bonusSources.push({ label: game.i18n.format("TAMS.AbilityPassiveTag", {tag}), value: val });
+            }
+        }
+    }
+
+    // Ability passive bonuses — type-based
+    {
+        const abilityTypeBonus = this.document.system.abilityTypeBonus || {};
+        const rollType = item?.type ?? null;
+        if (abilityTypeBonus.all) {
+            bonus += abilityTypeBonus.all;
+            bonusSources.push({ label: game.i18n.localize("TAMS.AbilityPassiveAll"), value: abilityTypeBonus.all });
+        }
+        if (rollType && rollType !== 'all' && abilityTypeBonus[rollType]) {
+            bonus += abilityTypeBonus[rollType];
+            bonusSources.push({ label: game.i18n.localize(`TAMS.AbilityPassive_${rollType}`), value: abilityTypeBonus[rollType] });
+        }
+    }
+
     // Add Accurate Tag Bonus
     if (item && item.system.tags) {
         const tags = item.system.tags.split(",").map(t => t.trim().toLowerCase());
@@ -1279,7 +1305,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         // Stealth bonus for smaller-than-Normal creatures
         const skillNameLower = name.toLowerCase();
         if (skillNameLower.includes('stealth') || skillNameLower.includes('sneak')) {
-            const sizeStep = SIZE_STEPS[this.document.system.settings.creatureSize ?? 'normal'] ?? 0;
+            const sizeStep = SIZE_STEPS[this.document.system.effectiveStealthSize ?? 'normal'] ?? 0;
             if (sizeStep < 0) {
                 const stealthBonus = Math.abs(sizeStep) * 10;
                 bonus += stealthBonus;
@@ -1486,10 +1512,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     // Size bonus for Strength-based contested checks (not weapon/ability attacks)
     const isAttackRoll = item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack));
     if (!isAttackRoll && statId === 'strength') {
-        const attackerSize = SIZE_STEPS[this.document.system.settings.creatureSize ?? 'normal'] ?? 0;
+        const attackerSize = SIZE_STEPS[this.document.system.effectiveCombatSize ?? 'normal'] ?? 0;
         const targets = [...game.user.targets];
         if (targets.length > 0) {
-            const targetSize = SIZE_STEPS[targets[0].actor?.system?.settings?.creatureSize ?? 'normal'] ?? 0;
+            const targetSize = SIZE_STEPS[targets[0].actor?.system?.effectiveCombatSize ?? 'normal'] ?? 0;
             const sizeDiff = attackerSize - targetSize;
             if (sizeDiff !== 0) {
                 const sizeBonus = sizeDiff * 10;

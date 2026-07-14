@@ -115,6 +115,7 @@ function computeArmorRepair({ value, max, rollTotal, alternate = false }) {
   };
 }
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1, large: 1.5, huge: 2, giant: 2.5 };
+const SIZE_ORDER = ["tiny", "small", "normal", "large", "huge", "giant"];
 function getCapacityMode() {
   try {
     return game.settings.get("tams", "capacityMode") || "weight";
@@ -183,6 +184,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({ initial: 0 }),
         color: new fields.StringField({ initial: "#e74c3c" })
       }),
+      tempDR: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({ initial: 10, min: 0 }),
         max: new fields.NumberField({ initial: 10, min: 0 }),
@@ -214,6 +216,9 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         npcRank: new fields.StringField({ initial: "mook" }),
         squadSize: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
         creatureSize: new fields.StringField({ initial: "normal" }),
+        effectiveHPSize: new fields.StringField({ initial: "" }),
+        effectiveStealthSize: new fields.StringField({ initial: "" }),
+        effectiveCombatSize: new fields.StringField({ initial: "" }),
         enabledCurrencies: new fields.ObjectField({ initial: {} })
       }),
       upgradePoints: new fields.SchemaField({
@@ -265,6 +270,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    * @protected
    */
   _prepareTraitModifiers() {
+    var _a;
     const statKeys = ["strength", "dexterity", "endurance", "wisdom", "intelligence", "bravery"];
     for (const key of statKeys) {
       if (this.stats[key]) this.stats[key].traitBonus = 0;
@@ -273,6 +279,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.traitHPExtra = 0;
     this.traitStaminaExtra = 0;
     this.traitProfessionBonuses = {};
+    this.abilityPassiveBonuses = {};
+    this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0 };
     const traits = this.parent.items.filter((i) => i.type === "trait");
     for (const trait of traits) {
       const system = trait.system;
@@ -296,6 +304,34 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         }
       }
     }
+    const baseSize = this.settings.creatureSize || "normal";
+    const bestSize = (a, b) => SIZE_ORDER.indexOf(a) >= SIZE_ORDER.indexOf(b) ? a : b;
+    let hpSize = this.settings.effectiveHPSize || baseSize;
+    let stealthSize = this.settings.effectiveStealthSize || baseSize;
+    let combatSize = this.settings.effectiveCombatSize || baseSize;
+    for (const item of this.parent.items) {
+      if (item.type !== "trait" && item.type !== "ability") continue;
+      const s = item.system;
+      if (s.sizeGrantHP) hpSize = bestSize(hpSize, s.sizeGrantHP);
+      if (s.sizeGrantStealth) stealthSize = bestSize(stealthSize, s.sizeGrantStealth);
+      if (s.sizeGrantCombat) combatSize = bestSize(combatSize, s.sizeGrantCombat);
+    }
+    this.effectiveHPSize = hpSize;
+    this.effectiveStealthSize = stealthSize;
+    this.effectiveCombatSize = combatSize;
+    for (const item of this.parent.items) {
+      if (item.type !== "ability") continue;
+      if (!item.system.isPassive || !item.system.passiveEnabled) continue;
+      const val = item.system.passiveBonus || 0;
+      if (!val) continue;
+      const tag = (_a = item.system.passiveTag) == null ? void 0 : _a.trim().toLowerCase();
+      if (tag) {
+        this.abilityPassiveBonuses[tag] = (this.abilityPassiveBonuses[tag] || 0) + val;
+      } else {
+        const rollType = item.system.passiveRollType || "all";
+        if (rollType in this.abilityTypeBonus) this.abilityTypeBonus[rollType] += val;
+      }
+    }
   }
   /**
    * Recompute max HP for each limb based on Endurance and NPC settings.
@@ -306,7 +342,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const settings = this.settings;
     const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
     const squadSize = settings.squadSize || 1;
-    const sizeMult = SIZE_HP_MULT[settings.creatureSize] ?? 1;
+    const sizeMult = SIZE_HP_MULT[this.effectiveHPSize || settings.creatureSize] ?? 1;
     const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
     for (const key of limbKeys) {
       const limb = this.limbs[key];
@@ -613,6 +649,9 @@ class TAMSBackpackData extends foundry.abstract.TypeDataModel {
         movement: new fields.NumberField({ initial: 0, integer: true })
       }),
       tags: new fields.StringField({ initial: "" }),
+      sizeGrantHP: new fields.StringField({ initial: "" }),
+      sizeGrantStealth: new fields.StringField({ initial: "" }),
+      sizeGrantCombat: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
   }
@@ -646,6 +685,9 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       inflictsStatusId: new fields.StringField({ initial: "" }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" }),
+      sizeGrantHP: new fields.StringField({ initial: "" }),
+      sizeGrantStealth: new fields.StringField({ initial: "" }),
+      sizeGrantCombat: new fields.StringField({ initial: "" }),
       ifStatement: new fields.StringField({ initial: "" }),
       ifCost: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
       calculator: new fields.SchemaField({
@@ -677,7 +719,12 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         duration: new fields.StringField({ initial: "instant" }),
         isStackable: new fields.BooleanField({ initial: false })
       }),
-      rechargeType: new fields.StringField({ initial: "rest" })
+      rechargeType: new fields.StringField({ initial: "rest" }),
+      isPassive: new fields.BooleanField({ initial: false }),
+      passiveEnabled: new fields.BooleanField({ initial: true }),
+      passiveBonus: new fields.NumberField({ initial: 0, nullable: true }),
+      passiveTag: new fields.StringField({ initial: "" }),
+      passiveRollType: new fields.StringField({ initial: "all" })
     };
   }
   /**
@@ -2689,6 +2736,16 @@ class TAMSActor extends Actor {
           }
         }
       }
+      if (!isSquadOrHorde && effective > 0) {
+        const pendingTempDR = updates["system.tempDR"];
+        const currentTempDR = pendingTempDR !== void 0 ? pendingTempDR : this.system.tempDR || 0;
+        if (currentTempDR > 0) {
+          const absorbed = Math.min(currentTempDR, effective);
+          effective -= absorbed;
+          updates["system.tempDR"] = currentTempDR - absorbed;
+          report += `  ↳ ${game.i18n.format("TAMS.Combat.TempDRAbsorbed", { absorbed, remaining: currentTempDR - absorbed })}<br>`;
+        }
+      }
       if (isSquadOrHorde) {
         const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
         const limbCap = (isAoE ? multiplier : 1) * indMax;
@@ -2728,7 +2785,8 @@ class TAMSActor extends Actor {
       const lossMsg = lossLabel ? `, ${lossLabel}` : "";
       report += `• ${game.i18n.format("TAMS.Checks.DamageReport", { loc, effective, blocked, penLabel, lossLabel: lossMsg, overflowLabel })}<br>`;
       if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
-      if (newHp <= 0 && !original.injured && !updates[`system.limbs.${limbKey}.injured`]) {
+      const limbMax = originalLimbStatus[limbKey].max;
+      if (newHp <= -limbMax && !originalLimbStatus[limbKey].injured && !updates[`system.limbs.${limbKey}.injured`]) {
         report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", { limb: limb.label })} !!!</b><br>`;
         updates[`system.limbs.${limbKey}.injured`] = true;
       }
@@ -2790,21 +2848,20 @@ class TAMSActor extends Actor {
     await this.update(finalUpdates);
     for (let [limbKey, damage] of Object.entries(limbDamageReceived)) {
       if (damage === 0 && !hits.some((h) => locationMap[h.location] === limbKey && h.forceCrit)) continue;
-      const original2 = originalLimbStatus[limbKey];
+      const original = originalLimbStatus[limbKey];
       const limb = this.system.limbs[limbKey];
       limb.value;
       if (isSquadOrHorde) continue;
-      if (original2.injured && damage > 0 && !original2.criticallyInjured) {
-        pendingChecks.push({ type: "crit", loc: limb.label, dc: damage + (original2.value < 0 ? Math.abs(original2.value) : 0), limbKey });
-      } else if (hits.some((h) => locationMap[h.location] === limbKey && h.forceCrit === "1")) {
-        if (!original2.criticallyInjured) {
-          pendingChecks.push({
-            type: "crit",
-            loc: limb.label,
-            dc: Math.max(10, damage + (original2.value < 0 ? Math.abs(original2.value) : 0)),
-            limbKey
-          });
-        }
+      const autoInjuredThisHit = updates[`system.limbs.${limbKey}.injured`] === true && !original.injured;
+      const limbHpAfterHit = this.system.limbs[limbKey].value;
+      if (original.injured && damage > 0 && !original.criticallyInjured) {
+        pendingChecks.push({ type: "crit", loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
+      } else if (autoInjuredThisHit && !original.criticallyInjured) {
+        pendingChecks.push({ type: "crit", loc: limb.label, dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)), limbKey });
+      } else if (hits.some((h) => locationMap[h.location] === limbKey && h.forceCrit === "1") && !original.criticallyInjured) {
+        pendingChecks.push({ type: "crit", loc: limb.label, dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)), limbKey });
+      } else if (limbHpAfterHit <= 0 && !original.injured && damage > 0) {
+        pendingChecks.push({ type: "injured", loc: limb.label, dc: damage, limbKey });
       }
     }
     const totalHp = this.system.hp.value;
@@ -4410,6 +4467,28 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
       }
     }
+    if ((_c = item == null ? void 0 : item.system) == null ? void 0 : _c.tags) {
+      const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+      const abilityPassiveBonuses = this.document.system.abilityPassiveBonuses || {};
+      for (const [tag, val] of Object.entries(abilityPassiveBonuses)) {
+        if (tags.includes(tag) && val !== 0) {
+          bonus += val;
+          bonusSources.push({ label: game.i18n.format("TAMS.AbilityPassiveTag", { tag }), value: val });
+        }
+      }
+    }
+    {
+      const abilityTypeBonus = this.document.system.abilityTypeBonus || {};
+      const rollType = (item == null ? void 0 : item.type) ?? null;
+      if (abilityTypeBonus.all) {
+        bonus += abilityTypeBonus.all;
+        bonusSources.push({ label: game.i18n.localize("TAMS.AbilityPassiveAll"), value: abilityTypeBonus.all });
+      }
+      if (rollType && rollType !== "all" && abilityTypeBonus[rollType]) {
+        bonus += abilityTypeBonus[rollType];
+        bonusSources.push({ label: game.i18n.localize(`TAMS.AbilityPassive_${rollType}`), value: abilityTypeBonus[rollType] });
+      }
+    }
     if (item && item.system.tags) {
       const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
       if (tags.includes("accurate")) {
@@ -4454,7 +4533,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
       const skillNameLower = name.toLowerCase();
       if (skillNameLower.includes("stealth") || skillNameLower.includes("sneak")) {
-        const sizeStep = SIZE_STEPS[this.document.system.settings.creatureSize ?? "normal"] ?? 0;
+        const sizeStep = SIZE_STEPS[this.document.system.effectiveStealthSize ?? "normal"] ?? 0;
         if (sizeStep < 0) {
           const stealthBonus = Math.abs(sizeStep) * 10;
           bonus += stealthBonus;
@@ -4644,10 +4723,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     const isAttackRoll = item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack);
     if (!isAttackRoll && statId === "strength") {
-      const attackerSize = SIZE_STEPS[this.document.system.settings.creatureSize ?? "normal"] ?? 0;
+      const attackerSize = SIZE_STEPS[this.document.system.effectiveCombatSize ?? "normal"] ?? 0;
       const targets = [...game.user.targets];
       if (targets.length > 0) {
-        const targetSize = SIZE_STEPS[((_e = (_d = (_c = targets[0].actor) == null ? void 0 : _c.system) == null ? void 0 : _d.settings) == null ? void 0 : _e.creatureSize) ?? "normal"] ?? 0;
+        const targetSize = SIZE_STEPS[((_e = (_d = targets[0].actor) == null ? void 0 : _d.system) == null ? void 0 : _e.effectiveCombatSize) ?? "normal"] ?? 0;
         const sizeDiff = attackerSize - targetSize;
         if (sizeDiff !== 0) {
           const sizeBonus = sizeDiff * 10;
@@ -5350,6 +5429,20 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       "magic": "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
       "acid": "TAMS.DamageType.acid"
+    };
+    context.passiveRollTypeOptions = {
+      "all": "TAMS.PassiveRollType.All",
+      "weapon": "TAMS.PassiveRollType.Weapon",
+      "skill": "TAMS.PassiveRollType.Skill",
+      "ability": "TAMS.PassiveRollType.Ability"
+    };
+    context.creatureSizeOptions = {
+      "tiny": "TAMS.CreatureSizeOptions.Tiny",
+      "small": "TAMS.CreatureSizeOptions.Small",
+      "normal": "TAMS.CreatureSizeOptions.Normal",
+      "large": "TAMS.CreatureSizeOptions.Large",
+      "huge": "TAMS.CreatureSizeOptions.Huge",
+      "giant": "TAMS.CreatureSizeOptions.Giant"
     };
     context.modifierTargetOptions = {
       "stats.strength.value": "TAMS.StatStrength",

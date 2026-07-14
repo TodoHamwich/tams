@@ -99,6 +99,22 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
       "acid": "TAMS.DamageType.acid"
     };
 
+    context.passiveRollTypeOptions = {
+      "all":     "TAMS.PassiveRollType.All",
+      "weapon":  "TAMS.PassiveRollType.Weapon",
+      "skill":   "TAMS.PassiveRollType.Skill",
+      "ability": "TAMS.PassiveRollType.Ability"
+    };
+
+    context.creatureSizeOptions = {
+      "tiny":   "TAMS.CreatureSizeOptions.Tiny",
+      "small":  "TAMS.CreatureSizeOptions.Small",
+      "normal": "TAMS.CreatureSizeOptions.Normal",
+      "large":  "TAMS.CreatureSizeOptions.Large",
+      "huge":   "TAMS.CreatureSizeOptions.Huge",
+      "giant":  "TAMS.CreatureSizeOptions.Giant"
+    };
+
     context.modifierTargetOptions = {
       "stats.strength.value": "TAMS.StatStrength",
       "stats.dexterity.value": "TAMS.StatDexterity",

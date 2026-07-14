@@ -223,6 +223,9 @@ export class TAMSBackpackData extends foundry.abstract.TypeDataModel {
         movement: new fields.NumberField({initial: 0, integer: true})
       }),
       tags: new fields.StringField({initial: ""}),
+      sizeGrantHP:      new fields.StringField({initial: ""}),
+      sizeGrantStealth: new fields.StringField({initial: ""}),
+      sizeGrantCombat:  new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
   }
@@ -260,6 +263,9 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       inflictsStatusId: new fields.StringField({initial: ""}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""}),
+      sizeGrantHP:      new fields.StringField({initial: ""}),
+      sizeGrantStealth: new fields.StringField({initial: ""}),
+      sizeGrantCombat:  new fields.StringField({initial: ""}),
       ifStatement: new fields.StringField({initial: ""}),
       ifCost: new fields.NumberField({initial: 0, integer: true, nullable: true}),
       calculator: new fields.SchemaField({
@@ -291,7 +297,12 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         duration: new fields.StringField({initial: "instant"}),
         isStackable: new fields.BooleanField({initial: false})
       }),
-      rechargeType: new fields.StringField({initial: "rest"})
+      rechargeType: new fields.StringField({initial: "rest"}),
+      isPassive:       new fields.BooleanField({initial: false}),
+      passiveEnabled:  new fields.BooleanField({initial: true}),
+      passiveBonus:    new fields.NumberField({initial: 0, nullable: true}),
+      passiveTag:      new fields.StringField({initial: ""}),
+      passiveRollType: new fields.StringField({initial: "all"})
     };
   }
 

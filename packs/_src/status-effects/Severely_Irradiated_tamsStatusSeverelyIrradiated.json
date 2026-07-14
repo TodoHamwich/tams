@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusSeverelyIrradiated"
+  "_id": "tamsStatusSeverelyIrradiated",
+  "_key": "!items.tamsStatusSeverelyIrradiated"
 }

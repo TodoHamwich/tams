@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusCharmed"
+  "_id": "tamsStatusCharmed",
+  "_key": "!items.tamsStatusCharmed"
 }

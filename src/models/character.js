@@ -1,6 +1,7 @@
 import { computeEncumbrance } from '../utils/inventory.js';
 
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1.0, large: 1.5, huge: 2.0, giant: 2.5 };
+const SIZE_ORDER = ['tiny', 'small', 'normal', 'large', 'huge', 'giant'];
 
 /**
  * Read the configured capacity mode safely, defaulting to "weight" when the
@@ -92,6 +93,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({initial: 0}),
         color: new fields.StringField({initial: "#e74c3c"})
       }),
+      tempDR: new fields.NumberField({initial: 0, integer: true, min: 0}),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({initial: 10, min: 0}),
         max: new fields.NumberField({initial: 10, min: 0}),
@@ -123,6 +125,9 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         npcRank: new fields.StringField({initial: "mook"}),
         squadSize: new fields.NumberField({initial: 1, integer: true, min: 0}),
         creatureSize: new fields.StringField({initial: "normal"}),
+        effectiveHPSize: new fields.StringField({initial: ""}),
+        effectiveStealthSize: new fields.StringField({initial: ""}),
+        effectiveCombatSize: new fields.StringField({initial: ""}),
         enabledCurrencies: new fields.ObjectField({initial: {}})
       }),
       upgradePoints: new fields.SchemaField({
@@ -185,6 +190,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.traitHPExtra = 0;
     this.traitStaminaExtra = 0;
     this.traitProfessionBonuses = {};
+    this.abilityPassiveBonuses = {};
+    this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0 };
 
     const traits = this.parent.items.filter(i => i.type === "trait");
     for (const trait of traits) {
@@ -209,6 +216,42 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         }
       }
     }
+
+    // Compute effective sizes from character settings and size grants on traits/abilities.
+    // Takes the highest size category found across all sources.
+    const baseSize = this.settings.creatureSize || 'normal';
+    const bestSize = (a, b) => SIZE_ORDER.indexOf(a) >= SIZE_ORDER.indexOf(b) ? a : b;
+
+    let hpSize      = this.settings.effectiveHPSize      || baseSize;
+    let stealthSize = this.settings.effectiveStealthSize || baseSize;
+    let combatSize  = this.settings.effectiveCombatSize  || baseSize;
+
+    for (const item of this.parent.items) {
+      if (item.type !== "trait" && item.type !== "ability") continue;
+      const s = item.system;
+      if (s.sizeGrantHP)      hpSize      = bestSize(hpSize,      s.sizeGrantHP);
+      if (s.sizeGrantStealth) stealthSize = bestSize(stealthSize, s.sizeGrantStealth);
+      if (s.sizeGrantCombat)  combatSize  = bestSize(combatSize,  s.sizeGrantCombat);
+    }
+
+    this.effectiveHPSize      = hpSize;
+    this.effectiveStealthSize = stealthSize;
+    this.effectiveCombatSize  = combatSize;
+
+    // Accumulate passive roll bonuses from abilities.
+    for (const item of this.parent.items) {
+      if (item.type !== "ability") continue;
+      if (!item.system.isPassive || !item.system.passiveEnabled) continue;
+      const val = item.system.passiveBonus || 0;
+      if (!val) continue;
+      const tag = item.system.passiveTag?.trim().toLowerCase();
+      if (tag) {
+        this.abilityPassiveBonuses[tag] = (this.abilityPassiveBonuses[tag] || 0) + val;
+      } else {
+        const rollType = item.system.passiveRollType || 'all';
+        if (rollType in this.abilityTypeBonus) this.abilityTypeBonus[rollType] += val;
+      }
+    }
   }
 
   /**
@@ -220,7 +263,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const settings = this.settings;
     const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
     const squadSize = settings.squadSize || 1;
-    const sizeMult = SIZE_HP_MULT[settings.creatureSize] ?? 1.0;
+    const sizeMult = SIZE_HP_MULT[this.effectiveHPSize || settings.creatureSize] ?? 1.0;
 
     const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
     for (const key of limbKeys) {

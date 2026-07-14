@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusStunned"
+  "_id": "tamsStatusStunned",
+  "_key": "!items.tamsStatusStunned"
 }

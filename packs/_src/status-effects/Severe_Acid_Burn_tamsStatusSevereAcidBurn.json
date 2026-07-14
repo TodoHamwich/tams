@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusSevereAcidBurn"
+  "_id": "tamsStatusSevereAcidBurn",
+  "_key": "!items.tamsStatusSevereAcidBurn"
 }

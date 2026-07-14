@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusEncumbered"
+  "_id": "tamsStatusEncumbered",
+  "_key": "!items.tamsStatusEncumbered"
 }

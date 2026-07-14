@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusFrozen"
+  "_id": "tamsStatusFrozen",
+  "_key": "!items.tamsStatusFrozen"
 }

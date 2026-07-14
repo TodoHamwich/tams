@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusFleeing"
+  "_id": "tamsStatusFleeing",
+  "_key": "!items.tamsStatusFleeing"
 }

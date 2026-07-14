@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusDeafened"
+  "_id": "tamsStatusDeafened",
+  "_key": "!items.tamsStatusDeafened"
 }

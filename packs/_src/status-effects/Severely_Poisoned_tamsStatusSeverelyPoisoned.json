@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusSeverelyPoisoned"
+  "_id": "tamsStatusSeverelyPoisoned",
+  "_key": "!items.tamsStatusSeverelyPoisoned"
 }

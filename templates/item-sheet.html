@@ -66,6 +66,32 @@
             <hr>
             {{/if}}
 
+            {{#if (or (eq item.type 'trait') (eq item.type 'ability'))}}
+            <hr>
+            <h3>{{localize 'TAMS.SizeGrants'}}</h3>
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.SizeGrantHP'}}</label>
+                <select name="system.sizeGrantHP">
+                    <option value="">{{localize 'TAMS.None'}}</option>
+                    {{selectOptions creatureSizeOptions selected=system.sizeGrantHP localize=true}}
+                </select>
+            </div>
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.SizeGrantStealth'}}</label>
+                <select name="system.sizeGrantStealth">
+                    <option value="">{{localize 'TAMS.None'}}</option>
+                    {{selectOptions creatureSizeOptions selected=system.sizeGrantStealth localize=true}}
+                </select>
+            </div>
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.SizeGrantCombat'}}</label>
+                <select name="system.sizeGrantCombat">
+                    <option value="">{{localize 'TAMS.None'}}</option>
+                    {{selectOptions creatureSizeOptions selected=system.sizeGrantCombat localize=true}}
+                </select>
+            </div>
+            {{/if}}
+
             {{#if (eq item.type 'skill')}}
             <div class="flexrow">
                 <label>{{localize 'TAMS.Familiarity'}}</label>
@@ -340,6 +366,33 @@
                     <input type="number" name="system.bonus" value="{{system.bonus}}" data-dtype="Number"/>
                 </div>
             </div>
+            <hr>
+
+            {{!-- Passive Roll Bonus --}}
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.IsPassiveQ'}}</label>
+                <input type="checkbox" name="system.isPassive" {{checked system.isPassive}}/>
+            </div>
+            {{#if system.isPassive}}
+            <div class="ability-section grid grid-2col" style="margin-bottom: 6px;">
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.PassiveBonus'}}</label>
+                    <input type="number" name="system.passiveBonus" value="{{system.passiveBonus}}"/>
+                </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.PassiveTag'}}</label>
+                    <input type="text" name="system.passiveTag" value="{{system.passiveTag}}" placeholder="{{localize 'TAMS.PassiveTagHint'}}"/>
+                </div>
+            </div>
+            {{#unless system.passiveTag}}
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.PassiveRollTypeLabel'}}</label>
+                <select name="system.passiveRollType">
+                    {{selectOptions passiveRollTypeOptions selected=system.passiveRollType localize=true}}
+                </select>
+            </div>
+            {{/unless}}
+            {{/if}}
             <hr>
 
             {{!-- Section 2: Classification --}}

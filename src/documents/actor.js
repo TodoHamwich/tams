@@ -88,6 +88,17 @@ export class TAMSActor extends Actor {
             }
         }
 
+        if (!isSquadOrHorde && effective > 0) {
+            const pendingTempDR = updates['system.tempDR'];
+            const currentTempDR = pendingTempDR !== undefined ? pendingTempDR : (this.system.tempDR || 0);
+            if (currentTempDR > 0) {
+                const absorbed = Math.min(currentTempDR, effective);
+                effective -= absorbed;
+                updates['system.tempDR'] = currentTempDR - absorbed;
+                report += `  ↳ ${game.i18n.format("TAMS.Combat.TempDRAbsorbed", {absorbed, remaining: currentTempDR - absorbed})}<br>`;
+            }
+        }
+
         if (isSquadOrHorde) {
             const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
             const limbCap = (isAoE ? multiplier : 1) * indMax; 
@@ -139,7 +150,8 @@ export class TAMSActor extends Actor {
         report += `• ${game.i18n.format("TAMS.Checks.DamageReport", {loc, effective, blocked, penLabel, lossLabel: lossMsg, overflowLabel})}<br>`;
         if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
 
-        if (newHp <= 0 && !original.injured && !updates[`system.limbs.${limbKey}.injured`]) {
+        const limbMax = originalLimbStatus[limbKey].max;
+        if (newHp <= -limbMax && !originalLimbStatus[limbKey].injured && !updates[`system.limbs.${limbKey}.injured`]) {
             report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", {limb: limb.label})} !!!</b><br>`;
             updates[`system.limbs.${limbKey}.injured`] = true;
         }
@@ -216,17 +228,21 @@ export class TAMSActor extends Actor {
         const currentVal = limb.value;
         if (isSquadOrHorde) continue;
         
+        const autoInjuredThisHit = updates[`system.limbs.${limbKey}.injured`] === true && !original.injured;
+        const limbHpAfterHit = this.system.limbs[limbKey].value;
+
         if (original.injured && damage > 0 && !original.criticallyInjured) {
+            // Was already injured — escalate to crit check
             pendingChecks.push({ type: 'crit', loc: limb.label, dc: damage + (original.value < 0 ? Math.abs(original.value) : 0), limbKey });
-        } else if (hits.some(h => locationMap[h.location] === limbKey && h.forceCrit === "1")) {
-            if (!original.criticallyInjured) {
-                pendingChecks.push({
-                    type: 'crit',
-                    loc: limb.label,
-                    dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)),
-                    limbKey
-                });
-            }
+        } else if (autoInjuredThisHit && !original.criticallyInjured) {
+            // Single hit drove a healthy limb past -max: injured auto-set, queue crit check
+            pendingChecks.push({ type: 'crit', loc: limb.label, dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)), limbKey });
+        } else if (hits.some(h => locationMap[h.location] === limbKey && h.forceCrit === "1") && !original.criticallyInjured) {
+            // Brutal tag forces a crit check regardless of HP
+            pendingChecks.push({ type: 'crit', loc: limb.label, dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)), limbKey });
+        } else if (limbHpAfterHit <= 0 && !original.injured && damage > 0) {
+            // Limb dropped to 0 or below (but above -max): queue injury roll
+            pendingChecks.push({ type: 'injured', loc: limb.label, dc: damage, limbKey });
         }
     }
 

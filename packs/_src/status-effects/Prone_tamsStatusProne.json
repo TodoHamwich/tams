@@ -9,5 +9,6 @@
     "description": ""
   },
   "flags": {},
-  "_id": "tamsStatusProne"
+  "_id": "tamsStatusProne",
+  "_key": "!items.tamsStatusProne"
 }
