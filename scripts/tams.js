@@ -3494,6 +3494,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const system = this.document.system;
     context.staminaPercentage = Math.clamp(system.stamina.value / (system.stamina.max || 1) * 100, 0, 100);
     context.hpPercentage = Math.clamp(system.hp.value / (system.hp.max || 1) * 100, 0, 100);
+    context.barrierPct = Math.clamp(system.tempDR / (system.hp.max || 1) * 100, 0, 100 - context.hpPercentage);
     context.capacityPercentage = Math.clamp(system.inventory.usedCapacity / (system.inventory.maxCapacity || 1) * 100, 0, 100);
     context.customResourceData = system.customResources.map((res) => {
       return {

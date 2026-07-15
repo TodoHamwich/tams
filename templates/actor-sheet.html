@@ -111,16 +111,15 @@
                                 <input type="number" name="system.hp.value" value="{{system.hp.value}}" max="{{system.hp.max}}" disabled class="small-input"/>
                                 <div class="bar">
                                     <div class="fill" style="width: {{hpPercentage}}%; background: {{system.hp.color}} !important;"></div>
+                                    {{#if (gt system.tempDR 0)}}
+                                    <div class="barrier-fill" style="left: {{hpPercentage}}%; width: {{barrierPct}}%;">
+                                        <input type="number" name="system.tempDR" value="{{system.tempDR}}" min="0" class="barrier-value" title="{{localize 'TAMS.TempDRHint'}}"/>
+                                    </div>
+                                    {{/if}}
                                 </div>
                                 <span class="max-label"> / {{system.hp.max}} </span>
                             </div>
                         </div>
-                    </div>
-
-                    {{!-- Temporary Damage Reduction --}}
-                    <div class="resource-item flexrow" style="margin-bottom: 6px; align-items: center; gap: 6px;">
-                        <label class="resource-label" style="flex: 0 0 auto;">{{localize 'TAMS.TempDR'}}</label>
-                        <input type="number" name="system.tempDR" value="{{system.tempDR}}" min="0" class="small-input" style="width: 60px;" title="{{localize 'TAMS.TempDRHint'}}"/>
                     </div>
 
                     <h3 class="small-header">{{localize 'TAMS.LimbsHPAndArmor'}} <a class="full-heal" data-action="fullHeal" title="{{localize 'TAMS.FullHealAllLimbs'}}"><i class="fas fa-heartbeat"></i></a></h3>
