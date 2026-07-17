@@ -72,6 +72,16 @@
                         {{localize 'TAMS.Tabs.Resistances'}}
                         <a data-action="resistanceAdd" title="{{localize 'TAMS.AddResistance'}}"><i class="fas fa-plus"></i></a>
                     </h3>
+                    {{#if (gt system.tempDR 0)}}
+                    <div class="resistance-row" style="display: grid; grid-template-columns: 2fr 2fr 1fr 24px; gap: 4px; align-items: center; margin-bottom: 4px;">
+                        <span style="font-weight: bold;">{{localize 'TAMS.TempDR'}}</span>
+                        <span style="color: #777; font-size: 0.85em;" title="{{localize 'TAMS.TempDRHint'}}">{{localize 'TAMS.Resistance'}}</span>
+                        <input type="number" name="system.tempDR" value="{{system.tempDR}}" min="0" step="1" style="width: 100%;" title="{{localize 'TAMS.TempDRHint'}}"/>
+                        <a data-action="barrierClear" style="color: #c0392b; cursor: pointer;" title="{{localize 'TAMS.TempDR'}}"><i class="fas fa-trash"></i></a>
+                    </div>
+                    {{else}}
+                    <a data-action="barrierAdd" style="display: block; font-size: 0.85em; color: #777; margin-bottom: 4px; cursor: pointer;" title="{{localize 'TAMS.TempDRHint'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.TempDR'}}</a>
+                    {{/if}}
                     {{#if system.resistances.length}}
                     <div class="resistance-header" style="display: grid; grid-template-columns: 2fr 2fr 1fr 24px; gap: 4px; font-size: 0.8em; font-weight: bold; padding: 2px 4px; color: #555;">
                         <span>{{localize 'TAMS.DamageTypeLabel'}}</span>
@@ -112,18 +122,12 @@
                                 <div class="bar">
                                     <div class="fill" style="width: {{hpPercentage}}%; background: {{system.hp.color}} !important;"></div>
                                     {{#if (gt system.tempDR 0)}}
-                                    <div class="barrier-fill" style="left: {{hpPercentage}}%; width: {{barrierPct}}%;">
+                                    <div class="barrier-fill" style="left: {{barrierLeft}}%; width: {{barrierPct}}%;">
                                         <span class="barrier-value">{{system.tempDR}}</span>
                                     </div>
                                     {{/if}}
                                 </div>
                                 <span class="max-label"> / {{system.hp.max}} </span>
-                            </div>
-                        </div>
-                        <div class="flexrow">
-                            <label class="resource-label">{{localize 'TAMS.TempDR'}}</label>
-                            <div class="bar-container">
-                                <input type="number" name="system.tempDR" value="{{system.tempDR}}" min="0" class="small-input" title="{{localize 'TAMS.TempDRHint'}}"/>
                             </div>
                         </div>
                     </div>

@@ -67,7 +67,7 @@
     "Theme": "Theme",
     "StatUpgradePoints": "Stat UP:",
     "TotalHP": "Total HP",
-    "TempDR": "Temp. DR",
+    "TempDR": "Barrier",
     "IsPassiveQ": "Passive Roll Bonus?",
     "PassiveBonus": "Bonus Value",
     "PassiveTag": "Apply to Tag",
@@ -94,7 +94,7 @@
     "EffectiveCombatSize": "Combat Size Bonus",
     "EffectiveSizeHint": "Grants this size's bonus without changing actual creature size. Takes the highest value from this setting, traits, and abilities.",
     "EffectiveSizeSameAs": "— Same as Creature Size —",
-    "TempDRHint": "Temporary Damage Reduction — absorbs incoming damage and depletes as it absorbs",
+    "TempDRHint": "Barrier — absorbs incoming damage and depletes as it absorbs",
     "Size": "Size",
     "LimbsHPAndArmor": "Limbs (HP / Armor)",
     "Limb": "Limb",
@@ -673,7 +673,7 @@
       "Immune": "Immune to {type} damage (negated)",
       "Resisted": "Resisted {value} {type} damage",
       "Vulnerable": "Vulnerable to {type} (+{value} damage)",
-      "TempDRAbsorbed": "Temp. DR absorbed {absorbed} damage ({remaining} remaining)"
+      "TempDRAbsorbed": "Barrier absorbed {absorbed} damage ({remaining} remaining)"
     },
     "DamageType": {
       "None": "None",

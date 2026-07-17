@@ -43,6 +43,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         setInventoryFilter: TAMSActorSheet.prototype._onSetInventoryFilter,
         resistanceAdd: TAMSActorSheet.prototype._onResistanceAdd,
         resistanceDelete: TAMSActorSheet.prototype._onResistanceDelete,
+        barrierAdd: TAMSActorSheet.prototype._onBarrierAdd,
+        barrierClear: TAMSActorSheet.prototype._onBarrierClear,
         sceneReset: TAMSActorSheet.prototype._onSceneReset,
         callGroupCheck: TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: TAMSActorSheet.prototype._onItemSendDescription
@@ -157,7 +159,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const system = this.document.system;
     context.staminaPercentage = Math.clamp((system.stamina.value / (system.stamina.max || 1)) * 100, 0, 100);
     context.hpPercentage = Math.clamp((system.hp.value / (system.hp.max || 1)) * 100, 0, 100);
-    context.barrierPct = Math.clamp((system.tempDR / (system.hp.max || 1)) * 100, 0, 100 - context.hpPercentage);
+    context.barrierPct = Math.clamp((system.tempDR / (system.hp.max || 1)) * 100, 0, context.hpPercentage);
+    context.barrierLeft = context.hpPercentage - context.barrierPct;
     context.capacityPercentage = Math.clamp((system.inventory.usedCapacity / (system.inventory.maxCapacity || 1)) * 100, 0, 100);
 
     context.customResourceData = system.customResources.map(res => {
@@ -1937,6 +1940,14 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const resources = [...(this.document.system.customResources || [])];
     resources.splice(index, 1);
     return this.document.update({"system.customResources": resources});
+  }
+
+  async _onBarrierAdd(event, target) {
+    return this.document.update({"system.tempDR": 10});
+  }
+
+  async _onBarrierClear(event, target) {
+    return this.document.update({"system.tempDR": 0});
   }
 
   async _onResistanceAdd(event, target) {

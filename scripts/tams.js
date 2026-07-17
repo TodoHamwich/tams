@@ -3430,6 +3430,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         setInventoryFilter: _TAMSActorSheet.prototype._onSetInventoryFilter,
         resistanceAdd: _TAMSActorSheet.prototype._onResistanceAdd,
         resistanceDelete: _TAMSActorSheet.prototype._onResistanceDelete,
+        barrierAdd: _TAMSActorSheet.prototype._onBarrierAdd,
+        barrierClear: _TAMSActorSheet.prototype._onBarrierClear,
         sceneReset: _TAMSActorSheet.prototype._onSceneReset,
         callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: _TAMSActorSheet.prototype._onItemSendDescription
@@ -3517,7 +3519,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const system = this.document.system;
     context.staminaPercentage = Math.clamp(system.stamina.value / (system.stamina.max || 1) * 100, 0, 100);
     context.hpPercentage = Math.clamp(system.hp.value / (system.hp.max || 1) * 100, 0, 100);
-    context.barrierPct = Math.clamp(system.tempDR / (system.hp.max || 1) * 100, 0, 100 - context.hpPercentage);
+    context.barrierPct = Math.clamp(system.tempDR / (system.hp.max || 1) * 100, 0, context.hpPercentage);
+    context.barrierLeft = context.hpPercentage - context.barrierPct;
     context.capacityPercentage = Math.clamp(system.inventory.usedCapacity / (system.inventory.maxCapacity || 1) * 100, 0, 100);
     context.customResourceData = system.customResources.map((res) => {
       return {
@@ -5131,6 +5134,12 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const resources = [...this.document.system.customResources || []];
     resources.splice(index, 1);
     return this.document.update({ "system.customResources": resources });
+  }
+  async _onBarrierAdd(event, target) {
+    return this.document.update({ "system.tempDR": 10 });
+  }
+  async _onBarrierClear(event, target) {
+    return this.document.update({ "system.tempDR": 0 });
   }
   async _onResistanceAdd(event, target) {
     const resistances = [...this.document.system.resistances || []];
