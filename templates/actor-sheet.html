@@ -113,7 +113,7 @@
                                     <div class="fill" style="width: {{hpPercentage}}%; background: {{system.hp.color}} !important;"></div>
                                     {{#if (gt system.tempDR 0)}}
                                     <div class="barrier-fill" style="left: {{hpPercentage}}%; width: {{barrierPct}}%;">
-                                        <input type="number" name="system.tempDR" value="{{system.tempDR}}" min="0" class="barrier-value" title="{{localize 'TAMS.TempDRHint'}}"/>
+                                        <span class="barrier-value">{{system.tempDR}}</span>
                                     </div>
                                     {{/if}}
                                 </div>
