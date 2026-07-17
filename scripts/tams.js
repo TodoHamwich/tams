@@ -1617,36 +1617,59 @@ async function tamsRenderChatMessage(message, html, data) {
     });
   });
   root.querySelectorAll(".tams-contest-check-roll").forEach((btn) => {
-    var _a, _b;
+    var _a, _b, _c, _d;
     const flags = (_a = message.flags) == null ? void 0 : _a.tams;
     if (!(flags == null ? void 0 : flags.isContestedCheck)) return;
-    const resolveContestActor = () => {
-      var _a2, _b2;
-      return ((_b2 = (_a2 = canvas.tokens) == null ? void 0 : _a2.controlled[0]) == null ? void 0 : _b2.actor) ?? game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
-    };
-    const actor = resolveContestActor();
-    if (!actor) {
-      btn.style.display = "none";
-      return;
+    if (game.user.isGM) {
+      btn.textContent = game.i18n.localize("TAMS.ContestedCheck.Contest");
+    } else {
+      const actor = ((_c = (_b = canvas.tokens) == null ? void 0 : _b.controlled[0]) == null ? void 0 : _c.actor) ?? game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
+      if (!actor) {
+        btn.style.display = "none";
+        return;
+      }
+      if (actor.id === flags.initiatorId) {
+        btn.disabled = true;
+        btn.textContent = game.i18n.localize("TAMS.ContestedCheck.YourRoll");
+        return;
+      }
+      if ((_d = flags.contests) == null ? void 0 : _d.some((c) => c.actorId === actor.id)) {
+        btn.disabled = true;
+        btn.textContent = game.i18n.localize("TAMS.ContestedCheck.AlreadyContested");
+        return;
+      }
+      btn.textContent = game.i18n.format("TAMS.ContestedCheck.ContestAs", { name: actor.name });
     }
-    if (actor.id === flags.initiatorId) {
-      btn.disabled = true;
-      btn.textContent = game.i18n.localize("TAMS.ContestedCheck.YourRoll");
-      return;
-    }
-    if ((_b = flags.contests) == null ? void 0 : _b.some((c) => c.actorId === actor.id)) {
-      btn.disabled = true;
-      btn.textContent = game.i18n.localize("TAMS.ContestedCheck.AlreadyContested");
-      return;
-    }
-    btn.textContent = game.i18n.format("TAMS.ContestedCheck.ContestAs", { name: actor.name });
     btn.addEventListener("click", async (ev) => {
-      var _a2, _b2;
+      var _a2, _b2, _c2, _d2;
       ev.preventDefault();
-      const currentActor = resolveContestActor();
-      if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
       const currentFlags = (_a2 = message.flags) == null ? void 0 : _a2.tams;
-      if ((_b2 = currentFlags == null ? void 0 : currentFlags.contests) == null ? void 0 : _b2.some((c) => c.actorId === currentActor.id)) {
+      let currentActor;
+      if (game.user.isGM) {
+        const contested = new Set(((currentFlags == null ? void 0 : currentFlags.contests) ?? []).map((c) => c.actorId));
+        const eligible = game.actors.filter((a) => a.type === "character" && a.id !== (currentFlags == null ? void 0 : currentFlags.initiatorId) && !contested.has(a.id));
+        if (!eligible.length) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
+        const actorOptions = eligible.map((a) => `<option value="${a.id}">${a.name}</option>`).join("");
+        currentActor = await new Promise((resolve) => {
+          new Dialog({
+            title: game.i18n.localize("TAMS.ContestedCheck.DialogTitle"),
+            content: `<div class="form-group">
+                <label>${game.i18n.localize("TAMS.ContestedCheck.ChooseActor")}</label>
+                <select id="cc-actor-choice">${actorOptions}</select>
+              </div>`,
+            buttons: {
+              ok: { label: game.i18n.localize("TAMS.ContestedCheck.Roll"), callback: (html2) => resolve(game.actors.get(html2.find("#cc-actor-choice").val())) },
+              cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+            },
+            default: "ok",
+            close: () => resolve(null)
+          }).render(true);
+        });
+      } else {
+        currentActor = ((_c2 = (_b2 = canvas.tokens) == null ? void 0 : _b2.controlled[0]) == null ? void 0 : _c2.actor) ?? game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
+      }
+      if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
+      if ((_d2 = currentFlags == null ? void 0 : currentFlags.contests) == null ? void 0 : _d2.some((c) => c.actorId === currentActor.id)) {
         return ui.notifications.info(game.i18n.localize("TAMS.ContestedCheck.AlreadyContested"));
       }
       const suggestedStatId = (currentFlags == null ? void 0 : currentFlags.statId) ?? "strength";

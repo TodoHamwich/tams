@@ -508,7 +508,8 @@
       "WhatToRoll": "Roll with:",
       "Roll": "Roll",
       "Submitted": "Contested roll submitted to GM.",
-      "NoCharacter": "No character found to roll with."
+      "NoCharacter": "No character found to roll with.",
+      "ChooseActor": "Contest as which character?"
     },
     "CreatureSize": "Creature Size",
     "SizeBonus": "Size Bonus",
