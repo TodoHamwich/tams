@@ -1873,7 +1873,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     `;
 
     if (event.altKey) {
-      await tamsCreateContestedCheck(this.document, label, finalTotal, rawResult, roll, statId);
+      const contestTotal = statId === 'bravery'
+        ? (effectiveStat + familiarity + bonus - rawResult)
+        : finalTotal;
+      await tamsCreateContestedCheck(this.document, label, contestTotal, rawResult, roll, statId);
     } else {
       ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor: this.document }),

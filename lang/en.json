@@ -718,6 +718,7 @@
       "UnconsciousCheck": "UNCONSCIOUS CHECK",
       "SurvivalCheck": "SURVIVAL CHECK",
       "RollEndurance": "Roll Endurance",
+      "RollVsInjury": "Avoid Injury",
       "RollVsCrit": "Avoid Critical Wound",
       "RollStayAwake": "Roll to Stay Awake",
       "RollSurvival": "Roll to Survive",

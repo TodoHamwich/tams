@@ -1,3 +1,0 @@
-{"name":"Travel Pace Calculator","type":"script","author":"tams-system","img":"icons/svg/walk.svg","command":"game.tams.travelPace();","folder":null,"sort":0,"ownership":{"default":0},"flags":{},"_id":"tamsTravelPace01"}
-{"name":"Item Maker","type":"script","author":"tams-system","img":"icons/svg/item-bag.svg","command":"const actor = canvas.tokens.controlled[0]?.actor ?? null; game.tams.openItemMaker(actor);","folder":null,"sort":100,"ownership":{"default":0},"flags":{},"_id":"tamsItemMaker01"}
-{"name":"Group Check","type":"script","author":"tams-system","img":"icons/svg/d20-highlight.svg","command":"game.tams.groupCheck();","folder":null,"sort":200,"ownership":{"default":0},"flags":{},"_id":"tamsGroupCheck01"}

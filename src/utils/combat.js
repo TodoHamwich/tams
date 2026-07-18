@@ -47,7 +47,13 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
         <p><b>${target.name}</b> ${game.i18n.localize("TAMS.Checks.MustMakeChecks")}:</p>`;
 
     pendingChecks.forEach((check, i) => {
-        if (check.type === 'crit') {
+        if (check.type === 'injured') {
+            content += `
+                <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
+                    <label><b>${game.i18n.format("TAMS.Checks.InjuryCheck", {loc: check.loc})}</b> (DC ${check.dc})</label>
+                    <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px;">${game.i18n.localize("TAMS.Checks.RollVsInjury")}</button>
+                </div>`;
+        } else if (check.type === 'crit') {
             content += `
                 <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
                     <label><b>${game.i18n.format("TAMS.Checks.CritCheck", {loc: check.loc})}</b> (DC ${check.dc})</label>
@@ -100,7 +106,20 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                 const success = total >= check.dc;
 
                 let report = "";
-                if (check.type === 'crit') {
+                if (check.type === 'injured') {
+                    report = `
+                        <div class="tams-roll">
+                            <h3 class="roll-label" style="color: #f39c12;">${game.i18n.format("TAMS.Checks.EnduranceCheckInjury", {loc: check.loc})}</h3>
+                            <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
+                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
+                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total: capped, dc: check.dc})}</div>
+                            ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Checks.SuccessNotInjured")}</div>` : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Checks.FailedInjured")}</div>`}
+                        </div>
+                    `;
+                    if (!success) {
+                        await target.update({[`system.limbs.${check.limbKey}.injured`]: true});
+                    }
+                } else if (check.type === 'crit') {
                     report = `
                         <div class="tams-roll">
                             <h3 class="roll-label">${game.i18n.format("TAMS.Checks.EnduranceCheck", {loc: check.loc})}</h3>
@@ -1015,7 +1034,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           const effectiveStat = stat ? stat.value + (stat.mod || 0) + (stat.traitBonus || 0) : 0;
           const contestRoll = await new Roll("1d100").evaluate();
           raw = contestRoll.total;
-          total = Math.min(raw, effectiveStat);
+          total = sId === 'bravery' ? (effectiveStat - raw) : Math.min(raw, effectiveStat);
           skillDisplayName = statLabels[sId] ?? sId;
         } else {
           const skillName = chosenRollChoice.slice(6);
@@ -1029,8 +1048,9 @@ export async function tamsRenderChatMessage(message, html, data) {
             const bonus = parseInt(skill.system.bonus) || 0;
             const contestRoll = await new Roll("1d100").evaluate();
             raw = contestRoll.total;
-            const capped = Math.min(raw, statValue + statMod);
-            total = capped + fam + bonus;
+            total = sId === 'bravery'
+              ? (statValue + statMod + fam + bonus - raw)
+              : (Math.min(raw, statValue + statMod) + fam + bonus);
             skillDisplayName = skill.name;
             await skill.update({ "system.usedInScene": true });
           } else {

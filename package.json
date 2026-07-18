@@ -10,7 +10,8 @@
     "sass": "sass styles/tams.scss styles/tams.css",
     "sass:watch": "sass --watch styles/tams.scss styles/tams.css",
     "build": "npm run sass && vite build",
-    "pack": "fvtt package pack -n macros --in packs/_src/macros --out packs && fvtt package pack -n status-effects --in packs/_src/status-effects --out packs",
+    "pack": "node scripts/pack-packs.mjs pack",
+    "unpack": "node scripts/pack-packs.mjs unpack",
     "link": "./link-to-foundry.sh",
     "update-local": "./link-to-foundry.sh"
   },

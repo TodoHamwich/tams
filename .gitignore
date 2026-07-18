@@ -22,10 +22,10 @@ package-lock.json
 .claude/
 CLAUDE.md
 
-# LevelDB runtime noise (lock + write-ahead log; data files are tracked)
-packs/*/LOCK
-packs/*/LOG
-packs/*/LOG.old
+# Compiled LevelDB packs — built from packs/_src/ via `npm run pack`, not committed
+packs/macros/
+packs/status-effects/
+packs/*.db
 
 # Local dev / docs
 update-local.ps1

@@ -63,9 +63,23 @@ export class TAMSActor extends Actor {
         const otherArmor = limb.otherArmor || 0;
         const armor = Math.floor(armorValue + otherArmor);
         const effectiveArmor = Math.max(0, armor - armourPen);
-        
-        let effective = Math.max(0, incoming - effectiveArmor);
-        const blocked = Math.min(incoming, effectiveArmor);
+
+        // Barrier absorbs incoming damage before armor
+        let barrierLabel = "";
+        let adjustedIncoming = incoming;
+        if (!isSquadOrHorde && adjustedIncoming > 0) {
+            const pendingTempDR = updates['system.tempDR'];
+            const currentTempDR = pendingTempDR !== undefined ? pendingTempDR : (this.system.tempDR || 0);
+            if (currentTempDR > 0) {
+                const absorbed = Math.min(currentTempDR, adjustedIncoming);
+                adjustedIncoming -= absorbed;
+                updates['system.tempDR'] = currentTempDR - absorbed;
+                barrierLabel = game.i18n.format("TAMS.Combat.TempDRAbsorbed", {absorbed, remaining: currentTempDR - absorbed});
+            }
+        }
+
+        let effective = Math.max(0, adjustedIncoming - effectiveArmor);
+        const blocked = Math.min(adjustedIncoming, effectiveArmor);
         let overflow = 0;
 
         let resistanceLabel = "";
@@ -85,17 +99,6 @@ export class TAMSActor extends Actor {
                     effective = effective + match.value;
                     resistanceLabel = game.i18n.format("TAMS.Combat.Vulnerable", {value: match.value, type: typeName});
                 }
-            }
-        }
-
-        if (!isSquadOrHorde && effective > 0) {
-            const pendingTempDR = updates['system.tempDR'];
-            const currentTempDR = pendingTempDR !== undefined ? pendingTempDR : (this.system.tempDR || 0);
-            if (currentTempDR > 0) {
-                const absorbed = Math.min(currentTempDR, effective);
-                effective -= absorbed;
-                updates['system.tempDR'] = currentTempDR - absorbed;
-                report += `  ↳ ${game.i18n.format("TAMS.Combat.TempDRAbsorbed", {absorbed, remaining: currentTempDR - absorbed})}<br>`;
             }
         }
 
@@ -136,7 +139,7 @@ export class TAMSActor extends Actor {
         limbDamageReceived[limbKey] += effective;
 
         let lossLabel = "";
-        if (armorValue > 0 && (effective + overflow) < incoming) {
+        if (armorValue > 0 && (effective + overflow) < adjustedIncoming) {
             const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
             const pending = updates[key];
             const currentVal = pending !== undefined ? pending : (isAltArmor ? limb.armorMax : limb.armor);
@@ -148,6 +151,7 @@ export class TAMSActor extends Actor {
         const overflowLabel = overflow > 0 ? game.i18n.format("TAMS.Checks.OverflowCapped", {overflow}) : "";
         const lossMsg = lossLabel ? `, ${lossLabel}` : "";
         report += `• ${game.i18n.format("TAMS.Checks.DamageReport", {loc, effective, blocked, penLabel, lossLabel: lossMsg, overflowLabel})}<br>`;
+        if (barrierLabel) report += `  ↳ ${barrierLabel}<br>`;
         if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
 
         const limbMax = originalLimbStatus[limbKey].max;
@@ -409,7 +413,7 @@ export class TAMSActor extends Actor {
 
         // Custom resources linked to this stat
         for (const [idx, res] of customResources.entries()) {
-          if (res.stat !== statKey || res.customValue) continue;
+          if (res.stat !== statKey || res.stat === "custom") continue;
           const resDelta = Math.floor(statDelta * (res.mult ?? 1));
           if (resDelta === 0) continue;
           const rawVal = (customResources[idx].value ?? 0) + resDelta;
@@ -432,7 +436,37 @@ export class TAMSActor extends Actor {
         }
       }
 
-      if (customResourcesChanged && !foundry.utils.hasProperty(updateData, "system.customResources"))
+      // Stamina mult change: adjust stamina.value by the delta in max
+      if (foundry.utils.hasProperty(updateData, "system.stamina.mult") &&
+          !foundry.utils.hasProperty(updateData, "system.stamina.value")) {
+        const newMult = foundry.utils.getProperty(updateData, "system.stamina.mult");
+        const oldMult = this.system.stamina?.mult ?? 1;
+        if (newMult !== oldMult) {
+          const endTotal = this.system.stats.endurance.total;
+          const delta = Math.floor(endTotal * newMult) - Math.floor(endTotal * oldMult);
+          if (delta !== 0)
+            foundry.utils.setProperty(updateData, "system.stamina.value", this.system.stamina.value + delta);
+        }
+      }
+
+      // Custom resource mult changes: adjust value by the delta in max
+      for (let idx = 0; idx < customResources.length; idx++) {
+        const multPath = `system.customResources.${idx}.mult`;
+        if (!foundry.utils.hasProperty(updateData, multPath)) continue;
+        const origRes = this.system.customResources[idx];
+        const newMult = foundry.utils.getProperty(updateData, multPath);
+        const oldMult = origRes.mult ?? 1;
+        if (newMult === oldMult || origRes.stat === "custom") continue;
+        const statVal = this.system.stats[origRes.stat]?.total || 0;
+        const delta = Math.floor(statVal * newMult) - Math.floor(statVal * oldMult);
+        if (delta === 0) continue;
+        customResources[idx].value = (customResources[idx].value ?? 0) + delta;
+        customResources[idx].mult = newMult;
+        delete updateData[multPath];
+        customResourcesChanged = true;
+      }
+
+      if (customResourcesChanged)
         foundry.utils.setProperty(updateData, "system.customResources", customResources);
 
       if (warnings.length) {
@@ -561,7 +595,7 @@ export class TAMSActor extends Actor {
       const customResources = foundry.utils.duplicate(this.system.customResources ?? []);
       let changed = false;
       for (const [idx, res] of customResources.entries()) {
-        if (res.stat !== statKey || res.customValue) continue;
+        if (res.stat !== statKey || res.stat === "custom") continue;
         const delta = Math.floor(statDelta * (res.mult ?? 1));
         if (delta === 0) continue;
         const rawVal = (customResources[idx].value ?? 0) + delta;
