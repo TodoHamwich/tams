@@ -184,7 +184,9 @@
       "SortSize": "Sort: Size",
       "SortQuantity": "Sort: Quantity",
       "FilterAll": "All Types",
-      "Stow": "Stow (to loose)"
+      "Stow": "Stow (to loose)",
+      "SectionEquipped": "Equipped / In Hand",
+      "SectionStowed": "Loose / Stowed"
     },
     "Repair": {
       "Title": "Repair: {name}",

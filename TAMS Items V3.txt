@@ -1,0 +1,1338 @@
+LEGACY OF THE GODS - ITEM PRICE LIST (V2 - METAL CURRENCY)
+
+Money:
+ 1 Gold = 20 Silver
+ 1 Silver = 12 Copper
+ 1 Copper = 4 Farthings
+
+===================================================================================
+ADVENTURING GEAR
+===================================================================================
+
+CONTAINERS & STORAGE
+Item                                Price
+Backpack                            2 Silver
+Belt pouch                          5 Copper
+Waterskin                           2 Copper
+Vial (glass)                        1 Silver
+Bottle                              4 Copper
+Flask                               3 Copper
+Sack (small)                        1 Copper
+Sack (large)                        2 Copper
+Chest (small)                       6 Copper
+Chest (medium)                      1 Silver
+Barrel                              3 Copper
+
+LIGHT SOURCES
+Item                                Price
+Candle (tallow)                     1 Copper
+Candle (wax)                        5 Copper
+Torch                               1 Copper
+Lantern (hooded)                    7 Silver
+Lantern (bullseye)                  12 Silver
+Oil (per pint)                      1 Silver
+
+ROPE & CLIMBING
+Item                                Price
+Rope (hemp, 50 ft)                  1 Silver
+Rope (silk, 50 ft)                  10 Silver
+Chain (10 ft)                       5 Silver
+Grappling hook                      1 Silver
+Piton                               1 Copper
+
+TOOLS & EQUIPMENT
+Item                                Price
+Crowbar                             2 Silver
+Hammer                              1 Silver
+Axe                                 5 Copper
+Shovel                              2 Copper
+Spade                               2 Copper
+Blanket                             5 Copper
+Bedroll                             1 Silver
+Tent (small)                        5 Silver
+Tent (large)                        15 Silver
+Lock (simple)                       2 Silver
+Lock (good)                         8 Silver
+Lock (superior)                     15 Silver
+Manacles                            2 Silver
+Mirror (small steel)                5 Silver
+Fishing tackle                      1 Silver
+
+===================================================================================
+FOOD & DRINK
+===================================================================================
+
+MEALS & RATIONS
+Item                                Price
+Trail rations (per day)             5 Copper
+Iron rations (preserved, per week)  7 Silver
+Bread (loaf)                        2 Copper
+Cheese (per lb)                     4 Copper
+Dried meat (per lb)                 6 Copper
+Fresh meat (per lb)                 3 Copper
+
+BEVERAGES (per gallon)
+Item                                Price
+Ale (common)                        1 Copper
+Ale (good)                          1½ Copper
+Beer                                1 Copper
+Wine (common)                       3 Copper
+Wine (good)                         8 Copper
+Wine (fine)                         2 Silver
+
+SPICES & LUXURY FOODS
+Item                                Price (per lb)
+Pepper                              4 Silver
+Saffron                             12 Silver
+Spices (common)                     1 Silver
+Spices (rare)                       3 Silver
+Dried fruit                         3 Copper
+Sugar                               2 Silver
+
+===================================================================================
+ARMOR
+===================================================================================
+
+AV  = Armor Value (flat damage reduction per hit)
+AHP = Armor Hit Points (hits absorbed before armor is destroyed; halved if
+      a single hit deals 2× the AV or more)
+Grade: Low (max 10) | Normal (max 25) | High (max 40)
+
+LIGHT ARMOR
+Item                                Price               AV      AHP     Grade
+Padded armor                        5 Silver            4       5       Low
+Leather armor                       10 Silver           6       7       Low
+Studded leather                     1 Gold 5 Silver     8       8       Low
+
+MEDIUM ARMOR
+Item                                Price               AV      AHP     Grade
+Hide armor                          10 Silver           8       10      Low
+Chain shirt                         2 Gold 10 Silver    10      15      Normal
+Scale mail                          2 Gold 10 Silver    12      10      Normal
+Breastplate                         16 Silver           15      18      Normal
+
+HEAVY ARMOR
+Item                                Price               AV      AHP     Grade
+Ring mail                           1 Gold 10 Silver    12      12      Normal
+Chain mail                          5 Gold              15      18      Normal
+Splint mail                         10 Gold             20      20      High
+Banded mail                         12 Gold 10 Silver   22      22      High
+Half-plate                          30 Gold             28      25      High
+Full plate                          80 Gold             35      30      High
+
+SHIELDS
+Shields add their AV to the covered limb when actively used to block.
+Item                                Price               AV      AHP
+Buckler                             2 Silver            5       6
+Light wooden shield                 3 Silver            6       8
+Light steel shield                  5 Silver            8       12
+Heavy wooden shield                 7 Silver            10      12
+Heavy steel shield                  10 Silver           12      18
+Tower shield                        15 Silver           15      20
+
+ARMOR ACCESSORIES
+Item                                Price               AV      AHP
+Helmet (simple)                     5 Silver            5       6
+Helmet (full)                       15 Silver           10      12
+Gauntlets                           2 Silver            4       6
+
+===================================================================================
+WEAPONS
+===================================================================================
+
+SIMPLE MELEE WEAPONS
+Item                                Price
+Club                                1 Copper
+Dagger                              2 Silver
+Light mace                          5 Silver
+Heavy mace                          12 Silver
+Quarterstaff                        2 Copper
+Sickle                              6 Copper
+Spear                               8 Copper
+
+SIMPLE RANGED WEAPONS
+Item                                Price
+Light crossbow                      5 Silver
+Heavy crossbow                      15 Silver
+Dart                                5 Copper
+Javelin                             1 Silver
+Sling                               1 Copper
+
+MARTIAL MELEE WEAPONS
+Item                                Price
+Longsword                           15 Silver
+Shortsword                          10 Silver
+Bastard sword                       1 Gold 15 Silver
+Greatsword                          2 Gold 10 Silver
+Scimitar                            15 Silver
+Rapier                              1 Gold
+Battleaxe                           10 Silver
+Greataxe                            1 Gold 10 Silver
+Handaxe                             6 Silver
+Warhammer                           12 Silver
+Maul                                10 Silver
+Flail                               8 Silver
+Morningstar                         8 Silver
+Lance                               3 Silver
+Pike                                2 Silver
+Halberd                             10 Silver
+Glaive                              8 Silver
+Trident                             5 Silver
+
+MARTIAL RANGED WEAPONS
+Item                                Price
+Longbow                             2 Silver
+Shortbow                            1 Silver
+Composite longbow                   10 Silver
+Composite shortbow                  5 Silver
+
+AMMUNITION
+Item                                Price
+Arrows (20)                         1 Silver
+Crossbow bolts (20)                 1 Silver
+Sling bullets (20)                  4 Copper
+
+WEAPON ACCESSORIES
+Item                                Price
+Quiver                              1 Silver
+Bow case                            2 Silver
+Scabbard (basic)                    1 Silver
+Scabbard (quality)                  5 Silver
+Weapon belt                         2 Silver
+
+===================================================================================
+REPAIR COSTS
+===================================================================================
+WIP
+EVERYTHING IN THIS SECTION CAN BE CHANGED AT ANY TIME.
+WIP
+
+General rule: Repair Cost ≈ (Missing AHP / Max AHP) × (Item Price × 0.5)
+Requires a craftsman with the appropriate tools and skill.
+Full rebuild (0 AHP remaining) costs 60-75% of the original item price.
+
+ARMOR REPAIR (by grade)
+Grade       Repair per AHP point restored       Typical turnaround
+Low         2 - 4 Silver                        1-2 hours per point
+Normal      5 - 10 Silver                       2-4 hours per point
+High        1 - 3 Gold                          half day per point
+
+Specific operations:
+Item                                Cost
+Patch padded / leather armor        1 - 3 Silver
+Re-stitch studded leather           2 - 5 Silver
+Replace broken chain links          3 - 8 Silver
+Straighten / replace plate section  5 - 20 Silver per section
+Replace visor or buckle             1 - 4 Silver
+Full armor overhaul (any grade)     40 - 60% of item price
+
+WEAPON REPAIR
+Item                                Cost
+Re-edge a bladed weapon             2 - 5 Silver
+Replace broken wooden haft / grip   1 - 3 Silver
+Re-set a loose crossbow prod        3 - 6 Silver
+Repair a cracked bow limb           4 - 8 Silver (or replace)
+Full weapon overhaul                30 - 50% of item price
+
+===================================================================================
+ANIMALS & MOUNTS
+===================================================================================
+
+HORSES
+Item                                Price
+Pony                                15 Silver
+Riding horse                        3 Gold
+Draft horse                         1 Gold
+Light warhorse                      7 Gold 10 Silver
+Heavy warhorse                      20 Gold
+Destrier (elite warhorse)           50 Gold
+
+LIVESTOCK
+Item                                Price
+Chicken                             2 Copper
+Goose                               6 Copper
+Pig                                 3 Silver
+Sheep                               1 Silver 5 Copper
+Goat                                1 Silver
+Cow                                 8 Silver
+Ox                                  13 Silver
+
+OTHER ANIMALS
+Item                                Price
+Dog (guard)                         1 Gold
+Dog (hunting)                       1 Gold 10 Silver
+Hawk (hunting)                      10 Gold
+Falcon (hunting)                    20 Gold
+Cat                                 2 Copper
+Mule                                8 Silver
+Donkey                              6 Silver
+
+TACK & HARNESS
+Item                                Price
+Saddle (riding)                     10 Silver
+Saddle (military)                   1 Gold
+Saddle (pack)                       5 Silver
+Saddlebags                          4 Silver
+Bridle                              2 Silver
+Bit and bridle                      1 Silver
+Barding (leather)                   2 Gold
+Barding (chain)                     20 Gold
+Barding (plate)                     80 Gold
+Feed (per day)                      5 Copper
+Stabling (per day)                  5 Copper
+
+===================================================================================
+SHIPS & WATERCRAFT
+===================================================================================
+
+SMALL VESSELS (oar or pole powered)
+Item                                Price
+Coracle (1 person, wicker & hide)   1 Silver
+Punt / flat-bottomed skiff          3 Silver
+Canoe (dugout, 2-3 person)          4 Silver
+Rowboat (2-4 person)                7 Silver
+Longboat (8-12 oarsmen)             8 Gold
+
+RIVER & COASTAL VESSELS (sail-assisted)
+Item                                Price
+Small fishing boat (4-6 crew)       5 Gold
+River barge (cargo, 10-20 ton)      20 Gold
+Coastal trader / cog (30-60 ton)    200 - 500 Gold
+Caravel (light, 3 mast)             600 - 1500 Gold
+
+OCEAN & WAR VESSELS
+Item                                Price
+Carrack (merchant, 200+ ton)        1000 - 3000 Gold
+War galley (oar + sail, 50 oarsmen) 2000 - 5000 Gold
+Man-of-war / great warship          10000+ Gold
+
+SHIP OPERATING COSTS (per day unless noted)
+Item                                Price
+Mooring fee (small harbor)          3 Copper
+Mooring fee (major port)            8 Copper
+Harbor tax (per week)               3 - 10 Silver
+Sailor's wage                       1 Silver
+Ship's mate wage                    4 Silver
+Captain's wage                      8 - 15 Silver
+Rations per sailor (per day)        8 Copper
+
+NAVIGATION & RIGGING EQUIPMENT
+Item                                Price
+Sea chart (per region)              2 - 8 Gold
+Astrolabe / sextant                 10 - 20 Gold
+Ship's anchor (small)               3 Silver
+Ship's anchor (large)               2 Gold
+Signal flags (full set)             5 Silver
+Ship's bell                         10 Silver
+Sounding line (50 ft)               2 Silver
+Tar and pitch (per gallon)          3 Copper
+
+===================================================================================
+CLOTHING
+===================================================================================
+
+COMMON CLOTHING
+Item                                Price
+Peasant's outfit                    2 Silver
+Laborer's outfit                    5 Silver
+Traveler's outfit                   1 Gold
+Scholar's outfit                    2 Gold
+Merchant's outfit                   2 Gold
+Noble's outfit                      10 Gold
+Royal outfit                        30+ Gold
+
+INDIVIDUAL ITEMS
+Item                                Price
+Tunic (peasant)                     2 Silver
+Tunic (quality)                     5 Silver
+Robe (simple)                       1 Silver
+Robe (quality)                      5 Silver
+Cloak (common)                      5 Silver
+Cloak (fine)                        1 Gold
+Boots (common)                      6 Copper
+Boots (riding)                      3 Silver
+Shoes                               4 Copper
+Belt                                1 Silver
+Hat (common)                        1 Silver
+Gloves                              1 Silver
+Fur-lined clothing                  +6 Silver
+
+CLOTH (per yard)
+Item                                Price
+Canvas                              1 Silver
+Linen (common)                      4 Copper
+Wool (common)                       1 Silver
+Wool (quality)                      5 Silver
+Silk                                10 Silver
+Velvet                              12 Silver
+
+===================================================================================
+TRADE GOODS & SERVICES
+===================================================================================
+
+LODGING (per day)
+Item                                Price
+Common room (floor space)           1 Copper
+Poor room                           2 Copper
+Common room (bed)                   5 Copper
+Good room                           1 Silver
+Fine room                           2 Silver
+Noble suite                         5+ Silver
+
+MEALS (at inn/tavern)
+Item                                Price
+Poor meal                           1 Copper
+Common meal                         3 Copper
+Good meal                           1 Silver
+Fine meal                           3 Silver
+Banquet (per person)                5+ Silver
+
+PROFESSIONAL SERVICES (per day)
+Item                                Price
+Unskilled laborer                   1 Silver
+Skilled laborer                     2 Silver
+Craftsman                           3 Silver
+Master craftsman                    5 Silver
+Lawyer                              5 Silver
+Scribe (to copy documents)          1 Silver
+
+HIRELING COSTS (per day)
+Item                                Price
+Porter                              1 Silver
+Guide (local)                       2 Silver
+Guide (wilderness)                  5 Silver
+Torchbearer                         1 Silver
+Mercenary (light infantry)          2 Copper
+Mercenary (archer)                  3 Copper
+Mercenary (cavalry)                 1 Silver 6 Copper
+Mercenary (knight)                  2 Silver
+Man-at-arms                         1 Silver
+
+TRANSPORTATION
+Item                                Price
+Cart rental (per day)               2 Silver
+Wagon rental (per day)              5 Silver
+Ferry crossing                      1 Copper
+Ship passage (per mile)             1 Copper
+Coach travel (per mile)             3 Copper
+
+===================================================================================
+PROPERTY & REAL ESTATE
+===================================================================================
+
+Prices vary significantly by location. Urban property in a major city commands
+2-5× the listed price. Rural prices assume settled, productive land.
+
+LAND (purchase, per acre)
+Item                                Price
+Scrubland / wasteland               3 - 8 Copper
+Common pasture (right to graze)     5 - 15 Copper
+Woodland                            8 Copper - 2 Silver
+Poor farmland                       5 - 15 Silver
+Good farmland                       2 - 5 Gold
+Prime farmland (irrigated, rich)    5 - 12 Gold
+
+RESIDENTIAL PROPERTY (purchase)
+Item                                Price
+Rural hovel / croft                 1 - 3 Gold
+Rural cottage                       3 - 6 Gold
+Craftsman's town house              10 - 25 Gold
+Merchant's townhouse                30 - 80 Gold
+Noble's townhouse                   100 - 300 Gold
+Manor house (with outbuildings)     500 - 2000 Gold
+Fortified tower / keep              2000 - 6000 Gold
+Castle (small, defensible)          10000+ Gold
+
+BUSINESS PREMISES (purchase)
+Item                                Price
+Market stall (permanent lease)      5 - 15 Gold
+Small shop                          10 - 25 Gold
+Workshop (craftsman, with tools)    20 - 50 Gold
+Smithy (forge included)             25 - 65 Gold
+Tavern (small, with cellar)         25 - 60 Gold
+Inn (established, with stables)     60 - 160 Gold
+Warehouse (town, medium)            20 - 55 Gold
+Watermill or windmill               60 - 200 Gold
+
+ANNUAL RENTAL
+Item                                Price per year
+Rural cottage                       3 - 8 Silver
+Small town dwelling                 1 - 2 Gold
+Merchant's town dwelling            2 - 5 Gold
+Shop premises                       8 Silver - 1 Gold 10 Silver
+Warehouse (medium)                  1 - 3 Gold
+
+ANNUAL INCOME FROM PROPERTY
+Item                                Typical Income
+Farmland per acre (worked)          5 - 15 Copper
+Mill (water or wind)                5 - 20 Gold
+Tavern / inn (net profit)           10 - 60 Gold
+Rental property (per dwelling)      8 Silver - 5 Gold
+
+===================================================================================
+TOOLS & INSTRUMENTS
+===================================================================================
+
+ARTISAN TOOLS
+Item                                Price
+Alchemist's supplies                50 Silver
+Blacksmith's tools                  10 Silver
+Carpenter's tools                   8 Silver
+Cartographer's tools                15 Silver
+Cook's utensils                     1 Silver
+Glassblower's tools                 1 Gold 10 Silver
+Jeweler's tools                     2 Gold 10 Silver
+Leatherworker's tools               5 Silver
+Mason's tools                       10 Silver
+Painter's supplies                  10 Silver
+Potter's tools                      10 Silver
+Weaver's tools                      1 Silver
+Woodcarver's tools                  1 Silver
+
+MUSICAL INSTRUMENTS
+Item                                Price
+Flute                               2 Silver
+Lute                                1 Gold 15 Silver
+Harp                                5 Gold
+Drum                                6 Silver
+Horn                                3 Silver
+
+GAMING & ENTERTAINMENT
+Item                                Price
+Dice set                            1 Silver
+Playing cards                       5 Silver
+Chess set (simple)                  1 Silver
+Chess set (quality)                 1 Gold
+
+===================================================================================
+SPECIALIST & CRIMINAL GEAR
+===================================================================================
+
+Most of these items are available through black market contacts or specialist
+suppliers. Prices reflect the risk premium; in cities with active guilds, members
+may pay 30-50% less. Possessing some items is itself illegal in many jurisdictions.
+
+THIEVES' TOOLS
+Item                                Price
+Basic lockpicks (crude set)         4 Silver
+Quality lockpicks                   15 Silver
+Master's picks (superior set)       5 Gold
+Rope ladder (10 ft sections)        2 Silver per section
+Glass cutter                        2 Silver
+Concealed pry bar                   1 Silver 6 Copper
+Rubber-soled shoes (silent)         4 Silver
+Climbing claws (hand & foot)        3 Silver
+Chalk (marks, signals)              1 Copper
+Chalk (different colors, set)       8 Copper
+
+ASSASSIN'S GEAR
+Item                                Price
+Garrote (wire or cord)              3 Copper
+Blowgun                             5 Silver
+Blowgun darts (10)                  2 Silver
+Concealed wrist sheath              2 Silver
+Night suit (dark, padded, silent)   3 Silver
+Grappling hook (folding, conceal)   2 Silver
+Smoke pellet (clay, fuse)           4 Silver each
+Flash powder (per charge)           3 Silver each
+
+DISGUISE & FORGERY
+Item                                Price
+Disguise kit (basic: makeup, wigs)  5 Silver
+Disguise kit (full: prosthetics)    2 Gold
+Forger's kit (inks, seals, quills)  8 Silver
+Blank official paper (per sheet)    1 - 3 Silver
+Wax seal stamp (copy of a known)    2 - 10 Silver
+Invisible ink (per vial)            3 Silver
+Sympathetic ink (reveals with heat) 5 Silver
+
+SPY & INFILTRATION GEAR
+Item                                Price
+Signal mirror (pocket)              1 Silver 5 Copper
+Ear trumpet (hearing at distance)   1 Silver
+Message tube (waterproof, sealed)   1 Silver
+Hollow heel insert (concealed)      4 Silver
+Smuggler's belt (hidden pockets)    3 Silver
+Dead drop container (buried tin)    5 Copper
+Codebook (blank, cipher grid)       4 Silver
+One-time cipher pad (per sheet)     2 Copper
+
+===================================================================================
+BOOKS & EDUCATION
+===================================================================================
+
+BOOKS
+Item                                Price
+Small book (primer)                 5 Silver
+Common book                         1 Gold
+Quality book                        3 Gold
+Large tome                          5 Gold
+Illuminated manuscript              10+ Gold
+Spellbook (blank)                   1 Gold 15 Silver
+
+WRITING MATERIALS
+Item                                Price
+Ink (per vial)                      8 Silver
+Ink pen                             2 Copper
+Paper (per sheet)                   4 Copper
+Parchment (per sheet)               1 Silver
+Scroll case                         1 Silver
+Sealing wax                         1 Silver
+
+EDUCATION (per year)
+Item                                Price
+Apprenticeship (trade)              1 Gold
+Scholar's education                 3 Gold
+University (basic)                  2 Gold
+University (quality)                7 Gold
+
+===================================================================================
+RELIGIOUS & HEALING
+===================================================================================
+
+RELIGIOUS ITEMS
+Item                                Price
+Holy symbol (wooden)                1 Silver
+Holy symbol (silver)                2 Gold 10 Silver
+Holy water (per vial)               2 Silver 5 Copper
+Prayer book                         10 Silver
+Incense (per block)                 1 Silver
+Vestments (common)                  5 Silver
+Vestments (fine)                    2 Gold
+
+HEALING SUPPLIES
+Item                                Price
+Healer's kit                        5 Silver
+Bandages (set of 10)                5 Copper
+Herbs (medicinal, common)           5 Copper
+Herbs (medicinal, rare)             1 Silver
+Antitoxin (vial)                    2 Gold 10 Silver
+Healing poultice                    5 Silver
+
+RELIGIOUS SERVICES
+Item                                Price
+Blessing                            1 Silver
+Funeral (common)                    1 Gold
+Funeral (quality)                   5 Gold
+Wedding (simple)                    1 Gold
+Wedding (elaborate)                 3 Gold
+Donation (expected)                 1+ Silver
+
+===================================================================================
+MISCELLANEOUS GOODS
+===================================================================================
+
+HOUSEHOLD ITEMS
+Item                                Price
+Chair                               3 Copper
+Table                               6 Copper
+Stool                               4 Copper
+Bed (simple)                        1 Silver
+Bed (quality)                       5 Silver
+Mattress                            2 Copper
+Pillow                              1 Copper
+Blanket                             5 Copper
+Sheet                               4 Copper
+Towel                               6 Copper
+Ceramic pot                         2 Copper
+Brass pot                           2 Silver
+Iron pot                            1 Silver
+Kettle                              1 Silver
+Basin and ewer                      1 Silver 8 Copper
+Bucket                              5 Copper
+Broom                               2 Copper
+
+JEWELRY & LUXURY ITEMS
+Item                                Price
+Signet ring (brass)                 5 Silver
+Ring (silver)                       1 Gold
+Ring (gold)                         5 Gold
+Ring with gem                       10+ Gold
+Necklace (silver)                   2 Gold
+Necklace (gold)                     10 Gold
+Bracelet (silver)                   1 Gold 10 Silver
+Earrings (silver pair)              15 Silver
+Crown (simple)                      20 Gold
+Crown (royal)                       500+ Gold
+
+GENERAL GOODS
+Item                                Price
+Soap (per lb)                       5 Copper
+Perfume (per vial)                  5 Silver
+Hourglass                           2 Gold 10 Silver
+Spyglass                            50 Gold
+Magnifying glass                    5 Gold
+Compass                             5 Gold
+Merchant's scale                    2 Silver
+
+===================================================================================
+MAGIC ITEMS & COMPONENTS
+===================================================================================
+WIP
+EVERYTHING IN THIS SECTION CAN BE CHANGED AT ANY TIME.
+WIP
+
+MAGIC ITEM PRICING FORMULA:
+Base Cost = (Total Ability Cost × 10) in Silver Pieces
+1 Silver Piece = 1 Copper (for this system)
+Therefore: Magic Item Cost = Ability Cost × 10 Copper
+
+For items with charges:
+- Each charge adds +1 to the ability cost before multiplying
+- Example: 5-cost ability with 3 charges = (5+3) × 10 = 80 Copper
+
+MATERIAL COMPONENTS FOR SPELLCASTING
+Item                                Price               Effect
+Component pouch (basic supplies)    2 Gold 5 Silver     Standard components
+Bat guano                           5 Copper            Fire/explosion spells
+Phosphorus                          1 Silver            Light/flame spells
+Powdered silver                     5 Silver            Anti-undead/holy spells
+Rare herbs (medicinal)              1 - 5 Gold          Healing/restoration
+Exotic minerals                     2 - 10 Gold         Enhancement/protection
+Crushed gems (per Gold value)       Market price        Reduces spell cost by 1 per Gold
+Dragon scales                       10 - 50 Gold        High-power spells
+Phoenix feather                     100+ Gold           Resurrection/life magic
+Void crystal shard                  20 - 100 Gold       Teleportation/space magic
+
+CONSUMABLES - POTIONS
+Note: Potions are typically made in batches. Prices shown are per potion retail price.
+Batch crafting reduces per-unit cost by 20-30% for the alchemist.
+
+Healing Potion Pricing Formula:
+Base Cost = (Healing Ability Cost × 10 Copper) + Material Costs
+Healing Ability Cost = 1 Mana per 5 HP healed (per ability rules)
+
+Item                                Ability Cost    Materials       Total Price (each)  Effect
+Potion of Minor Healing (10 HP)     2 Mana         5 Copper        2 Silver 5 Copper   Restores 10 HP (Thorax)
+Potion of Healing (30 HP)           6 Mana         1 Silver        6 Silver 1 Copper   Restores 30 HP (Thorax + spillover)
+Potion of Greater Healing (60 HP)   12 Mana        3 Silver        13 Silver           Restores 60 HP (Full Thorax + more)
+Potion of Superior Healing (150 HP) 30 Mana        2 Gold          4 Gold 10 Silver    Restores 150 HP (Most body parts)
+
+Superior Healing Potion Materials (Rare/Monster parts required):
+- Troll blood or Hydra regeneration gland (1-1.5 Gold)
+- Phoenix tears or Unicorn horn shavings (10-15 Silver)
+- Rare medicinal herbs (blessed moonflower, etc.) (5-10 Silver)
+- Crushed healing crystals or dragon heartscale (5 Silver)
+
+Resource Restoration Potions:
+Item                                Ability Cost    Materials       Total Price (each)  Effect
+Potion of Stamina (10)              2 Mana         1 Silver        3 Silver            Restores 10 Stamina
+Potion of Stamina (25)              5 Mana         2 Silver        6 Silver 2 Copper   Restores 25 Stamina
+Potion of Mana (10)                 2 Mana         2 Silver        4 Silver            Restores 10 Mana
+Potion of Mana (25)                 5 Mana         5 Silver        10 Silver           Restores 25 Mana
+
+Other Potions:
+Item                                Ability Cost    Materials       Total Price (each)  Effect
+Antitoxin (basic)                   3 Mana         5 Silver        7 Silver 6 Copper   Removes common poison
+Antidote (specific poison)          5-10 Mana      5-20 Silver     10 Silver - 2 Gold  Counters specific toxin
+Elixir of Strength (+5, 1 hour)     2 Mana         2 Silver        4 Silver            +5 Strength for 1 hour
+Elixir of Agility (+5, 1 hour)      2 Mana         2 Silver        4 Silver            +5 Agility for 1 hour
+Elixir of Mind (+5, 1 hour)         2 Mana         2 Silver        4 Silver            +5 Mind for 1 hour
+Elixir of Endurance (+5, 1 hour)    2 Mana         2 Silver        4 Silver            +5 Endurance for 1 hour
+
+Note: Healing spreads from Thorax outward to other body parts equally.
+Batch Crafting: Alchemists typically brew 5-10 potions at once, reducing their material costs per unit.
+
+CONSUMABLES - SCROLLS (One-time use, anyone can use)
+Scroll Type                         Price               Notes
+Cantrip scroll (1 effect)           1 Silver            Single effect ability
+Simple spell scroll (2-3 effects)   3 - 4 Silver        2-3 effect ability
+Moderate spell (4-5 effects)        5 - 6 Silver        4-5 effect ability
+Complex spell (6-8 effects)         7 - 9 Silver        6-8 effect ability
+Powerful spell (9-12 effects)       10 - 13 Silver      9-12 effect ability
+Ritual scroll (13+ effects)         14+ Silver          13+ effect ability
+
+Note: Scroll prices assume instant cast. Add +1 Silver per turn of required cast time.
+
+ENCHANTED WEAPONS
+Enhancement                         Price Modifier      Effect
++5 Attack bonus                     +1 Gold             +5 to attack rolls
++10 Attack bonus                    +2 Gold             +10 to attack rolls
++15 Attack bonus                    +3 Gold             +15 to attack rolls
++0.25 Stat damage                   +1 Gold             Adds 0.25× stat to damage
++0.5 Stat damage                    +2 Gold             Adds 0.5× stat to damage
++0.75 Stat damage                   +3 Gold             Adds 0.75× stat to damage
+Ignores 5 Armor                     +1 Gold             Bypasses 5 armor
+Ignores 10 Armor                    +2 Gold             Bypasses 10 armor
+Element damage (fire/ice/etc)       +2 Gold             Adds elemental damage type
+Special ability (varies)            Ability cost × 10 Copper Per ability embedded
+Charges (if applicable)             +10 Copper per charge Recharges 1/day
+
+Example Enchanted Weapons:
+Longsword +5 Attack                 15 Silver + 1 Gold = 1 Gold 15 Silver
+Greatsword +10 Attack, +0.25 Str    2 Gold 10 Silver + 2 Gold + 1 Gold = 5 Gold 10 Silver
+Flaming Sword (+5 Atk, Fire dmg)    15 Silver + 1 Gold + 2 Gold = 3 Gold 15 Silver
+
+ENCHANTED ARMOR
+Enhancement                         Price Modifier      Effect
++5 Armor bonus                      +1 Gold             +5 to armor rating
++10 Armor bonus                     +2 Gold             +10 to armor rating
++15 Armor bonus                     +3 Gold             +15 to armor rating
+5 Damage Reduction (flat)           +2 Gold             5 DR against all damage
+10 Damage Reduction (flat)          +4 Gold             10 DR against all damage
+15 Damage Reduction (flat)          +8 Gold             15 DR against all damage
+5 DR (specific limb)                +1 Gold             5 DR to one body part
+Element resistance                  +2 Gold             Resistance to one element
+Special ability (varies)            Ability cost × 10 Copper Per ability embedded
+
+Example Enchanted Armor:
+Chain Mail +5 Armor                 5 Gold + 1 Gold = 6 Gold
+Plate Armor +10, 5 DR (flat)        80 Gold + 2 Gold + 2 Gold = 84 Gold
+Fire-Resistant Leather              10 Silver + 2 Gold = 2 Gold 10 Silver
+
+MAGIC RINGS & AMULETS
+Item Type                           Base Price          Effect
+Ring of Protection (+5 to checks)   2 Gold              +5 to defensive checks
+Ring of Stat Boost (+5 to stat)     2 Gold              +5 to one stat for duration
+Ring with ability (varies)          Ability cost × 10 Copper Contains usable ability
+Amulet of Natural Armor (+5)        1 Gold              +5 armor bonus
+Amulet with ability (varies)        Ability cost × 10 Copper Contains usable ability
+
+WONDROUS ITEMS
+Item                                Price               Effect
+Bag of Holding                      10 Gold             Holds much more than appears
+Boots of Speed (+5 movement)        3 Gold              +5 meters movement
+Cloak of Stealth (+5 Stealth)       2 Gold              +5 to stealth checks
+Gloves of Dexterity (+5 Agility)    2 Gold              +5 Agility bonus
+Belt of Strength (+5 Strength)      2 Gold              +5 Strength bonus
+Headband of Intellect (+5 Mind)     2 Gold              +5 Mind bonus
+Everburning Torch                   5 Silver            Never runs out of light
+Rope of Climbing                    3 Gold              Climbs on command
+Immovable Rod                       5 Gold              Locks in place when activated
+Portable Hole                       20 Gold             Creates extradimensional space
+
+WANDS & STAVES (Rechargeable Items)
+Base Formula: (Ability Cost + Charges) × 10 Copper
+
+Wand Examples:
+Wand of Magic Missile (3 effect, 5 charges)   (3+5) × 10 = 80 Copper = 6 Silver 8 Copper
+Wand of Healing (2 effect, 10 charges)         (2+10) × 10 = 120 Copper = 10 Silver
+Wand of Fireball (8 effect, 3 charges)         (8+3) × 10 = 110 Copper = 9 Silver 2 Copper
+
+Staff Examples:
+Staff of Power (multiple abilities)            50 - 200 Gold   Varies by abilities
+Staff of Healing (powerful, 20 charges)        (15+20) × 10 = 350 Copper = 29 Silver 2 Copper
+
+===================================================================================
+SPELLCASTING SERVICES
+===================================================================================
+
+PRICING FORMULA FOR SPELLCASTING SERVICES:
+Base Service Cost = (Ability Cost × 2) in Copper
++ Material Component costs (if customer doesn't provide)
++ Caster's fee modifier based on reputation/location
++ Cast time surcharge (longer rituals cost more)
+
+Service Fee Modifiers:
+- Village priest/hedge mage:        ×1 (standard rate)
+- Town temple/wizard:               ×1.5
+- City temple/mage guild:           ×2
+- Master caster/specialist:         ×3
+- Legendary caster:                 ×5+
+
+Cast Time Surcharge:
+- Instant/same turn:                +50% (mishap risk)
+- 1-3 turns:                        +0%
+- Ritual (10+ minutes):             +25%
+- Extended ritual (1+ hour):        +50%
+- Multi-day ritual:                 +100%+
+
+HEALING SERVICES (Common - Temple/Cleric)
+Service                             Base Cost       Typical Final Price
+Minor Healing (10 HP)               4 Copper        6 - 20 Copper
+Moderate Healing (25 HP)            8 Copper        12 Copper - 2 Silver
+Major Healing (50 HP)               1 Silver        1s 6c - 3 Silver
+Greater Healing (100 HP)            2 Silver        3 - 6 Silver
+Cure Disease (simple)               1 Silver        1s 6c - 3 Silver
+Cure Disease (complex)              5 Silver        7s 6c - 15 Silver
+Neutralize Poison                   2 Silver        3 - 6 Silver
+Remove Curse (simple)               10 Silver       15 - 30 Silver
+Remove Curse (powerful)             2 Gold          3 - 6 Gold
+Restore Limb/Regeneration           10 Gold         15 - 50 Gold
+Resurrection (if available)         100+ Gold       150 - 500+ Gold
+
+Note: Resurrection requires rare materials (Phoenix feather 100+ Gold, rare gems, etc.)
+and is only available in major cities or from legendary clerics.
+
+DIVINATION SERVICES (Fortune Tellers/Seers/Diviners)
+Service                             Base Cost       Typical Final Price
+Simple Fortune Reading              2 Copper        3 Copper - 1 Silver
+Detailed Fortune Reading            1 Silver        1s 6c - 3 Silver
+Locate Object (simple)              5 Silver        7s 6c - 15 Silver
+Locate Person                       10 Silver       15 - 30 Silver
+Scrying (distant viewing)           1 Gold          1s 10s - 3 Gold
+Commune with spirits/gods           5 Gold          7s 10s - 15 Gold
+Prophecy/major divination           10+ Gold        15 - 50+ Gold
+Identify magic item                 2 - 10 Silver   3 - 30 Silver
+
+ARCANE SERVICES (Wizard Guilds/Independent Mages)
+Service                             Base Cost       Typical Final Price
+Detect Magic                        2 Copper        3 Copper - 1 Silver
+Read Magic/Decipher                 5 Copper        7 Copper - 2 Silver
+Identify (simple magic item)        2 Silver        3 - 6 Silver
+Identify (complex magic item)       5 Silver        7s 6c - 15 Silver
+Comprehend Languages                1 Silver        1s 6c - 3 Silver
+Dispel Magic (minor)                5 Silver        7s 6c - 15 Silver
+Dispel Magic (major)                2 Gold          3 - 6 Gold
+Enchant Item (simple)               10+ Gold        15 - 50+ Gold
+Enchant Item (complex)              50+ Gold        75 - 500+ Gold
+Teleport (per person, short)        5 Gold          7s 10s - 15 Gold
+Teleport (per person, long)         20 Gold         30 - 60 Gold
+Teleport Circle (permanent setup)   1000+ Gold      Permanent infrastructure
+
+Note: Teleport Circles are typically guild-maintained and require membership/fees.
+Individual teleports to circle locations: 1-5 Gold per person.
+
+RITUAL SERVICES (Ritual Specialists)
+Service                             Base Cost       Typical Final Price
+Blessing (person/object)            5 Copper        7 Copper - 2 Silver
+Consecrate Area                     1 Gold          1s 10s - 3 Gold
+Ward/Protection Circle              2 Gold          3 - 6 Gold
+Banish Entity (minor)               5 Gold          7s 10s - 15 Gold
+Banish Entity (major)               20 Gold         30 - 100 Gold
+Summon Entity (controlled)          10 Gold         15 - 50 Gold
+Planar Travel                       50+ Gold        75 - 500+ Gold
+True Resurrection                   500+ Gold       750 - 5000+ Gold
+Wish/Miracle (if available)         1000+ Gold      Priceless/not for sale
+
+ALCHEMY SERVICES (Alchemists/Apothecaries)
+Service                             Base Cost       Typical Final Price
+Brew healing potion (minor)         6 Copper        9 Copper - 2 Silver
+Brew healing potion (moderate)      1 Silver 6c     2 - 4 Silver
+Brew healing potion (greater)       3 Silver        4s 6c - 7 Silver
+Create antidote (known poison)      1 Silver        1s 6c - 3 Silver
+Create antidote (unknown poison)    5 Silver        7s 6c - 15 Silver
+Brew stat potion                    2 Silver        3 - 6 Silver
+Analyze substance                   5 Copper        7 Copper - 2 Silver
+Custom potion (varies)              Varies          2× material cost minimum
+
+ENCHANTING SERVICES (Enchanters)
+Service                             Base Cost       Typical Final Price
+Simple enchantment (+5 bonus)       5 Gold          7s 10s - 15 Gold
+Moderate enchantment (+10 bonus)    15 Gold         22s 10s - 45 Gold
+Major enchantment (+15 bonus)       40 Gold         60 - 120 Gold
+Embed ability (per ability cost)    (Ability × 10 Copper) × 2 Double item cost
+Add charges (per charge)            1 Silver per charge   2 - 3 Silver per
+Repair magic item                   50% of creation cost    Varies
+Recharge depleted item              25% of creation cost    Varies
+
+Note: Times for enchanting services:
+- Simple enchantment: 1-3 days
+- Moderate enchantment: 1 week
+- Major enchantment: 2-4 weeks
+- Complex items: 1-6 months
+
+MATERIAL COMPONENT PROVISION:
+If customer provides materials: Standard service fee only
+If caster provides materials: Add material cost + 50% markup
+
+Common Material Costs for Services:
+- Minor healing: 5-10 Copper in herbs
+- Major healing: 1-5 Silver in components
+- Remove curse: 5-20 Silver in materials
+- Resurrection: 100+ Gold (Phoenix feather, gems, rare herbs)
+- Teleportation: 10-50 Silver (void crystals, focus items)
+- Major enchantment: 10-100+ Gold (gems, rare metals, monster parts)
+
+===================================================================================
+WAGES & INCOME
+===================================================================================
+
+DAILY WAGES
+Profession                          Wage
+Unskilled laborer                   1 Silver
+Beggar/Street urchin                1 - 3 Copper
+Porter/Bearer                       1 Silver
+Torchbearer                         1 Silver
+Farmhand                            1 Silver
+Apprentice (artisan)                6 Copper
+Skilled laborer                     2 Silver
+Master carpenter                    3 Copper
+Master mason                        4 Copper
+Craftsman (journeyman)              2 - 3 Silver
+Master craftsman                    4 - 5 Silver
+Scribe                              2 Silver
+Artist/Painter                      3 Silver
+Weaver                              5 Copper
+Blacksmith                          3 - 4 Silver
+
+WEEKLY WAGES
+Profession                          Wage
+Servant (household)                 3 - 7 Silver
+Cook                                4 - 8 Silver
+Stable hand                         3 Silver
+Gardener                            4 Silver
+
+MONTHLY WAGES
+Profession                          Wage
+Skilled servant                     1 Gold
+Clerk                               1 Gold 10 Silver
+Armorer                             1 Gold 4 Silver
+Master armorer                      1 Gold 6 Silver 8 Copper
+Steward (minor estate)              2 Gold
+Bodyguard                           2 Gold
+Ship's mate                         1 Gold 10 Silver
+Ship's captain                      4 - 8 Gold
+
+ANNUAL WAGES (with Monthly/Weekly/Daily equivalents)
+Profession                          Annual          Monthly         Weekly          Daily
+Page/Messenger                      1-6 Silver      ~½ Copper       ~¼ Copper       negligible
+Kitchen servant                     2-4 Silver      ~1 Copper       ~½ Copper       negligible
+Stableboy                           3-5 Silver      ~1½ Copper      ~¾ Copper       negligible
+Groom                               5-8 Silver      ~2-3 Copper     ~1 Copper       negligible
+Porter (estate)                     5-8 Silver      ~2-3 Copper     ~1 Copper       negligible
+Falconer                            5-8 Silver      ~2-3 Copper     ~1 Copper       negligible
+Carter                              5-8 Silver      ~2-3 Copper     ~1 Copper       negligible
+Squire (to knight)                  13s 4c-1 Gold   ~1-2 Copper     ~½-1 Copper     negligible
+Common laborer (year-round)         2 Gold          ~3 Silver       ~9 Copper       ~1½ Copper
+Skilled artisan (established)       3-5 Gold        5-8 Silver      15-24 Copper    2-4 Copper
+Master artisan                      5-10 Gold       8-17 Silver     2-4 Silver      4-7 Copper
+Chantry priest                      4 Gold 13s      ~8 Silver       ~2 Silver       ~3 Copper
+Parish priest                       3-8 Gold        5-13 Silver     15-39 Copper    2-6 Copper
+Town clerk                          5 Gold          ~8 Silver       ~2 Silver       ~3 Copper
+Bailiff (minor lord)                8-12 Gold       13-20 Silver    4-6 Silver      6-9 Copper
+Steward (major estate)              10-20 Gold      17-33 Silver    5-10 Silver     8-15 Copper
+Wardens (city position)             10 Gold         ~17 Silver      ~5 Silver       ~8 Copper
+Lawyer/Advocate                     10-30 Gold      17-50 Silver    5-15 Silver     8-24 Copper
+Physician                           15-40 Gold      25-67 Silver    7-20 Silver     1-3 Silver
+University scholar                  5-15 Gold       8-25 Silver     2-7 Silver      4-12 Copper
+Court official                      20-50 Gold      33-83 Silver    10-25 Silver    1.5-4 Silver
+Baron (income)                      200-500 Gold    ~17-42 Gold     ~4-10 Gold      ~12-24 Silver
+Earl (income)                       400-11000 Gold  ~33-917 Gold    ~8-229 Gold     ~1-37 Gold
+Duke (income)                       1,000+ Gold     ~83+ Gold       ~21+ Gold       ~3+ Gold
+
+Note: Lower annual wages (under 1 Gold) show negligible daily rates as these positions
+typically receive room, board, and other benefits as part of their compensation.
+
+MILITARY WAGES (Daily)
+Rank/Position                       Wage                    Era/Type
+Light infantry                      2 Copper                Regular army
+Archer                              3 Copper                Regular army
+Crossbowman                         3 Copper                Regular army
+Pikeman                             4 Copper                Regular army
+Mounted archer                      6 Copper                Regular army
+Heavy infantry                      6 Copper                Regular army
+Man-at-arms                         1 Silver                Regular/Mercenary
+Squire (military)                   1 Silver                Mercenary
+Sergeant                            1 Silver                Regular army
+Cavalryman                          1 Silver 6 Copper       Regular army
+Knight                              2 Silver                Mercenary
+Knight banneret                     4 Silver                Mercenary
+Ensign/Standard bearer              2 Silver                Regular army
+Drummer/Trumpeter                   1 Silver 8 Copper       Regular army
+Lieutenant                          4 Silver                Regular army
+Captain                             8 Silver                Regular army
+Commander                           1 Gold                  Regular army
+
+ADVENTURER INCOME (Estimated Annual)
+Experience Level                    Typical Income
+Novice adventurers:                 5 - 20 Gold
+Experienced adventurers:            20 - 100 Gold
+Veteran adventurers:                100 - 500 Gold
+Renowned adventurers:               500 - 2,000 Gold
+Master adventurers:                 2,000 - 10,000 Gold
+Legendary adventurers:              10,000+ Gold
+
+Note: Adventurer income is highly variable based on success, treasure found,
+and contracts completed. Many adventurers alternate between great wealth and poverty.
+
+SPECIALIZED PROFESSIONS
+
+ALCHEMICAL & MYSTICAL ARTS
+Profession                          Annual              Monthly             Weekly              Daily
+Alchemist (apprentice)              5-15 Gold           8-25 Silver         2-7 Silver          4-12 Copper
+Alchemist (journeyman)              15-40 Gold          25-67 Silver        7-20 Silver         1-3 Silver
+Alchemist (master)                  40-100+ Gold        67-167+ Silver      20-50+ Silver       3-8+ Silver
+Apothecary                          8-35 Gold           13-58 Silver        4-17 Silver         6 Copper-3 Silver
+Herbalist (village)                 3-10 Gold           5-17 Silver         15 Copper-5 Silver  2-8 Copper
+Herbalist (city)                    10-25 Gold          17-42 Silver        5-12 Silver         8 Copper-2 Silver
+Poisoner                            20-200+ Gold        33-333+ Silver      10-83+ Silver       1.5-14+ Silver
+Healer (folk/barber surgeon)        5-15 Gold           8-25 Silver         2-7 Silver          4-12 Copper
+Healer (trained physician)          15-40 Gold          25-67 Silver        7-20 Silver         1-3 Silver
+Healer (court physician)            40-100 Gold         67-167 Silver       20-50 Silver        3-8 Silver
+Midwife                             4-12 Gold           7-20 Silver         2-6 Silver          3-10 Copper
+Perfumer                            10-30 Gold          17-50 Silver        5-15 Silver         8 Copper-2 Silver
+Distiller                           8-25 Gold           13-42 Silver        4-12 Silver         6 Copper-2 Silver
+Astrologer                          10-50 Gold          17-83 Silver        5-25 Silver         8 Copper-4 Silver
+Fortune teller/Seer                 2-20 Gold           3-33 Silver         9 Copper-10 Silver  1.5 Copper-1.5 Silver
+Diviner (reputable)                 15-60 Gold          25-100 Silver       7-30 Silver         1-5 Silver
+Sage/Researcher                     5-30 Gold           8-50 Silver         2-15 Silver         4 Copper-2 Silver
+Occultist/Mystic                    10-40 Gold          17-67 Silver        5-20 Silver         8 Copper-3 Silver
+Enchanter (if legal)                50-500+ Gold        83-833+ Silver      25-250+ Silver      4-42+ Silver
+Ritual specialist                   20-100 Gold         33-167 Silver       10-50 Silver        1.5-8 Silver
+Tattoo artist (magical)             8-30 Gold           13-50 Silver        4-15 Silver         6 Copper-2 Silver
+Ink maker (magical inks)            12-40 Gold          20-67 Silver        6-20 Silver         9 Copper-3 Silver
+Monster hunter                      10-500+ Gold        17-833+ Silver      5-250+ Silver       8 Copper-42+ Silver
+Relic hunter                        20-1000+ Gold       33-1667+ Silver     10-500+ Silver      1.5-83+ Silver
+
+TRADE & COMMERCE
+Profession                          Annual              Monthly             Weekly              Daily
+Merchant (small)                    10-50 Gold          17-83 Silver        5-25 Silver         8 Copper-4 Silver
+Merchant (established)              50-500 Gold         83-833 Silver       25-250 Silver       4-42 Silver
+Merchant (wealthy)                  500-5000 Gold       833-8333 Silver     250-2500 Silver     42-417 Silver
+Moneylender                         30-300 Gold         50-500 Silver       15-150 Silver       2-25 Silver
+Gem cutter                          15-60 Gold          25-100 Silver       7-30 Silver         1-5 Silver
+Jeweler                             20-100 Gold         33-167 Silver       10-50 Silver        1.5-8 Silver
+Rare goods dealer                   40-400 Gold         67-667 Silver       20-200 Silver       3-33 Silver
+Exotic animal trader                25-200 Gold         42-333 Silver       12-100 Silver       2-17 Silver
+
+HOSPITALITY & ENTERTAINMENT
+Profession                          Annual              Monthly             Weekly              Daily
+Innkeeper (small)                   5-20 Gold           8-33 Silver         2-10 Silver         4 Copper-1.5 Silver
+Innkeeper (large establishment)     20-100 Gold         33-167 Silver       10-50 Silver        1.5-8 Silver
+Tavern keeper                       3-30 Gold           5-50 Silver         15 Copper-15 Silver 2 Copper-2 Silver
+Brothel keeper                      10-100 Gold         17-167 Silver       5-50 Silver         8 Copper-8 Silver
+Bard (street performer)             2-10 Gold           3-17 Silver         9 Copper-5 Silver   1.5-8 Copper
+Bard (established)                  10-40 Gold          17-67 Silver        5-20 Silver         8 Copper-3 Silver
+Bard (court)                        20-80 Gold          33-133 Silver       10-40 Silver        1.5-6.5 Silver
+Gladiator/Pit fighter               5-50 Gold           8-83 Silver         2-25 Silver         4 Copper-4 Silver
+
+SHADOWY PROFESSIONS
+Profession                          Annual              Monthly             Weekly              Daily
+Bounty hunter                       5-200 Gold          8-333 Silver        2-100 Silver        4 Copper-17 Silver
+Assassin                            10-1000+ Gold       17-1667+ Silver     5-500+ Silver       8 Copper-83+ Silver
+Thief/Burglar                       5-500 Gold          8-833 Silver        2-250 Silver        4 Copper-42 Silver
+Fence (stolen goods)                15-150 Gold         25-250 Silver       7-75 Silver         1-12.5 Silver
+Smuggler                            20-200 Gold         33-333 Silver       10-100 Silver       1.5-17 Silver
+Spy                                 20-200 Gold         33-333 Silver       10-100 Silver       1.5-17 Silver
+Information broker                  10-100 Gold         17-167 Silver       5-50 Silver         8 Copper-8 Silver
+Forger                              15-80 Gold          25-133 Silver       7-40 Silver         1-6.5 Silver
+
+===================================================================================
+NOTES FOR GM
+===================================================================================
+
+Currency Conversion Reference:
+- 1 Gold = 20 Silver = 240 Copper
+- Items under 1 Silver are priced in Copper
+- Items over 1 Gold are priced in Gold and Silver
+
+Price Variations by Location:
+- Remote locations: +50% to +200%
+- Major cities: Standard pricing
+- Trade hubs: -10% to -20%
+- Wartime: +100% to +500% for weapons/armor
+
+Quality Modifiers:
+- Poor quality: -50%
+- Standard quality: Listed price
+- Masterwork: +300 to 600 Silver (depending on item)
+- Exceptional: +10 to 50 Gold (depending on item)
+
+Wage Notes:
+- Most wages include room and board when working for an employer
+- Freelance workers typically charge 20-50% more but must cover their own expenses
+- Seasonal workers (harvest, etc.) may earn more during peak times
+- Urban wages are typically 20-30% higher than rural wages
+- Master craftsmen often supplement income with apprentice fees and special commissions
+
+===================================================================================
+REWARD GUIDELINES FOR GMs
+===================================================================================
+
+These guidelines use the adventurer income tiers from the Wages section as their
+backbone. "Party" assumes 4 players; scale linearly for different group sizes.
+Quest fees are contracted payments; loot is separate and on top.
+
+-----------------------------------------------------------------------------------
+QUEST REWARD TIERS
+-----------------------------------------------------------------------------------
+
+Tier        Difficulty Profile                      Party Fee       Per Person
+----------  --------------------------------------  --------------  --------------
+Novice      Low danger, unskilled opposition,       2 - 8 Gold      5 - 20 Silver
+            local stakes (village, single farm)
+            Examples: clear a rat infestation,
+            deliver a message through bandit
+            country, investigate rumors
+
+Experienced Moderate danger, organized enemies,     8 - 40 Gold     2 - 10 Gold
+            regional stakes (town, trade route)
+            Examples: escort a merchant caravan,
+            break up a bandit camp, rescue a
+            prisoner from a keep
+
+Veteran     Serious danger, skilled opposition,     40 - 200 Gold   10 - 50 Gold
+            significant stakes (city, region)
+            Examples: root out a cult, clear a
+            haunted ruin, stop a smuggling ring
+
+Renowned    High danger, exceptional enemies,       200 - 800 Gold  50 - 200 Gold
+            major stakes (kingdom, great city)
+            Examples: stop a warlord, recover a
+            stolen artifact, neutralize a siege
+
+Master      Extreme danger, legendary opposition,   800 - 4000 Gold 200 - 1000 Gold
+            catastrophic stakes
+            Examples: prevent a war, destroy an
+            elder vampire, contain a demon rift
+
+Legendary   Near-suicidal, world-altering stakes    4000+ Gold      1000+ Gold
+            Examples: seal a divine incursion,
+            slay a god-touched creature
+
+Note: These are contracted fees from a patron. Discovered loot, salvage, and
+valuables recovered during the quest add 25-50% on top of the contract value
+on average. Some quests have no patron and are entirely loot-funded.
+
+-----------------------------------------------------------------------------------
+UPKEEP COSTS (Calibrate Reward Feel)
+-----------------------------------------------------------------------------------
+
+A party of 4 burns roughly the following per day of active adventuring:
+
+Expense                             Cost per Person     Party of 4
+Lodging (common room)               2-5 Copper          8-20 Copper
+Meals (inn/tavern)                  3-10 Copper         12-40 Copper
+Torches/oil/supplies                2-5 Copper          8-20 Copper
+Feed/stabling (if mounted)          5-10 Copper         20-40 Copper
+-----------------------------------------------------------------------
+Total (on foot, frugal)             7-20 Copper/day     ~1 Silver/day
+Total (mounted, comfortable)        12-30 Copper/day    ~2 Silver/day
+
+A Novice quest paying 5 Gold total barely covers 3-4 days of expenses for the
+party plus a little profit — this is intentional. Early adventuring should feel
+tight, not lucrative.
+
+-----------------------------------------------------------------------------------
+ENEMY LOOT BY TYPE
+-----------------------------------------------------------------------------------
+
+Enemy Type                  Coin                Gear / Valuables
+--------------------------  ------------------  -----------------------------------
+Beggar / street urchin      1-5 Copper          Nothing useful
+Common thug / mugger        5-20 Copper         Knife, cheap club
+Bandit (mook)               8-30 Copper         Worn shortsword or handaxe
+Bandit lieutenant           5-15 Silver         Serviceable weapon + light armor
+Bandit leader               10-30 Silver        Quality weapon, possible chain shirt
+Mercenary foot soldier      10-25 Silver        Standard weapon + leather or chain
+Mercenary captain           1-3 Gold            Quality weapons, possibly plate
+City guard (corrupt)        5-15 Silver         Standard-issue gear
+Cult initiate               5-20 Silver         Ritual symbols, cheap robes
+Cult priest / leader        5-25 Gold           Ritual items, scrolls, fine vestments
+Assassin                    10-40 Silver        Good daggers, poisons, lock picks
+Minor noble (enemy)         15-80 Gold          Fine clothing, signet ring, jewelry
+Wealthy merchant (enemy)    20-100 Gold         Trade goods, coin, letters of credit
+
+Note: Gear taken from enemies is typically in used/damaged condition. Apply a
+50% resale value unless the party repairs/cleans it.
+
+-----------------------------------------------------------------------------------
+MONSTER & CREATURE LOOT
+-----------------------------------------------------------------------------------
+
+Creature                    Hoard Size          Notes
+--------------------------  ------------------  -----------------------------------
+Rats / vermin               Nothing             At best a bounty from a farmer
+Giant insects               Nothing             Chitin/venom may sell to alchemist
+Goblins (group of 6-10)     5-20 Copper         Crude weapons, maybe 1 Silver total
+Kobolds (lair of 10-20)     1-5 Silver          Crude traps, minor trinkets
+Orcs (warband of 6-8)       2-10 Silver         Serviceable weapons, crude armor
+Ogre (lone)                 5-20 Silver         Whatever it stole, battered gear
+Troll                       10-40 Silver        Accumulated stolen goods
+Werewolf / lycanthrope      10-30 Silver        Personal effects from human life
+Vampire (minor)             20-100 Gold         Old wealth, fine objects, blood wine
+Ghost / undead lord         50-200 Gold         Tomb goods, ancient coin, heirlooms
+Wyvern                      30-150 Gold         Stolen livestock + some gathered coin
+Young dragon                200-800 Gold        Mixed hoard: coin, gems, art objects
+Adult dragon                1,000-5,000 Gold    Full hoard; weapons, armor, magic
+Elder / ancient dragon      10,000+ Gold        Treasure of a ruined civilization
+
+Monster by-products (sold to alchemists, monster hunters, collectors):
+- Troll blood: 1-2 Gold per vial
+- Werewolf pelt (intact): 5-20 Gold
+- Dragon scale (per scale): 2-10 Gold
+- Dragon heart: 50-200 Gold
+- Wyvern venom gland: 10-30 Gold
+- Phase spider silk: 5-15 Gold
+
+-----------------------------------------------------------------------------------
+DUNGEON & LOCATION TREASURE
+-----------------------------------------------------------------------------------
+
+Location Type               Total Loot Value    Composition
+--------------------------  ------------------  -----------------------------------
+Abandoned farmstead         2-8 Silver          Tools, livestock, hidden coin
+Bandit camp (20-30 men)     5-20 Gold           Coin, stolen trade goods, weapons
+Smuggler warehouse          10-50 Gold          High-value goods, black market items
+Cultist shrine              5-30 Gold           Silver ritual objects, donations
+Minor noble's treasury      50-200 Gold         Coin, jewelry, ledgers, art
+Haunted manor               20-100 Gold         Antique valuables, old coin, gems
+Ancient tomb (minor)        30-150 Gold         Old coin, burial jewelry, arms
+Ancient tomb (significant)  100-500 Gold        Burial hoard, rare objects, scrolls
+Wizard's tower              50-300 Gold         Books (1-3 Gold each), components,
+                                                instruments, possibly a magic item
+Ruined castle vault         100-600 Gold        Mixed coin, weapons, crown assets
+Ancient vault (lost era)    500-3,000 Gold      Era artifacts, large coin, gems
+
+Treasure Composition (use as a default split):
+- Coin (mixed): 50-60% of total value
+- Trade goods / art / jewelry: 20-30% of total value
+- Useful equipment (weapons, armor, tools): 10-20% of total value
+- Magic items: rare; treat as a bonus, not part of base value calculation
+
+-----------------------------------------------------------------------------------
+NON-MONETARY REWARDS
+-----------------------------------------------------------------------------------
+
+Not all rewards are coin. The following have tangible economic and narrative value:
+
+Land grant (minor, a farm or small estate)
+  Approximate value: 200-600 Gold in property; income ~10-30 Gold/year
+
+Land grant (significant, a manor or village)
+  Approximate value: 1,000-5,000 Gold; income ~50-250 Gold/year
+
+Title (knighthood, minor lordship)
+  Value: Social access, legal protections, free lodging in allied keeps
+  Rough equivalent: 100-500 Gold in practical benefit over a campaign
+
+Letters of introduction / patronage
+  Opens doors to factions, guilds, noble courts
+  Value depends entirely on who signs it
+
+Guild membership (mage, thieves, merchants)
+  Access to training, safe houses, information networks, discounts
+  Rough equivalent: 20-100 Gold in practical benefit
+
+Magical training or a spellbook
+  Value: 50-500 Gold depending on what is taught
+
+Forgiveness of debt or criminal record
+  Value: Situational, potentially life-saving
+
+Information (maps, secrets, political leverage)
+  Value: 5-500 Gold depending on what it unlocks
+
+-----------------------------------------------------------------------------------
+PACING NOTES
+-----------------------------------------------------------------------------------
+
+Keep the economy real:
+- A longsword (15 Silver) should feel like a meaningful purchase early on.
+  After a solid Novice quest, a player might have just enough for one.
+- Chain mail (5 Gold) is a mid-career purchase, not a starting given.
+- Full plate (80 Gold) should be a long-term goal for most characters — roughly
+  what a veteran earns from two or three significant contracts.
+- A riding horse (3 Gold) is attainable early; a warhorse (20 Gold) is earned.
+
+Magic item economy:
+- Magic items should feel rare and disruptive. Resist putting them in every hoard.
+- When players find magic, let them sell or trade it; even a simple enchanted
+  weapon is worth 1-5 Gold and changes what a character can afford next.
+- Use the potion prices as a guide: a Minor Healing potion (2 Silver 5 Copper)
+  is cheap enough to stock up on; Superior Healing (4 Gold 10 Silver) is a
+  serious investment.
+
+Signs the economy is broken:
+- Players stop tracking silver because gold is plentiful: reduce quest fees by
+  30-50% or introduce significant expenses (ship passage, bribes, property damage)
+- Players can't afford basic upkeep between quests: bump Novice rewards up or
+  give them a low-risk job to bridge the gap
+- No one buys armor because they loot it all: apply condition penalties to looted
+  gear, or have enemies use it until it degrades
+
+===================================================================================
+
+Legacy of the Gods Campaign Setting
+Version 2.0 - Metal Currency Edition

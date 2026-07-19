@@ -266,7 +266,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     }
 
     // --- Unified Inventory Grouping ---
-    const equippedSection = { id: "hand", label: "Equipped / In Hand", items: [], type: "status" };
+    const equippedSection = { id: "hand", label: game.i18n.localize("TAMS.Inventory.SectionEquipped"), items: [], type: "status" };
     const containerSectionMap = {};
     for (const bp of inventoryBackpacks) {
       containerSectionMap[bp.id] = {
@@ -280,7 +280,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         modifier: bp.system.modifier
       };
     }
-    const stowedSection = { id: "stowed", label: "Loose / Stowed", items: [], type: "status" };
+    const stowedSection = { id: "stowed", label: game.i18n.localize("TAMS.Inventory.SectionStowed"), items: [], type: "status" };
 
     for (const item of allItems) {
       if (["skill", "ability", "trait"].includes(item.type)) continue;

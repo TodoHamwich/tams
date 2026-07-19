@@ -9,7 +9,7 @@ export class TAMSItem extends Item {
    */
   static get metadata() {
     return foundry.utils.mergeObject(super.metadata, {
-      types: ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "questItem", "backpack", "trait"]
+      types: ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect"]
     }, {inplace: false});
   }
 }

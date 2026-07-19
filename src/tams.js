@@ -117,7 +117,7 @@ Hooks.once("init", async function() {
     openItemMaker: (actor = null) => TAMSItemMaker.open(actor)
   };
 
-  foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1.sheets.ActorSheet);
+  foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1?.sheets?.ActorSheet);
   foundry.documents.collections.Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
   foundry.documents.collections.Actors.registerSheet("tams", TAMSDowntimeSheet, {
     types: ["downtime"],
@@ -139,7 +139,7 @@ Hooks.once("init", async function() {
     makeDefault: false,
     label: "TAMS.NPCSheet"
   });
-  foundry.documents.collections.Items.unregisterSheet("core", foundry.appv1.sheets.ItemSheet);
+  foundry.documents.collections.Items.unregisterSheet("core", foundry.appv1?.sheets?.ItemSheet);
   foundry.documents.collections.Items.registerSheet("tams", TAMSItemSheet, { makeDefault: true });
 
   // --- Handlebars Helpers ---

@@ -2,7 +2,7 @@
   "id": "tams",
   "title": "Todo's Advanced Modular System",
   "description": "A custom system for Foundry VTT",
-  "version": "1.5.9",
+  "version": "1.5.10",
   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
   "authors": [
@@ -12,7 +12,7 @@
     }
   ],
   "esmodules": [
-    "src/tams.js"
+    "scripts/tams.js"
   ],
   "styles": [
     "styles/tams.css"
@@ -23,14 +23,33 @@
       "label": "TAMS Macros",
       "path": "packs/macros",
       "type": "Macro",
-      "system": "tams"
+      "system": "tams",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "TRUSTED": "OBSERVER",
+        "ASSISTANT": "OWNER",
+        "GAMEMASTER": "OWNER"
+      }
     },
     {
       "name": "status-effects",
       "label": "TAMS Status Effects",
       "path": "packs/status-effects",
       "type": "Item",
-      "system": "tams"
+      "system": "tams",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "TRUSTED": "OBSERVER",
+        "ASSISTANT": "OWNER",
+        "GAMEMASTER": "OWNER"
+      }
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "TAMS",
+      "sorting": "a",
+      "packs": ["macros", "status-effects"]
     }
   ],
   "languages": [
