@@ -1635,6 +1635,8 @@
 
 .honor-tree-wrap {
   display: grid;
+  width: 500px;
+  margin: 0 auto;
 }
 .honor-tree-wrap > .honor-tree-bg,
 .honor-tree-wrap > .honor-tree {
@@ -1809,23 +1811,28 @@
   font-weight: 600;
 }
 .honor-tree .honor-footer-row {
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .honor-tree .honor-footer-row .honor-col {
-  gap: 4px;
-  font-size: 0.8em;
-  color: #888;
+  gap: 5px;
+  font-size: 0.82em;
+  color: #777;
 }
 .honor-tree .honor-footer-row .honor-col .honor-score {
   font-weight: bold;
-  color: #555;
+  color: #444;
 }
 .honor-tree .honor-footer-row .honor-col .honor-edit {
   cursor: pointer;
-  color: #ccc;
+  font-size: 1.1em;
+  color: #999;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
 }
 .honor-tree .honor-footer-row .honor-col .honor-edit:hover {
-  color: #555;
+  color: #333;
+  background: rgba(0, 0, 0, 0.07);
 }
 
 .tams.theme-grimdark {

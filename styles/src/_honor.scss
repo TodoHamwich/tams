@@ -6,10 +6,11 @@ $dishonor-bg:   #f9cccc;
 $node-size:     13px;
 $seg-h:         22px;
 
-// Wrapper uses CSS grid to stack the SVG tree behind the data grid
-// without relying on absolute positioning (which breaks in Foundry's scrollable tabs)
+// Fixed-width container so SVG coordinates align predictably with the grid
 .honor-tree-wrap {
   display: grid;
+  width: 500px;
+  margin: 0 auto;
 
   > .honor-tree-bg,
   > .honor-tree {
@@ -218,19 +219,26 @@ $seg-h:         22px;
 
   // Score + edit button footer
   .honor-footer-row {
-    margin-top: 6px;
+    margin-top: 8px;
 
     .honor-col {
-      gap: 4px;
-      font-size: 0.8em;
-      color: #888;
+      gap: 5px;
+      font-size: 0.82em;
+      color: #777;
 
-      .honor-score { font-weight: bold; color: #555; }
+      .honor-score { font-weight: bold; color: #444; }
 
       .honor-edit {
         cursor: pointer;
-        color: #ccc;
-        &:hover { color: #555; }
+        font-size: 1.1em;
+        color: #999;
+        padding: 2px 4px;
+        border-radius: 3px;
+        transition: color 0.15s, background 0.15s;
+        &:hover {
+          color: #333;
+          background: rgba(0,0,0,0.07);
+        }
       }
     }
   }

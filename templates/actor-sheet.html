@@ -778,24 +778,37 @@
         <div class="tab honor {{#if (eq activeTab 'honor')}}active{{/if}}" data-group="primary" data-tab="honor" data-scrollable data-scroll-id="tab-honor">
           <div class="honor-tree-wrap">
 
-            {{!-- Decorative tree: CSS grid layers this behind .honor-tree --}}
+            {{!-- Decorative tree line art: CSS grid layers this behind .honor-tree --}}
+            {{!-- viewBox 500×640 matches the fixed container (500px wide, auto height via preserveAspectRatio=none) --}}
+            {{!-- Key y-positions: tier0≈55, tier3≈250, Common≈320, dtier0≈390, dtier3≈580 --}}
+            {{!-- Key x-positions (4 equal columns): 62, 187, 312, 437 --}}
             <svg class="honor-tree-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 640" preserveAspectRatio="none" aria-hidden="true">
-                {{!-- Canopy blob --}}
-                <path fill="#7b6040" fill-opacity="0.22" d="M250,28 C210,26 155,52 125,88 C90,128 88,172 108,203 C72,213 52,250 68,286 C88,332 150,322 185,296 C196,318 217,337 250,337 C283,337 304,318 315,296 C350,322 412,332 432,286 C448,250 428,213 392,203 C412,172 410,128 375,88 C345,52 290,26 250,28 Z"/>
-                {{!-- Trunk --}}
-                <rect fill="#8b6035" fill-opacity="0.45" x="234" y="330" width="32" height="82" rx="10"/>
-                {{!-- Root blob --}}
-                <path fill="#6b4c28" fill-opacity="0.22" d="M250,412 C204,414 128,443 93,478 C62,508 72,548 110,561 C148,572 192,549 216,526 C226,546 240,560 250,560 C260,560 274,546 284,526 C308,549 352,572 390,561 C428,548 438,508 407,478 C372,443 296,414 250,412 Z"/>
-                {{!-- Branches: start at trunk top (250,332), arc out to each column (x=62,187,312,437) at y≈268 --}}
-                <path stroke="#8b6035" stroke-width="4"   stroke-opacity="0.40" fill="none" stroke-linecap="round" d="M 250,332 Q 250,268  62,268"/>
-                <path stroke="#8b6035" stroke-width="3"   stroke-opacity="0.35" fill="none" stroke-linecap="round" d="M 250,332 Q 250,268 187,268"/>
-                <path stroke="#8b6035" stroke-width="3"   stroke-opacity="0.35" fill="none" stroke-linecap="round" d="M 250,332 Q 250,268 312,268"/>
-                <path stroke="#8b6035" stroke-width="4"   stroke-opacity="0.40" fill="none" stroke-linecap="round" d="M 250,332 Q 250,268 437,268"/>
-                {{!-- Roots: start at trunk bottom (250,412), arc out to each column at y≈445 --}}
-                <path stroke="#6b4c28" stroke-width="4"   stroke-opacity="0.38" fill="none" stroke-linecap="round" d="M 250,412 Q 250,445  62,445"/>
-                <path stroke="#6b4c28" stroke-width="3"   stroke-opacity="0.32" fill="none" stroke-linecap="round" d="M 250,412 Q 250,445 187,445"/>
-                <path stroke="#6b4c28" stroke-width="3"   stroke-opacity="0.32" fill="none" stroke-linecap="round" d="M 250,412 Q 250,445 312,445"/>
-                <path stroke="#6b4c28" stroke-width="4"   stroke-opacity="0.38" fill="none" stroke-linecap="round" d="M 250,412 Q 250,445 437,445"/>
+              <g stroke="#7b5c2e" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                {{!-- Central trunk --}}
+                <line x1="250" y1="255" x2="250" y2="385" stroke-width="8" stroke-opacity="0.30"/>
+                {{!-- Horizontal bar at Common level (y=320) --}}
+                <line x1="62" y1="320" x2="437" y2="320" stroke-width="2" stroke-opacity="0.20"/>
+                {{!-- 4 branches: trunk top (250,255) arcing to each column at tier3 level (y=250) --}}
+                <path stroke-width="5" stroke-opacity="0.35" d="M 250,255 Q 250,250  62,250"/>
+                <path stroke-width="3" stroke-opacity="0.28" d="M 250,255 Q 250,250 187,250"/>
+                <path stroke-width="3" stroke-opacity="0.28" d="M 250,255 Q 250,250 312,250"/>
+                <path stroke-width="5" stroke-opacity="0.35" d="M 250,255 Q 250,250 437,250"/>
+                {{!-- Vertical lines up each column: tier3→tier0 --}}
+                <line x1="62"  y1="250" x2="62"  y2="55" stroke-width="2" stroke-opacity="0.22"/>
+                <line x1="187" y1="250" x2="187" y2="55" stroke-width="2" stroke-opacity="0.22"/>
+                <line x1="312" y1="250" x2="312" y2="55" stroke-width="2" stroke-opacity="0.22"/>
+                <line x1="437" y1="250" x2="437" y2="55" stroke-width="2" stroke-opacity="0.22"/>
+                {{!-- 4 roots: trunk bottom (250,385) arcing to each column at dtier0 level (y=390) --}}
+                <path stroke-width="5" stroke-opacity="0.32" d="M 250,385 Q 250,390  62,390"/>
+                <path stroke-width="3" stroke-opacity="0.25" d="M 250,385 Q 250,390 187,390"/>
+                <path stroke-width="3" stroke-opacity="0.25" d="M 250,385 Q 250,390 312,390"/>
+                <path stroke-width="5" stroke-opacity="0.32" d="M 250,385 Q 250,390 437,390"/>
+                {{!-- Vertical lines down each column: dtier0→dtier3 --}}
+                <line x1="62"  y1="390" x2="62"  y2="585" stroke-width="2" stroke-opacity="0.22"/>
+                <line x1="187" y1="390" x2="187" y2="585" stroke-width="2" stroke-opacity="0.22"/>
+                <line x1="312" y1="390" x2="312" y2="585" stroke-width="2" stroke-opacity="0.22"/>
+                <line x1="437" y1="390" x2="437" y2="585" stroke-width="2" stroke-opacity="0.22"/>
+              </g>
             </svg>
 
             <div class="honor-tree">
