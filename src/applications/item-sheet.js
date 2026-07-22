@@ -215,7 +215,8 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
 
     const sePresets = {};
     for (const se of (CONFIG.statusEffects ?? [])) {
-      sePresets[se.id] = se.label ?? se.id;
+      if (!se.tams) continue;
+      sePresets[se.id] = se.name ?? se.label ?? se.id;
     }
     const currentStatusId = this.document.system.inflictsStatusId ?? '';
     const isKnownPreset = currentStatusId === '' || !!sePresets[currentStatusId];

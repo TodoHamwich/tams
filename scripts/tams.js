@@ -251,7 +251,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         damageType: new fields.StringField({ initial: "" }),
         category: new fields.StringField({ initial: "resistance" }),
         value: new fields.NumberField({ initial: 0, integer: true, min: 0 })
-      }))
+      })),
+      honor: new fields.SchemaField({
+        valor: new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 }),
+        justice: new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 }),
+        devotion: new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 }),
+        renown: new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 })
+      })
     };
   }
   /** @override */
@@ -3440,6 +3446,89 @@ Hooks.on("dropCanvasData", async (canvas2, data) => {
   }
   return tamsHandleLootDrop(data, data.x, data.y);
 });
+const HONOR_PATHS = {
+  valor: {
+    labelKey: "TAMS.Honor.Path.Valor",
+    tiers: [
+      { min: 91, labelKey: "TAMS.Honor.Tier.Valor.Lionheart", glossKey: "TAMS.Honor.Gloss.Valor.Lionheart" },
+      { min: 76, labelKey: "TAMS.Honor.Tier.Valor.Valiant", glossKey: "TAMS.Honor.Gloss.Valor.Valiant" },
+      { min: 51, labelKey: "TAMS.Honor.Tier.Valor.Brave", glossKey: "TAMS.Honor.Gloss.Valor.Brave" },
+      { min: 26, labelKey: "TAMS.Honor.Tier.Valor.Steadfast", glossKey: "TAMS.Honor.Gloss.Valor.Steadfast" },
+      { min: 0, labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
+      { min: -25, labelKey: "TAMS.Honor.Tier.Valor.Timid", glossKey: "TAMS.Honor.Gloss.Valor.Timid" },
+      { min: -50, labelKey: "TAMS.Honor.Tier.Valor.Craven", glossKey: "TAMS.Honor.Gloss.Valor.Craven" },
+      { min: -75, labelKey: "TAMS.Honor.Tier.Valor.Dastard", glossKey: "TAMS.Honor.Gloss.Valor.Dastard" },
+      { min: -100, labelKey: "TAMS.Honor.Tier.Valor.Runagate", glossKey: "TAMS.Honor.Gloss.Valor.Runagate" }
+    ]
+  },
+  justice: {
+    labelKey: "TAMS.Honor.Path.Justice",
+    tiers: [
+      { min: 91, labelKey: "TAMS.Honor.Tier.Justice.Great", glossKey: "TAMS.Honor.Gloss.Justice.Great" },
+      { min: 76, labelKey: "TAMS.Honor.Tier.Justice.Righteous", glossKey: "TAMS.Honor.Gloss.Justice.Righteous" },
+      { min: 51, labelKey: "TAMS.Honor.Tier.Justice.Just", glossKey: "TAMS.Honor.Gloss.Justice.Just" },
+      { min: 26, labelKey: "TAMS.Honor.Tier.Justice.Upright", glossKey: "TAMS.Honor.Gloss.Justice.Upright" },
+      { min: 0, labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
+      { min: -25, labelKey: "TAMS.Honor.Tier.Justice.Suspect", glossKey: "TAMS.Honor.Gloss.Justice.Suspect" },
+      { min: -50, labelKey: "TAMS.Honor.Tier.Justice.Corrupt", glossKey: "TAMS.Honor.Gloss.Justice.Corrupt" },
+      { min: -75, labelKey: "TAMS.Honor.Tier.Justice.Unjust", glossKey: "TAMS.Honor.Gloss.Justice.Unjust" },
+      { min: -100, labelKey: "TAMS.Honor.Tier.Justice.Tyrant", glossKey: "TAMS.Honor.Gloss.Justice.Tyrant" }
+    ]
+  },
+  devotion: {
+    labelKey: "TAMS.Honor.Path.Devotion",
+    tiers: [
+      { min: 91, labelKey: "TAMS.Honor.Tier.Devotion.Sainted", glossKey: "TAMS.Honor.Gloss.Devotion.Sainted" },
+      { min: 76, labelKey: "TAMS.Honor.Tier.Devotion.Devoted", glossKey: "TAMS.Honor.Gloss.Devotion.Devoted" },
+      { min: 51, labelKey: "TAMS.Honor.Tier.Devotion.Pious", glossKey: "TAMS.Honor.Gloss.Devotion.Pious" },
+      { min: 26, labelKey: "TAMS.Honor.Tier.Devotion.Faithful", glossKey: "TAMS.Honor.Gloss.Devotion.Faithful" },
+      { min: 0, labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
+      { min: -25, labelKey: "TAMS.Honor.Tier.Devotion.Lapsed", glossKey: "TAMS.Honor.Gloss.Devotion.Lapsed" },
+      { min: -50, labelKey: "TAMS.Honor.Tier.Devotion.Faithless", glossKey: "TAMS.Honor.Gloss.Devotion.Faithless" },
+      { min: -75, labelKey: "TAMS.Honor.Tier.Devotion.Heretic", glossKey: "TAMS.Honor.Gloss.Devotion.Heretic" },
+      { min: -100, labelKey: "TAMS.Honor.Tier.Devotion.Accursed", glossKey: "TAMS.Honor.Gloss.Devotion.Accursed" }
+    ]
+  },
+  renown: {
+    labelKey: "TAMS.Honor.Path.Renown",
+    tiers: [
+      { min: 91, labelKey: "TAMS.Honor.Tier.Renown.Magnificent", glossKey: "TAMS.Honor.Gloss.Renown.Magnificent" },
+      { min: 76, labelKey: "TAMS.Honor.Tier.Renown.Renowned", glossKey: "TAMS.Honor.Gloss.Renown.Renowned" },
+      { min: 51, labelKey: "TAMS.Honor.Tier.Renown.Honored", glossKey: "TAMS.Honor.Gloss.Renown.Honored" },
+      { min: 26, labelKey: "TAMS.Honor.Tier.Renown.Worthy", glossKey: "TAMS.Honor.Gloss.Renown.Worthy" },
+      { min: 0, labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
+      { min: -25, labelKey: "TAMS.Honor.Tier.Renown.Disgraced", glossKey: "TAMS.Honor.Gloss.Renown.Disgraced" },
+      { min: -50, labelKey: "TAMS.Honor.Tier.Renown.Infamous", glossKey: "TAMS.Honor.Gloss.Renown.Infamous" },
+      { min: -75, labelKey: "TAMS.Honor.Tier.Renown.Villainous", glossKey: "TAMS.Honor.Gloss.Renown.Villainous" },
+      { min: -100, labelKey: "TAMS.Honor.Tier.Renown.Damned", glossKey: "TAMS.Honor.Gloss.Renown.Damned" }
+    ]
+  }
+};
+function getHonorTier(score, path) {
+  const pathData = HONOR_PATHS[path];
+  if (!pathData) return null;
+  for (const tier of pathData.tiers) {
+    if (score >= tier.min) return tier;
+  }
+  return pathData.tiers[pathData.tiers.length - 1];
+}
+function isHonorEnabled() {
+  try {
+    return game.settings.get("tams", "honorSystem") === true;
+  } catch {
+    return false;
+  }
+}
+function getPartyHonor() {
+  try {
+    return JSON.parse(game.settings.get("tams", "partyHonor"));
+  } catch {
+    return { valor: 0, justice: 0, devotion: 0, renown: 0 };
+  }
+}
+function setPartyHonor(data) {
+  return game.settings.set("tams", "partyHonor", JSON.stringify(data));
+}
 const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
 const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2) {
   /** @override */
@@ -3480,7 +3569,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         barrierClear: _TAMSActorSheet.prototype._onBarrierClear,
         sceneReset: _TAMSActorSheet.prototype._onSceneReset,
         callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck,
-        itemSendDescription: _TAMSActorSheet.prototype._onItemSendDescription
+        itemSendDescription: _TAMSActorSheet.prototype._onItemSendDescription,
+        honorEdit: _TAMSActorSheet.prototype._onHonorEdit
       }
     }, { inplace: false });
   }
@@ -3542,6 +3632,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     this._prepareSelectOptions(context);
     this._prepareCurrencyData(context);
     this._prepareLimbArmorOptions(context);
+    this._prepareHonorData(context);
     const skipDisplay = /* @__PURE__ */ new Set(["encumbered"]);
     context.activeStatuses = [...this.document.statuses ?? []].filter((id) => !skipDisplay.has(id)).map((id) => {
       var _a, _b;
@@ -3881,6 +3972,54 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (capacityMode === "slots") {
       context.capacityPercentage = Math.clamp(inv.usedSlots / (inv.maxSlots || 1) * 100, 0, 100);
     }
+  }
+  _prepareHonorData(context) {
+    context.honorEnabled = isHonorEnabled();
+    if (!context.honorEnabled) return;
+    const honor = this.document.system.honor ?? {};
+    context.honorPaths = Object.entries(HONOR_PATHS).map(([id, pathData]) => {
+      const score = honor[id] ?? 0;
+      const currentTier = getHonorTier(score, id);
+      const ci = pathData.tiers.indexOf(currentTier);
+      const mkTier = (tier, i) => ({
+        labelKey: tier.labelKey,
+        glossKey: tier.glossKey,
+        active: i <= 4 ? ci <= i : ci >= i,
+        // honor: ci<=i; dishonor: ci>=i
+        current: ci === i
+      });
+      const honorTiers = pathData.tiers.slice(0, 4).map((t, i) => mkTier(t, i));
+      const dishonorTiers = pathData.tiers.slice(5).map((t, j) => mkTier(t, j + 5));
+      return {
+        id,
+        score,
+        labelKey: pathData.labelKey,
+        honorTiers,
+        dishonorTiers,
+        // Named shortcuts so templates can use path.ht0.active without subexpressions
+        ht0: honorTiers[0],
+        ht1: honorTiers[1],
+        ht2: honorTiers[2],
+        ht3: honorTiers[3],
+        dt0: dishonorTiers[0],
+        dt1: dishonorTiers[1],
+        dt2: dishonorTiers[2],
+        dt3: dishonorTiers[3],
+        common: { ...mkTier(pathData.tiers[4], 4), labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
+        // Segment fills: hN = segment between honor tiers, dN = dishonor
+        seg: {
+          h0: ci <= 0,
+          h1: ci <= 1,
+          h2: ci <= 2,
+          h3: ci <= 3,
+          d0: ci >= 5,
+          d1: ci >= 6,
+          d2: ci >= 7,
+          d3: ci >= 8
+        }
+      };
+    });
+    context.isGM = game.user.isGM;
   }
   /**
    * Handle creating a new item on the actor.
@@ -5216,6 +5355,37 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   async _onCallGroupCheck(event, target) {
     game.tams.groupCheck();
   }
+  async _onHonorEdit(event, target) {
+    var _a;
+    const path = target.dataset.path;
+    const pathData = HONOR_PATHS[path];
+    if (!pathData) return;
+    const current = ((_a = this.document.system.honor) == null ? void 0 : _a[path]) ?? 0;
+    new Dialog({
+      title: `${game.i18n.localize(pathData.labelKey)} — ${game.i18n.localize("TAMS.Honor.EditScore")}`,
+      content: `<div class="form-group" style="padding: 10px;">
+        <label>${game.i18n.localize("TAMS.Honor.Score")} (-100 ${game.i18n.localize("TAMS.Honor.To")} 100)</label>
+        <input type="number" name="score" value="${current}" min="-100" max="100" style="width: 80px; margin-left: 10px;"/>
+      </div>`,
+      buttons: {
+        save: {
+          icon: '<i class="fas fa-save"></i>',
+          label: game.i18n.localize("TAMS.Save"),
+          callback: async (html) => {
+            const val = parseInt(html.find('[name="score"]').val());
+            if (!isNaN(val)) {
+              await this.document.update({ [`system.honor.${path}`]: Math.clamp(val, -100, 100) });
+            }
+          }
+        },
+        cancel: {
+          icon: '<i class="fas fa-times"></i>',
+          label: game.i18n.localize("TAMS.Cancel")
+        }
+      },
+      default: "save"
+    }).render(true);
+  }
 };
 __publicField(_TAMSActorSheet, "PARTS", {
   form: {
@@ -5617,7 +5787,8 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     }
     const sePresets = {};
     for (const se of CONFIG.statusEffects ?? []) {
-      sePresets[se.id] = se.label ?? se.id;
+      if (!se.tams) continue;
+      sePresets[se.id] = se.name ?? se.label ?? se.id;
     }
     const currentStatusId = this.document.system.inflictsStatusId ?? "";
     const isKnownPreset = currentStatusId === "" || !!sePresets[currentStatusId];
@@ -6393,6 +6564,67 @@ __publicField(_TAMSItemMaker, "PARTS", {
   form: { template: "systems/tams/templates/item-maker.html" }
 });
 let TAMSItemMaker = _TAMSItemMaker;
+const _TAMSPartyHonorApp = class _TAMSPartyHonorApp extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    const partyHonor = getPartyHonor();
+    context.paths = Object.entries(HONOR_PATHS).map(([id, pathData]) => {
+      const score = partyHonor[id] ?? 0;
+      return { id, score, labelKey: pathData.labelKey, tier: getHonorTier(score, id) };
+    });
+    context.isGM = game.user.isGM;
+    return context;
+  }
+  async _onAdjustScore(event, target) {
+    const path = target.dataset.path;
+    const partyHonor = getPartyHonor();
+    const current = partyHonor[path] ?? 0;
+    const pathData = HONOR_PATHS[path];
+    if (!pathData) return;
+    new Dialog({
+      title: `${game.i18n.localize(pathData.labelKey)} — ${game.i18n.localize("TAMS.Honor.EditScore")}`,
+      content: `<div class="form-group" style="padding: 10px;">
+        <label>${game.i18n.localize("TAMS.Honor.Score")} (-100 ${game.i18n.localize("TAMS.Honor.To")} 100)</label>
+        <input type="number" name="score" value="${current}" min="-100" max="100" style="width: 80px; margin-left: 10px;"/>
+      </div>`,
+      buttons: {
+        save: {
+          icon: '<i class="fas fa-save"></i>',
+          label: game.i18n.localize("TAMS.Save"),
+          callback: async (html) => {
+            const val = parseInt(html.find('[name="score"]').val());
+            if (!isNaN(val)) {
+              partyHonor[path] = Math.clamp(val, -100, 100);
+              await setPartyHonor(partyHonor);
+              this.render();
+            }
+          }
+        },
+        cancel: {
+          icon: '<i class="fas fa-times"></i>',
+          label: game.i18n.localize("TAMS.Cancel")
+        }
+      },
+      default: "save"
+    }).render(true);
+  }
+};
+__publicField(_TAMSPartyHonorApp, "DEFAULT_OPTIONS", {
+  id: "tams-party-honor",
+  classes: ["tams", "party-honor"],
+  position: { width: 480, height: "auto" },
+  window: {
+    title: "TAMS.Honor.PartyHonor",
+    icon: "fas fa-shield-alt"
+  },
+  actions: {
+    adjustScore: _TAMSPartyHonorApp.prototype._onAdjustScore
+  }
+});
+__publicField(_TAMSPartyHonorApp, "PARTS", {
+  form: { template: "systems/tams/templates/party-honor.html" }
+});
+let TAMSPartyHonorApp = _TAMSPartyHonorApp;
 Hooks.once("init", async function() {
   var _a, _b, _c, _d;
   console.log("TAMS | Initializing Todo's Advanced Modular System");
@@ -6435,6 +6667,21 @@ Hooks.once("init", async function() {
     type: Number,
     range: { min: 2, max: 10, step: 1 },
     default: 2
+  });
+  game.settings.register("tams", "honorSystem", {
+    name: "TAMS.Settings.HonorSystem",
+    hint: "TAMS.Settings.HonorSystemHint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+  game.settings.register("tams", "partyHonor", {
+    name: "TAMS.Honor.PartyHonor",
+    scope: "world",
+    config: false,
+    type: String,
+    default: '{"valor":0,"justice":0,"devotion":0,"renown":0}'
   });
   game.settings.register("tams", "enforceEquipLimit", {
     name: "TAMS.Settings.EnforceEquipLimit",
@@ -6479,7 +6726,13 @@ Hooks.once("init", async function() {
       game.tams._travelPaceApp.render(true, { focus: true });
     },
     groupCheck: () => tamsCallGroupCheck(),
-    openItemMaker: (actor = null) => TAMSItemMaker.open(actor)
+    openItemMaker: (actor = null) => TAMSItemMaker.open(actor),
+    partyHonor: () => {
+      if (!game.tams._partyHonorApp) {
+        game.tams._partyHonorApp = new TAMSPartyHonorApp();
+      }
+      game.tams._partyHonorApp.render(true, { focus: true });
+    }
   };
   foundry.documents.collections.Actors.unregisterSheet("core", (_b = (_a = foundry.appv1) == null ? void 0 : _a.sheets) == null ? void 0 : _b.ActorSheet);
   foundry.documents.collections.Actors.registerSheet("tams", TAMSActorSheet, { makeDefault: true });
@@ -6521,6 +6774,7 @@ Hooks.once("init", async function() {
   Handlebars.registerHelper("not", (a) => !a);
   Handlebars.registerHelper("subtract", (a, b) => (Number(a) || 0) - (Number(b) || 0));
   Handlebars.registerHelper("add", (a, b) => (Number(a) || 0) + (Number(b) || 0));
+  Handlebars.registerHelper("index", (arr, i) => arr == null ? void 0 : arr[i]);
   Handlebars.registerHelper("capitalize", (str) => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -6551,32 +6805,32 @@ Hooks.once("init", async function() {
   });
   const tamsStatusEffects = [
     // Existing
-    { id: "encumbered", name: "TAMS.Encumbered", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg" },
-    { id: "bleeding", name: "TAMS.Status.Bleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
-    { id: "severe-bleeding", name: "TAMS.Status.SevereBleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
+    { id: "encumbered", name: "TAMS.Encumbered", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg", tams: true },
+    { id: "bleeding", name: "TAMS.Status.Bleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
+    { id: "severe-bleeding", name: "TAMS.Status.SevereBleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
     // Category 1 — Combat Conditions
-    { id: "stunned", name: "TAMS.Status.Stunned", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg" },
-    { id: "prone", name: "TAMS.Status.Prone", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg" },
-    { id: "suppressed", name: "TAMS.Status.Suppressed", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg" },
-    { id: "blinded", name: "TAMS.Status.Blinded", img: "icons/svg/blind.svg", icon: "icons/svg/blind.svg" },
-    { id: "deafened", name: "TAMS.Status.Deafened", img: "icons/svg/deaf.svg", icon: "icons/svg/deaf.svg" },
+    { id: "stunned", name: "TAMS.Status.Stunned", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg", tams: true },
+    { id: "prone", name: "TAMS.Status.Prone", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg", tams: true },
+    { id: "suppressed", name: "TAMS.Status.Suppressed", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg", tams: true },
+    { id: "blinded", name: "TAMS.Status.Blinded", img: "icons/svg/blind.svg", icon: "icons/svg/blind.svg", tams: true },
+    { id: "deafened", name: "TAMS.Status.Deafened", img: "icons/svg/deaf.svg", icon: "icons/svg/deaf.svg", tams: true },
     // Category 2 — Ongoing Damage (severity tiers)
-    { id: "on-fire", name: "TAMS.Status.OnFire", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg" },
-    { id: "engulfed", name: "TAMS.Status.Engulfed", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg" },
-    { id: "poisoned", name: "TAMS.Status.Poisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg" },
-    { id: "severely-poisoned", name: "TAMS.Status.SeverelyPoisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg" },
-    { id: "irradiated", name: "TAMS.Status.Irradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg" },
-    { id: "severely-irradiated", name: "TAMS.Status.SeverelyIrradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg" },
-    { id: "acid-burn", name: "TAMS.Status.AcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
-    { id: "severe-acid-burn", name: "TAMS.Status.SevereAcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
+    { id: "on-fire", name: "TAMS.Status.OnFire", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg", tams: true },
+    { id: "engulfed", name: "TAMS.Status.Engulfed", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg", tams: true },
+    { id: "poisoned", name: "TAMS.Status.Poisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg", tams: true },
+    { id: "severely-poisoned", name: "TAMS.Status.SeverelyPoisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg", tams: true },
+    { id: "irradiated", name: "TAMS.Status.Irradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg", tams: true },
+    { id: "severely-irradiated", name: "TAMS.Status.SeverelyIrradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg", tams: true },
+    { id: "acid-burn", name: "TAMS.Status.AcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
+    { id: "severe-acid-burn", name: "TAMS.Status.SevereAcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
     // Category 3 — Morale / Mental
-    { id: "fleeing", name: "TAMS.Status.Fleeing", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg" },
-    { id: "frozen", name: "TAMS.Status.Frozen", img: "icons/svg/frozen.svg", icon: "icons/svg/frozen.svg" },
-    { id: "charmed", name: "TAMS.Status.Charmed", img: "icons/svg/sleep.svg", icon: "icons/svg/sleep.svg" },
-    { id: "confused", name: "TAMS.Status.Confused", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg" },
+    { id: "fleeing", name: "TAMS.Status.Fleeing", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg", tams: true },
+    { id: "frozen", name: "TAMS.Status.Frozen", img: "icons/svg/frozen.svg", icon: "icons/svg/frozen.svg", tams: true },
+    { id: "charmed", name: "TAMS.Status.Charmed", img: "icons/svg/sleep.svg", icon: "icons/svg/sleep.svg", tams: true },
+    { id: "confused", name: "TAMS.Status.Confused", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg", tams: true },
     // Category 4 — Limb-Specific
-    { id: "broken-arm", name: "TAMS.Status.BrokenArm", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" },
-    { id: "broken-leg", name: "TAMS.Status.BrokenLeg", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg" }
+    { id: "broken-arm", name: "TAMS.Status.BrokenArm", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
+    { id: "broken-leg", name: "TAMS.Status.BrokenLeg", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true }
   ];
   for (const effect of tamsStatusEffects) {
     if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some((e) => e.id === effect.id)) {

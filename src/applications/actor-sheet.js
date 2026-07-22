@@ -1,6 +1,7 @@
 import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog } from '../utils/helpers.js';
 import { computeArmorRepair } from '../utils/inventory.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
+import { HONOR_PATHS, getHonorTier, isHonorEnabled } from '../utils/honor.js';
 
 const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
 
@@ -47,7 +48,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         barrierClear: TAMSActorSheet.prototype._onBarrierClear,
         sceneReset: TAMSActorSheet.prototype._onSceneReset,
         callGroupCheck: TAMSActorSheet.prototype._onCallGroupCheck,
-        itemSendDescription: TAMSActorSheet.prototype._onItemSendDescription
+        itemSendDescription: TAMSActorSheet.prototype._onItemSendDescription,
+        honorEdit: TAMSActorSheet.prototype._onHonorEdit
       }
     }, { inplace: false });
   }
@@ -131,6 +133,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     this._prepareSelectOptions(context);
     this._prepareCurrencyData(context);
     this._prepareLimbArmorOptions(context);
+    this._prepareHonorData(context);
 
     // Active status effects panel
     const skipDisplay = new Set(["encumbered"]);
@@ -491,6 +494,43 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (capacityMode === "slots") {
         context.capacityPercentage = Math.clamp((inv.usedSlots / (inv.maxSlots || 1)) * 100, 0, 100);
     }
+  }
+
+  _prepareHonorData(context) {
+    context.honorEnabled = isHonorEnabled();
+    if (!context.honorEnabled) return;
+    const honor = this.document.system.honor ?? {};
+    context.honorPaths = Object.entries(HONOR_PATHS).map(([id, pathData]) => {
+      const score = honor[id] ?? 0;
+      const currentTier = getHonorTier(score, id);
+      const ci = pathData.tiers.indexOf(currentTier); // 0=Lionheart … 4=Common … 8=Runagate
+
+      const mkTier = (tier, i) => ({
+        labelKey: tier.labelKey,
+        glossKey: tier.glossKey,
+        active: i <= 4 ? ci <= i : ci >= i, // honor: ci<=i; dishonor: ci>=i
+        current: ci === i
+      });
+
+      const honorTiers    = pathData.tiers.slice(0, 4).map((t, i) => mkTier(t, i));
+      const dishonorTiers = pathData.tiers.slice(5).map((t, j) => mkTier(t, j + 5));
+      return {
+        id, score,
+        labelKey: pathData.labelKey,
+        honorTiers,
+        dishonorTiers,
+        // Named shortcuts so templates can use path.ht0.active without subexpressions
+        ht0: honorTiers[0], ht1: honorTiers[1], ht2: honorTiers[2], ht3: honorTiers[3],
+        dt0: dishonorTiers[0], dt1: dishonorTiers[1], dt2: dishonorTiers[2], dt3: dishonorTiers[3],
+        common: { ...mkTier(pathData.tiers[4], 4), labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
+        // Segment fills: hN = segment between honor tiers, dN = dishonor
+        seg: {
+          h0: ci <= 0, h1: ci <= 1, h2: ci <= 2, h3: ci <= 3,
+          d0: ci >= 5, d1: ci >= 6, d2: ci >= 7, d3: ci >= 8
+        }
+      };
+    });
+    context.isGM = game.user.isGM;
   }
 
   /**
@@ -1986,5 +2026,37 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
   async _onCallGroupCheck(event, target) {
     game.tams.groupCheck();
+  }
+
+  async _onHonorEdit(event, target) {
+    const path = target.dataset.path;
+    const pathData = HONOR_PATHS[path];
+    if (!pathData) return;
+    const current = this.document.system.honor?.[path] ?? 0;
+
+    new Dialog({
+      title: `${game.i18n.localize(pathData.labelKey)} — ${game.i18n.localize("TAMS.Honor.EditScore")}`,
+      content: `<div class="form-group" style="padding: 10px;">
+        <label>${game.i18n.localize("TAMS.Honor.Score")} (-100 ${game.i18n.localize("TAMS.Honor.To")} 100)</label>
+        <input type="number" name="score" value="${current}" min="-100" max="100" style="width: 80px; margin-left: 10px;"/>
+      </div>`,
+      buttons: {
+        save: {
+          icon: '<i class="fas fa-save"></i>',
+          label: game.i18n.localize("TAMS.Save"),
+          callback: async (html) => {
+            const val = parseInt(html.find('[name="score"]').val());
+            if (!isNaN(val)) {
+              await this.document.update({ [`system.honor.${path}`]: Math.clamp(val, -100, 100) });
+            }
+          }
+        },
+        cancel: {
+          icon: '<i class="fas fa-times"></i>',
+          label: game.i18n.localize("TAMS.Cancel")
+        }
+      },
+      default: "save"
+    }).render(true);
   }
 }

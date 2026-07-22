@@ -160,7 +160,13 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         damageType: new fields.StringField({initial: ""}),
         category: new fields.StringField({initial: "resistance"}),
         value: new fields.NumberField({initial: 0, integer: true, min: 0})
-      }))
+      })),
+      honor: new fields.SchemaField({
+        valor:    new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 }),
+        justice:  new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 }),
+        devotion: new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 }),
+        renown:   new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 })
+      })
     };
   }
 

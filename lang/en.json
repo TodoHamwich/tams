@@ -211,7 +211,9 @@
       "EnforceEquipLimit": "Enforce Equip (Hand) Limit",
       "EnforceEquipLimitHint": "When enabled, limit how many weapons/shields can be held at once.",
       "MaxHands": "Number of Hands",
-      "MaxHandsHint": "Maximum hands available when the equip limit is enforced."
+      "MaxHandsHint": "Maximum hands available when the equip limit is enforced.",
+      "HonorSystem": "Enable Honor System",
+      "HonorSystemHint": "Enables the Honor tracking system, showing each character's standing across four paths: Valor, Justice, Devotion, and Renown."
     },
     "Yes": "Yes",
     "No": "No",
@@ -533,7 +535,8 @@
       "Modifiers": "Modifiers",
       "Settings": "Settings",
       "Resistances": "Resistances",
-      "Scene": "Scene"
+      "Scene": "Scene",
+      "Honor": "Honor"
     },
     "SceneUPPools": "Upgrade Point Pools",
     "SceneUsed": "Used This Scene",
@@ -812,6 +815,106 @@
         "Jammed": "JAMMED",
         "ReliableReroll": "Reliable Reroll (Original: {original})",
         "HandsFull": "Your hands are full (max {max})."
+      }
+    },
+    "Honor": {
+      "Title": "Honor",
+      "EditScore": "Edit Score",
+      "Score": "Score",
+      "To": "to",
+      "PartyHonor": "Party Honor",
+      "PartyHonorHint": "Tracks the party's collective standing on each honor path. Adjusted by the GM.",
+      "Path": {
+        "Valor":    "Valor",
+        "Justice":  "Justice",
+        "Devotion": "Devotion",
+        "Renown":   "Renown"
+      },
+      "Tier": {
+        "Common": "Common",
+        "Valor": {
+          "Lionheart": "the Lionheart",
+          "Valiant":   "the Valiant",
+          "Brave":     "the Brave",
+          "Steadfast": "the Steadfast",
+          "Timid":     "the Timid",
+          "Craven":    "the Craven",
+          "Dastard":   "the Dastard",
+          "Runagate":  "the Runagate"
+        },
+        "Justice": {
+          "Great":     "the Great",
+          "Righteous": "the Righteous",
+          "Just":      "the Just",
+          "Upright":   "the Upright",
+          "Suspect":   "the Suspect",
+          "Corrupt":   "the Corrupt",
+          "Unjust":    "the Unjust",
+          "Tyrant":    "the Tyrant"
+        },
+        "Devotion": {
+          "Sainted":   "the Sainted",
+          "Devoted":   "the Devoted",
+          "Pious":     "the Pious",
+          "Faithful":  "the Faithful",
+          "Lapsed":    "the Lapsed",
+          "Faithless": "the Faithless",
+          "Heretic":   "the Heretic",
+          "Accursed":  "the Accursed"
+        },
+        "Renown": {
+          "Magnificent": "the Magnificent",
+          "Renowned":    "the Renowned",
+          "Honored":     "the Honored",
+          "Worthy":      "the Worthy",
+          "Disgraced":   "the Disgraced",
+          "Infamous":    "the Infamous",
+          "Villainous":  "the Villainous",
+          "Damned":      "the Damned"
+        }
+      },
+      "Gloss": {
+        "Common": "No particular standing",
+        "Valor": {
+          "Lionheart": "Fearless, a legend in their own time",
+          "Valiant":   "Distinguished in battle",
+          "Brave":     "Proven courage",
+          "Steadfast": "Reliable, holds the line",
+          "Timid":     "Avoids danger, unreliable",
+          "Craven":    "Known coward",
+          "Dastard":   "Cowardly and treacherous",
+          "Runagate":  "Deserter, fled duty entirely"
+        },
+        "Justice": {
+          "Great":     "A standard-bearer for all",
+          "Righteous": "Upholds justice at personal cost",
+          "Just":      "Fair and principled",
+          "Upright":   "Honest, trustworthy",
+          "Suspect":   "Questionable character",
+          "Corrupt":   "Known to abuse power",
+          "Unjust":    "Openly cruel and unfair",
+          "Tyrant":    "Rules through fear and cruelty"
+        },
+        "Devotion": {
+          "Sainted":   "Revered, almost beyond reproach",
+          "Devoted":   "Selfless service to a cause",
+          "Pious":     "Devout, spiritually disciplined",
+          "Faithful":  "Keeps oaths and beliefs",
+          "Lapsed":    "Slipping from their oaths",
+          "Faithless": "Broken oaths, untrustworthy",
+          "Heretic":   "Actively rejects what they once swore to",
+          "Accursed":  "Condemned, cast out"
+        },
+        "Renown": {
+          "Magnificent": "Extraordinary, spoken of with awe",
+          "Renowned":    "Fame spreads beyond their home",
+          "Honored":     "Well-regarded, known by name",
+          "Worthy":      "Earns respect through deeds",
+          "Disgraced":   "Fell from good standing",
+          "Infamous":    "Known for wrongdoing",
+          "Villainous":  "Actively harmful reputation",
+          "Damned":      "Beyond redemption in public eyes"
+        }
       }
     }
   },

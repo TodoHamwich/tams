@@ -9,6 +9,7 @@ import { TAMSNPCSheet } from './applications/npc-sheet.js';
 import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
 import { TAMSItemMaker } from './applications/item-maker.js';
+import { TAMSPartyHonorApp } from './applications/party-honor-dialog.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
 import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending, tamsHandleContestedCheckPending, tamsOnTurnStart, tamsOnCombatEnd } from './utils/combat.js';
 
@@ -63,6 +64,25 @@ Hooks.once("init", async function() {
     default: 2
   });
 
+  // Honor system: toggle the honor tracking feature on or off world-wide
+  game.settings.register("tams", "honorSystem", {
+    name: "TAMS.Settings.HonorSystem",
+    hint: "TAMS.Settings.HonorSystemHint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+
+  // Honor system: persisted party honor scores (not shown in settings UI, managed via dialog)
+  game.settings.register("tams", "partyHonor", {
+    name: "TAMS.Honor.PartyHonor",
+    scope: "world",
+    config: false,
+    type: String,
+    default: '{"valor":0,"justice":0,"devotion":0,"renown":0}'
+  });
+
   // Inventory: enforce a maximum number of equipped/in-hand weapons & shields
   game.settings.register("tams", "enforceEquipLimit", {
     name: "TAMS.Settings.EnforceEquipLimit",
@@ -114,7 +134,13 @@ Hooks.once("init", async function() {
       game.tams._travelPaceApp.render(true, { focus: true });
     },
     groupCheck: () => tamsCallGroupCheck(),
-    openItemMaker: (actor = null) => TAMSItemMaker.open(actor)
+    openItemMaker: (actor = null) => TAMSItemMaker.open(actor),
+    partyHonor: () => {
+      if (!game.tams._partyHonorApp) {
+        game.tams._partyHonorApp = new TAMSPartyHonorApp();
+      }
+      game.tams._partyHonorApp.render(true, { focus: true });
+    }
   };
 
   foundry.documents.collections.Actors.unregisterSheet("core", foundry.appv1?.sheets?.ActorSheet);
@@ -178,6 +204,9 @@ Hooks.once("init", async function() {
   Handlebars.registerHelper('subtract', (a, b) => (Number(a) || 0) - (Number(b) || 0));
   Handlebars.registerHelper('add', (a, b) => (Number(a) || 0) + (Number(b) || 0));
   
+  /** Return element at index i from an array */
+  Handlebars.registerHelper('index', (arr, i) => arr?.[i]);
+
   /** Capitalize a string */
   Handlebars.registerHelper('capitalize', (str) => {
     if (!str) return "";
@@ -216,34 +245,36 @@ Hooks.once("init", async function() {
   });
 
   // --- Custom status effects ---
+  // tams: true marks effects that are selectable on items (abilities/weapons).
+  // Terminal states like "dead" must NOT be in this list.
   const tamsStatusEffects = [
     // Existing
-    { id: "encumbered",           name: "TAMS.Encumbered",                  img: "icons/svg/anchor.svg",  icon: "icons/svg/anchor.svg" },
-    { id: "bleeding",             name: "TAMS.Status.Bleeding",             img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
-    { id: "severe-bleeding",      name: "TAMS.Status.SevereBleeding",       img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
+    { id: "encumbered",           name: "TAMS.Encumbered",                  img: "icons/svg/anchor.svg",  icon: "icons/svg/anchor.svg",  tams: true },
+    { id: "bleeding",             name: "TAMS.Status.Bleeding",             img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg",   tams: true },
+    { id: "severe-bleeding",      name: "TAMS.Status.SevereBleeding",       img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg",   tams: true },
     // Category 1 — Combat Conditions
-    { id: "stunned",              name: "TAMS.Status.Stunned",              img: "icons/svg/daze.svg",    icon: "icons/svg/daze.svg" },
-    { id: "prone",                name: "TAMS.Status.Prone",                img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg" },
-    { id: "suppressed",           name: "TAMS.Status.Suppressed",           img: "icons/svg/anchor.svg",  icon: "icons/svg/anchor.svg" },
-    { id: "blinded",              name: "TAMS.Status.Blinded",              img: "icons/svg/blind.svg",   icon: "icons/svg/blind.svg" },
-    { id: "deafened",             name: "TAMS.Status.Deafened",             img: "icons/svg/deaf.svg",    icon: "icons/svg/deaf.svg" },
+    { id: "stunned",              name: "TAMS.Status.Stunned",              img: "icons/svg/daze.svg",    icon: "icons/svg/daze.svg",    tams: true },
+    { id: "prone",                name: "TAMS.Status.Prone",                img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg", tams: true },
+    { id: "suppressed",           name: "TAMS.Status.Suppressed",           img: "icons/svg/anchor.svg",  icon: "icons/svg/anchor.svg",  tams: true },
+    { id: "blinded",              name: "TAMS.Status.Blinded",              img: "icons/svg/blind.svg",   icon: "icons/svg/blind.svg",   tams: true },
+    { id: "deafened",             name: "TAMS.Status.Deafened",             img: "icons/svg/deaf.svg",    icon: "icons/svg/deaf.svg",    tams: true },
     // Category 2 — Ongoing Damage (severity tiers)
-    { id: "on-fire",              name: "TAMS.Status.OnFire",               img: "icons/svg/fire.svg",    icon: "icons/svg/fire.svg" },
-    { id: "engulfed",             name: "TAMS.Status.Engulfed",             img: "icons/svg/fire.svg",    icon: "icons/svg/fire.svg" },
-    { id: "poisoned",             name: "TAMS.Status.Poisoned",             img: "icons/svg/poison.svg",  icon: "icons/svg/poison.svg" },
-    { id: "severely-poisoned",    name: "TAMS.Status.SeverelyPoisoned",     img: "icons/svg/poison.svg",  icon: "icons/svg/poison.svg" },
-    { id: "irradiated",           name: "TAMS.Status.Irradiated",           img: "icons/svg/skull.svg",   icon: "icons/svg/skull.svg" },
-    { id: "severely-irradiated",  name: "TAMS.Status.SeverelyIrradiated",   img: "icons/svg/skull.svg",   icon: "icons/svg/skull.svg" },
-    { id: "acid-burn",            name: "TAMS.Status.AcidBurn",             img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
-    { id: "severe-acid-burn",     name: "TAMS.Status.SevereAcidBurn",       img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
+    { id: "on-fire",              name: "TAMS.Status.OnFire",               img: "icons/svg/fire.svg",    icon: "icons/svg/fire.svg",    tams: true },
+    { id: "engulfed",             name: "TAMS.Status.Engulfed",             img: "icons/svg/fire.svg",    icon: "icons/svg/fire.svg",    tams: true },
+    { id: "poisoned",             name: "TAMS.Status.Poisoned",             img: "icons/svg/poison.svg",  icon: "icons/svg/poison.svg",  tams: true },
+    { id: "severely-poisoned",    name: "TAMS.Status.SeverelyPoisoned",     img: "icons/svg/poison.svg",  icon: "icons/svg/poison.svg",  tams: true },
+    { id: "irradiated",           name: "TAMS.Status.Irradiated",           img: "icons/svg/skull.svg",   icon: "icons/svg/skull.svg",   tams: true },
+    { id: "severely-irradiated",  name: "TAMS.Status.SeverelyIrradiated",   img: "icons/svg/skull.svg",   icon: "icons/svg/skull.svg",   tams: true },
+    { id: "acid-burn",            name: "TAMS.Status.AcidBurn",             img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg",   tams: true },
+    { id: "severe-acid-burn",     name: "TAMS.Status.SevereAcidBurn",       img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg",   tams: true },
     // Category 3 — Morale / Mental
-    { id: "fleeing",              name: "TAMS.Status.Fleeing",              img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg" },
-    { id: "frozen",               name: "TAMS.Status.Frozen",               img: "icons/svg/frozen.svg",  icon: "icons/svg/frozen.svg" },
-    { id: "charmed",              name: "TAMS.Status.Charmed",              img: "icons/svg/sleep.svg",   icon: "icons/svg/sleep.svg" },
-    { id: "confused",             name: "TAMS.Status.Confused",             img: "icons/svg/daze.svg",    icon: "icons/svg/daze.svg" },
+    { id: "fleeing",              name: "TAMS.Status.Fleeing",              img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg", tams: true },
+    { id: "frozen",               name: "TAMS.Status.Frozen",               img: "icons/svg/frozen.svg",  icon: "icons/svg/frozen.svg",  tams: true },
+    { id: "charmed",              name: "TAMS.Status.Charmed",              img: "icons/svg/sleep.svg",   icon: "icons/svg/sleep.svg",   tams: true },
+    { id: "confused",             name: "TAMS.Status.Confused",             img: "icons/svg/daze.svg",    icon: "icons/svg/daze.svg",    tams: true },
     // Category 4 — Limb-Specific
-    { id: "broken-arm",           name: "TAMS.Status.BrokenArm",            img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
-    { id: "broken-leg",           name: "TAMS.Status.BrokenLeg",            img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg" },
+    { id: "broken-arm",           name: "TAMS.Status.BrokenArm",            img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg",   tams: true },
+    { id: "broken-leg",           name: "TAMS.Status.BrokenLeg",            img: "icons/svg/blood.svg",   icon: "icons/svg/blood.svg",   tams: true },
   ];
   for (const effect of tamsStatusEffects) {
     if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some(e => e.id === effect.id)) {

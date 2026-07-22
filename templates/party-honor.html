@@ -1,0 +1,16 @@
+<div class="tams party-honor-panel" style="padding: 10px;">
+    <p style="color: #666; font-size: 0.9em; font-style: italic; margin-bottom: 10px;">{{localize 'TAMS.Honor.PartyHonorHint'}}</p>
+    {{#each paths as |path|}}
+    <div class="honor-path-row" style="display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid rgba(0,0,0,0.1);">
+        <span style="font-weight: bold; min-width: 75px;">{{localize path.labelKey}}</span>
+        <span style="flex: 1; font-size: 0.95em;">
+            {{localize path.tier.labelKey}}
+            <span style="color: #777; font-size: 0.85em; font-style: italic;"> — {{localize path.tier.glossKey}}</span>
+        </span>
+        <span style="font-size: 0.85em; color: #555; min-width: 35px; text-align: right;">{{path.score}}</span>
+        {{#if ../isGM}}
+        <a data-action="adjustScore" data-path="{{path.id}}" style="cursor: pointer; color: #555; padding-left: 4px;" title="{{localize 'TAMS.Honor.EditScore'}}"><i class="fas fa-pencil"></i></a>
+        {{/if}}
+    </div>
+    {{/each}}
+</div>

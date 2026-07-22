@@ -1633,6 +1633,200 @@
   background: rgba(255, 0, 0, 0.18);
 }
 
+.tab.honor {
+  position: relative;
+  overflow: hidden;
+}
+
+.honor-tree-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.honor-tree {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px 4px;
+}
+.honor-tree .honor-row {
+  display: flex;
+  flex-direction: row;
+}
+.honor-tree .honor-row .honor-col {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  padding: 0 2px;
+}
+.honor-tree .honor-headers .honor-col {
+  padding-bottom: 6px;
+}
+.honor-tree .honor-headers .honor-col .honor-path-label {
+  font-family: "MedievalSharp", serif;
+  font-size: 0.78em;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  color: #666;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.honor-tree .honor-seg-row .honor-col {
+  height: 22px;
+  position: relative;
+}
+.honor-tree .honor-seg-row .honor-col::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 1px;
+}
+.honor-tree .honor-seg-row .honor-col .honor-seg {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  transition: background 0.3s;
+}
+.honor-tree .honor-seg-row .honor-col .honor-seg.seg-honor {
+  background: #c9a84c;
+}
+.honor-tree .honor-seg-row .honor-col .honor-seg.seg-dishonor {
+  background: #8b2020;
+}
+.honor-tree .honor-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: default;
+  padding: 2px 0;
+  position: relative;
+}
+.honor-tree .honor-node .honor-dot {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.6);
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.honor-tree .honor-node .honor-node-label {
+  font-size: 0.6em;
+  color: #555;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.35s, color 0.3s, font-weight 0.2s;
+}
+.honor-tree .honor-node.honor-active .honor-dot {
+  border-color: rgb(181.4583690987, 148.0051502146, 54.7416309013);
+  background: #f5e6b0;
+}
+.honor-tree .honor-node.honor-active .honor-node-label {
+  opacity: 1;
+  color: rgb(114.8519313305, 93.678111588, 34.6480686695);
+  font-weight: 600;
+}
+.honor-tree .honor-node.dishonor-active .honor-dot {
+  border-color: #8b2020;
+  background: #f9cccc;
+}
+.honor-tree .honor-node.dishonor-active .honor-node-label {
+  opacity: 1;
+  color: rgb(118.2719298246, 27.2280701754, 27.2280701754);
+  font-weight: 600;
+}
+.honor-tree .honor-node.honor-current .honor-dot {
+  width: 17px;
+  height: 17px;
+  border-width: 3px;
+  box-shadow: 0 0 7px rgba(0, 0, 0, 0.35);
+}
+.honor-tree .honor-node.honor-current .honor-node-label {
+  opacity: 1;
+  font-weight: bold;
+  font-size: 0.66em;
+}
+.honor-tree .honor-common-bar {
+  position: relative;
+  margin: 3px 0;
+}
+.honor-tree .honor-common-bar::before {
+  content: "";
+  position: absolute;
+  left: 12.5%;
+  right: 12.5%;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 2px;
+  background: rgba(0, 0, 0, 0.14);
+  z-index: 0;
+}
+.honor-tree .honor-common-bar .honor-col {
+  position: relative;
+  z-index: 1;
+}
+.honor-tree .honor-common-bar .honor-node {
+  background: rgba(249, 249, 247, 0.88);
+  border-radius: 4px;
+  padding: 3px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+.honor-tree .honor-common-bar .honor-node .honor-dot {
+  border-color: #888;
+  background: #c8c8c8;
+}
+.honor-tree .honor-common-bar .honor-node .honor-node-label {
+  opacity: 1;
+  color: #555;
+  font-weight: 600;
+}
+.honor-tree .honor-footer-row {
+  margin-top: 6px;
+}
+.honor-tree .honor-footer-row .honor-col {
+  gap: 4px;
+  font-size: 0.8em;
+  color: #888;
+}
+.honor-tree .honor-footer-row .honor-col .honor-score {
+  font-weight: bold;
+  color: #555;
+}
+.honor-tree .honor-footer-row .honor-col .honor-edit {
+  cursor: pointer;
+  color: #ccc;
+}
+.honor-tree .honor-footer-row .honor-col .honor-edit:hover {
+  color: #555;
+}
+
 .tams.theme-grimdark {
   background: #1c1e21;
   color: #d0cfc8;

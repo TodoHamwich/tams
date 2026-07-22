@@ -47,6 +47,7 @@
         <a class="item {{#if (eq activeTab 'description')}}active{{/if}}" data-action="setTab" data-tab="description" title="{{localize 'TAMS.Tabs.Description'}}"><i class="fas fa-scroll"></i></a>
         <a class="item {{#if (eq activeTab 'scene')}}active{{/if}}" data-action="setTab" data-tab="scene" title="{{localize 'TAMS.Tabs.Scene'}}"><i class="fas fa-dice-d20"></i></a>
         <a class="item {{#if (eq activeTab 'modifiers')}}active{{/if}}" data-action="setTab" data-tab="modifiers" title="{{localize 'TAMS.Tabs.Modifiers'}}"><i class="fas fa-sliders-h"></i></a>
+        {{#if honorEnabled}}<a class="item {{#if (eq activeTab 'honor')}}active{{/if}}" data-action="setTab" data-tab="honor" title="{{localize 'TAMS.Tabs.Honor'}}"><i class="fas fa-crown"></i></a>{{/if}}
         <a class="item {{#if (eq activeTab 'settings')}}active{{/if}}" data-action="setTab" data-tab="settings" title="{{localize 'TAMS.Tabs.Settings'}}"><i class="fas fa-cog"></i></a>
     </nav>
 
@@ -771,6 +772,116 @@
                 </div>
             </div>
         </div>
+
+        {{!-- Honor Tab --}}
+        {{#if honorEnabled}}
+        <div class="tab honor {{#if (eq activeTab 'honor')}}active{{/if}}" data-group="primary" data-tab="honor" data-scrollable data-scroll-id="tab-honor">
+
+            {{!-- Decorative tree silhouette: purely visual, sits behind the data grid --}}
+            <svg class="honor-tree-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 640" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                {{!-- Upper canopy blob --}}
+                <path fill="#7b6040" fill-opacity="0.09" d="M250,28 C210,26 155,52 125,88 C90,128 88,172 108,203 C72,213 52,250 68,286 C88,332 150,322 185,296 C196,318 217,337 250,337 C283,337 304,318 315,296 C350,322 412,332 432,286 C448,250 428,213 392,203 C412,172 410,128 375,88 C345,52 290,26 250,28 Z"/>
+                {{!-- Trunk --}}
+                <rect fill="#8b6035" fill-opacity="0.20" x="234" y="330" width="32" height="82" rx="10"/>
+                {{!-- Root area blob --}}
+                <path fill="#6b4c28" fill-opacity="0.09" d="M250,412 C204,414 128,443 93,478 C62,508 72,548 110,561 C148,572 192,549 216,526 C226,546 240,560 250,560 C260,560 274,546 284,526 C308,549 352,572 390,561 C428,548 438,508 407,478 C372,443 296,414 250,412 Z"/>
+                {{!-- Main branches: trunk top (250,333) out to each of the 4 path columns at y≈270 --}}
+                <path stroke="#8b6035" stroke-width="3"   stroke-opacity="0.18" fill="none" stroke-linecap="round" d="M 244,332 Q  62,328  62,268"/>
+                <path stroke="#8b6035" stroke-width="2.5" stroke-opacity="0.15" fill="none" stroke-linecap="round" d="M 247,330 Q 187,328 187,268"/>
+                <path stroke="#8b6035" stroke-width="2.5" stroke-opacity="0.15" fill="none" stroke-linecap="round" d="M 253,330 Q 312,328 312,268"/>
+                <path stroke="#8b6035" stroke-width="3"   stroke-opacity="0.18" fill="none" stroke-linecap="round" d="M 256,332 Q 437,328 437,268"/>
+                {{!-- Main roots: trunk bottom (250,412) out to each of the 4 path columns at y≈445 --}}
+                <path stroke="#6b4c28" stroke-width="3"   stroke-opacity="0.18" fill="none" stroke-linecap="round" d="M 244,412 Q  62,416  62,448"/>
+                <path stroke="#6b4c28" stroke-width="2.5" stroke-opacity="0.14" fill="none" stroke-linecap="round" d="M 247,412 Q 187,416 187,448"/>
+                <path stroke="#6b4c28" stroke-width="2.5" stroke-opacity="0.14" fill="none" stroke-linecap="round" d="M 253,412 Q 312,416 312,448"/>
+                <path stroke="#6b4c28" stroke-width="3"   stroke-opacity="0.18" fill="none" stroke-linecap="round" d="M 256,412 Q 437,416 437,448"/>
+            </svg>
+
+            <div class="honor-tree">
+
+                {{!-- Path name headers --}}
+                <div class="honor-row honor-headers">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><span class="honor-path-label">{{localize path.labelKey}}</span></div>{{/each}}
+                </div>
+
+                {{!-- Tier: Lionheart / Great / Sainted / Magnificent --}}
+                <div class="honor-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.ht0.active}}honor-active{{/if}} {{#if path.ht0.current}}honor-current{{/if}}" title="{{localize path.ht0.labelKey}} — {{localize path.ht0.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht0.labelKey}}</span></div></div>{{/each}}
+                </div>
+                <div class="honor-row honor-seg-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h0}}seg-honor{{/if}}"></div></div>{{/each}}
+                </div>
+
+                {{!-- Tier: Valiant / Righteous / Devoted / Renowned --}}
+                <div class="honor-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.ht1.active}}honor-active{{/if}} {{#if path.ht1.current}}honor-current{{/if}}" title="{{localize path.ht1.labelKey}} — {{localize path.ht1.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht1.labelKey}}</span></div></div>{{/each}}
+                </div>
+                <div class="honor-row honor-seg-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h1}}seg-honor{{/if}}"></div></div>{{/each}}
+                </div>
+
+                {{!-- Tier: Brave / Just / Pious / Honored --}}
+                <div class="honor-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.ht2.active}}honor-active{{/if}} {{#if path.ht2.current}}honor-current{{/if}}" title="{{localize path.ht2.labelKey}} — {{localize path.ht2.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht2.labelKey}}</span></div></div>{{/each}}
+                </div>
+                <div class="honor-row honor-seg-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h2}}seg-honor{{/if}}"></div></div>{{/each}}
+                </div>
+
+                {{!-- Tier: Steadfast / Upright / Faithful / Worthy --}}
+                <div class="honor-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.ht3.active}}honor-active{{/if}} {{#if path.ht3.current}}honor-current{{/if}}" title="{{localize path.ht3.labelKey}} — {{localize path.ht3.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht3.labelKey}}</span></div></div>{{/each}}
+                </div>
+                <div class="honor-row honor-seg-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h3}}seg-honor{{/if}}"></div></div>{{/each}}
+                </div>
+
+                {{!-- Common root bar: horizontal trunk connects all four paths --}}
+                <div class="honor-row honor-common-bar">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node honor-common {{#if path.common.current}}honor-current{{/if}}" title="{{localize 'TAMS.Honor.Tier.Common'}} — {{localize 'TAMS.Honor.Gloss.Common'}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize 'TAMS.Honor.Tier.Common'}}</span></div></div>{{/each}}
+                </div>
+
+                <div class="honor-row honor-seg-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.d0}}seg-dishonor{{/if}}"></div></div>{{/each}}
+                </div>
+
+                {{!-- Tier: Timid / Suspect / Lapsed / Disgraced --}}
+                <div class="honor-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.dt0.active}}dishonor-active{{/if}} {{#if path.dt0.current}}honor-current{{/if}}" title="{{localize path.dt0.labelKey}} — {{localize path.dt0.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt0.labelKey}}</span></div></div>{{/each}}
+                </div>
+                <div class="honor-row honor-seg-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.d1}}seg-dishonor{{/if}}"></div></div>{{/each}}
+                </div>
+
+                {{!-- Tier: Craven / Corrupt / Faithless / Infamous --}}
+                <div class="honor-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.dt1.active}}dishonor-active{{/if}} {{#if path.dt1.current}}honor-current{{/if}}" title="{{localize path.dt1.labelKey}} — {{localize path.dt1.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt1.labelKey}}</span></div></div>{{/each}}
+                </div>
+                <div class="honor-row honor-seg-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.d2}}seg-dishonor{{/if}}"></div></div>{{/each}}
+                </div>
+
+                {{!-- Tier: Dastard / Unjust / Heretic / Villainous --}}
+                <div class="honor-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.dt2.active}}dishonor-active{{/if}} {{#if path.dt2.current}}honor-current{{/if}}" title="{{localize path.dt2.labelKey}} — {{localize path.dt2.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt2.labelKey}}</span></div></div>{{/each}}
+                </div>
+                <div class="honor-row honor-seg-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.d3}}seg-dishonor{{/if}}"></div></div>{{/each}}
+                </div>
+
+                {{!-- Tier: Runagate / Tyrant / Accursed / Damned --}}
+                <div class="honor-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.dt3.active}}dishonor-active{{/if}} {{#if path.dt3.current}}honor-current{{/if}}" title="{{localize path.dt3.labelKey}} — {{localize path.dt3.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt3.labelKey}}</span></div></div>{{/each}}
+                </div>
+
+                {{!-- Footer: score + edit button --}}
+                <div class="honor-row honor-footer-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><span class="honor-score">{{path.score}}</span>{{#if isGM}}<a class="honor-edit" data-action="honorEdit" data-path="{{path.id}}" title="{{localize 'TAMS.Honor.EditScore'}}"><i class="fas fa-pencil fa-xs"></i></a>{{/if}}</div>{{/each}}
+                </div>
+
+            </div>
+        </div>
+        {{/if}}
 
         {{!-- Settings Tab --}}
         <div class="tab settings {{#if (eq activeTab 'settings')}}active{{/if}}" data-group="primary" data-tab="settings" data-scrollable data-scroll-id="tab-settings">

@@ -1,0 +1,233 @@
+// Honor tree tab
+$honor-gold:    #c9a84c;
+$honor-gold-bg: #f5e6b0;
+$dishonor-red:  #8b2020;
+$dishonor-bg:   #f9cccc;
+$node-size:     13px;
+$seg-h:         22px;
+
+// The tab itself is the positioning context for the SVG background
+.tab.honor {
+  position: relative;
+  overflow: hidden;
+}
+
+// Decorative tree SVG — fills the tab behind all content
+.honor-tree-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+// Data grid — sits above the SVG background
+.honor-tree {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px 4px;
+
+  // Every row is a flex row with 4 equal columns
+  .honor-row {
+    display: flex;
+    flex-direction: row;
+
+    .honor-col {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 0;
+      padding: 0 2px;
+    }
+  }
+
+  // Path name headers
+  .honor-headers .honor-col {
+    padding-bottom: 6px;
+    .honor-path-label {
+      font-family: $font-header;
+      font-size: 0.78em;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      color: #666;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // Segment rows: fixed-height with a vertical line
+  .honor-seg-row .honor-col {
+    height: $seg-h;
+    position: relative;
+
+    // Gray baseline line
+    &::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.10);
+      border-radius: 1px;
+    }
+
+    .honor-seg {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      transform: translateX(-50%);
+      border-radius: 1px;
+      transition: background 0.3s;
+
+      &.seg-honor    { background: $honor-gold; }
+      &.seg-dishonor { background: $dishonor-red; }
+    }
+  }
+
+  // Tier nodes: centered dot + label (label hidden until active)
+  .honor-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: default;
+    padding: 2px 0;
+    position: relative;
+
+    .honor-dot {
+      flex-shrink: 0;
+      width: $node-size;
+      height: $node-size;
+      border-radius: 50%;
+      border: 2px solid rgba(0,0,0,0.12);
+      background: rgba(255,255,255,0.6);
+      box-sizing: border-box;
+      position: relative;
+      z-index: 1;
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+
+    // Label: invisible by default; fades in when tier is reached
+    .honor-node-label {
+      font-size: 0.60em;
+      color: #555;
+      text-align: center;
+      line-height: 1.1;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.35s, color 0.3s, font-weight 0.2s;
+    }
+
+    // Honor path reached: gold dot + label fades in
+    &.honor-active {
+      .honor-dot {
+        border-color: darken($honor-gold, 8%);
+        background: $honor-gold-bg;
+      }
+      .honor-node-label {
+        opacity: 1;
+        color: darken($honor-gold, 25%);
+        font-weight: 600;
+      }
+    }
+
+    // Dishonor path reached: red dot + label fades in
+    &.dishonor-active {
+      .honor-dot {
+        border-color: $dishonor-red;
+        background: $dishonor-bg;
+      }
+      .honor-node-label {
+        opacity: 1;
+        color: darken($dishonor-red, 5%);
+        font-weight: 600;
+      }
+    }
+
+    // Current tier: larger dot, bolder label
+    &.honor-current {
+      .honor-dot {
+        width: $node-size + 4px;
+        height: $node-size + 4px;
+        border-width: 3px;
+        box-shadow: 0 0 7px rgba(0,0,0,0.35);
+      }
+      .honor-node-label {
+        opacity: 1;
+        font-weight: bold;
+        font-size: 0.66em;
+      }
+    }
+  }
+
+  // Common bar: always-visible node, with a horizontal trunk line behind it
+  .honor-common-bar {
+    position: relative;
+    margin: 3px 0;
+
+    // Horizontal trunk line connecting all four Common nodes
+    &::before {
+      content: '';
+      position: absolute;
+      left: 12.5%;
+      right: 12.5%;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 2px;
+      background: rgba(0,0,0,0.14);
+      z-index: 0;
+    }
+
+    .honor-col { position: relative; z-index: 1; }
+
+    .honor-node {
+      background: rgba(249, 249, 247, 0.88);
+      border-radius: 4px;
+      padding: 3px 6px;
+      border: 1px solid rgba(0,0,0,0.15);
+
+      .honor-dot {
+        border-color: #888;
+        background: #c8c8c8;
+      }
+      // Common label is always visible
+      .honor-node-label {
+        opacity: 1;
+        color: #555;
+        font-weight: 600;
+      }
+    }
+  }
+
+  // Score + edit button footer
+  .honor-footer-row {
+    margin-top: 6px;
+
+    .honor-col {
+      gap: 4px;
+      font-size: 0.8em;
+      color: #888;
+
+      .honor-score { font-weight: bold; color: #555; }
+
+      .honor-edit {
+        cursor: pointer;
+        color: #ccc;
+        &:hover { color: #555; }
+      }
+    }
+  }
+}
