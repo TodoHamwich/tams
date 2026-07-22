@@ -1687,23 +1687,12 @@
   height: 22px;
   position: relative;
 }
-.honor-tree .honor-seg-row .honor-col::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 1px;
-}
 .honor-tree .honor-seg-row .honor-col .honor-seg {
   position: absolute;
   left: 50%;
   top: 0;
   bottom: 0;
-  width: 2px;
+  width: 3px;
   transform: translateX(-50%);
   border-radius: 1px;
   transition: background 0.3s;
@@ -1733,7 +1722,8 @@
   box-sizing: border-box;
   position: relative;
   z-index: 1;
-  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  opacity: 0;
+  transition: opacity 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 .honor-tree .honor-node .honor-node-label {
   font-size: 0.6em;
@@ -1748,6 +1738,7 @@
   transition: opacity 0.35s, color 0.3s, font-weight 0.2s;
 }
 .honor-tree .honor-node.honor-active .honor-dot {
+  opacity: 1;
   border-color: rgb(181.4583690987, 148.0051502146, 54.7416309013);
   background: #f5e6b0;
 }
@@ -1757,6 +1748,7 @@
   font-weight: 600;
 }
 .honor-tree .honor-node.dishonor-active .honor-dot {
+  opacity: 1;
   border-color: #8b2020;
   background: #f9cccc;
 }
@@ -1802,6 +1794,7 @@
   border: 1px solid rgba(0, 0, 0, 0.15);
 }
 .honor-tree .honor-common-bar .honor-node .honor-dot {
+  opacity: 1;
   border-color: #888;
   background: #c8c8c8;
 }

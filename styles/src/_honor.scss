@@ -66,30 +66,17 @@ $seg-h:         22px;
     }
   }
 
-  // Segment rows: fixed-height with a vertical line
+  // Segment rows: SVG handles the grey baseline; only show a colored overlay when active
   .honor-seg-row .honor-col {
     height: $seg-h;
     position: relative;
-
-    // Gray baseline line
-    &::before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.10);
-      border-radius: 1px;
-    }
 
     .honor-seg {
       position: absolute;
       left: 50%;
       top: 0;
       bottom: 0;
-      width: 2px;
+      width: 3px;
       transform: translateX(-50%);
       border-radius: 1px;
       transition: background 0.3s;
@@ -119,7 +106,8 @@ $seg-h:         22px;
       box-sizing: border-box;
       position: relative;
       z-index: 1;
-      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+      opacity: 0;
+      transition: opacity 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
     }
 
     // Label: invisible by default; fades in when tier is reached
@@ -139,6 +127,7 @@ $seg-h:         22px;
     // Honor path reached: gold dot + label fades in
     &.honor-active {
       .honor-dot {
+        opacity: 1;
         border-color: darken($honor-gold, 8%);
         background: $honor-gold-bg;
       }
@@ -152,6 +141,7 @@ $seg-h:         22px;
     // Dishonor path reached: red dot + label fades in
     &.dishonor-active {
       .honor-dot {
+        opacity: 1;
         border-color: $dishonor-red;
         background: $dishonor-bg;
       }
@@ -205,6 +195,7 @@ $seg-h:         22px;
       border: 1px solid rgba(0,0,0,0.15);
 
       .honor-dot {
+        opacity: 1;
         border-color: #888;
         background: #c8c8c8;
       }
