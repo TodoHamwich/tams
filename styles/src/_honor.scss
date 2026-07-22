@@ -6,26 +6,30 @@ $dishonor-bg:   #f9cccc;
 $node-size:     13px;
 $seg-h:         22px;
 
-// The tab itself is the positioning context for the SVG background
-.tab.honor {
-  position: relative;
-  overflow: hidden;
+// Wrapper uses CSS grid to stack the SVG tree behind the data grid
+// without relying on absolute positioning (which breaks in Foundry's scrollable tabs)
+.honor-tree-wrap {
+  display: grid;
+
+  > .honor-tree-bg,
+  > .honor-tree {
+    grid-area: 1 / 1; // same cell — they overlap
+  }
+
+  > .honor-tree-bg {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  > .honor-tree {
+    z-index: 1;
+  }
 }
 
-// Decorative tree SVG — fills the tab behind all content
-.honor-tree-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-// Data grid — sits above the SVG background
+// Data grid
 .honor-tree {
-  position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   padding: 8px 12px 4px;

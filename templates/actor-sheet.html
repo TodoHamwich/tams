@@ -776,25 +776,26 @@
         {{!-- Honor Tab --}}
         {{#if honorEnabled}}
         <div class="tab honor {{#if (eq activeTab 'honor')}}active{{/if}}" data-group="primary" data-tab="honor" data-scrollable data-scroll-id="tab-honor">
+          <div class="honor-tree-wrap">
 
-            {{!-- Decorative tree silhouette: purely visual, sits behind the data grid --}}
-            <svg class="honor-tree-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 640" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                {{!-- Upper canopy blob --}}
-                <path fill="#7b6040" fill-opacity="0.09" d="M250,28 C210,26 155,52 125,88 C90,128 88,172 108,203 C72,213 52,250 68,286 C88,332 150,322 185,296 C196,318 217,337 250,337 C283,337 304,318 315,296 C350,322 412,332 432,286 C448,250 428,213 392,203 C412,172 410,128 375,88 C345,52 290,26 250,28 Z"/>
+            {{!-- Decorative tree: CSS grid layers this behind .honor-tree --}}
+            <svg class="honor-tree-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 640" preserveAspectRatio="none" aria-hidden="true">
+                {{!-- Canopy blob --}}
+                <path fill="#7b6040" fill-opacity="0.22" d="M250,28 C210,26 155,52 125,88 C90,128 88,172 108,203 C72,213 52,250 68,286 C88,332 150,322 185,296 C196,318 217,337 250,337 C283,337 304,318 315,296 C350,322 412,332 432,286 C448,250 428,213 392,203 C412,172 410,128 375,88 C345,52 290,26 250,28 Z"/>
                 {{!-- Trunk --}}
-                <rect fill="#8b6035" fill-opacity="0.20" x="234" y="330" width="32" height="82" rx="10"/>
-                {{!-- Root area blob --}}
-                <path fill="#6b4c28" fill-opacity="0.09" d="M250,412 C204,414 128,443 93,478 C62,508 72,548 110,561 C148,572 192,549 216,526 C226,546 240,560 250,560 C260,560 274,546 284,526 C308,549 352,572 390,561 C428,548 438,508 407,478 C372,443 296,414 250,412 Z"/>
-                {{!-- Main branches: trunk top (250,333) out to each of the 4 path columns at y≈270 --}}
-                <path stroke="#8b6035" stroke-width="3"   stroke-opacity="0.18" fill="none" stroke-linecap="round" d="M 244,332 Q  62,328  62,268"/>
-                <path stroke="#8b6035" stroke-width="2.5" stroke-opacity="0.15" fill="none" stroke-linecap="round" d="M 247,330 Q 187,328 187,268"/>
-                <path stroke="#8b6035" stroke-width="2.5" stroke-opacity="0.15" fill="none" stroke-linecap="round" d="M 253,330 Q 312,328 312,268"/>
-                <path stroke="#8b6035" stroke-width="3"   stroke-opacity="0.18" fill="none" stroke-linecap="round" d="M 256,332 Q 437,328 437,268"/>
-                {{!-- Main roots: trunk bottom (250,412) out to each of the 4 path columns at y≈445 --}}
-                <path stroke="#6b4c28" stroke-width="3"   stroke-opacity="0.18" fill="none" stroke-linecap="round" d="M 244,412 Q  62,416  62,448"/>
-                <path stroke="#6b4c28" stroke-width="2.5" stroke-opacity="0.14" fill="none" stroke-linecap="round" d="M 247,412 Q 187,416 187,448"/>
-                <path stroke="#6b4c28" stroke-width="2.5" stroke-opacity="0.14" fill="none" stroke-linecap="round" d="M 253,412 Q 312,416 312,448"/>
-                <path stroke="#6b4c28" stroke-width="3"   stroke-opacity="0.18" fill="none" stroke-linecap="round" d="M 256,412 Q 437,416 437,448"/>
+                <rect fill="#8b6035" fill-opacity="0.45" x="234" y="330" width="32" height="82" rx="10"/>
+                {{!-- Root blob --}}
+                <path fill="#6b4c28" fill-opacity="0.22" d="M250,412 C204,414 128,443 93,478 C62,508 72,548 110,561 C148,572 192,549 216,526 C226,546 240,560 250,560 C260,560 274,546 284,526 C308,549 352,572 390,561 C428,548 438,508 407,478 C372,443 296,414 250,412 Z"/>
+                {{!-- Branches: start at trunk top (250,332), arc out to each column (x=62,187,312,437) at y≈268 --}}
+                <path stroke="#8b6035" stroke-width="4"   stroke-opacity="0.40" fill="none" stroke-linecap="round" d="M 250,332 Q 250,268  62,268"/>
+                <path stroke="#8b6035" stroke-width="3"   stroke-opacity="0.35" fill="none" stroke-linecap="round" d="M 250,332 Q 250,268 187,268"/>
+                <path stroke="#8b6035" stroke-width="3"   stroke-opacity="0.35" fill="none" stroke-linecap="round" d="M 250,332 Q 250,268 312,268"/>
+                <path stroke="#8b6035" stroke-width="4"   stroke-opacity="0.40" fill="none" stroke-linecap="round" d="M 250,332 Q 250,268 437,268"/>
+                {{!-- Roots: start at trunk bottom (250,412), arc out to each column at y≈445 --}}
+                <path stroke="#6b4c28" stroke-width="4"   stroke-opacity="0.38" fill="none" stroke-linecap="round" d="M 250,412 Q 250,445  62,445"/>
+                <path stroke="#6b4c28" stroke-width="3"   stroke-opacity="0.32" fill="none" stroke-linecap="round" d="M 250,412 Q 250,445 187,445"/>
+                <path stroke="#6b4c28" stroke-width="3"   stroke-opacity="0.32" fill="none" stroke-linecap="round" d="M 250,412 Q 250,445 312,445"/>
+                <path stroke="#6b4c28" stroke-width="4"   stroke-opacity="0.38" fill="none" stroke-linecap="round" d="M 250,412 Q 250,445 437,445"/>
             </svg>
 
             <div class="honor-tree">
@@ -880,6 +881,7 @@
                 </div>
 
             </div>
+          </div>{{!-- .honor-tree-wrap --}}
         </div>
         {{/if}}
 
