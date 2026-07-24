@@ -514,23 +514,41 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
       const honorTiers    = pathData.tiers.slice(0, 4).map((t, i) => mkTier(t, i));
       const dishonorTiers = pathData.tiers.slice(5).map((t, j) => mkTier(t, j + 5));
+
+      // Segment fill ratios (0–1): bars grow from bottom as score advances through each tier.
+      // hFill(n): progress through honor tier n; returns 1 when the tier has been surpassed.
+      // dFill(n): same for the dishonor tier paired with slot n (slot0↔dt3, slot3↔dt0).
+      const HONOR_HI = [100, 90, 75, 50];
+      const hFill = (s, n) => {
+        const lo = pathData.tiers[n].min, hi = HONOR_HI[n];
+        if (s < lo) return 0; if (s >= hi) return 1;
+        return (s - lo) / (hi - lo);
+      };
+      const dFill = (s, n) => {
+        const ai = 8 - n, lo = pathData.tiers[ai].min, hi = pathData.tiers[ai - 1].min - 1;
+        if (s > hi) return 0; if (s <= lo) return 1;
+        return (hi - s) / (hi - lo);
+      };
+      const fills = [0, 1, 2, 3].map(n =>
+        parseFloat((score >= 0 ? hFill(score, n) : dFill(score, n)).toFixed(3))
+      );
+
       return {
         id, score,
         labelKey: pathData.labelKey,
         honorTiers,
         dishonorTiers,
-        // Named shortcuts so templates can use path.ht0.active without subexpressions
         ht0: honorTiers[0], ht1: honorTiers[1], ht2: honorTiers[2], ht3: honorTiers[3],
         dt0: dishonorTiers[0], dt1: dishonorTiers[1], dt2: dishonorTiers[2], dt3: dishonorTiers[3],
         common: { ...mkTier(pathData.tiers[4], 4), labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
-        // Segment fills: hN = segment between honor tiers, dN = dishonor
         seg: {
           h0: ci <= 0, h1: ci <= 1, h2: ci <= 2, h3: ci <= 3,
-          d0: ci >= 5, d1: ci >= 6, d2: ci >= 7, d3: ci >= 8
+          d0: ci >= 5, d1: ci >= 6, d2: ci >= 7, d3: ci >= 8,
+          fill0: fills[0], fill1: fills[1], fill2: fills[2], fill3: fills[3],
         }
       };
     });
-    context.isGM = game.user.isGM;
+    context.canEditHonor = game.user.isGM || this.document.isOwner;
   }
 
   /**
@@ -1335,6 +1353,25 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         label = `Attacking with ${item.name}`;
 
+        // Apply familiarity from "Ranged Weapon (X)" or "Melee Weapon (X)" skills:
+        // full familiarity if the specific part matches this weapon, half for all others of the same category.
+        const wNameLower = item.name.toLowerCase();
+        const wTags = item.system.tags ? item.system.tags.split(",").map(t => t.trim().toLowerCase()) : [];
+        const expectedBroad = item.system.isRanged ? "ranged weapon" : "melee weapon";
+        for (const skill of this.document.items.filter(i => i.type === 'skill')) {
+            const broadPart = skill.name.split("(")[0].trim().toLowerCase();
+            if (broadPart !== expectedBroad) continue;
+            const parenMatch = skill.name.match(/\(([^)]+)\)/);
+            if (!parenMatch) continue;
+            const specific = parenMatch[1].trim().toLowerCase();
+            const isSpecificMatch = wNameLower.includes(specific) || wTags.includes(specific);
+            const rawSkillFam = parseInt(skill.system.familiarity) || 0;
+            const appliedFam = isSpecificMatch ? rawSkillFam : Math.floor(rawSkillFam / 2);
+            if (appliedFam !== 0) {
+                bonus += appliedFam;
+                bonusSources.push({ label: item.system.isRanged ? "Ranged Weapon Skill" : "Melee Weapon Skill", value: appliedFam });
+            }
+        }
     }
 
     if (item && item.type === 'skill') {
