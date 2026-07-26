@@ -20,11 +20,13 @@ Hooks.once("init", async function() {
   game.socket.on("system.tams", data => {
     if (data.type === "updateMessage" && game.user.isGM) {
       const message = game.messages.get(data.messageId);
-      if (message) message.update(data.updateData);
+      // Only update messages authored by the user who emitted the socket request
+      if (message && message.author?.id === data.userId) message.update(data.updateData);
     } else if (data.type === "createLoot" && game.user.isGM) {
         tamsHandleLootDrop(data.lootData, data.x, data.y);
     } else if (data.type === "transferItem" && game.user.isGM) {
-        tamsHandleItemTransfer(data);
+        const sender = game.users.get(data.userId);
+        if (sender) tamsHandleItemTransfer(data, sender);
     }
   });
 

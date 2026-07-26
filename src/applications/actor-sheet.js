@@ -736,13 +736,16 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const item = this.document.items.get(itemId);
     if (!item) return;
 
+    const enrichedDesc = item.system.description
+        ? await TextEditor.enrichHTML(item.system.description, {secrets: false, async: true})
+        : `<em>${game.i18n.localize("TAMS.NoDescription")}</em>`;
     const content = `
       <div class="tams-item-description">
         <div class="item-desc-header" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.2); padding-bottom:4px;">
-          <img src="${item.img}" width="32" height="32" style="border-radius:3px;"/>
-          <strong style="font-size:1.1em;">${item.name}</strong>
+          <img src="${foundry.utils.escapeHTML(item.img)}" width="32" height="32" style="border-radius:3px;"/>
+          <strong style="font-size:1.1em;">${foundry.utils.escapeHTML(item.name)}</strong>
         </div>
-        ${item.system.description || `<em>${game.i18n.localize("TAMS.NoDescription")}</em>`}
+        ${enrichedDesc}
       </div>`;
 
     await ChatMessage.create({
@@ -1677,7 +1680,33 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     let damageInfo = "";
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
         let damage = item.system.calculatedDamage;
-        const isRanged = item.type === 'weapon' ? !!item.system.isRanged : (item.system.calculator?.range > 10);
+        let weaponOverride = null;
+        if (item.type === 'ability' && item.system.useWeaponDamage) {
+            const weapons = this.document.items.filter(i => i.type === 'weapon');
+            if (weapons.length === 0) {
+                return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoWeaponsForAbility"));
+            }
+            if (weapons.length === 1) {
+                weaponOverride = weapons[0];
+            } else {
+                const opts = weapons.map(w => `<option value="${w.id}">${w.name} (${w.system.calculatedDamage} ${game.i18n.localize("TAMS.Dmg")})</option>`).join('');
+                weaponOverride = await new Promise(resolve => {
+                    new Dialog({
+                        title: game.i18n.format("TAMS.ChooseWeaponForAbility", {name: item.name}),
+                        content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Weapon")}</label><select id="tams-weapon-picker">${opts}</select></div>`,
+                        buttons: {
+                            ok: { label: game.i18n.localize("TAMS.Confirm"), callback: html => resolve(weapons.find(w => w.id === html.find('#tams-weapon-picker').val())) },
+                            cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+                        },
+                        default: "ok",
+                        close: () => resolve(null)
+                    }).render(true);
+                });
+                if (!weaponOverride) return;
+            }
+            damage = weaponOverride.system.calculatedDamage;
+        }
+        const isRanged = item.type === 'weapon' ? !!item.system.isRanged : (weaponOverride ? !!weaponOverride.system.isRanged : (item.system.calculator?.range > 10));
 
         const isCrit = difficulty > 0 && dcTotal >= (difficulty * 2);
         let forceCrit = false;
@@ -1718,9 +1747,14 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         if (item.type === 'weapon' && item.system.hasArmourPen) {
             armourPen = item.system.armourPenetration || 0;
         } else if (item.type === 'ability') {
-            armourPen = item.system.armourPenetration || 0;
+            if (weaponOverride) {
+                armourPen = (weaponOverride.system.hasArmourPen ? (weaponOverride.system.armourPenetration || 0) : 0)
+                          + (item.system.armourPenetration || 0);
+            } else {
+                armourPen = item.system.armourPenetration || 0;
+            }
         }
-        const damageType = item.system.damageType || "";
+        const damageType = (weaponOverride ? weaponOverride.system.damageType : item.system.damageType) || "";
 
         const isAoE = !!item.system.isAoE || (item.system.calculator?.enabled && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === 'aoe'));
         let targets = isAoE ? [...game.user.targets] : (tToken ? [tToken] : []);
@@ -1894,8 +1928,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
     }
 
-    const descriptionHtml = (item && (item.type === 'ability' || item.type === 'skill') && item.system.description)
-        ? `<div class="roll-description">${item.system.description}</div>`
+    const rawDesc = (item && (item.type === 'ability' || item.type === 'skill')) ? (item.system.description || "") : "";
+    const descriptionHtml = rawDesc
+        ? `<div class="roll-description">${await TextEditor.enrichHTML(rawDesc, {secrets: false, async: true})}</div>`
         : "";
 
     let ifButtonHtml = "";
@@ -1919,7 +1954,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     const messageContent = `
       <div class="tams-roll">
-        <h3 class="roll-label">${label}</h3>
+        <h3 class="roll-label">${foundry.utils.escapeHTML(label)}</h3>
         ${descriptionHtml}
         ${ifButtonHtml}
         ${damageInfo}

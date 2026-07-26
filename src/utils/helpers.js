@@ -11,7 +11,7 @@ export { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage };
  * @param {string} [params.newLocation="stowed"] New location for the item.
  * @returns {Promise<Item|void>}
  */
-export async function tamsHandleItemTransfer({itemData, sourceActorUuid, targetActorUuid, newLocation}) {
+export async function tamsHandleItemTransfer({itemData, sourceActorUuid, targetActorUuid, newLocation}, sender = null) {
   let target = await fromUuid(targetActorUuid);
   if (!target) return;
   const targetActor = (target instanceof foundry.documents.BaseActor) ? target : target.actor;
@@ -40,6 +40,22 @@ export async function tamsHandleItemTransfer({itemData, sourceActorUuid, targetA
   if (sourceActor && originalId) {
       sourceItem = sourceActor.items.get(originalId);
       if (sourceItem) itemsToDelete.push(sourceItem);
+  }
+
+  // When called via socket: verify the claiming user owns the source actor,
+  // then replace the client-supplied itemData with the canonical server-side item.
+  if (sender) {
+      if (sourceActor && !sourceActor.testUserPermission(sender, "OWNER")) {
+          console.warn(`TAMS | transferItem rejected: ${sender.name} does not own source actor`);
+          return;
+      }
+      if (sourceItem) {
+          const canonical = sourceItem.toObject();
+          delete canonical._id;
+          canonical.system.location = newLocation;
+          if (canonical.system.equipped !== undefined) canonical.system.equipped = false;
+          itemsToCreate[0] = canonical;
+      }
   }
 
   // Backpack contents: If it's an EQUIPPED backpack, move all items in it too
@@ -176,7 +192,8 @@ Hooks.on("dropCanvasData", async (canvas, data) => {
             itemData: item.toObject(),
             sourceActorUuid: item.parent?.uuid,
             targetActorUuid: targetToken.actor.uuid,
-            newLocation: "stowed"
+            newLocation: "stowed",
+            userId: game.user.id
         });
         ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.GivingItem", {item: item.name, target: targetToken.name}));
         return false;

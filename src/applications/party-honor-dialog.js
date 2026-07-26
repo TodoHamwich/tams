@@ -30,6 +30,7 @@ export class TAMSPartyHonorApp extends foundry.applications.api.HandlebarsApplic
   }
 
   async _onAdjustScore(event, target) {
+    if (!game.user.isGM) return;
     const path = target.dataset.path;
     const partyHonor = getPartyHonor();
     const current = partyHonor[path] ?? 0;

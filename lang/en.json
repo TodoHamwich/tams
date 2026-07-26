@@ -369,6 +369,9 @@
     "IsApexQ": "Apex Ability?",
     "IsReactionQ": "Is Reaction?",
     "IsAttackQ": "Is Attack?",
+    "UseWeaponDamage": "Use Weapon Damage?",
+    "UseWeaponDamageHint": "Damage, armour penetration, and damage type are taken from a chosen weapon at roll time.",
+    "ChooseWeaponForAbility": "Choose Weapon for {name}",
     "MultiAttack": "Multi-Attack",
     "BaseDamage": "Base Damage",
     "CustomDamage": "Custom Damage",
@@ -812,9 +815,11 @@
         "NoUsesLeft": "No uses left! Shift-click to refill.",
         "NotEnoughToBoost": "Not enough resource to boost!",
         "NotEnoughAmmo": "Not enough ammo! Using only {count} ammo.",
+        "NoWeaponsForAbility": "No weapons in inventory to use with this ability.",
         "Jammed": "JAMMED",
         "ReliableReroll": "Reliable Reroll (Original: {original})",
-        "HandsFull": "Your hands are full (max {max})."
+        "HandsFull": "Your hands are full (max {max}).",
+        "NoPermission": "You do not have permission to modify this character."
       }
     },
     "Honor": {

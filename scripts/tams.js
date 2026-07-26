@@ -119,14 +119,14 @@ const SIZE_ORDER = ["tiny", "small", "normal", "large", "huge", "giant"];
 function getCapacityMode() {
   try {
     return game.settings.get("tams", "capacityMode") || "weight";
-  } catch (e) {
+  } catch (e2) {
     return "weight";
   }
 }
 function getLargeSlots() {
   try {
     return game.settings.get("tams", "largeItemSlots") || 2;
-  } catch (e) {
+  } catch (e2) {
     return 2;
   }
 }
@@ -678,6 +678,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({ initial: 0 })
       }),
       isAttack: new fields.BooleanField({ initial: false }),
+      useWeaponDamage: new fields.BooleanField({ initial: false }),
       damage: new fields.NumberField({ initial: 0, nullable: true }),
       armourPenetration: new fields.NumberField({ initial: 0, integer: true, min: 0, nullable: true }),
       attackStat: new fields.StringField({ initial: "strength" }),
@@ -849,6 +850,7 @@ class TAMSTraitData extends foundry.abstract.TypeDataModel {
     };
   }
 }
+const e = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 async function tamsUpdateMessage(message, updateData) {
   if (game.user.isGM || message.isAuthor) {
     try {
@@ -860,6 +862,7 @@ async function tamsUpdateMessage(message, updateData) {
   game.socket.emit("system.tams", {
     type: "updateMessage",
     messageId: message.id,
+    userId: game.user.id,
     updateData
   });
 }
@@ -1091,6 +1094,11 @@ async function tamsHandleGroupCheckPending(msg) {
     return;
   }
   const existing = ((_d = (_c = groupMsg.flags) == null ? void 0 : _c.tams) == null ? void 0 : _d.results) ?? [];
+  if (typeof entry.total !== "number" || typeof entry.raw !== "number" || entry.raw < 1 || entry.raw > 100 || Math.abs(entry.total) > 300) {
+    console.warn("TAMS | groupCheck entry rejected: implausible roll values", entry);
+    await msg.delete();
+    return;
+  }
   if (!existing.some((r) => r.actorId === entry.actorId)) {
     const newResults = [...existing, entry];
     await groupMsg.update({
@@ -1390,7 +1398,7 @@ async function tamsOnTurnStart(actor) {
     await actor.toggleStatusEffect("stunned", { active: false });
   }
   if (statuses.has("frozen")) {
-    const def = (_a = CONFIG.statusEffects) == null ? void 0 : _a.find((e) => e.id === "frozen");
+    const def = (_a = CONFIG.statusEffects) == null ? void 0 : _a.find((e2) => e2.id === "frozen");
     allPendingChecks.push({
       type: "morale",
       statusId: "frozen",
@@ -1399,7 +1407,7 @@ async function tamsOnTurnStart(actor) {
     });
   }
   if (statuses.has("fleeing")) {
-    const def = (_b = CONFIG.statusEffects) == null ? void 0 : _b.find((e) => e.id === "fleeing");
+    const def = (_b = CONFIG.statusEffects) == null ? void 0 : _b.find((e2) => e2.id === "fleeing");
     allPendingChecks.push({
       type: "morale",
       statusId: "fleeing",
@@ -1417,11 +1425,11 @@ async function tamsOnTurnStart(actor) {
   const skipStatuses = /* @__PURE__ */ new Set(["encumbered", "stunned", "frozen", "fleeing"]);
   const activeStatusNames = [...statuses].filter((s) => !skipStatuses.has(s)).map((s) => {
     var _a2;
-    const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e) => e.id === s);
+    const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e2) => e2.id === s);
     return def ? game.i18n.localize(def.name) : s;
   });
   if (injuredLimbs.length || critLimbs.length || activeStatusNames.length) {
-    let content = `<div class="tams-roll"><h3 class="roll-label">${actor.name}</h3>`;
+    let content = `<div class="tams-roll"><h3 class="roll-label">${e(actor.name)}</h3>`;
     if (critLimbs.length)
       content += `<div class="tams-crit failure">${game.i18n.format("TAMS.TurnStart.CritReminder", { limbs: critLimbs.join(", ") })}</div>`;
     if (injuredLimbs.length)
@@ -1458,17 +1466,17 @@ async function tamsOnCombatEnd(combat) {
     }, 0);
     const persistentStatuses = [...actor.statuses ?? []].filter((s) => !TEMP_COMBAT_STATUSES.has(s) && s !== "encumbered").map((s) => {
       var _a2;
-      const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e) => e.id === s);
+      const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e2) => e2.id === s);
       return def ? game.i18n.localize(def.name) : s;
     });
     let row = `<div style="margin: 4px 0; padding: 4px; border-bottom: 1px solid #444;">`;
-    row += `<b>${actor.name}</b> — HP: ${totalHp}`;
+    row += `<b>${e(actor.name)}</b> — HP: ${totalHp}`;
     if (persistentStatuses.length)
       row += `<br><span style="color:#e67e22;">${persistentStatuses.join(", ")}</span>`;
     if (cleared.length) {
       const clearedNames = cleared.map((id) => {
         var _a2;
-        const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e) => e.id === id);
+        const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e2) => e2.id === id);
         return def ? game.i18n.localize(def.name) : id;
       });
       row += `<br><span style="color:#2e7d32;">Cleared: ${clearedNames.join(", ")}</span>`;
@@ -1943,6 +1951,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (!actorUuid) return;
     const actor = await fromUuid(actorUuid);
     if (!actor) return;
+    if (!actor.isOwner) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoPermission"));
     if (resourceKey === "stamina") {
       const current = actor.system.stamina.value;
       if (current < cost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
@@ -2039,9 +2048,9 @@ async function tamsRenderChatMessage(message, html, data) {
     const total = capped;
     let critInfo = "";
     if (raw >= attackerRaw * 2) {
-      critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", { name: actor.name })}</div>`;
+      critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", { name: e(actor.name) })}</div>`;
     } else if (attackerRaw >= raw * 2) {
-      critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { name: actor.name })}</div>`;
+      critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { name: e(actor.name) })}</div>`;
     }
     let hitsScored = 0;
     let damageInfo = "";
@@ -2065,7 +2074,7 @@ async function tamsRenderChatMessage(message, html, data) {
     }
     const msg = `
         <div class="tams-roll" data-actor-uuid="${actor.uuid}" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-attacker-damage-type="${attackerDamageType}" data-first-location="${attackerLocations[0] || ""}" data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? "1" : "0"}" data-is-aoe="${isAoEFromData ? "1" : "0"}">
-          <h3 class="roll-label">${game.i18n.format("TAMS.Combat.DodgeWith", { name: actor.name })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
+          <h3 class="roll-label">${game.i18n.format("TAMS.Combat.DodgeWith", { name: e(actor.name) })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
           <div class="roll-crit-info">${critInfo}</div>
           <div class="roll-hits-info">${damageInfo}</div>
           <div class="roll-row"><span>${game.i18n.localize("TAMS.Combat.RawDiceResult")}</span><span class="roll-value">${raw}</span></div>
@@ -2096,7 +2105,7 @@ async function tamsRenderChatMessage(message, html, data) {
     const raw = parseInt(container2.dataset.raw);
     const capped = parseInt(container2.dataset.capped);
     const actor = fromUuidSync(actorUuid) || game.actors.get(actorId);
-    if (!actor) return;
+    if (!actor || !actor.isOwner) return;
     const isUnawareFromData = container2.dataset.unaware === "1";
     const pointsNeeded = Math.max(0, Math.ceil((attackerTotal - capped) / 5));
     const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
@@ -2160,9 +2169,9 @@ async function tamsRenderChatMessage(message, html, data) {
     const targetLimb = container2.dataset.targetLimb;
     const isAoEFromData = container2.dataset.isAoe === "1";
     if (raw >= attackerRaw * 2) {
-      critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", { name: actor.name })}</div>`;
+      critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalDodge", { name: e(actor.name) })}</div>`;
     } else if (attackerRaw >= raw * 2) {
-      critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { name: actor.name })}</div>`;
+      critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { name: e(actor.name) })}</div>`;
     }
     if (attackerTotal > total) {
       hitsScored = Math.min(1 + Math.floor((attackerTotal - total) / 5), attackerMulti);
@@ -2303,14 +2312,47 @@ async function tamsRenderChatMessage(message, html, data) {
       raw = reroll.total;
       rerolled = true;
     }
+    let profBonus = 0;
+    const actorTraits = actor.items.filter((i) => i.type === "trait");
+    for (const trait of actorTraits) {
+      if (trait.system.isProfession && trait.system.profession) {
+        const prof = trait.system.profession.trim().toLowerCase();
+        if (tags.includes(prof)) {
+          profBonus += trait.system.modifiers.filter((m) => m.target === "allProfessionRolls").reduce((acc, m) => acc + m.value, 0);
+        }
+      }
+    }
+    const abilityPassiveBonuses = actor.system.abilityPassiveBonuses || {};
+    for (const [tag, val] of Object.entries(abilityPassiveBonuses)) {
+      if (tags.includes(tag) && val !== 0) profBonus += val;
+    }
+    const abilityTypeBonus = actor.system.abilityTypeBonus || {};
+    if (abilityTypeBonus.all) profBonus += abilityTypeBonus.all;
+    if (weapon.type !== "all" && abilityTypeBonus[weapon.type]) profBonus += abilityTypeBonus[weapon.type];
+    if (tags.includes("accurate")) profBonus += 5;
+    if (weapon.type === "weapon") {
+      const wNameLower = weapon.name.toLowerCase();
+      const expectedBroad = weapon.system.isRanged ? "ranged weapon" : "melee weapon";
+      for (const skill of actor.items.filter((i) => i.type === "skill")) {
+        const broadPart = skill.name.split("(")[0].trim().toLowerCase();
+        if (broadPart !== expectedBroad) continue;
+        const parenMatch = skill.name.match(/\(([^)]+)\)/);
+        if (!parenMatch) continue;
+        const specific = parenMatch[1].trim().toLowerCase();
+        const isSpecificMatch = wNameLower.includes(specific) || tags.includes(specific);
+        const rawSkillFam = parseInt(skill.system.familiarity) || 0;
+        const appliedFam = isSpecificMatch ? rawSkillFam : Math.floor(rawSkillFam / 2);
+        if (appliedFam !== 0) profBonus += appliedFam;
+      }
+    }
     const capped = Math.min(raw, cap);
-    const total = capped + fam;
+    const total = capped + fam + profBonus;
     const threshold = isRanged ? 20 : 10;
     const isMutual = Math.abs(attackerTotal - total) <= threshold;
     if (isAoEFromData && isRanged) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
     let critInfo = "";
-    if (raw >= attackerRaw * 2) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalRetaliation", { name: actor.name })}</div>`;
-    else if (attackerRaw >= raw * 2) critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { name: actor.name })}</div>`;
+    if (raw >= attackerRaw * 2) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalRetaliation", { name: e(actor.name) })}</div>`;
+    else if (attackerRaw >= raw * 2) critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { name: e(actor.name) })}</div>`;
     let multiVal = weapon.type === "weapon" ? weapon.system.fireRate === "3" ? 3 : weapon.system.fireRate === "auto" ? 10 : weapon.system.fireRate === "custom" ? weapon.system.fireRateCustom : 1 : weapon.system.multiAttack || 1;
     const damage = weapon.system.calculatedDamage;
     const armourPen = weapon.type === "weapon" && weapon.system.hasArmourPen ? weapon.system.armourPenetration || 0 : weapon.system.armourPenetration || 0;
@@ -2333,7 +2375,7 @@ async function tamsRenderChatMessage(message, html, data) {
             <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.HitsTaken")} ${hitsTaken} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>${game.i18n.localize("TAMS.Location")}: ${defenseLocations.join(", ")}</small></div>
             <div class="roll-row" style="margin-bottom: 10px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-damage-type="${attackerDamageType}" data-locations='${JSON.stringify(defenseLocations)}' data-is-aoe="${isAoEFromData ? "1" : "0"}">${actor.name ? `Apply Hits to ${actor.name}` : game.i18n.localize("TAMS.Combat.ApplyHitsToDefender")}</button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-damage-type="${attackerDamageType}" data-locations='${JSON.stringify(defenseLocations)}' data-is-aoe="${isAoEFromData ? "1" : "0"}">${actor.name ? `Apply Hits to ${e(actor.name)}` : game.i18n.localize("TAMS.Combat.ApplyHitsToDefender")}</button>
             </div>
           `;
       if (!isMutual && !critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.RetaliateFailed", { total: attackerTotal })}</div>`;
@@ -2342,18 +2384,19 @@ async function tamsRenderChatMessage(message, html, data) {
     }
     const isRetAoE = !!weapon.system.isAoE;
     const retDamageType = weapon.system.damageType || "";
-    const applyToAttackerLabel = attackerName ? `Apply Hits to ${attackerName}` : game.i18n.localize("TAMS.Checks.ApplyAllHits");
+    const applyToAttackerLabel = attackerName ? `Apply Hits to ${e(attackerName)}` : game.i18n.localize("TAMS.Checks.ApplyAllHits");
     const retButtons = hitsScored > 0 && !isMutual ? `
           <button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${retDamageType}" data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? "1" : "0"}">${applyToAttackerLabel}</button>
           <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${retDamageType}" data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}">${game.i18n.localize("TAMS.Dodge")}</button>
-          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${retDamageType}" data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${actor.name}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
+          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${retDamageType}" data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${e(actor.name)}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
           <button class="tams-behind-toggle" style="background: #444; color: white;">B</button>
           <button class="tams-unaware-toggle" style="background: #444; color: white;">U</button>
       ` : isMutual ? `<button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${retDamageType}" data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? "1" : "0"}">${applyToAttackerLabel}</button>` : "";
+    const retAbilityDescHtml = weapon.type === "ability" && weapon.system.description ? `<div class="roll-description">${await TextEditor.enrichHTML(weapon.system.description, { secrets: false, async: true })}</div>` : "";
     const msg = `
         <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-attacker-damage-type="${retDamageType}" data-is-ranged="${isRanged ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? "1" : "0"}">
-          <h3 class="roll-label">${game.i18n.format("TAMS.Combat.RetaliationWith", { name: actor.name, weapon: weapon.name })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
-          ${weapon.type === "ability" && weapon.system.description ? `<div class="roll-description">${weapon.system.description}</div>` : ""}
+          <h3 class="roll-label">${game.i18n.format("TAMS.Combat.RetaliationWith", { name: e(actor.name), weapon: e(weapon.name) })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
+          ${retAbilityDescHtml}
           ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
               ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", { original: originalRaw })}
           </div>` : ""}
@@ -2367,6 +2410,7 @@ async function tamsRenderChatMessage(message, html, data) {
           <div class="roll-row"><span>${game.i18n.localize("TAMS.Combat.RawDiceResult")}</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>${game.i18n.format("TAMS.Combat.StatCapLabel", { name: "Cap", value: cap })}</small><span>${capped}</span></div>
           <div class="roll-row"><small>${game.i18n.localize("TAMS.Familiarity")}:</small><span>+${fam}</span></div>
+          ${profBonus !== 0 ? `<div class="roll-row"><small>${game.i18n.localize("TAMS.Bonus")}:</small><span>+${profBonus}</span></div>` : ""}
           <hr>
           <div class="roll-total">${game.i18n.localize("TAMS.Total")}: <b>${total}</b></div>
           ${critInfo}
@@ -2383,12 +2427,12 @@ async function tamsRenderChatMessage(message, html, data) {
     const btn = ev.currentTarget;
     const container2 = btn.closest(".tams-roll");
     const actor = fromUuidSync(container2.dataset.actorUuid) || game.actors.get(container2.dataset.actorId);
-    if (!actor) return;
+    if (!actor || !actor.isOwner) return;
     const dc = parseInt(container2.dataset.dc), raw = parseInt(container2.dataset.raw), end = parseInt(container2.dataset.end);
     const capped = Math.min(raw, end), pointsNeeded = Math.max(0, Math.ceil((dc - capped) / 5));
     const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
     actor.system.customResources.forEach((res, idx) => resources.push({ id: idx.toString(), name: res.name, value: res.value }));
-    const options = resources.map((r) => `<option value="${r.id}">${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
+    const options = resources.map((r) => `<option value="${r.id}">${e(r.name)} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
     const spending = await new Promise((resolve) => {
       new Dialog({
         title: game.i18n.localize("TAMS.Combat.BoostUnconsciousTitle"),
@@ -2424,7 +2468,7 @@ async function tamsRenderChatMessage(message, html, data) {
       }
     }
     const resName = resources.find((r) => r.id === resId).name;
-    container2.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><span>Boost (${resName}):</span><span>+${bonus}</span></div>`;
+    container2.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><span>Boost (${e(resName)}):</span><span>+${bonus}</span></div>`;
     container2.querySelector(".roll-total b").innerText = total;
     const statusDiv = container2.querySelector(".tams-success, .tams-crit.failure");
     if (statusDiv) {
@@ -2442,12 +2486,12 @@ async function tamsRenderChatMessage(message, html, data) {
     const btn = ev.currentTarget;
     const container2 = btn.closest(".tams-roll");
     const actor = fromUuidSync(container2.dataset.actorUuid) || game.actors.get(container2.dataset.actorId);
-    if (!actor) return;
+    if (!actor || !actor.isOwner) return;
     const dc = parseInt(container2.dataset.dc), raw = parseInt(container2.dataset.raw), end = parseInt(container2.dataset.end);
     const capped = Math.min(raw, end), pointsNeeded = Math.max(0, Math.ceil((dc - capped) / 5));
     const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
     actor.system.customResources.forEach((res, idx) => resources.push({ id: idx.toString(), name: res.name, value: res.value }));
-    const options = resources.map((r) => `<option value="${r.id}">${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
+    const options = resources.map((r) => `<option value="${r.id}">${e(r.name)} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
     const spending = await new Promise((resolve) => {
       new Dialog({
         title: game.i18n.localize("TAMS.Combat.BoostSurvivalTitle"),
@@ -2483,7 +2527,7 @@ async function tamsRenderChatMessage(message, html, data) {
       }
     }
     const resName = resources.find((r) => r.id === resId).name;
-    container2.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><span>Boost (${resName}):</span><span>+${bonus}</span></div>`;
+    container2.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><span>Boost (${e(resName)}):</span><span>+${bonus}</span></div>`;
     container2.querySelector(".roll-total b").innerText = total;
     const statusDiv = container2.querySelector(".tams-success, .tams-crit.failure");
     if (statusDiv) {
@@ -2500,13 +2544,13 @@ async function tamsRenderChatMessage(message, html, data) {
     ev.preventDefault();
     const btn = ev.currentTarget;
     const actor = fromUuidSync(btn.dataset.actorUuid) || game.actors.get(btn.dataset.actorId);
-    if (!actor) return;
+    if (!actor || !actor.isOwner) return;
     const difficulty = parseInt(btn.dataset.difficulty);
     const currentTotal = parseInt(btn.dataset.total);
     const pointsNeeded = Math.max(0, Math.ceil((difficulty - currentTotal) / 5));
     const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
     actor.system.customResources.forEach((res, idx) => resources.push({ id: idx.toString(), name: res.name, value: res.value }));
-    const options = resources.map((r) => `<option value="${r.id}">${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
+    const options = resources.map((r) => `<option value="${r.id}">${e(r.name)} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
     const spending = await new Promise((resolve) => {
       new Dialog({
         title: game.i18n.localize("TAMS.BoostRollTitle"),
@@ -2546,7 +2590,7 @@ async function tamsRenderChatMessage(message, html, data) {
     const resName = resources.find((r) => r.id === resId).name;
     const boostContainer = container.querySelector(".roll-boost-container");
     if (boostContainer) {
-      boostContainer.innerHTML = `<div class="roll-row"><span>Boost (${resName}):</span><span>+${bonus}</span></div>`;
+      boostContainer.innerHTML = `<div class="roll-row"><span>Boost (${e(resName)}):</span><span>+${bonus}</span></div>`;
     }
     const totalEl = container.querySelector(".roll-total b");
     if (totalEl) totalEl.innerText = newTotal;
@@ -3305,7 +3349,7 @@ class TAMSItem extends Item {
     }, { inplace: false });
   }
 }
-async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUuid, newLocation }) {
+async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUuid, newLocation }, sender = null) {
   let target = await fromUuid(targetActorUuid);
   if (!target) return;
   const targetActor = target instanceof foundry.documents.BaseActor ? target : target.actor;
@@ -3324,6 +3368,19 @@ async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUu
   if (sourceActor && originalId) {
     sourceItem = sourceActor.items.get(originalId);
     if (sourceItem) itemsToDelete.push(sourceItem);
+  }
+  if (sender) {
+    if (sourceActor && !sourceActor.testUserPermission(sender, "OWNER")) {
+      console.warn(`TAMS | transferItem rejected: ${sender.name} does not own source actor`);
+      return;
+    }
+    if (sourceItem) {
+      const canonical = sourceItem.toObject();
+      delete canonical._id;
+      canonical.system.location = newLocation;
+      if (canonical.system.equipped !== void 0) canonical.system.equipped = false;
+      itemsToCreate[0] = canonical;
+    }
   }
   if (sourceItem && sourceItem.type === "backpack" && sourceItem.system.equipped) {
     const contents = sourceActor.items.filter((i) => i.system.location === "backpack" || i.system.location === sourceItem.id);
@@ -3428,7 +3485,8 @@ Hooks.on("dropCanvasData", async (canvas2, data) => {
         itemData: item.toObject(),
         sourceActorUuid: (_b = item.parent) == null ? void 0 : _b.uuid,
         targetActorUuid: targetToken.actor.uuid,
-        newLocation: "stowed"
+        newLocation: "stowed",
+        userId: game.user.id
       });
       ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.GivingItem", { item: item.name, target: targetToken.name }));
       return false;
@@ -3636,7 +3694,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const skipDisplay = /* @__PURE__ */ new Set(["encumbered"]);
     context.activeStatuses = [...this.document.statuses ?? []].filter((id) => !skipDisplay.has(id)).map((id) => {
       var _a, _b;
-      const def = ((_a = CONFIG.statusEffects) == null ? void 0 : _a.find((e) => e.id === id)) ?? {};
+      const def = ((_a = CONFIG.statusEffects) == null ? void 0 : _a.find((e2) => e2.id === id)) ?? {};
       const itemRef = (_b = game.items) == null ? void 0 : _b.find((i) => i.type === "statusEffect" && i.system.statusId === id);
       return {
         id,
@@ -3925,7 +3983,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       } else {
         currencyNames = currencySettingsRaw.split(",").map((s) => s.trim()).filter((s) => s);
       }
-    } catch (e) {
+    } catch (e2) {
       currencyNames = currencySettingsRaw.split(",").map((s) => s.trim()).filter((s) => s);
     }
     const enabledCurrencies = this.document.system.settings.enabledCurrencies || {};
@@ -3958,7 +4016,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let capacityMode = "weight";
     try {
       capacityMode = game.settings.get("tams", "capacityMode") || "weight";
-    } catch (e) {
+    } catch (e2) {
     }
     const inv = this.document.system.inventory;
     context.inventory = {
@@ -4208,13 +4266,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const itemId = target.dataset.itemId || ((_a = target.closest(".item")) == null ? void 0 : _a.dataset.itemId);
     const item = this.document.items.get(itemId);
     if (!item) return;
+    const enrichedDesc = item.system.description ? await TextEditor.enrichHTML(item.system.description, { secrets: false, async: true }) : `<em>${game.i18n.localize("TAMS.NoDescription")}</em>`;
     const content = `
       <div class="tams-item-description">
         <div class="item-desc-header" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.2); padding-bottom:4px;">
-          <img src="${item.img}" width="32" height="32" style="border-radius:3px;"/>
-          <strong style="font-size:1.1em;">${item.name}</strong>
+          <img src="${foundry.utils.escapeHTML(item.img)}" width="32" height="32" style="border-radius:3px;"/>
+          <strong style="font-size:1.1em;">${foundry.utils.escapeHTML(item.name)}</strong>
         </div>
-        ${item.system.description || `<em>${game.i18n.localize("TAMS.NoDescription")}</em>`}
+        ${enrichedDesc}
       </div>`;
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this.document }),
@@ -4361,7 +4420,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     try {
       enforce = game.settings.get("tams", "enforceEquipLimit");
       maxHands = game.settings.get("tams", "maxHands") || 2;
-    } catch (e) {
+    } catch (e2) {
     }
     if (!enforce) return false;
     if (kind === "hand") {
@@ -5044,7 +5103,33 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let damageInfo = "";
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
       let damage = item.system.calculatedDamage;
-      const isRanged = item.type === "weapon" ? !!item.system.isRanged : ((_g = item.system.calculator) == null ? void 0 : _g.range) > 10;
+      let weaponOverride = null;
+      if (item.type === "ability" && item.system.useWeaponDamage) {
+        const weapons = this.document.items.filter((i) => i.type === "weapon");
+        if (weapons.length === 0) {
+          return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoWeaponsForAbility"));
+        }
+        if (weapons.length === 1) {
+          weaponOverride = weapons[0];
+        } else {
+          const opts = weapons.map((w) => `<option value="${w.id}">${w.name} (${w.system.calculatedDamage} ${game.i18n.localize("TAMS.Dmg")})</option>`).join("");
+          weaponOverride = await new Promise((resolve) => {
+            new Dialog({
+              title: game.i18n.format("TAMS.ChooseWeaponForAbility", { name: item.name }),
+              content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Weapon")}</label><select id="tams-weapon-picker">${opts}</select></div>`,
+              buttons: {
+                ok: { label: game.i18n.localize("TAMS.Confirm"), callback: (html) => resolve(weapons.find((w) => w.id === html.find("#tams-weapon-picker").val())) },
+                cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+              },
+              default: "ok",
+              close: () => resolve(null)
+            }).render(true);
+          });
+          if (!weaponOverride) return;
+        }
+        damage = weaponOverride.system.calculatedDamage;
+      }
+      const isRanged = item.type === "weapon" ? !!item.system.isRanged : weaponOverride ? !!weaponOverride.system.isRanged : ((_g = item.system.calculator) == null ? void 0 : _g.range) > 10;
       const isCrit = difficulty > 0 && dcTotal >= difficulty * 2;
       let forceCrit = false;
       if (item && item.system.tags) {
@@ -5080,9 +5165,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       if (item.type === "weapon" && item.system.hasArmourPen) {
         armourPen = item.system.armourPenetration || 0;
       } else if (item.type === "ability") {
-        armourPen = item.system.armourPenetration || 0;
+        if (weaponOverride) {
+          armourPen = (weaponOverride.system.hasArmourPen ? weaponOverride.system.armourPenetration || 0 : 0) + (item.system.armourPenetration || 0);
+        } else {
+          armourPen = item.system.armourPenetration || 0;
+        }
       }
-      const damageType = item.system.damageType || "";
+      const damageType = (weaponOverride ? weaponOverride.system.damageType : item.system.damageType) || "";
       const isAoE = !!item.system.isAoE || ((_j = item.system.calculator) == null ? void 0 : _j.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
       let targets = isAoE ? [...game.user.targets] : tToken ? [tToken] : [];
       if (isSquadOrHorde) {
@@ -5246,7 +5335,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             `;
       }
     }
-    const descriptionHtml = item && (item.type === "ability" || item.type === "skill") && item.system.description ? `<div class="roll-description">${item.system.description}</div>` : "";
+    const rawDesc = item && (item.type === "ability" || item.type === "skill") ? item.system.description || "" : "";
+    const descriptionHtml = rawDesc ? `<div class="roll-description">${await TextEditor.enrichHTML(rawDesc, { secrets: false, async: true })}</div>` : "";
     let ifButtonHtml = "";
     if (item && item.type === "ability" && item.system.ifStatement && item.system.ifCost) {
       const ifStatement = item.system.ifStatement;
@@ -5267,7 +5357,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     const messageContent = `
       <div class="tams-roll">
-        <h3 class="roll-label">${label}</h3>
+        <h3 class="roll-label">${foundry.utils.escapeHTML(label)}</h3>
         ${descriptionHtml}
         ${ifButtonHtml}
         ${damageInfo}
@@ -6008,7 +6098,7 @@ const _TAMSTravelPaceApp = class _TAMSTravelPaceApp extends foundry.applications
         let daysInCycle = 0;
         const fullTravelDays = Math.floor(totalTravelDays);
         const totalElapsedDaysToIterate = Math.ceil(totalElapsedDays);
-        for (let e = 1; e <= totalElapsedDaysToIterate; e++) {
+        for (let e2 = 1; e2 <= totalElapsedDaysToIterate; e2++) {
           if (this.daysBetweenRest > 0 && travelDayCount > 0 && travelDayCount % this.daysBetweenRest === 0 && daysInCycle === this.daysBetweenRest) {
             staminaPerDay.push(0);
             daysInCycle = 0;
@@ -6446,8 +6536,8 @@ const _TAMSItemMaker = class _TAMSItemMaker extends foundry.applications.api.Han
     super._onRender(context, options);
     const nameInput = this.element.querySelector(".item-maker-name");
     if (nameInput) {
-      nameInput.addEventListener("input", (e) => {
-        this._name = e.target.value;
+      nameInput.addEventListener("input", (e2) => {
+        this._name = e2.target.value;
       });
     }
     this.element.querySelectorAll("[data-field]").forEach((el) => {
@@ -6611,6 +6701,7 @@ const _TAMSPartyHonorApp = class _TAMSPartyHonorApp extends foundry.applications
     return context;
   }
   async _onAdjustScore(event, target) {
+    if (!game.user.isGM) return;
     const path = target.dataset.path;
     const partyHonor = getPartyHonor();
     const current = partyHonor[path] ?? 0;
@@ -6664,13 +6755,15 @@ Hooks.once("init", async function() {
   var _a, _b, _c, _d;
   console.log("TAMS | Initializing Todo's Advanced Modular System");
   game.socket.on("system.tams", (data) => {
+    var _a2;
     if (data.type === "updateMessage" && game.user.isGM) {
       const message = game.messages.get(data.messageId);
-      if (message) message.update(data.updateData);
+      if (message && ((_a2 = message.author) == null ? void 0 : _a2.id) === data.userId) message.update(data.updateData);
     } else if (data.type === "createLoot" && game.user.isGM) {
       tamsHandleLootDrop(data.lootData, data.x, data.y);
     } else if (data.type === "transferItem" && game.user.isGM) {
-      tamsHandleItemTransfer(data);
+      const sender = game.users.get(data.userId);
+      if (sender) tamsHandleItemTransfer(data, sender);
     }
   });
   game.settings.register("tams", "currencies", {
@@ -6868,7 +6961,7 @@ Hooks.once("init", async function() {
     { id: "broken-leg", name: "TAMS.Status.BrokenLeg", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true }
   ];
   for (const effect of tamsStatusEffects) {
-    if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some((e) => e.id === effect.id)) {
+    if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some((e2) => e2.id === effect.id)) {
       CONFIG.statusEffects.push(effect);
     }
   }
