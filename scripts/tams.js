@@ -3640,8 +3640,24 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     return isUnlinkedToken ? `[Token] ${actor.name}` : actor.name;
   }
   /** @override */
+  async _preRender(context, options) {
+    var _a;
+    await super._preRender(context, options);
+    this._savedScrollPositions = {};
+    for (const el of ((_a = this.element) == null ? void 0 : _a.querySelectorAll("[data-scroll-id]")) ?? []) {
+      this._savedScrollPositions[el.dataset.scrollId] = el.scrollTop;
+    }
+  }
+  /** @override */
   _onRender(context, options) {
     super._onRender(context, options);
+    if (this._savedScrollPositions) {
+      for (const el of this.element.querySelectorAll("[data-scroll-id]")) {
+        const saved = this._savedScrollPositions[el.dataset.scrollId];
+        if (saved !== void 0) el.scrollTop = saved;
+      }
+      this._savedScrollPositions = null;
+    }
     const theme = this.document.system.theme || "default";
     this.element.classList.remove("theme-default", "theme-dark", "theme-parchment", "theme-grimdark", "theme-cyberpunk", "theme-gothic", "theme-tactical");
     this.element.classList.add(`theme-${theme}`);
@@ -5735,7 +5751,8 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         editImage: _TAMSItemSheet.prototype._onEditImage,
         modifierCreate: _TAMSItemSheet.prototype._onModifierCreate,
         modifierDelete: _TAMSItemSheet.prototype._onModifierDelete,
-        tagToggle: _TAMSItemSheet.prototype._onTagToggle
+        tagToggle: _TAMSItemSheet.prototype._onTagToggle,
+        toggleSection: _TAMSItemSheet.prototype._onToggleSection
       }
     }, { inplace: false });
   }
@@ -5745,6 +5762,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
   }
   /** @override */
   async _prepareContext(options) {
+    var _a;
     const context = await super._prepareContext(options);
     context.item = this.document;
     context.document = this.document;
@@ -5924,11 +5942,38 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     };
     context.inflictsStatusPresetValue = isKnownPreset ? currentStatusId : "custom";
     context.inflictsStatusIsCustom = !isKnownPreset && currentStatusId !== "";
+    if (this.document.type === "ability") {
+      const sys = this.document.system;
+      if (this._sectionOpen === void 0) {
+        this._sectionOpen = {
+          uses: ((_a = sys.uses) == null ? void 0 : _a.max) > 0,
+          conditionalCost: !!sys.ifStatement,
+          sizeGrants: !!(sys.sizeGrantHP || sys.sizeGrantStealth || sys.sizeGrantCombat)
+        };
+      }
+      context.sectionOpen = this._sectionOpen;
+    }
     return context;
+  }
+  /** @override */
+  async _preRender(context, options) {
+    var _a;
+    await super._preRender(context, options);
+    this._savedScrollPositions = {};
+    for (const el of ((_a = this.element) == null ? void 0 : _a.querySelectorAll("[data-scroll-id]")) ?? []) {
+      this._savedScrollPositions[el.dataset.scrollId] = el.scrollTop;
+    }
   }
   /** @override */
   _onRender(context, options) {
     super._onRender(context, options);
+    if (this._savedScrollPositions) {
+      for (const el of this.element.querySelectorAll("[data-scroll-id]")) {
+        const saved = this._savedScrollPositions[el.dataset.scrollId];
+        if (saved !== void 0) el.scrollTop = saved;
+      }
+      this._savedScrollPositions = null;
+    }
     this.element.querySelectorAll(".inflicts-status-preset").forEach((select) => {
       select.addEventListener("change", (event) => {
         const value = event.target.value;
@@ -6005,6 +6050,19 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       tagsArray.push(tag.toLowerCase());
     }
     await this.document.update({ "system.tags": tagsArray.filter((t) => t).join(", ") });
+  }
+  /**
+   * Handle toggling a collapsible ability section.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  _onToggleSection(event, target) {
+    var _a;
+    if (!this._sectionOpen) this._sectionOpen = {};
+    const section = ((_a = target.closest("[data-section]")) == null ? void 0 : _a.dataset.section) ?? target.dataset.section;
+    this._sectionOpen[section] = !this._sectionOpen[section];
+    this.render();
   }
   /** @override */
   _prepareSubmitData(event, form, formData) {

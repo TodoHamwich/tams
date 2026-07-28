@@ -68,8 +68,24 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
   };
 
   /** @override */
+  async _preRender(context, options) {
+    await super._preRender(context, options);
+    this._savedScrollPositions = {};
+    for (const el of this.element?.querySelectorAll('[data-scroll-id]') ?? []) {
+      this._savedScrollPositions[el.dataset.scrollId] = el.scrollTop;
+    }
+  }
+
+  /** @override */
   _onRender(context, options) {
     super._onRender(context, options);
+    if (this._savedScrollPositions) {
+      for (const el of this.element.querySelectorAll('[data-scroll-id]')) {
+        const saved = this._savedScrollPositions[el.dataset.scrollId];
+        if (saved !== undefined) el.scrollTop = saved;
+      }
+      this._savedScrollPositions = null;
+    }
     const theme = this.document.system.theme || "default";
     this.element.classList.remove("theme-default", "theme-dark", "theme-parchment", "theme-grimdark", "theme-cyberpunk", "theme-gothic", "theme-tactical");
     this.element.classList.add(`theme-${theme}`);

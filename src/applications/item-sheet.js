@@ -15,7 +15,8 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         editImage: TAMSItemSheet.prototype._onEditImage,
         modifierCreate: TAMSItemSheet.prototype._onModifierCreate,
         modifierDelete: TAMSItemSheet.prototype._onModifierDelete,
-        tagToggle: TAMSItemSheet.prototype._onTagToggle
+        tagToggle: TAMSItemSheet.prototype._onTagToggle,
+        toggleSection: TAMSItemSheet.prototype._onToggleSection
       }
     }, { inplace: false });
   }
@@ -228,12 +229,40 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     context.inflictsStatusPresetValue = isKnownPreset ? currentStatusId : 'custom';
     context.inflictsStatusIsCustom = !isKnownPreset && currentStatusId !== '';
 
+    if (this.document.type === 'ability') {
+      const sys = this.document.system;
+      if (this._sectionOpen === undefined) {
+        this._sectionOpen = {
+          uses: (sys.uses?.max > 0),
+          conditionalCost: !!(sys.ifStatement),
+          sizeGrants: !!(sys.sizeGrantHP || sys.sizeGrantStealth || sys.sizeGrantCombat)
+        };
+      }
+      context.sectionOpen = this._sectionOpen;
+    }
+
     return context;
+  }
+
+  /** @override */
+  async _preRender(context, options) {
+    await super._preRender(context, options);
+    this._savedScrollPositions = {};
+    for (const el of this.element?.querySelectorAll('[data-scroll-id]') ?? []) {
+      this._savedScrollPositions[el.dataset.scrollId] = el.scrollTop;
+    }
   }
 
   /** @override */
   _onRender(context, options) {
     super._onRender(context, options);
+    if (this._savedScrollPositions) {
+      for (const el of this.element.querySelectorAll('[data-scroll-id]')) {
+        const saved = this._savedScrollPositions[el.dataset.scrollId];
+        if (saved !== undefined) el.scrollTop = saved;
+      }
+      this._savedScrollPositions = null;
+    }
     this.element.querySelectorAll('.inflicts-status-preset').forEach(select => {
       select.addEventListener('change', event => {
         const value = event.target.value;
@@ -316,6 +345,19 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     }
     
     await this.document.update({ "system.tags": tagsArray.filter(t => t).join(", ") });
+  }
+
+  /**
+   * Handle toggling a collapsible ability section.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  _onToggleSection(event, target) {
+    if (!this._sectionOpen) this._sectionOpen = {};
+    const section = target.closest("[data-section]")?.dataset.section ?? target.dataset.section;
+    this._sectionOpen[section] = !this._sectionOpen[section];
+    this.render();
   }
 
   /** @override */

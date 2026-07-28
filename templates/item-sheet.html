@@ -66,7 +66,7 @@
             <hr>
             {{/if}}
 
-            {{#if (or (eq item.type 'trait') (eq item.type 'ability'))}}
+            {{#if (eq item.type 'trait')}}
             <hr>
             <h3>{{localize 'TAMS.SizeGrants'}}</h3>
             <div class="flexrow" style="margin-bottom: 6px;">
@@ -412,7 +412,11 @@
             {{#unless system.isApex}}
 
             {{!-- Section 3: Usage --}}
-            <h3>{{localize 'TAMS.Uses'}}</h3>
+            <div class="flexrow rollable" data-action="toggleSection" data-section="uses" style="cursor: pointer; margin-bottom: 4px;">
+                <i class="fas fa-chevron-{{#if sectionOpen.uses}}down{{else}}right{{/if}}"></i>
+                <h3 style="flex: 1; margin: 0; border: none;">{{localize 'TAMS.Uses'}}</h3>
+            </div>
+            {{#if sectionOpen.uses}}
             <div class="ability-section flexrow">
                 <label>{{localize 'TAMS.Uses'}}</label>
                 <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
@@ -425,6 +429,7 @@
                     {{selectOptions rechargeTypeOptions selected=system.rechargeType localize=true}}
                 </select>
             </div>
+            {{/if}}
             <hr>
 
             {{!-- Section 4: Cost & Resource --}}
@@ -446,8 +451,12 @@
                 </div>
             </div>
 
+            <div class="flexrow rollable" data-action="toggleSection" data-section="conditionalCost" style="cursor: pointer; margin-bottom: 4px;">
+                <i class="fas fa-chevron-{{#if sectionOpen.conditionalCost}}down{{else}}right{{/if}}"></i>
+                <label style="cursor: pointer; flex: 1; font-weight: bold;">{{localize 'TAMS.ConditionalCost'}}</label>
+            </div>
+            {{#if sectionOpen.conditionalCost}}
             <div class="conditional-cost-block">
-                <label>{{localize 'TAMS.ConditionalCost'}}</label>
                 <div class="flexrow">
                     <label>{{localize 'TAMS.IFStatement'}}</label>
                     <input type="text" name="system.ifStatement" value="{{system.ifStatement}}" placeholder="e.g. If in cover..."/>
@@ -457,6 +466,7 @@
                     <input type="number" name="system.ifCost" value="{{system.ifCost}}"/>
                 </div>
             </div>
+            {{/if}}
             <hr>
 
             {{!-- Section 5: Cost Calculator --}}
@@ -660,6 +670,10 @@
                     <label>{{localize 'TAMS.IsAoE'}}</label>
                     <input type="checkbox" name="system.isAoE" {{checked system.isAoE}}/>
                 </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.UseWeaponDamage'}}</label>
+                    <input type="checkbox" name="system.useWeaponDamage" {{checked system.useWeaponDamage}}/>
+                </div>
                 <div class="ability-attack-block">
                     <p class="ability-calculator__group-title">{{localize 'TAMS.AttackDetails'}}</p>
                     <div class="grid grid-2col">
@@ -669,6 +683,11 @@
                                 {{selectOptions statOptions selected=system.attackStat localize=true}}
                             </select>
                         </div>
+                        {{#if system.useWeaponDamage}}
+                        <div class="flexrow" style="grid-column: 1 / -1;">
+                            <em style="color: #888; font-size: 0.9em;">{{localize 'TAMS.UseWeaponDamageHint'}}</em>
+                        </div>
+                        {{else}}
                         <div class="flexrow">
                             <label>{{localize 'TAMS.DamageStat'}}</label>
                             <select name="system.damageStat">
@@ -690,10 +709,6 @@
                             <input type="number" name="system.damageBonus" value="{{system.damageBonus}}"/>
                         </div>
                         <div class="flexrow">
-                            <label>{{localize 'TAMS.ArmourPenetration'}}</label>
-                            <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>
-                        </div>
-                        <div class="flexrow">
                             <label>{{localize 'TAMS.DamageTypeLabel'}}</label>
                             <select name="system.damageType">
                                 {{selectOptions damageTypeOptions selected=system.damageType localize=true}}
@@ -702,6 +717,11 @@
                         <div class="flexrow">
                             <label>{{localize 'TAMS.CalculatedDamage'}}</label>
                             <span class="ability-cost-badge">{{system.calculatedDamage}}</span>
+                        </div>
+                        {{/if}}
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.ArmourPenetration'}}</label>
+                            <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>
                         </div>
                     </div>
                 </div>
@@ -733,6 +753,35 @@
             </div>
 
             {{/unless}}
+
+            <hr>
+            <div class="flexrow rollable" data-action="toggleSection" data-section="sizeGrants" style="cursor: pointer; margin-bottom: 4px;">
+                <i class="fas fa-chevron-{{#if sectionOpen.sizeGrants}}down{{else}}right{{/if}}"></i>
+                <h3 style="flex: 1; margin: 0; border: none;">{{localize 'TAMS.SizeGrants'}}</h3>
+            </div>
+            {{#if sectionOpen.sizeGrants}}
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.SizeGrantHP'}}</label>
+                <select name="system.sizeGrantHP">
+                    <option value="">{{localize 'TAMS.None'}}</option>
+                    {{selectOptions creatureSizeOptions selected=system.sizeGrantHP localize=true}}
+                </select>
+            </div>
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.SizeGrantStealth'}}</label>
+                <select name="system.sizeGrantStealth">
+                    <option value="">{{localize 'TAMS.None'}}</option>
+                    {{selectOptions creatureSizeOptions selected=system.sizeGrantStealth localize=true}}
+                </select>
+            </div>
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.SizeGrantCombat'}}</label>
+                <select name="system.sizeGrantCombat">
+                    <option value="">{{localize 'TAMS.None'}}</option>
+                    {{selectOptions creatureSizeOptions selected=system.sizeGrantCombat localize=true}}
+                </select>
+            </div>
+            {{/if}}
             {{/if}}
 
             {{!-- ═══════════════════════════════════════════════════════════ --}}
