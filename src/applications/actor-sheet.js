@@ -1979,8 +1979,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         const ifResource = item.system.resource || "stamina";
         ifButtonHtml = `
             <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-apply-if-cost" 
-                        data-cost="${ifCost}" 
+                <button class="tams-apply-if-cost"
+                        data-cost="${ifCost}"
                         data-resource="${ifResource}"
                         data-actor-uuid="${this.document.uuid}"
                         data-label="${ifStatement}">
@@ -1991,11 +1991,35 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         `;
     }
 
+    let mishapButtonHtml = "";
+    if (item && item.type === 'ability') {
+        const abilityTags = item.system.tags ? item.system.tags.split(",").map(t => t.trim().toLowerCase()) : [];
+        const isMagicAbility = abilityTags.some(t => ["magic", "spell", "psychic", "alchemy", "divine"].includes(t));
+        if (isMagicAbility) {
+            let totalEffects = -1;
+            if (item.system.calculator?.enabled) {
+                totalEffects = (item.system.calculator.effects || 0)
+                    + (item.system.calculator.guaranteedMax || 0)
+                    + (item.system.calculator.detriments || 0);
+            }
+            mishapButtonHtml = `
+                <div class="roll-row" style="margin-top: 5px;">
+                    <button class="tams-mishap-check"
+                            data-effects="${totalEffects}"
+                            data-actor-uuid="${this.document.uuid}">
+                        ${game.i18n.localize("TAMS.Mishap.ButtonLabel")}
+                    </button>
+                </div>
+            `;
+        }
+    }
+
     const messageContent = `
       <div class="tams-roll">
         <h3 class="roll-label">${foundry.utils.escapeHTML(label)}</h3>
         ${descriptionHtml}
         ${ifButtonHtml}
+        ${mishapButtonHtml}
         ${damageInfo}
         ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
             ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", {original: originalResult})}
