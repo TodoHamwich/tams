@@ -1670,21 +1670,21 @@
   padding: 0 2px;
 }
 .honor-tree .honor-headers .honor-col {
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 }
 .honor-tree .honor-headers .honor-col .honor-path-label {
   font-family: "MedievalSharp", serif;
-  font-size: 0.78em;
+  font-size: 0.9em;
   font-weight: bold;
   letter-spacing: 0.04em;
-  color: #666;
+  color: #555;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .honor-tree .honor-seg-row .honor-col {
-  height: 22px;
+  height: 26px;
   position: relative;
 }
 .honor-tree .honor-seg-row .honor-col .honor-seg {
@@ -1692,30 +1692,53 @@
   left: 50%;
   top: 0;
   bottom: 0;
-  width: 3px;
+  width: 4px;
   transform: translateX(-50%);
-  border-radius: 1px;
-  transition: background 0.3s;
+  overflow: hidden;
 }
-.honor-tree .honor-seg-row .honor-col .honor-seg.seg-honor {
+.honor-tree .honor-seg-row .honor-col .honor-seg::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--fill, 0) * 100%);
+  border-radius: 1px;
+  transition: height 0.5s ease-out;
+}
+.honor-tree .honor-seg-row .honor-col .honor-seg.seg-honor::after {
   background: #c9a84c;
 }
-.honor-tree .honor-seg-row .honor-col .honor-seg.seg-dishonor {
+.honor-tree .honor-seg-row .honor-col .honor-seg.seg-dishonor::after {
   background: #8b2020;
+}
+.honor-tree .honor-tier-row .honor-col {
+  align-items: stretch;
+}
+.honor-tree .honor-tier-slot {
+  position: relative;
+  width: 100%;
+  height: 52px;
+  display: flex;
+  justify-content: center;
+}
+.honor-tree .honor-tier-slot .honor-node {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
 }
 .honor-tree .honor-node {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   cursor: default;
   padding: 2px 0;
-  position: relative;
 }
 .honor-tree .honor-node .honor-dot {
   flex-shrink: 0;
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   border: 2px solid transparent;
   background: transparent;
@@ -1726,7 +1749,7 @@
   transition: opacity 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 .honor-tree .honor-node .honor-node-label {
-  font-size: 0.6em;
+  font-size: 0.72em;
   color: #555;
   text-align: center;
   line-height: 1.1;
@@ -1744,7 +1767,7 @@
 }
 .honor-tree .honor-node.honor-active .honor-node-label {
   opacity: 1;
-  color: rgb(114.8519313305, 93.678111588, 34.6480686695);
+  color: rgb(95.2618025751, 77.6995708155, 28.7381974249);
   font-weight: 600;
 }
 .honor-tree .honor-node.dishonor-active .honor-dot {
@@ -1758,15 +1781,15 @@
   font-weight: 600;
 }
 .honor-tree .honor-node.honor-current .honor-dot {
-  width: 17px;
-  height: 17px;
+  width: 21px;
+  height: 21px;
   border-width: 3px;
-  box-shadow: 0 0 7px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
 }
 .honor-tree .honor-node.honor-current .honor-node-label {
   opacity: 1;
   font-weight: bold;
-  font-size: 0.66em;
+  font-size: 0.8em;
 }
 .honor-tree .honor-common-bar {
   position: relative;
@@ -1802,30 +1825,45 @@
   opacity: 1;
   color: #555;
   font-weight: 600;
+  font-size: 0.72em;
 }
 .honor-tree .honor-footer-row {
   margin-top: 8px;
 }
 .honor-tree .honor-footer-row .honor-col {
-  gap: 5px;
-  font-size: 0.82em;
-  color: #777;
+  font-size: 0.85em;
 }
 .honor-tree .honor-footer-row .honor-col .honor-score {
   font-weight: bold;
   color: #444;
 }
 .honor-tree .honor-footer-row .honor-col .honor-edit {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   cursor: pointer;
-  font-size: 1.1em;
-  color: #999;
-  padding: 2px 4px;
-  border-radius: 3px;
-  transition: color 0.15s, background 0.15s;
+  color: #555;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.04);
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.honor-tree .honor-footer-row .honor-col .honor-edit .honor-score {
+  color: #333;
+  font-weight: bold;
+}
+.honor-tree .honor-footer-row .honor-col .honor-edit i {
+  font-size: 0.75em;
+  opacity: 0.6;
 }
 .honor-tree .honor-footer-row .honor-col .honor-edit:hover {
-  color: #333;
-  background: rgba(0, 0, 0, 0.07);
+  color: #111;
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.25);
+}
+.honor-tree .honor-footer-row .honor-col .honor-edit:hover i {
+  opacity: 1;
 }
 
 .tams.theme-grimdark {

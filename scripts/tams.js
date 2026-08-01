@@ -4895,6 +4895,26 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         statValue = stat ? stat.value : 0;
         statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         label = game.i18n.format("TAMS.UsingAbilityLabel", { name: item.name });
+        const abilityTags = item.system.tags ? item.system.tags.split(",").map((t) => t.trim().toLowerCase()) : [];
+        const isRangedAbility = abilityTags.includes("ranged");
+        const isMeleeAbility = abilityTags.includes("melee");
+        if (isRangedAbility || isMeleeAbility) {
+          const expectedBroad = isRangedAbility ? "ranged weapon" : "melee weapon";
+          for (const skill of this.document.items.filter((i) => i.type === "skill")) {
+            const broadPart = skill.name.split("(")[0].trim().toLowerCase();
+            if (broadPart !== expectedBroad) continue;
+            const parenMatch = skill.name.match(/\(([^)]+)\)/);
+            if (!parenMatch) continue;
+            const specific = parenMatch[1].trim().toLowerCase();
+            const isSpecificMatch = abilityTags.includes(specific);
+            const rawSkillFam = parseInt(skill.system.familiarity) || 0;
+            const appliedFam = isSpecificMatch ? rawSkillFam : Math.floor(rawSkillFam / 2);
+            if (appliedFam !== 0) {
+              bonus += appliedFam;
+              bonusSources.push({ label: isRangedAbility ? "Ranged Weapon Skill" : "Melee Weapon Skill", value: appliedFam });
+            }
+          }
+        }
       } else {
         statId = item.system.capStat || "strength";
         addStatModSources(statId);

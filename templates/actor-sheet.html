@@ -778,36 +778,16 @@
         <div class="tab honor {{#if (eq activeTab 'honor')}}active{{/if}}" data-group="primary" data-tab="honor" data-scrollable data-scroll-id="tab-honor">
           <div class="honor-tree-wrap">
 
-            {{!-- Decorative tree line art: CSS grid layers this behind .honor-tree --}}
-            {{!-- viewBox 500×640 matches the fixed container (500px wide, auto height via preserveAspectRatio=none) --}}
-            {{!-- Key y-positions: tier0≈55, tier3≈250, Common≈320, dtier0≈390, dtier3≈580 --}}
-            {{!-- Key x-positions (4 equal columns): 62, 187, 312, 437 --}}
-            <svg class="honor-tree-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 640" preserveAspectRatio="none" aria-hidden="true">
-              <g stroke="#7b5c2e" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                {{!-- Central trunk --}}
-                <line x1="250" y1="255" x2="250" y2="385" stroke-width="8" stroke-opacity="0.30"/>
-                {{!-- Horizontal bar at Common level (y=320) --}}
-                <line x1="62" y1="320" x2="437" y2="320" stroke-width="2" stroke-opacity="0.20"/>
-                {{!-- 4 branches: trunk top (250,255) arcing to each column at tier3 level (y=250) --}}
-                <path stroke-width="5" stroke-opacity="0.35" d="M 250,255 Q 250,250  62,250"/>
-                <path stroke-width="3" stroke-opacity="0.28" d="M 250,255 Q 250,250 187,250"/>
-                <path stroke-width="3" stroke-opacity="0.28" d="M 250,255 Q 250,250 312,250"/>
-                <path stroke-width="5" stroke-opacity="0.35" d="M 250,255 Q 250,250 437,250"/>
-                {{!-- Vertical lines up each column: tier3→tier0 --}}
-                <line x1="62"  y1="250" x2="62"  y2="55" stroke-width="2" stroke-opacity="0.22"/>
-                <line x1="187" y1="250" x2="187" y2="55" stroke-width="2" stroke-opacity="0.22"/>
-                <line x1="312" y1="250" x2="312" y2="55" stroke-width="2" stroke-opacity="0.22"/>
-                <line x1="437" y1="250" x2="437" y2="55" stroke-width="2" stroke-opacity="0.22"/>
-                {{!-- 4 roots: trunk bottom (250,385) arcing to each column at dtier0 level (y=390) --}}
-                <path stroke-width="5" stroke-opacity="0.32" d="M 250,385 Q 250,390  62,390"/>
-                <path stroke-width="3" stroke-opacity="0.25" d="M 250,385 Q 250,390 187,390"/>
-                <path stroke-width="3" stroke-opacity="0.25" d="M 250,385 Q 250,390 312,390"/>
-                <path stroke-width="5" stroke-opacity="0.32" d="M 250,385 Q 250,390 437,390"/>
-                {{!-- Vertical lines down each column: dtier0→dtier3 --}}
-                <line x1="62"  y1="390" x2="62"  y2="585" stroke-width="2" stroke-opacity="0.22"/>
-                <line x1="187" y1="390" x2="187" y2="585" stroke-width="2" stroke-opacity="0.22"/>
-                <line x1="312" y1="390" x2="312" y2="585" stroke-width="2" stroke-opacity="0.22"/>
-                <line x1="437" y1="390" x2="437" y2="585" stroke-width="2" stroke-opacity="0.22"/>
+            {{!-- Structural tree lines: 4 vertical stems at column centers (x=62,187,312,437). --}}
+            {{!-- Circles and HTML seg overlays sit on these same columns so everything aligns. --}}
+            {{!-- viewBox 500×430; preserveAspectRatio=none so it stretches to the grid height. --}}
+            <svg class="honor-tree-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 430" preserveAspectRatio="none" aria-hidden="true">
+              <g stroke="#7b5c2e" fill="none" stroke-linecap="round">
+                {{!-- 4 vertical stems — one per path, from below headers to Common level --}}
+                <line x1="62"  y1="35" x2="62"  y2="362" stroke-width="4" stroke-opacity="0.22"/>
+                <line x1="187" y1="35" x2="187" y2="362" stroke-width="4" stroke-opacity="0.22"/>
+                <line x1="312" y1="35" x2="312" y2="362" stroke-width="4" stroke-opacity="0.22"/>
+                <line x1="437" y1="35" x2="437" y2="362" stroke-width="4" stroke-opacity="0.22"/>
               </g>
             </svg>
 
@@ -818,79 +798,58 @@
                     {{#each honorPaths as |path|}}<div class="honor-col"><span class="honor-path-label">{{localize path.labelKey}}</span></div>{{/each}}
                 </div>
 
-                {{!-- Tier: Lionheart / Great / Sainted / Magnificent --}}
-                <div class="honor-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.ht0.active}}honor-active{{/if}} {{#if path.ht0.current}}honor-current{{/if}}" title="{{localize path.ht0.labelKey}} — {{localize path.ht0.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht0.labelKey}}</span></div></div>{{/each}}
+                {{!-- Slot 0 (top — most extreme): Lionheart/Great/Sainted/Magnificent  OR  Runagate/Tyrant/Accursed/Damned --}}
+                <div class="honor-row honor-tier-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-tier-slot">
+                        <div class="honor-node {{#if path.ht0.active}}honor-active{{/if}} {{#if path.ht0.current}}honor-current{{/if}}" title="{{localize path.ht0.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht0.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.dt3.active}}dishonor-active{{/if}} {{#if path.dt3.current}}honor-current{{/if}}" title="{{localize path.dt3.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt3.labelKey}}</span></div>
+                    </div></div>{{/each}}
                 </div>
                 <div class="honor-row honor-seg-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h0}}seg-honor{{/if}}"></div></div>{{/each}}
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h0}}seg-honor{{/if}} {{#if path.seg.d3}}seg-dishonor{{/if}}" style="--fill: {{path.seg.fill0}}"></div></div>{{/each}}
                 </div>
 
-                {{!-- Tier: Valiant / Righteous / Devoted / Renowned --}}
-                <div class="honor-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.ht1.active}}honor-active{{/if}} {{#if path.ht1.current}}honor-current{{/if}}" title="{{localize path.ht1.labelKey}} — {{localize path.ht1.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht1.labelKey}}</span></div></div>{{/each}}
+                {{!-- Slot 1: Valiant/Righteous/Devoted/Renowned  OR  Dastard/Unjust/Heretic/Villainous --}}
+                <div class="honor-row honor-tier-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-tier-slot">
+                        <div class="honor-node {{#if path.ht1.active}}honor-active{{/if}} {{#if path.ht1.current}}honor-current{{/if}}" title="{{localize path.ht1.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht1.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.dt2.active}}dishonor-active{{/if}} {{#if path.dt2.current}}honor-current{{/if}}" title="{{localize path.dt2.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt2.labelKey}}</span></div>
+                    </div></div>{{/each}}
                 </div>
                 <div class="honor-row honor-seg-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h1}}seg-honor{{/if}}"></div></div>{{/each}}
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h1}}seg-honor{{/if}} {{#if path.seg.d2}}seg-dishonor{{/if}}" style="--fill: {{path.seg.fill1}}"></div></div>{{/each}}
                 </div>
 
-                {{!-- Tier: Brave / Just / Pious / Honored --}}
-                <div class="honor-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.ht2.active}}honor-active{{/if}} {{#if path.ht2.current}}honor-current{{/if}}" title="{{localize path.ht2.labelKey}} — {{localize path.ht2.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht2.labelKey}}</span></div></div>{{/each}}
+                {{!-- Slot 2: Brave/Just/Pious/Honored  OR  Craven/Corrupt/Faithless/Infamous --}}
+                <div class="honor-row honor-tier-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-tier-slot">
+                        <div class="honor-node {{#if path.ht2.active}}honor-active{{/if}} {{#if path.ht2.current}}honor-current{{/if}}" title="{{localize path.ht2.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht2.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.dt1.active}}dishonor-active{{/if}} {{#if path.dt1.current}}honor-current{{/if}}" title="{{localize path.dt1.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt1.labelKey}}</span></div>
+                    </div></div>{{/each}}
                 </div>
                 <div class="honor-row honor-seg-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h2}}seg-honor{{/if}}"></div></div>{{/each}}
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h2}}seg-honor{{/if}} {{#if path.seg.d1}}seg-dishonor{{/if}}" style="--fill: {{path.seg.fill2}}"></div></div>{{/each}}
                 </div>
 
-                {{!-- Tier: Steadfast / Upright / Faithful / Worthy --}}
-                <div class="honor-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.ht3.active}}honor-active{{/if}} {{#if path.ht3.current}}honor-current{{/if}}" title="{{localize path.ht3.labelKey}} — {{localize path.ht3.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht3.labelKey}}</span></div></div>{{/each}}
+                {{!-- Slot 3 (closest to Common): Steadfast/Upright/Faithful/Worthy  OR  Timid/Suspect/Lapsed/Disgraced --}}
+                <div class="honor-row honor-tier-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-tier-slot">
+                        <div class="honor-node {{#if path.ht3.active}}honor-active{{/if}} {{#if path.ht3.current}}honor-current{{/if}}" title="{{localize path.ht3.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht3.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.dt0.active}}dishonor-active{{/if}} {{#if path.dt0.current}}honor-current{{/if}}" title="{{localize path.dt0.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt0.labelKey}}</span></div>
+                    </div></div>{{/each}}
                 </div>
                 <div class="honor-row honor-seg-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h3}}seg-honor{{/if}}"></div></div>{{/each}}
+                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.h3}}seg-honor{{/if}} {{#if path.seg.d0}}seg-dishonor{{/if}}" style="--fill: {{path.seg.fill3}}"></div></div>{{/each}}
                 </div>
 
-                {{!-- Common root bar: horizontal trunk connects all four paths --}}
+                {{!-- Common bar at base: always visible, connects all four paths --}}
                 <div class="honor-row honor-common-bar">
                     {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node honor-common {{#if path.common.current}}honor-current{{/if}}" title="{{localize 'TAMS.Honor.Tier.Common'}} — {{localize 'TAMS.Honor.Gloss.Common'}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize 'TAMS.Honor.Tier.Common'}}</span></div></div>{{/each}}
                 </div>
 
-                <div class="honor-row honor-seg-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.d0}}seg-dishonor{{/if}}"></div></div>{{/each}}
-                </div>
-
-                {{!-- Tier: Timid / Suspect / Lapsed / Disgraced --}}
-                <div class="honor-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.dt0.active}}dishonor-active{{/if}} {{#if path.dt0.current}}honor-current{{/if}}" title="{{localize path.dt0.labelKey}} — {{localize path.dt0.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt0.labelKey}}</span></div></div>{{/each}}
-                </div>
-                <div class="honor-row honor-seg-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.d1}}seg-dishonor{{/if}}"></div></div>{{/each}}
-                </div>
-
-                {{!-- Tier: Craven / Corrupt / Faithless / Infamous --}}
-                <div class="honor-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.dt1.active}}dishonor-active{{/if}} {{#if path.dt1.current}}honor-current{{/if}}" title="{{localize path.dt1.labelKey}} — {{localize path.dt1.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt1.labelKey}}</span></div></div>{{/each}}
-                </div>
-                <div class="honor-row honor-seg-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.d2}}seg-dishonor{{/if}}"></div></div>{{/each}}
-                </div>
-
-                {{!-- Tier: Dastard / Unjust / Heretic / Villainous --}}
-                <div class="honor-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.dt2.active}}dishonor-active{{/if}} {{#if path.dt2.current}}honor-current{{/if}}" title="{{localize path.dt2.labelKey}} — {{localize path.dt2.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt2.labelKey}}</span></div></div>{{/each}}
-                </div>
-                <div class="honor-row honor-seg-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-seg {{#if path.seg.d3}}seg-dishonor{{/if}}"></div></div>{{/each}}
-                </div>
-
-                {{!-- Tier: Runagate / Tyrant / Accursed / Damned --}}
-                <div class="honor-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node {{#if path.dt3.active}}dishonor-active{{/if}} {{#if path.dt3.current}}honor-current{{/if}}" title="{{localize path.dt3.labelKey}} — {{localize path.dt3.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt3.labelKey}}</span></div></div>{{/each}}
-                </div>
-
                 {{!-- Footer: score + edit button --}}
                 <div class="honor-row honor-footer-row">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><span class="honor-score">{{path.score}}</span>{{#if isGM}}<a class="honor-edit" data-action="honorEdit" data-path="{{path.id}}" title="{{localize 'TAMS.Honor.EditScore'}}"><i class="fas fa-pencil fa-xs"></i></a>{{/if}}</div>{{/each}}
+                    {{#each honorPaths as |path|}}<div class="honor-col"><a class="honor-edit" data-action="honorEdit" data-path="{{path.id}}" title="{{localize 'TAMS.Honor.EditScore'}}"><span class="honor-score">{{path.score}}</span><i class="fas fa-pencil fa-xs"></i></a></div>{{/each}}
                 </div>
 
             </div>

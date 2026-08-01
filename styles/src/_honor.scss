@@ -3,8 +3,8 @@ $honor-gold:    #c9a84c;
 $honor-gold-bg: #f5e6b0;
 $dishonor-red:  #8b2020;
 $dishonor-bg:   #f9cccc;
-$node-size:     13px;
-$seg-h:         22px;
+$node-size:     16px;
+$seg-h:         26px;
 
 // Fixed-width container so SVG coordinates align predictably with the grid
 .honor-tree-wrap {
@@ -52,13 +52,13 @@ $seg-h:         22px;
 
   // Path name headers
   .honor-headers .honor-col {
-    padding-bottom: 6px;
+    padding-bottom: 8px;
     .honor-path-label {
       font-family: $font-header;
-      font-size: 0.78em;
+      font-size: 0.9em;
       font-weight: bold;
       letter-spacing: 0.04em;
-      color: #666;
+      color: #555;
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
@@ -66,7 +66,7 @@ $seg-h:         22px;
     }
   }
 
-  // Segment rows: SVG handles the grey baseline; only show a colored overlay when active
+  // Segment rows: SVG draws the grey track; colored ::after fills from bottom as score rises
   .honor-seg-row .honor-col {
     height: $seg-h;
     position: relative;
@@ -76,13 +76,41 @@ $seg-h:         22px;
       left: 50%;
       top: 0;
       bottom: 0;
-      width: 3px;
+      width: 4px;
       transform: translateX(-50%);
-      border-radius: 1px;
-      transition: background 0.3s;
+      overflow: hidden;
 
-      &.seg-honor    { background: $honor-gold; }
-      &.seg-dishonor { background: $dishonor-red; }
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0; right: 0; bottom: 0;
+        height: calc(var(--fill, 0) * 100%);
+        border-radius: 1px;
+        transition: height 0.5s ease-out;
+      }
+
+      &.seg-honor::after    { background: $honor-gold; }
+      &.seg-dishonor::after { background: $dishonor-red; }
+    }
+  }
+
+  // Tier rows: fixed height so the two overlapping nodes don't double the row height
+  .honor-tier-row .honor-col {
+    align-items: stretch;
+  }
+
+  // Slot container: fixed height; both honor and dishonor nodes sit absolutely centered
+  .honor-tier-slot {
+    position: relative;
+    width: 100%;
+    height: 52px;
+    display: flex;
+    justify-content: center;
+
+    .honor-node {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
     }
   }
 
@@ -91,10 +119,9 @@ $seg-h:         22px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     cursor: default;
     padding: 2px 0;
-    position: relative;
 
     .honor-dot {
       flex-shrink: 0;
@@ -112,7 +139,7 @@ $seg-h:         22px;
 
     // Label: invisible by default; fades in when tier is reached
     .honor-node-label {
-      font-size: 0.60em;
+      font-size: 0.72em;
       color: #555;
       text-align: center;
       line-height: 1.1;
@@ -133,7 +160,7 @@ $seg-h:         22px;
       }
       .honor-node-label {
         opacity: 1;
-        color: darken($honor-gold, 25%);
+        color: darken($honor-gold, 30%);
         font-weight: 600;
       }
     }
@@ -155,25 +182,25 @@ $seg-h:         22px;
     // Current tier: larger dot, bolder label
     &.honor-current {
       .honor-dot {
-        width: $node-size + 4px;
-        height: $node-size + 4px;
+        width: $node-size + 5px;
+        height: $node-size + 5px;
         border-width: 3px;
-        box-shadow: 0 0 7px rgba(0,0,0,0.35);
+        box-shadow: 0 0 8px rgba(0,0,0,0.35);
       }
       .honor-node-label {
         opacity: 1;
         font-weight: bold;
-        font-size: 0.66em;
+        font-size: 0.80em;
       }
     }
   }
 
-  // Common bar: always-visible node, with a horizontal trunk line behind it
+  // Common bar at base: always-visible node, with a horizontal connector line behind it
   .honor-common-bar {
     position: relative;
     margin: 3px 0;
 
-    // Horizontal trunk line connecting all four Common nodes
+    // Horizontal line connecting all four Common nodes
     &::before {
       content: '';
       position: absolute;
@@ -199,36 +226,48 @@ $seg-h:         22px;
         border-color: #888;
         background: #c8c8c8;
       }
-      // Common label is always visible
+      // Common label always visible
       .honor-node-label {
         opacity: 1;
         color: #555;
         font-weight: 600;
+        font-size: 0.72em;
       }
     }
   }
 
-  // Score + edit button footer
+  // Score + edit footer
   .honor-footer-row {
     margin-top: 8px;
 
     .honor-col {
-      gap: 5px;
-      font-size: 0.82em;
-      color: #777;
+      font-size: 0.85em;
 
-      .honor-score { font-weight: bold; color: #444; }
+      .honor-score {
+        font-weight: bold;
+        color: #444;
+      }
 
       .honor-edit {
+        display: flex;
+        align-items: center;
+        gap: 4px;
         cursor: pointer;
-        font-size: 1.1em;
-        color: #999;
-        padding: 2px 4px;
-        border-radius: 3px;
-        transition: color 0.15s, background 0.15s;
+        color: #555;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid rgba(0,0,0,0.18);
+        background: rgba(0,0,0,0.04);
+        transition: color 0.15s, background 0.15s, border-color 0.15s;
+
+        .honor-score { color: #333; font-weight: bold; }
+        i { font-size: 0.75em; opacity: 0.6; }
+
         &:hover {
-          color: #333;
-          background: rgba(0,0,0,0.07);
+          color: #111;
+          background: rgba(0,0,0,0.10);
+          border-color: rgba(0,0,0,0.25);
+          i { opacity: 1; }
         }
       }
     }

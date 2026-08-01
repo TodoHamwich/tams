@@ -250,6 +250,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({initial: 0})
       }),
       isAttack: new fields.BooleanField({initial: false}),
+      useWeaponDamage: new fields.BooleanField({initial: false}),
       damage: new fields.NumberField({initial: 0, nullable: true}),
       armourPenetration: new fields.NumberField({initial: 0, integer: true, min: 0, nullable: true}),
       attackStat: new fields.StringField({initial: "strength"}),
