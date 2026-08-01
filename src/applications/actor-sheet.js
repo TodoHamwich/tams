@@ -1599,26 +1599,33 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         });
     }
 
-    const roll = await new Roll("1d100").evaluate();
-    let rawResult = roll.total;
-    let originalResult = rawResult;
-    let rerolled = false;
-    let isJammed = false;
+    const isMaxRoll = dataset.isMaxRoll === "true";
+    const effectiveStat = statValue + statMod;
 
-    if (item && item.system.tags) {
-        const tags = item.system.tags.split(",").map(t => t.trim().toLowerCase());
-        if (tags.includes("reliable") && rawResult <= 4) {
-            const reroll = await new Roll("1d100").evaluate();
-            rawResult = reroll.total;
-            rerolled = true;
-        }
-        if (tags.includes("unreliable") && rawResult <= 4) {
-            isJammed = true;
+    let roll, rawResult, originalResult, rerolled = false, isJammed = false;
+
+    if (isMaxRoll) {
+        roll = await new Roll(`${effectiveStat}`).evaluate();
+        rawResult = effectiveStat;
+        originalResult = rawResult;
+    } else {
+        roll = await new Roll("1d100").evaluate();
+        rawResult = roll.total;
+        originalResult = rawResult;
+
+        if (item && item.system.tags) {
+            const tags = item.system.tags.split(",").map(t => t.trim().toLowerCase());
+            if (tags.includes("reliable") && rawResult <= 4) {
+                const reroll = await new Roll("1d100").evaluate();
+                rawResult = reroll.total;
+                rerolled = true;
+            }
+            if (tags.includes("unreliable") && rawResult <= 4) {
+                isJammed = true;
+            }
         }
     }
-
-    const effectiveStat = statValue + statMod;
-    const cappedResult = Math.min(rawResult, effectiveStat);
+    const cappedResult = isMaxRoll ? effectiveStat : Math.min(rawResult, effectiveStat);
     
     // Apply Backpack penalties
     const backpackPen = this.document.system.backpackPenalties;
@@ -2024,7 +2031,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
             ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", {original: originalResult})}
         </div>` : ""}
-        <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${rawResult}</span></div>
+        <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${isMaxRoll ? `MAX (${rawResult})` : rawResult}</span></div>
         ${statId === 'bravery' ? 
             `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? ' + ' + familiarity : ''}${bonus ? ' + ' + bonus : ''}</span></div>` :
             `<div class="roll-row"><small>Stat Cap (${statValue}${statMod >= 0 ? '+' : ''}${statMod}):</small><span>${cappedResult}</span></div>
@@ -2036,12 +2043,16 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
         <hr>
         <div class="roll-total">${statId === 'bravery' ? 'Target to beat' : 'Total'}: <b>${statId === 'bravery' ? (effectiveStat + familiarity + bonus) : finalTotal}</b></div>
-        ${critInfo}
+        ${isMaxRoll
+            ? `<div class="tams-crit success" style="font-style:italic;">${game.i18n.localize("TAMS.GuaranteedMaxNote")}</div>`
+            : critInfo}
         <div class="roll-contest-hint">
-            ${statId === 'bravery' ? 
+            ${statId === 'bravery' ?
                 `<br><small>Bravery checks are roll-under. Success if Roll <= Target.</small>` :
-                `<br><small><b>Crit Check (Contested):</b> Attacker Raw Dice (${rawResult}) vs 2x Defender Raw Dice.</small>
-                 <br><small><b>Crit Check (Static):</b> Total (${finalTotal}) vs 2x Difficulty.</small>`
+                isMaxRoll
+                    ? `<br><small>${game.i18n.localize("TAMS.GuaranteedMaxHint")}</small>`
+                    : `<br><small><b>Crit Check (Contested):</b> Attacker Raw Dice (${rawResult}) vs 2x Defender Raw Dice.</small>
+                       <br><small><b>Crit Check (Static):</b> Total (${finalTotal}) vs 2x Difficulty.</small>`
             }
         </div>
       </div>

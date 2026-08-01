@@ -5166,24 +5166,30 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }).render(true);
       });
     }
-    const roll = await new Roll("1d100").evaluate();
-    let rawResult = roll.total;
-    let originalResult = rawResult;
-    let rerolled = false;
-    let isJammed = false;
-    if (item && item.system.tags) {
-      const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
-      if (tags.includes("reliable") && rawResult <= 4) {
-        const reroll = await new Roll("1d100").evaluate();
-        rawResult = reroll.total;
-        rerolled = true;
-      }
-      if (tags.includes("unreliable") && rawResult <= 4) {
-        isJammed = true;
+    const isMaxRoll = dataset.isMaxRoll === "true";
+    const effectiveStat = statValue + statMod;
+    let roll, rawResult, originalResult, rerolled = false, isJammed = false;
+    if (isMaxRoll) {
+      roll = await new Roll(`${effectiveStat}`).evaluate();
+      rawResult = effectiveStat;
+      originalResult = rawResult;
+    } else {
+      roll = await new Roll("1d100").evaluate();
+      rawResult = roll.total;
+      originalResult = rawResult;
+      if (item && item.system.tags) {
+        const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+        if (tags.includes("reliable") && rawResult <= 4) {
+          const reroll = await new Roll("1d100").evaluate();
+          rawResult = reroll.total;
+          rerolled = true;
+        }
+        if (tags.includes("unreliable") && rawResult <= 4) {
+          isJammed = true;
+        }
       }
     }
-    const effectiveStat = statValue + statMod;
-    const cappedResult = Math.min(rawResult, effectiveStat);
+    const cappedResult = isMaxRoll ? effectiveStat : Math.min(rawResult, effectiveStat);
     const backpackPen = this.document.system.backpackPenalties;
     if (backpackPen) {
       if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
@@ -5552,7 +5558,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
             ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", { original: originalResult })}
         </div>` : ""}
-        <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${rawResult}</span></div>
+        <div class="roll-row"><span>Raw Dice Result:</span><span class="roll-value">${isMaxRoll ? `MAX (${rawResult})` : rawResult}</span></div>
         ${statId === "bravery" ? `<div class="roll-row"><small>Target (Bravery):</small><span>${statValue}${familiarity ? " + " + familiarity : ""}${bonus ? " + " + bonus : ""}</span></div>` : `<div class="roll-row"><small>Stat Cap (${statValue}${statMod >= 0 ? "+" : ""}${statMod}):</small><span>${cappedResult}</span></div>
              ${statModSources.length > 0 ? statModSources.map((s) => `<div class="roll-row-detail"><small>${s.label}:</small><span>${s.value >= 0 ? "+" : ""}${s.value}</span></div>`).join("") : ""}
              ${familiarity > 0 ? `<div class="roll-row"><small>Familiarity:</small><span>+${familiarity}</span></div>` : ""}
@@ -5561,10 +5567,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
              ${squadBonus > 0 ? `<div class="roll-row"><small>Squad Bonus:</small><span>+${squadBonus}</span></div>` : ""}`}
         <hr>
         <div class="roll-total">${statId === "bravery" ? "Target to beat" : "Total"}: <b>${statId === "bravery" ? effectiveStat + familiarity + bonus : finalTotal}</b></div>
-        ${critInfo}
+        ${isMaxRoll ? `<div class="tams-crit success" style="font-style:italic;">${game.i18n.localize("TAMS.GuaranteedMaxNote")}</div>` : critInfo}
         <div class="roll-contest-hint">
-            ${statId === "bravery" ? `<br><small>Bravery checks are roll-under. Success if Roll <= Target.</small>` : `<br><small><b>Crit Check (Contested):</b> Attacker Raw Dice (${rawResult}) vs 2x Defender Raw Dice.</small>
-                 <br><small><b>Crit Check (Static):</b> Total (${finalTotal}) vs 2x Difficulty.</small>`}
+            ${statId === "bravery" ? `<br><small>Bravery checks are roll-under. Success if Roll <= Target.</small>` : isMaxRoll ? `<br><small>${game.i18n.localize("TAMS.GuaranteedMaxHint")}</small>` : `<br><small><b>Crit Check (Contested):</b> Attacker Raw Dice (${rawResult}) vs 2x Defender Raw Dice.</small>
+                       <br><small><b>Crit Check (Static):</b> Total (${finalTotal}) vs 2x Difficulty.</small>`}
         </div>
       </div>
     `;

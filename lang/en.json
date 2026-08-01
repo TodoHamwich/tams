@@ -384,6 +384,9 @@
     "Cost": "Cost",
     "IFStatement": "IF Statement",
     "IFCost": "IF Cost",
+    "MaxRoll": "Guaranteed Max",
+    "GuaranteedMaxNote": "Guaranteed Max — no dice rolled, crits not possible.",
+    "GuaranteedMaxHint": "Guaranteed Max: cannot crit. Fails only if task difficulty exceeds your total.",
     "ApplyIFCost": "Apply IF Cost ({cost})",
     "Mishap": {
         "ButtonLabel": "Mishap Check",
