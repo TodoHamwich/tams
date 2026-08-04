@@ -1,0 +1,16 @@
+{
+  "name": "Woodcarver's Tools (Basic)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Basic, +0",
+    "description": "Woodcarver's Tools (Basic). Skill bonus: +0."
+  },
+  "flags": {},
+  "_id": "tamsToolWoodcarverBasic",
+  "_key": "!items!tamsToolWoodcarverBasic"
+}

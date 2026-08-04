@@ -1,0 +1,39 @@
+{
+  "name": "Light Crossbow",
+  "type": "weapon",
+  "img": "icons/weapons/crossbows/crossbow.svg",
+  "system": {
+    "familiarity": 0,
+    "usedInScene": false,
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "equipped": false,
+    "isHeavy": false,
+    "isTwoHanded": false,
+    "isLight": false,
+    "isRanged": true,
+    "isThrown": false,
+    "hasArmourPen": true,
+    "armourPenetration": 5,
+    "rangedDamage": 30,
+    "ammo": {
+      "current": 0,
+      "total": 0
+    },
+    "fireRate": "1",
+    "fireRateCustom": 1,
+    "attackStat": "default",
+    "damageStat": "dexterity",
+    "consumeAmmo": true,
+    "special": "",
+    "isAoE": false,
+    "damageType": "",
+    "tags": "Ranged, Crossbow",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsWeaponLightCrossbow",
+  "_key": "!items!tamsWeaponLightCrossbow"
+}

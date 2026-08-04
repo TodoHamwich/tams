@@ -10,5 +10,5 @@
   },
   "flags": {},
   "_id": "tamsStatusSuppressed",
-  "_key": "!items.tamsStatusSuppressed"
+  "_key": "!items!tamsStatusSuppressed"
 }

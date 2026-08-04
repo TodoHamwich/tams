@@ -1,0 +1,16 @@
+{
+  "name": "Full Helmet",
+  "type": "equipment",
+  "img": "icons/equipment/head/helm-barbute-steel-grey.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Helmet, Armor",
+    "description": "AV: 10. AHP: 12. Covers head only."
+  },
+  "flags": {},
+  "_id": "tamsHelmetFull",
+  "_key": "!items!tamsHelmetFull"
+}

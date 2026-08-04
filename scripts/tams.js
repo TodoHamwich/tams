@@ -287,7 +287,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.traitProfessionBonuses = {};
     this.abilityPassiveBonuses = {};
     this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0 };
-    const traits = this.parent.items.filter((i) => i.type === "trait");
+    const traits = this.parent.items.filter((i) => i.type === "trait" || i.type === "race");
     for (const trait of traits) {
       const system = trait.system;
       for (const mod of system.modifiers) {
@@ -316,7 +316,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     let stealthSize = this.settings.effectiveStealthSize || baseSize;
     let combatSize = this.settings.effectiveCombatSize || baseSize;
     for (const item of this.parent.items) {
-      if (item.type !== "trait" && item.type !== "ability") continue;
+      if (item.type !== "trait" && item.type !== "ability" && item.type !== "race") continue;
       const s = item.system;
       if (s.sizeGrantHP) hpSize = bestSize(hpSize, s.sizeGrantHP);
       if (s.sizeGrantStealth) stealthSize = bestSize(stealthSize, s.sizeGrantStealth);
@@ -690,7 +690,10 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       isAoE: new fields.BooleanField({ initial: false }),
       damageType: new fields.StringField({ initial: "" }),
       inflictsStatusId: new fields.StringField({ initial: "" }),
+      hasSave: new fields.BooleanField({ initial: false }),
+      saveAgainst: new fields.StringField({ initial: "dexterity" }),
       tags: new fields.StringField({ initial: "" }),
+      castTime: new fields.StringField({ initial: "immediate" }),
       description: new fields.HTMLField({ initial: "" }),
       sizeGrantHP: new fields.StringField({ initial: "" }),
       sizeGrantStealth: new fields.StringField({ initial: "" }),
@@ -701,7 +704,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         enabled: new fields.BooleanField({ initial: false }),
         isUtility: new fields.BooleanField({ initial: false }),
         effects: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
-        guaranteedMax: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
+        guaranteedMax: new fields.BooleanField({ initial: false }),
         detriments: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
         movementDoubleOwn: new fields.BooleanField({ initial: false }),
         movementHalveEnemy: new fields.BooleanField({ initial: false }),
@@ -724,7 +727,15 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         aoeRadius: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
         range: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
         duration: new fields.StringField({ initial: "instant" }),
-        isStackable: new fields.BooleanField({ initial: false })
+        isStackable: new fields.BooleanField({ initial: false }),
+        tagAccurate: new fields.BooleanField({ initial: false }),
+        tagReliable: new fields.BooleanField({ initial: false }),
+        tagUnreliable: new fields.BooleanField({ initial: false }),
+        tagVicious: new fields.BooleanField({ initial: false }),
+        tagBrutal: new fields.BooleanField({ initial: false }),
+        tagTransformation: new fields.BooleanField({ initial: false }),
+        tagOther: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
+        statIncrease: new fields.NumberField({ initial: 0, integer: true, nullable: true })
       }),
       rechargeType: new fields.StringField({ initial: "rest" }),
       isPassive: new fields.BooleanField({ initial: false }),
@@ -757,12 +768,13 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     const c = this.calculator;
     let cost = 0;
     cost += (c.effects || 0) * 1;
-    cost += (c.guaranteedMax || 0) * 2;
+    if (c.guaranteedMax) cost += 2;
     cost -= (c.detriments || 0) * 1;
     if (c.movementDoubleOwn) cost += 2;
     if (c.movementHalveEnemy) cost += 4;
     cost += (c.movementFlat || 0) * 2;
     cost += Math.floor((c.rollBonus || 0) / 5) * 1;
+    cost += Math.floor((c.statIncrease || 0) / 5) * 1;
     if (c.ignoreArmor > 0) {
       cost += 1;
       if (c.ignoreArmor > 1) cost += (c.ignoreArmor - 1) * 2;
@@ -814,6 +826,12 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       else if (c.duration === "3rounds") cost += 4;
     }
     if (c.isStackable) cost *= 2;
+    if (c.tagAccurate) cost += 1;
+    if (c.tagReliable) cost += 1;
+    if (c.tagUnreliable) cost -= 1;
+    if (c.tagVicious) cost += 1;
+    if (c.tagBrutal) cost += 2;
+    cost += (c.tagOther || 0) * 1;
     return Math.max(1, Math.floor(cost));
   }
   prepareDerivedData() {
@@ -830,6 +848,29 @@ class TAMSStatusEffectData extends foundry.abstract.TypeDataModel {
       statusId: new fields.StringField({ initial: "" }),
       mechanicalSummary: new fields.StringField({ initial: "" }),
       durationRounds: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+      description: new fields.HTMLField({ initial: "" })
+    };
+  }
+}
+class TAMSRaceData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      passiveTraits: new fields.ArrayField(new fields.SchemaField({
+        name: new fields.StringField({ initial: "" }),
+        description: new fields.StringField({ initial: "" })
+      })),
+      grantedAbilities: new fields.ArrayField(new fields.ObjectField()),
+      modifiers: new fields.ArrayField(new fields.SchemaField({
+        target: new fields.StringField({ initial: "stats.strength.value" }),
+        value: new fields.NumberField({ initial: 0 }),
+        type: new fields.StringField({ initial: "add" })
+      })),
+      size: new fields.StringField({ initial: "normal" }),
+      sizeGrantHP: new fields.StringField({ initial: "" }),
+      sizeGrantStealth: new fields.StringField({ initial: "" }),
+      sizeGrantCombat: new fields.StringField({ initial: "" }),
+      tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
   }
@@ -897,12 +938,185 @@ const MISHAP_TABLE = [
   { min: 296, max: 310, tier: 4, name: "The Living Wound", effect: "The caster becomes a permanent conscious conduit for uncontrolled magical energy. They cannot die, heal, or rest, and experience constant agony as raw magic tears through them. The surrounding area warps over time. There is no cure." },
   { min: 311, max: Infinity, tier: 4, name: "The Rending (Event)", effect: "The mishap becomes a named event in the history of the world. Reality within a 1-kilometre radius is permanently and irrevocably altered. The caster is transformed into something that cannot be categorised. This result has happened before. There are ruins named after it." }
 ];
-function getMishapEntry(roll) {
-  if (roll <= 0) return MISHAP_TABLE[0];
-  return MISHAP_TABLE.find((e2) => roll >= e2.min && roll <= e2.max) ?? MISHAP_TABLE[MISHAP_TABLE.length - 1];
+const DIVINE_MISHAP_TABLE = {
+  tierNames: {
+    1: "Purely Narrative",
+    2: "Real Effects",
+    3: "Extreme",
+    4: "The Cost of Being Heard"
+  },
+  entries: [
+    // Tier 1: Purely Narrative (01–100)
+    { min: 1, max: 5, tier: 1, name: "Trembling Light", effect: "The power manifests as usual but flickers once, visibly, before stabilising." },
+    { min: 6, max: 10, tier: 1, name: "Cold Channel", effect: "The caster's focus or hands grow briefly cold instead of warm during the channelling." },
+    { min: 11, max: 15, tier: 1, name: "Audible", effect: "The invocation produces a faint resonant hum audible to everyone within 5m." },
+    { min: 16, max: 20, tier: 1, name: "Off-Colour", effect: "The visual manifestation appears in an unexpected colour — still clearly divine, just different." },
+    { min: 21, max: 25, tier: 1, name: "Echo of Doubt", effect: "For a half-second, the caster is completely certain the ability won't work. It does." },
+    { min: 26, max: 30, tier: 1, name: "Watched", effect: "A clear, calm sense of being observed during the casting. It passes the moment the ability resolves." },
+    { min: 31, max: 35, tier: 1, name: "Scent", effect: "The ability carries an unusual scent — incense, rain, iron, or something specific to the caster's tradition." },
+    { min: 36, max: 40, tier: 1, name: "Misplaced Reverence", effect: "A nearby creature instinctively bows or averts their gaze during the channelling, without knowing why." },
+    { min: 41, max: 45, tier: 1, name: "Weight", effect: "An uncharacteristic heaviness for a moment, then nothing. The ability works." },
+    { min: 46, max: 50, tier: 1, name: "Delay", effect: "The ability triggers half a second late. No mechanical effect; everyone noticed." },
+    { min: 51, max: 55, tier: 1, name: "Visible Breath", effect: "The caster's breath becomes visible as mist for the round, regardless of temperature." },
+    { min: 56, max: 60, tier: 1, name: "Second Voice", effect: "The invocation is briefly accompanied by a second voice saying the same words." },
+    { min: 61, max: 65, tier: 1, name: "Stillness", effect: "Every flame or moving light source within 10m stills completely for 1 second." },
+    { min: 66, max: 70, tier: 1, name: "Gravity", effect: "Small loose objects within 2m orient briefly toward the caster during the invocation." },
+    { min: 71, max: 75, tier: 1, name: "Marked", effect: "A visible symbol appears on the caster's skin for the rest of the round, then fades." },
+    { min: 76, max: 80, tier: 1, name: "Displaced Sound", effect: "The sound of the invocation comes from slightly the wrong direction." },
+    { min: 81, max: 85, tier: 1, name: "Ambient Response", effect: "The environment reacts — birds go quiet, wind stills, animals look toward the caster." },
+    { min: 86, max: 90, tier: 1, name: "Excessive Sincerity", effect: "The ability works but the caster delivers it with an intensity everyone nearby finds slightly unsettling." },
+    { min: 91, max: 95, tier: 1, name: "Interference", effect: "A brief ripple passes through all ongoing effects in the area before the ability fires cleanly." },
+    { min: 96, max: 100, tier: 1, name: "Grand Entrance", effect: "The ability fires normally but with significantly more dramatic visual presentation than warranted." },
+    // Tier 2: Real Effects (101–200) — alternating positive/negative every 10
+    { min: 101, max: 110, tier: 2, positive: true, name: "Divine Echo", effect: "Ability fires at full effect, then fires again at half effect at the caster's next turn, retargeted by the caster." },
+    { min: 111, max: 120, tier: 2, positive: false, name: "Rebuke", effect: "Ability fails. The power turns inward — caster takes (cost × 10) to the Thorax, bypassing armour. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10." },
+    { min: 121, max: 130, tier: 2, positive: true, name: "Surging Conviction", effect: "Ability fires at double all numerical values. No downside." },
+    { min: 131, max: 140, tier: 2, positive: false, name: "Misaligned", effect: "Ability fires at full effect but strikes the caster instead of the intended target, as if they were the original target." },
+    { min: 141, max: 150, tier: 2, positive: true, name: "Granted Action", effect: "Ability fires normally. Caster gains an additional activation this round." },
+    { min: 151, max: 160, tier: 2, positive: false, name: "Holy Discharge", effect: "The ability detonates at the caster's position. All creatures within 5m (including the caster) take (cost × 10) damage. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected. Ability fails." },
+    { min: 161, max: 170, tier: 2, positive: true, name: "Unwavering Faith", effect: "Ability fires normally. Caster's next 2 divine ability rolls automatically succeed at maximum effect." },
+    { min: 171, max: 180, tier: 2, positive: false, name: "The Wrong Ear", effect: "The invocation is heard by something that opposes what the caster serves. A hostile entity arrives, drawn by the prayer (GM scales to party threat level). Ability fails." },
+    { min: 181, max: 190, tier: 2, positive: true, name: "Overflowing Grace", effect: "Ability fires normally and is duplicated in full at a second valid target of the caster's choosing." },
+    { min: 191, max: 200, tier: 2, positive: false, name: "Cascading Doubt", effect: "Roll twice more on this 101–200 band (re-roll 191+). Apply both simultaneously. Original ability fails." },
+    // Tier 3: Extreme (201–250)
+    { min: 201, max: 210, tier: 3, name: "Righteous Detonation", effect: "The divine energy discharges in a 10m radius. All creatures within take (cost × 20) damage. Caster takes double. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected (the caster's doubled portion is reduced by 20 per resource spent). Make a Survival Check if brought to 0 HP. Ability fails." },
+    { min: 211, max: 220, tier: 3, name: "Weight of Judgement", effect: "Every creature within 20m is compelled for 1d4 rounds to act in accordance with their own stated values. Creatures who act against their professed nature during this time take (cost × 10) damage. Ability fires normally." },
+    { min: 221, max: 230, tier: 3, name: "Silence of the Faithful", effect: "A 15m radius zone erupts from the caster — no divine abilities may be channelled within it for 1d4+1 rounds, all ongoing divine effects suspended. Caster takes (cost × 10) to the Thorax. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10." },
+    { min: 231, max: 240, tier: 3, name: "Crisis of Conviction", effect: "The caster is overtaken by complete involuntary doubt. For 1d4 rounds they cannot use any divine ability and must pass a Bravery check to take any action that invokes their code or deity." },
+    { min: 241, max: 250, tier: 3, name: "Marked for Attention", effect: "The ability fails. The power discharges inward — every limb takes (cost × 10) damage bypassing armour. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10. Make a Survival Check for each limb brought to 0 HP or below." },
+    // Tier 4: The Cost of Being Heard (250+)
+    { min: 250, max: 250, tier: 4, name: "The Silence", effect: "The power simply stops. Not anger, not punishment — just absence where something once was. The caster is completely functional. Their divine abilities no longer work. There is no explanation and no sign it will return." },
+    { min: 251, max: 265, tier: 4, name: "Claimed", effect: "Something heard the invocation before the intended recipient could respond, and answered. The caster's power works perfectly — it is simply coming from somewhere else now. The caster may or may not be able to tell the difference. Whatever answered can." },
+    { min: 266, max: 280, tier: 4, name: "Perfect Obedience", effect: "The caster is granted absolute, permanent clarity of what their code or deity demands of them in every moment. They cannot act against it — not from lack of desire, but because the person capable of choosing otherwise no longer exists. They remain functional, even content. The individual who entered this combat is gone." },
+    { min: 281, max: 295, tier: 4, name: "Vessel", effect: "The caster becomes a direct, unfiltered conduit. The power moves through them constantly without direction or consent. They glow. They heal those nearby. They cannot touch anything without leaving a mark. This does not stop." },
+    { min: 296, max: 310, tier: 4, name: "Devoted", effect: "The caster's commitment deepens past what a person can healthily sustain. They cannot prioritise anything above their code or deity — not survival, not allies, not themselves. They are perfectly content. They are completely unreachable." },
+    { min: 311, max: Infinity, tier: 4, name: "The Answer", effect: "The invocation was answered completely and without reservation. Whatever the caster serves is now fully, physically, permanently present. It has not left. It has its own ideas about what comes next. The GM determines its nature. The campaign has changed." }
+  ]
+};
+const ALCHEMY_MISHAP_TABLE = {
+  tierNames: {
+    1: "Produced with Side Effects",
+    2: "Real Effects",
+    3: "Brew Fails — Dangerous",
+    4: "Not Everything Can Be Neutralised"
+  },
+  entries: [
+    // Tier 1: Produced with Side Effects (01–100)
+    { min: 1, max: 5, tier: 1, name: "Delayed Onset", effect: "Takes effect 1 round later than it should." },
+    { min: 6, max: 10, tier: 1, name: "Noxious", effect: "Unpleasant in delivery — foul to drink, stinging to touch, acrid when airborne." },
+    { min: 11, max: 15, tier: 1, name: "Glowing", effect: "The brew and its target glow faintly for the duration of the effect." },
+    { min: 16, max: 20, tier: 1, name: "Wrong Smell", effect: "The target emits a strong, distinct smell for the duration of the effect." },
+    { min: 21, max: 25, tier: 1, name: "Half Duration", effect: "Full potency but lasts half as long as intended." },
+    { min: 26, max: 30, tier: 1, name: "Unstable", effect: "Must be used within the next hour or degrades into an inert substance." },
+    { min: 31, max: 35, tier: 1, name: "Skin Deep", effect: "Causes a temporary harmless change to the target's skin tone or hair colour for its duration." },
+    { min: 36, max: 40, tier: 1, name: "Audible", effect: "Makes a distinct noise on use — a hiss, pop, or resonant hum." },
+    { min: 41, max: 45, tier: 1, name: "Extended Duration", effect: "Full potency but lasts twice as long." },
+    { min: 46, max: 50, tier: 1, name: "Contagious Touch", effect: "For the first round after use, anyone the target touches is mildly affected at half potency for 1 round." },
+    { min: 51, max: 55, tier: 1, name: "Reduced Yield", effect: "Only a single dose is produced regardless of batch size." },
+    { min: 56, max: 60, tier: 1, name: "Half Potency", effect: "Full duration but at half the intended effect." },
+    { min: 61, max: 65, tier: 1, name: "Sediment", effect: "Must be shaken or stirred before use or the first dose is inert." },
+    { min: 66, max: 70, tier: 1, name: "Temperature", effect: "Target experiences an intense but harmless sensation of heat or cold for 1 round after use." },
+    { min: 71, max: 75, tier: 1, name: "Wrong Sense", effect: "The effect is accompanied by an unexpected sensory experience on the target — sound instead of light, heat instead of pressure. The intended effect is still correct." },
+    { min: 76, max: 80, tier: 1, name: "Sticky", effect: "Takes effect 2 rounds late but lingers 1 round longer than normal." },
+    { min: 81, max: 85, tier: 1, name: "Photosensitive", effect: "Degrades immediately if exposed to direct light. Must be used in dim conditions or is ruined on the spot." },
+    { min: 86, max: 90, tier: 1, name: "Reactive", effect: "Interacts visibly with any other alchemical substance within 1m, producing harmless but dramatic visual effects." },
+    { min: 91, max: 95, tier: 1, name: "Extra Dose", effect: "An additional dose is produced but has a 50% chance of being inert, determined when used." },
+    { min: 96, max: 100, tier: 1, name: "Wrong Form", effect: "Produced in an unexpected physical form — solid instead of liquid, gas instead of gel. Full potency, awkward delivery." },
+    // Tier 2: Real Effects (101–200) — alternating positive/negative every 10
+    { min: 101, max: 110, tier: 2, positive: true, name: "Exceptional Yield", effect: "Brew succeeds at full potency and produces 3 doses instead of 1." },
+    { min: 111, max: 120, tier: 2, positive: false, name: "Contaminated", effect: "Brew works as intended but is also harmful to handle. The user takes (effects × 5) Acid damage on application, bypassing armour." },
+    { min: 121, max: 130, tier: 2, positive: true, name: "Doubled Potency", effect: "Brew succeeds at double strength and double duration. No extra cost." },
+    { min: 131, max: 140, tier: 2, positive: false, name: "Reversed", effect: "Brew is produced and looks correct but does the exact opposite of its intended function in every respect." },
+    { min: 141, max: 150, tier: 2, positive: true, name: "Accidental Discovery", effect: "Brew produces its intended effect plus a second minor beneficial effect equivalent to a 1-effect ability. GM determines what." },
+    { min: 151, max: 160, tier: 2, positive: false, name: "Unstable Compound", effect: "Brew is produced but detonates if significantly disturbed — dropped, struck in combat, or roughly handled. Explosion deals (effects × 5) Fire damage to everything within 3m. The carrier is not exempt." },
+    { min: 161, max: 170, tier: 2, positive: true, name: "Perfect Formula", effect: "Brew succeeds at full potency. The alchemist fully internalises the recipe — all future brews of this type have no mishap chance." },
+    { min: 171, max: 180, tier: 2, positive: false, name: "Contagion", effect: "Brew works as intended but becomes transmissible through touch for its duration. Anyone touching the target must pass an Endurance check or contract a half-potency version of the effect." },
+    { min: 181, max: 190, tier: 2, positive: true, name: "Sympathetic Batch", effect: "Brew succeeds at full potency and automatically produces one additional dose that takes effect on a willing target of the alchemist's choice within sight, at half potency." },
+    { min: 191, max: 200, tier: 2, positive: false, name: "Chain Reaction", effect: "Roll twice more on this 101–200 band (re-roll 191+). Apply both simultaneously." },
+    // Tier 3: Brew Fails — Dangerous (201–250)
+    { min: 201, max: 210, tier: 3, name: "Detonation", effect: "The mixture ignites violently. Everything within 5m takes (effects × 10) Fire damage; everything within 10m takes half. The workspace is destroyed." },
+    { min: 211, max: 220, tier: 3, name: "Plague Brew", effect: "The brew mutates into an airborne contagion. All creatures within 20m must pass an Endurance check or contract a debilitating illness — GM determines symptoms, 1d4 days of rest to recover." },
+    { min: 221, max: 230, tier: 3, name: "Corrosive Burst", effect: "The brew dissolves outward in a 5m radius Acid wave dealing (effects × 8) damage to all within. Surfaces and equipment in the area are permanently corroded." },
+    { min: 231, max: 240, tier: 3, name: "Marked", effect: "The fumes permanently alter the alchemist's biology in a minor but irreversible way. GM determines the nature of the change. The alchemist is otherwise unharmed." },
+    { min: 241, max: 250, tier: 3, name: "Internal Reaction", effect: "The brew reacts with the alchemist's own biology on contact. Every limb takes (effects × 8) damage bypassing all armour. Make a Survival Check for each limb brought to 0 HP or below." },
+    // Tier 4: Not Everything Can Be Neutralised (250+)
+    { min: 250, max: 250, tier: 4, name: "Reduction", effect: "The alchemist is reduced to their component biological materials, arranged very neatly. The materials are, individually, fine." },
+    { min: 251, max: 265, tier: 4, name: "Transmutation", effect: "The alchemist's body is slowly converted to a different substance over the course of a week. The process is visible, gradual, and cannot be stopped. At the end: still aware. No longer biological." },
+    { min: 266, max: 280, tier: 4, name: "The Perfect Formula", effect: "The alchemist has discovered something extraordinary and knows it with certainty. Sleep, food, and other people become secondary. The formula is real and remarkable. The alchemist will never willingly stop working on it." },
+    { min: 281, max: 295, tier: 4, name: "Dissolution", effect: "The alchemist begins breaking down chemically over the following months — gradually, without pain, and with no known treatment. They remain fully conscious throughout." },
+    { min: 296, max: 310, tier: 4, name: "The Substance", effect: "The alchemist has produced something that cannot be destroyed, contained, or understood. It has no known effect. It persists and grows slowly. The alchemist is compelled to keep adding to it. Neither they nor anyone else knows why." },
+    { min: 311, max: Infinity, tier: 4, name: "The Reaction That Does Not Stop", effect: "The brew triggers a self-perpetuating reaction in local matter. The alchemist is the catalyst and cannot leave the affected radius. The radius is growing — slowly, measurably. The GM determines what the reaction produces. It is not destructive. It is not safe. It is simply ongoing." }
+  ]
+};
+const PSYCHIC_MISHAP_TABLE = {
+  tierNames: {
+    1: "Purely Narrative",
+    2: "Real Effects",
+    3: "Extreme",
+    4: "Past the Point of Thought"
+  },
+  entries: [
+    // Tier 1: Purely Narrative (01–100)
+    { min: 1, max: 5, tier: 1, name: "Nosebleed", effect: "Minor strain manifests physically. The caster's nose bleeds for a round." },
+    { min: 6, max: 10, tier: 1, name: "Surface Thoughts", effect: "The caster accidentally broadcasts their current surface thoughts to anyone within 5m." },
+    { min: 11, max: 15, tier: 1, name: "Static", effect: "A brief visual or auditory static overlays the caster's perception for a moment." },
+    { min: 16, max: 20, tier: 1, name: "Déjà Vu", effect: "Everyone within 10m experiences an intense, simultaneous moment of déjà vu." },
+    { min: 21, max: 25, tier: 1, name: "Phantom Touch", effect: "The caster briefly feels physical sensations from a random nearby creature." },
+    { min: 26, max: 30, tier: 1, name: "Involuntary Glow", effect: "The caster's eyes glow faintly during the activation." },
+    { min: 31, max: 35, tier: 1, name: "Memory Flash", effect: "A single inconsequential memory from a nearby creature flashes through the caster's mind uninvited." },
+    { min: 36, max: 40, tier: 1, name: "Pressure", effect: "Everyone nearby briefly feels pressure behind their eyes, as if being watched from inside." },
+    { min: 41, max: 45, tier: 1, name: "Ambient Hum", effect: "A low-frequency hum radiates from the caster for 1 round, audible up to 5m." },
+    { min: 46, max: 50, tier: 1, name: "Emotional Bleed", effect: "The caster involuntarily feels the dominant emotion of the nearest creature for a moment." },
+    { min: 51, max: 55, tier: 1, name: "Levitation Twitch", effect: "Small loose objects within 1m briefly float an inch before dropping." },
+    { min: 56, max: 60, tier: 1, name: "Remote Sense", effect: "The caster momentarily perceives through the senses of a nearby creature for about 1 second." },
+    { min: 61, max: 65, tier: 1, name: "Afterimage", effect: "The target leaves a brief psionic echo in the caster's vision for 1 round." },
+    { min: 66, max: 70, tier: 1, name: "Involuntary Empathy", effect: "The caster knows exactly how every visible creature is currently feeling for 1 round." },
+    { min: 71, max: 75, tier: 1, name: "Mental Echo", effect: "The caster hears the last thing a nearby creature thought, word for word, once." },
+    { min: 76, max: 80, tier: 1, name: "Overtuned", effect: "The caster can hear conversations in adjacent rooms or around corners for 1 round." },
+    { min: 81, max: 85, tier: 1, name: "Temporal Blip", effect: "The caster loses half a second of awareness. Nothing they could have prevented occurs." },
+    { min: 86, max: 90, tier: 1, name: "Social Leak", effect: "The caster involuntarily mimics a gesture or expression from whoever they are mentally focused on." },
+    { min: 91, max: 95, tier: 1, name: "Power Surge", effect: "The ability fires with a visible corona of psionic energy — impressive, adds nothing." },
+    { min: 96, max: 100, tier: 1, name: "Feedback Squeal", effect: "A brief high-pitched tone audible only to psychically sensitive creatures radiates from the caster." },
+    // Tier 2: Real Effects (101–200) — alternating positive/negative every 10
+    { min: 101, max: 110, tier: 2, positive: true, name: "Psionic Echo", effect: "Ability fires at full effect, then fires again at half effect at the caster's next turn, retargeted by the caster." },
+    { min: 111, max: 120, tier: 2, positive: false, name: "Mindburn", effect: "Ability fails. The strain turns inward — caster takes (cost × 10) Psychic damage to the Head, bypassing armour. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10." },
+    { min: 121, max: 130, tier: 2, positive: true, name: "Amplified Signal", effect: "Ability fires at double all numerical values. No downside." },
+    { min: 131, max: 140, tier: 2, positive: false, name: "Involuntary Reversal", effect: "Ability fires at full effect but strikes the caster instead of the intended target, as if they were the original target." },
+    { min: 141, max: 150, tier: 2, positive: true, name: "Mental Clarity", effect: "Ability fires normally. Caster gains an additional activation this round." },
+    { min: 151, max: 160, tier: 2, positive: false, name: "Neural Overload", effect: "The ability detonates at the caster's position. All creatures within 5m (including the caster) take (cost × 10) Psychic damage. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected. Ability fails." },
+    { min: 161, max: 170, tier: 2, positive: true, name: "Psionic Mastery", effect: "Ability fires normally. Caster's next 2 psychic ability rolls automatically succeed at maximum effect." },
+    { min: 171, max: 180, tier: 2, positive: false, name: "Broadcast", effect: "The caster involuntarily transmits everything they are currently experiencing — sensory and emotional — to every creature within 20m for 1d4 rounds. They cannot filter or stop it. Ability fails." },
+    { min: 181, max: 190, tier: 2, positive: true, name: "Expanded Reach", effect: "Ability fires normally and is duplicated in full at a second valid target of the caster's choosing." },
+    { min: 191, max: 200, tier: 2, positive: false, name: "Cascade Meltdown", effect: "Roll twice more on this 101–200 band (re-roll 191+). Apply both simultaneously. Original ability fails." },
+    // Tier 3: Extreme (201–250)
+    { min: 201, max: 210, tier: 3, name: "Psionic Detonation", effect: "Uncontrolled psychic force erupts in a 10m radius. All creatures take (cost × 20) Psychic damage to the Head, bypassing armour. Caster takes double. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected (the caster's doubled portion is reduced by 20 per resource spent). Make a Survival Check if brought to 0 HP. Ability fails." },
+    { min: 211, max: 220, tier: 3, name: "Mind Fracture", effect: "The caster's psychic sense shatters outward. All creatures within 20m hear each other's surface thoughts in full for 1d4 rounds — no creature can successfully deceive another during this time. Caster takes (cost × 10) Psychic damage to the Head, bypassing armour. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10. Ability fires normally." },
+    { min: 221, max: 230, tier: 3, name: "Psychic Void", effect: "A 15m radius zone of mental silence erupts from the caster. No psychic abilities may be used within it for 1d4+1 rounds; all ongoing psychic effects are immediately suppressed. Caster takes (cost × 10) to the Head. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10." },
+    { min: 231, max: 240, tier: 3, name: "Consciousness Inversion", effect: "The caster's awareness is projected outward while their body acts on pure instinct. For 1d4 rounds, the GM controls the caster's body; the caster observes helplessly from outside it. Ability fails." },
+    { min: 241, max: 250, tier: 3, name: "Identity Bleed", effect: "The caster's sense of self partially merges with every creature they have targeted with a psychic ability this combat. They experience all of these minds simultaneously. They retain their own identity, but will never be entirely alone in their thoughts again. Ability fails." },
+    // Tier 4: Past the Point of Thought (250+)
+    { min: 250, max: 250, tier: 4, name: "Ego Death", effect: "The caster's personality, memories, and identity are permanently erased. The body remains fully functional, inhabited by no one. No known method can restore what was there." },
+    { min: 251, max: 265, tier: 4, name: "Gestalt", effect: "The caster's mind expands to absorb the consciousness of every creature within 50m. All become one shared mind. The caster's original identity is the most diluted. The collective has no intention of separating." },
+    { min: 266, max: 280, tier: 4, name: "Eternal Broadcast", effect: "The caster becomes a permanent involuntary psychic beacon. Every thought is transmitted at full intensity to every psychically sensitive creature within 1km. They cannot stop it. They cannot sleep. Every private moment is public. Forever." },
+    { min: 281, max: 295, tier: 4, name: "The Passenger", effect: "An entity that was apparently waiting for exactly this opportunity takes up residence in the caster's mind. The caster is still there. The entity does not leave. It occasionally makes observations." },
+    { min: 296, max: 310, tier: 4, name: "Unravelling", effect: "The boundary between the caster and the minds around them begins to dissolve. Each day, a piece of someone else's identity replaces something of their own. Within a month, nothing original remains. The process is gradual enough to be fully conscious throughout." },
+    { min: 311, max: Infinity, tier: 4, name: "The Open Wound", effect: "The caster's mind tears open a permanent two-way connection to whatever lies beyond consciousness. Things come through. The caster cannot close it. They do not come all at once. They are patient." }
+  ]
+};
+const TAG_TO_TABLE = {
+  divine: DIVINE_MISHAP_TABLE,
+  psychic: PSYCHIC_MISHAP_TABLE,
+  alchemy: ALCHEMY_MISHAP_TABLE
+};
+function getMishapTable(tag) {
+  return TAG_TO_TABLE[tag] ?? null;
+}
+function getMishapEntry(roll, entries = MISHAP_TABLE) {
+  if (roll <= 0) return entries[0];
+  return entries.find((e2) => roll >= e2.min && roll <= e2.max) ?? entries[entries.length - 1];
 }
 function calculateMishapChance(effects, invokingTurns) {
-  return Math.max(0, effects * 25 - invokingTurns * 25);
+  return effects * 15 - invokingTurns * 50;
 }
 function getMishapModifier(chance) {
   return Math.max(0, chance - 100);
@@ -1358,6 +1572,29 @@ function getWhisperIds(actor) {
 async function tamsOnTurnStart(actor) {
   var _a, _b;
   if (!actor || actor.type !== "character") return;
+  const dyingCountdown = actor.getFlag("tams", "dyingCountdown");
+  if (dyingCountdown) {
+    const turnsLeft = dyingCountdown.turnsLeft - 1;
+    if (turnsLeft <= 0) {
+      await actor.setFlag("tams", "dyingCountdown", null);
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.2em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Death", { name: actor.name })}</div></div>`,
+        whisper: getWhisperIds(actor)
+      });
+    } else {
+      await actor.setFlag("tams", "dyingCountdown", { ...dyingCountdown, turnsLeft });
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<div class="tams-roll"><div class="tams-crit failure">${game.i18n.format("TAMS.Dying.Countdown", { name: actor.name, turns: turnsLeft })}</div></div>`,
+        whisper: getWhisperIds(actor)
+      });
+    }
+  }
+  const reactionUses = actor.getFlag("tams", "reactionUses") ?? {};
+  if (Object.keys(reactionUses).length > 0) {
+    await actor.setFlag("tams", "reactionUses", {});
+  }
   const statusTracking = actor.getFlag("tams", "statusTracking") ?? {};
   if (Object.keys(statusTracking).length > 0 && game.combat) {
     const updatedTracking = { ...statusTracking };
@@ -1517,6 +1754,9 @@ async function tamsOnCombatEnd(combat) {
         cleared.push(id);
       }
     }
+    if (actor.getFlag("tams", "dyingCountdown")) await actor.setFlag("tams", "dyingCountdown", null);
+    const reactionUses = actor.getFlag("tams", "reactionUses") ?? {};
+    if (Object.keys(reactionUses).length > 0) await actor.setFlag("tams", "reactionUses", {});
     const totalHp = LIMB_KEYS.reduce((sum, k) => {
       var _a2;
       return sum + (((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0);
@@ -1852,6 +2092,63 @@ async function tamsRenderChatMessage(message, html, data) {
       }
     });
   });
+  root.querySelectorAll(".tams-save-button").forEach((btn) => {
+    btn.addEventListener("click", async (ev) => {
+      var _a, _b, _c, _d, _e;
+      ev.preventDefault();
+      const saveAgainst = btn.dataset.saveAgainst;
+      const abilityName = btn.dataset.abilityName ?? "";
+      const msgId = (_a = btn.closest("[data-message-id]")) == null ? void 0 : _a.dataset.messageId;
+      const originMsg = game.messages.get(msgId);
+      const dc = ((_c = (_b = originMsg == null ? void 0 : originMsg.flags) == null ? void 0 : _b.tams) == null ? void 0 : _c.saveDC) ?? parseInt(btn.dataset.dc);
+      const actor = ((_e = (_d = canvas.tokens) == null ? void 0 : _d.controlled[0]) == null ? void 0 : _e.actor) ?? game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
+      if (!actor || !actor.isOwner) return ui.notifications.warn(game.i18n.localize("TAMS.Save.NoActor"));
+      const STAT_KEYS = /* @__PURE__ */ new Set(["strength", "dexterity", "endurance", "wisdom", "intelligence", "bravery"]);
+      const statLabels = {
+        strength: game.i18n.localize("TAMS.StatStrength"),
+        dexterity: game.i18n.localize("TAMS.StatDexterity"),
+        endurance: game.i18n.localize("TAMS.StatEndurance"),
+        wisdom: game.i18n.localize("TAMS.StatWisdom"),
+        intelligence: game.i18n.localize("TAMS.StatIntelligence"),
+        bravery: game.i18n.localize("TAMS.StatBravery")
+      };
+      const roll = await new Roll("1d100").evaluate();
+      const raw = roll.total;
+      let total, saveLabel;
+      if (STAT_KEYS.has(saveAgainst)) {
+        const stat = actor.system.stats[saveAgainst];
+        const statValue = stat ? stat.value + (stat.mod || 0) + (stat.traitBonus || 0) : 0;
+        total = Math.min(raw, statValue);
+        saveLabel = statLabels[saveAgainst] ?? saveAgainst;
+      } else {
+        const skill = actor.items.find((i) => i.type === "skill" && i.name.toLowerCase() === saveAgainst.toLowerCase());
+        if (skill) {
+          const sId = skill.system.stat;
+          const stat = actor.system.stats[sId];
+          const statValue = stat ? stat.value + (stat.mod || 0) + (stat.traitBonus || 0) : 0;
+          const fam = parseInt(skill.system.familiarity) || 0;
+          const bonus = parseInt(skill.system.bonus) || 0;
+          total = Math.min(raw, statValue) + fam + bonus;
+          saveLabel = skill.name;
+          await skill.update({ "system.usedInScene": true });
+        } else {
+          total = raw;
+          saveLabel = saveAgainst;
+        }
+      }
+      const success = total >= dc;
+      const report = `
+          <div class="tams-roll">
+            <h3 class="roll-label">${e(actor.name)}: ${game.i18n.format("TAMS.Save.Title", { ability: e(abilityName) })}</h3>
+            <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
+            <div class="roll-row"><span>${e(saveLabel)} ${game.i18n.localize("TAMS.Save.CheckLabel")}</span><span>${total}</span></div>
+            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total, dc })}</div>
+            ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Save.Success")}</div>` : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Save.Failure")}</div>`}
+          </div>
+        `;
+      await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: report });
+    });
+  });
   root.querySelectorAll(".tams-take-damage").forEach((el) => el.addEventListener("click", async (ev) => {
     var _a, _b;
     ev.preventDefault();
@@ -2057,47 +2354,66 @@ async function tamsRenderChatMessage(message, html, data) {
     const btn = ev.currentTarget;
     const actorUuid = btn.dataset.actorUuid;
     let totalEffects = parseInt(btn.dataset.effects);
+    const castTime = btn.dataset.castTime ?? "immediate";
+    const mishapTag = btn.dataset.mishapTag ?? "magic";
+    const mishapTableObj = getMishapTable(mishapTag);
+    const mishapEntries = mishapTableObj ? mishapTableObj.entries : MISHAP_TABLE;
     const actor = actorUuid ? await fromUuid(actorUuid) : null;
-    if (totalEffects < 0) {
-      totalEffects = await new Promise((resolve) => {
-        new Dialog({
-          title: game.i18n.localize("TAMS.Mishap.DialogTitle"),
-          content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.EffectsPrompt")}</label><input type="number" id="mishap-effects" value="1" min="0"/></div>`,
-          buttons: {
-            roll: { label: game.i18n.localize("TAMS.Mishap.RollButton"), callback: (html2) => resolve(parseInt(html2.find("#mishap-effects").val()) || 0) },
-            cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(-1) }
-          },
-          default: "roll"
-        }).render(true);
-      });
-      if (totalEffects < 0) return;
-    }
-    const invokingTurns = await new Promise((resolve) => {
+    const effectsRow = totalEffects < 0 ? `<div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.EffectsPrompt")}</label><input type="number" id="mishap-effects" value="1" min="0"/></div>` : `<input type="hidden" id="mishap-effects" value="${totalEffects}"/>`;
+    const oneTurnChecked = castTime === "1turn" ? "checked" : "";
+    const result = await new Promise((resolve) => {
       new Dialog({
         title: game.i18n.localize("TAMS.Mishap.DialogTitle"),
-        content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.TurnsPrompt")}</label><input type="number" id="mishap-turns" value="0" min="0"/></div>`,
+        content: `${effectsRow}
+                    <div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.OneTurnCast")} (−100%)</label><input type="checkbox" id="mishap-oneturn" ${oneTurnChecked}/></div>
+                    <div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.TurnsPrompt")} (−50% each)</label><input type="number" id="mishap-turns" value="0" min="0"/></div>
+                    <div class="form-group"><label>${game.i18n.localize("TAMS.CalculatorOptions.ReducedMishap")} (+2 cost, −60%)</label><input type="checkbox" id="mishap-reduced"/></div>`,
         buttons: {
-          roll: { label: game.i18n.localize("TAMS.Mishap.RollButton"), callback: (html2) => resolve(parseInt(html2.find("#mishap-turns").val()) || 0) },
-          cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(-1) }
+          roll: { label: game.i18n.localize("TAMS.Mishap.RollButton"), callback: (html2) => resolve({ effects: parseInt(html2.find("#mishap-effects").val()) || 0, oneTurn: html2.find("#mishap-oneturn").is(":checked"), turns: parseInt(html2.find("#mishap-turns").val()) || 0, reduced: html2.find("#mishap-reduced").is(":checked") }) },
+          cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
         },
         default: "roll"
       }).render(true);
     });
-    if (invokingTurns < 0) return;
-    const chance = calculateMishapChance(totalEffects, invokingTurns);
+    if (!result) return;
+    totalEffects = result.effects;
+    const invokingTurns = result.turns;
+    let chance = calculateMishapChance(totalEffects, invokingTurns);
+    if (result.oneTurn) chance -= 100;
+    if (result.reduced) chance -= 60;
+    chance = Math.max(0, chance);
+    const chanceParts = [`${totalEffects} effects × 15% = ${totalEffects * 15}%`];
+    if (invokingTurns > 0) chanceParts.push(`${invokingTurns} invoking × −50% = −${invokingTurns * 50}%`);
+    if (result.oneTurn) chanceParts.push(`1 Turn cast: −100%`);
+    if (result.reduced) chanceParts.push(`Reduced Mishap: −60%`);
+    chanceParts.push(`<b>Final: ${chance}%</b>`);
+    const chanceBreakdown = chanceParts.join(" | ");
     if (chance <= 0) {
       ChatMessage.create({
         speaker: actor ? ChatMessage.getSpeaker({ actor }) : {},
-        content: `<div class="tams-roll"><h3 class="roll-label">${game.i18n.localize("TAMS.Mishap.Title")}</h3><div class="roll-row">${game.i18n.localize("TAMS.Mishap.NoChance")}</div></div>`
+        content: `<div class="tams-roll"><h3 class="roll-label">${game.i18n.localize("TAMS.Mishap.Title")}</h3><div class="roll-row"><small>${chanceBreakdown}</small></div><div class="roll-row">${game.i18n.localize("TAMS.Mishap.NoChance")}</div></div>`
       });
       return;
+    }
+    if (chance < 100) {
+      const occurrenceRoll = await new Roll("1d100").evaluate();
+      if (occurrenceRoll.total > chance) {
+        ChatMessage.create({
+          speaker: actor ? ChatMessage.getSpeaker({ actor }) : {},
+          content: `<div class="tams-roll"><h3 class="roll-label">${game.i18n.localize("TAMS.Mishap.Title")}</h3><div class="roll-row"><small>${chanceBreakdown}</small></div><div class="roll-row">${game.i18n.format("TAMS.Mishap.NoProcDisplay", { roll: occurrenceRoll.total, chance })}</div></div>`,
+          rolls: [occurrenceRoll]
+        });
+        btn.disabled = true;
+        btn.innerText = game.i18n.localize("TAMS.Mishap.Rolled");
+        return;
+      }
     }
     const modifier = getMishapModifier(chance);
     const roll = await new Roll(`1d100 + ${modifier}`).evaluate();
     const rollTotal = roll.total;
-    const entry = getMishapEntry(rollTotal);
+    const entry = getMishapEntry(rollTotal, mishapEntries);
     const tierColors = { 1: "#2e7d32", 2: "#e65100", 3: "#b71c1c", 4: "#4a148c" };
-    const tierNames = {
+    const tierNames = mishapTableObj ? mishapTableObj.tierNames : {
       1: game.i18n.localize("TAMS.Mishap.Tier1"),
       2: game.i18n.localize("TAMS.Mishap.Tier2"),
       3: game.i18n.localize("TAMS.Mishap.Tier3"),
@@ -2109,8 +2425,8 @@ async function tamsRenderChatMessage(message, html, data) {
     const content = `
             <div class="tams-roll">
                 <h3 class="roll-label" style="color:${tierColor};">${game.i18n.localize("TAMS.Mishap.Title")}</h3>
-                <div class="roll-row"><small>${game.i18n.format("TAMS.Mishap.ChanceDisplay", { chance, effects: totalEffects, turns: invokingTurns })}</small></div>
-                ${modifier > 0 ? `<div class="roll-row"><small>${game.i18n.format("TAMS.Mishap.ModifierDisplay", { modifier })}</small></div>` : ""}
+                <div class="roll-row"><small>${chanceBreakdown}</small></div>
+                ${modifier > 0 ? `<div class="roll-row"><small>Roll modifier: +${modifier} (chance exceeded 100%)</small></div>` : ""}
                 <div class="roll-row"><span>Roll:</span><span class="roll-value">${((_b = (_a = roll.dice[0]) == null ? void 0 : _a.results[0]) == null ? void 0 : _b.result) ?? "?"} ${modifier > 0 ? `+ ${modifier}` : ""} = ${rollTotal}</span></div>
                 <hr>
                 <div class="roll-total" style="color:${tierColor};">${e(tierName)}${positiveTag}: <b>${e(entry.name)}</b></div>
@@ -3106,17 +3422,24 @@ class TAMSActor extends Actor {
           reasons: [`${game.i18n.localize("TAMS.Checks.ReasonTotalHPNegative")} (${totalHp})`]
         });
       }
-      const checkLethal = (key) => {
+      const existingCountdown = this.getFlag("tams", "dyingCountdown");
+      let dyingStarted = false;
+      for (const key of ["head", "thorax"]) {
         const limb = this.system.limbs[key];
-        if (limb.value < -limb.max) {
-          survivalNeeded = true;
-          const dc = Math.abs(limb.value);
-          if (dc > survivalDC) survivalDC = dc;
-          reasons.push(`${limb.label} ${game.i18n.localize("TAMS.Checks.ReasonLimbBeyondNegMax")} (${limb.value} / -${limb.max})`);
+        if (limb.value < -limb.max && !existingCountdown && !dyingStarted) {
+          dyingStarted = true;
+          const turnsLeft = Math.max(1, Math.floor(this.system.stats.endurance.total / 10));
+          await this.toggleStatusEffect("unconscious", { active: true });
+          await this.setFlag("tams", "dyingCountdown", { turnsLeft, limbKey: key });
+          const ownerIds = Object.entries(this.ownership ?? {}).filter(([id, lvl]) => lvl >= 3 && id !== "default").map(([id]) => id);
+          const whisperIds = [.../* @__PURE__ */ new Set([...ownerIds, ...game.users.filter((u) => u.isGM).map((u) => u.id)])];
+          await ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor: this }),
+            content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Started", { name: this.name, limb: limb.label, turns: turnsLeft })}</div></div>`,
+            whisper: whisperIds
+          });
         }
-      };
-      checkLethal("head");
-      checkLethal("thorax");
+      }
       if (survivalNeeded) {
         pendingChecks.push({ type: "survival", dc: survivalDC, reasons });
       }
@@ -3759,7 +4082,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         sceneReset: _TAMSActorSheet.prototype._onSceneReset,
         callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: _TAMSActorSheet.prototype._onItemSendDescription,
-        honorEdit: _TAMSActorSheet.prototype._onHonorEdit
+        honorEdit: _TAMSActorSheet.prototype._onHonorEdit,
+        raceRemove: _TAMSActorSheet.prototype._onRaceRemove
       }
     }, { inplace: false });
   }
@@ -3818,6 +4142,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         const statusId = ev.currentTarget.dataset.statusId;
         await this.document.toggleStatusEffect(statusId, { active: false });
       });
+    });
+    this.element.querySelectorAll(".item[data-item-id]").forEach((el) => {
+      el.addEventListener("dragover", (ev) => {
+        ev.preventDefault();
+        el.classList.add("drag-over");
+      });
+      el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
+      el.addEventListener("drop", () => el.classList.remove("drag-over"));
     });
   }
   /** @override */
@@ -3895,7 +4227,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     this._expandedItems ?? (this._expandedItems = /* @__PURE__ */ new Set());
     const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
     const limbLabels = this.document.system.limbs;
-    for (let i of this.document.items) {
+    for (let i of [...this.document.items].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))) {
       let isGreyedOut = false;
       let effectiveLocation = i.system.location;
       if (effectiveLocation === "backpack") {
@@ -3953,6 +4285,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       else if (i.type === "questItem") inventoryQuestItems.push(itemData);
       else if (i.type === "backpack") inventoryBackpacks.push(itemData);
       else if (i.type === "trait") traits.push(itemData);
+      else if (i.type === "race") ;
       else if (i.type === "equipment") inventoryMisc.push(itemData);
     }
     const equippedSection = { id: "hand", label: game.i18n.localize("TAMS.Inventory.SectionEquipped"), items: [], type: "status" };
@@ -4063,6 +4396,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     context.skills = skills;
     context.abilities = abilities;
     context.traits = traits;
+    const raceDoc = this.document.items.find((i) => i.type === "race") ?? null;
+    context.raceItem = raceDoc ? { id: raceDoc.id, name: raceDoc.name, img: raceDoc.img, system: raceDoc.system } : null;
     const sceneItems = [
       ...weapons.map((i) => ({ ...i, sceneType: game.i18n.localize("TAMS.Weapon") })),
       ...skills.map((i) => ({ ...i, sceneType: game.i18n.localize("TAMS.Skill") })),
@@ -4300,6 +4635,18 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (confirmed) {
       item.delete();
     }
+  }
+  /**
+   * Handle removing the slotted race from the actor.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onRaceRemove(event, target) {
+    const existing = this.document.items.filter((i) => i.type === "race");
+    const granted = this.document.items.filter((i) => i.getFlag("tams", "raceGranted"));
+    const toDelete = [...existing.map((i) => i.id), ...granted.map((i) => i.id)];
+    if (toDelete.length) await this.document.deleteEmbeddedDocuments("Item", toDelete);
   }
   /**
    * Handle giving an item to another actor.
@@ -4775,12 +5122,62 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.ActorFullyHealed", { name: this.document.name }));
   }
   /** @override */
+  _canDragDrop(selector) {
+    return this.isEditable;
+  }
+  /** @override */
   async _onDrop(event) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const data = TextEditor.getDragEventData(event);
     if (data.type !== "Item") return super._onDrop(event);
-    const item = await Item.fromDropData(data);
-    if (!item) return;
+    let item;
+    try {
+      item = await Item.fromDropData(data);
+    } catch (err) {
+      if (data.uuid) {
+        const parts = data.uuid.split(".");
+        if (parts[0] === "Item") {
+          item = game.items.get(parts[1]) ?? null;
+        } else if (parts[0] === "Compendium" && parts.length >= 5) {
+          const packId = `${parts[1]}.${parts[2]}`;
+          const docId = parts[4];
+          const pack = game.packs.get(packId);
+          if (pack) {
+            try {
+              const docs = await pack.getDocuments();
+              item = docs.find((d) => d.id === docId) ?? null;
+            } catch (e2) {
+            }
+          }
+        }
+      }
+      if (!item) {
+        console.error("TAMS | _onDrop: could not resolve item", err);
+        return;
+      }
+    }
+    if (item.type === "race") {
+      if (!this.document.isOwner) return;
+      if (((_a = item.parent) == null ? void 0 : _a.uuid) === this.document.uuid) return;
+      const existing = this.document.items.filter((i) => i.type === "race");
+      const previouslyGranted = this.document.items.filter((i) => i.getFlag("tams", "raceGranted"));
+      const toDelete = [...existing.map((i) => i.id), ...previouslyGranted.map((i) => i.id)];
+      if (toDelete.length) await this.document.deleteEmbeddedDocuments("Item", toDelete);
+      const raceData = item.toObject();
+      delete raceData._id;
+      await this.document.createEmbeddedDocuments("Item", [raceData]);
+      const grantedAbilities = item.system.grantedAbilities ?? [];
+      if (grantedAbilities.length) {
+        const toCreate = grantedAbilities.map((a) => {
+          const d = foundry.utils.duplicate(a);
+          delete d._id;
+          foundry.utils.setProperty(d, "flags.tams.raceGranted", true);
+          return d;
+        });
+        await this.document.createEmbeddedDocuments("Item", toCreate);
+      }
+      return;
+    }
     const targetEl = event.target.closest(".item[data-item-id], .inventory-section[data-section-id]");
     let newLocation = "";
     if (targetEl) {
@@ -4799,7 +5196,24 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
       }
     }
-    const isSameActor = ((_a = item.parent) == null ? void 0 : _a.uuid) === this.document.uuid;
+    const isSameActor = ((_b = item.parent) == null ? void 0 : _b.uuid) === this.document.uuid;
+    if (isSameActor && ["skill", "ability", "weapon"].includes(item.type) && (targetEl == null ? void 0 : targetEl.dataset.itemId)) {
+      const targetItemId = targetEl.dataset.itemId;
+      if (targetItemId !== item.id) {
+        const targetItem = this.document.items.get(targetItemId);
+        if (targetItem && targetItem.type === item.type) {
+          const ordered = [...this.document.items].filter((i) => i.type === item.type).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+          const withoutDragged = ordered.filter((i) => i.id !== item.id);
+          const targetIdx = withoutDragged.findIndex((i) => i.id === targetItem.id);
+          const targetBounds = targetEl.getBoundingClientRect();
+          const insertAfter = event.clientY > targetBounds.top + targetBounds.height / 2;
+          withoutDragged.splice(insertAfter ? targetIdx + 1 : targetIdx, 0, item);
+          const updates = withoutDragged.map((i, idx) => ({ _id: i.id, sort: (idx + 1) * 1e5 }));
+          await this.document.updateEmbeddedDocuments("Item", updates);
+          return;
+        }
+      }
+    }
     if (isSameActor) {
       await item.update({ "system.location": newLocation });
       return;
@@ -4807,20 +5221,26 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (!this.document.isOwner) {
       game.socket.emit("system.tams", {
         type: "transferItem",
+        userId: game.user.id,
         itemData: item.toObject(),
-        sourceActorUuid: (_b = item.parent) == null ? void 0 : _b.uuid,
+        sourceActorUuid: (_c = item.parent) == null ? void 0 : _c.uuid,
         targetActorUuid: this.document.uuid,
         newLocation
       });
       ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.RequestTransfer", { item: item.name, name: this.document.name }));
       return;
     }
-    return tamsHandleItemTransfer({
-      itemData: item.toObject(),
-      sourceActorUuid: (_c = item.parent) == null ? void 0 : _c.uuid,
-      targetActorUuid: this.document.uuid,
-      newLocation
-    });
+    try {
+      return await tamsHandleItemTransfer({
+        itemData: item.toObject(),
+        sourceActorUuid: (_d = item.parent) == null ? void 0 : _d.uuid,
+        targetActorUuid: this.document.uuid,
+        newLocation
+      });
+    } catch (err) {
+      console.error("TAMS | _onDrop: tamsHandleItemTransfer failed", err);
+      ui.notifications.error(`TAMS: Failed to add item "${item.name}" — see console for details.`);
+    }
   }
   /** @override */
   _onDragStart(event) {
@@ -4846,7 +5266,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   async _onRoll(event, target) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q;
     const dataset = target.dataset;
     const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
     const tToken = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0] ?? null;
@@ -5019,6 +5439,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         bonus += itemBonus;
         bonusSources.push({ label: game.i18n.localize("TAMS.ItemBonus"), value: itemBonus });
       }
+      if ((_d = item.system.calculator) == null ? void 0 : _d.enabled) {
+        const calcRollBonus = parseInt(item.system.calculator.rollBonus) || 0;
+        if (calcRollBonus !== 0) {
+          bonus += calcRollBonus;
+          bonusSources.push({ label: game.i18n.localize("TAMS.CalculatorOptions.RollBonus"), value: calcRollBonus });
+        }
+      }
       if (item.system.isAttack) {
         statId = item.system.attackStat;
         addStatModSources(statId);
@@ -5108,21 +5535,28 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }).render(true);
         return;
       }
+      let effectiveCost = cost;
+      if (item.system.isReaction && cost > 0 && !isLimited) {
+        const reactionUses = this.document.getFlag("tams", "reactionUses") ?? {};
+        const useCount = (reactionUses[item.id] ?? 0) + 1;
+        effectiveCost = cost * useCount;
+        await this.document.setFlag("tams", "reactionUses", { ...reactionUses, [item.id]: useCount });
+      }
       if (isLimited) {
         if (usesVal <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoUsesLeft"));
         await item.update({ "system.uses.value": usesVal - 1 });
-      } else if (!item.system.isApex && cost > 0) {
+      } else if (!item.system.isApex && effectiveCost > 0) {
         const resourceKey = item.system.resource;
         if (resourceKey === "stamina") {
           const current = this.document.system.stamina.value;
-          if (current < cost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
-          await this.document.update({ "system.stamina.value": current - cost });
+          if (current < effectiveCost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
+          await this.document.update({ "system.stamina.value": current - effectiveCost });
         } else {
           const idx = parseInt(resourceKey);
           const res = this.document.system.customResources[idx];
           if (res) {
-            if (res.value < cost) {
-              const remaining = cost - res.value;
+            if (res.value < effectiveCost) {
+              const remaining = effectiveCost - res.value;
               const stamina = this.document.system.stamina.value;
               if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", { resource: res.name }));
               const useBoth = await new Promise((resolve) => {
@@ -5146,7 +5580,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
               });
             } else {
               const resources = foundry.utils.duplicate(this.document.system.customResources);
-              resources[idx].value -= cost;
+              resources[idx].value -= effectiveCost;
               await this.document.update({ "system.customResources": resources });
             }
           }
@@ -5205,7 +5639,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const attackerSize = SIZE_STEPS[this.document.system.effectiveCombatSize ?? "normal"] ?? 0;
       const targets = [...game.user.targets];
       if (targets.length > 0) {
-        const targetSize = SIZE_STEPS[((_e = (_d = targets[0].actor) == null ? void 0 : _d.system) == null ? void 0 : _e.effectiveCombatSize) ?? "normal"] ?? 0;
+        const targetSize = SIZE_STEPS[((_f = (_e = targets[0].actor) == null ? void 0 : _e.system) == null ? void 0 : _f.effectiveCombatSize) ?? "normal"] ?? 0;
         const sizeDiff = attackerSize - targetSize;
         if (sizeDiff !== 0) {
           const sizeBonus = sizeDiff * 10;
@@ -5220,7 +5654,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let squadBonus = 0;
     let maxSquadTargets = 1;
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
-      item.type === "weapon" ? !!item.system.isRanged : ((_f = item.system.calculator) == null ? void 0 : _f.range) > 10;
+      item.type === "weapon" ? !!item.system.isRanged : ((_g = item.system.calculator) == null ? void 0 : _g.range) > 10;
       if (isSquadOrHorde) {
         maxSquadTargets = squadSize;
         maxSquadTargets = Math.max(1, maxSquadTargets);
@@ -5302,7 +5736,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
         damage = weaponOverride.system.calculatedDamage;
       }
-      const isRanged = item.type === "weapon" ? !!item.system.isRanged : weaponOverride ? !!weaponOverride.system.isRanged : ((_g = item.system.calculator) == null ? void 0 : _g.range) > 10;
+      const isRanged = item.type === "weapon" ? !!item.system.isRanged : weaponOverride ? !!weaponOverride.system.isRanged : ((_h = item.system.calculator) == null ? void 0 : _h.range) > 10;
       const isCrit = difficulty > 0 && dcTotal >= difficulty * 2;
       let forceCrit = false;
       if (item && item.system.tags) {
@@ -5320,7 +5754,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         else if (item.system.fireRate === "auto") multiVal = 10;
         else if (item.system.fireRate === "custom") multiVal = item.system.fireRateCustom || 1;
         if (item.system.consumeAmmo) {
-          const currentAmmo = ((_h = item.system.ammo) == null ? void 0 : _h.current) || 0;
+          const currentAmmo = ((_i = item.system.ammo) == null ? void 0 : _i.current) || 0;
           if (currentAmmo < multiVal) {
             if (currentAmmo <= 0) {
               return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", { item: item.name }));
@@ -5333,7 +5767,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       } else if (item.type === "ability") {
         multiVal = item.system.multiAttack || 1;
       }
-      const targetLimb = item.type === "ability" && ((_i = item.system.calculator) == null ? void 0 : _i.enabled) ? item.system.calculator.targetLimb : "none";
+      const targetLimb = item.type === "ability" && ((_j = item.system.calculator) == null ? void 0 : _j.enabled) ? item.system.calculator.targetLimb : "none";
       let armourPen = 0;
       if (item.type === "weapon" && item.system.hasArmourPen) {
         armourPen = item.system.armourPenetration || 0;
@@ -5345,7 +5779,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
       }
       const damageType = (weaponOverride ? weaponOverride.system.damageType : item.system.damageType) || "";
-      const isAoE = !!item.system.isAoE || ((_j = item.system.calculator) == null ? void 0 : _j.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
+      const isAoE = !!item.system.isAoE || ((_k = item.system.calculator) == null ? void 0 : _k.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
       let targets = isAoE ? [...game.user.targets] : tToken ? [tToken] : [];
       if (isSquadOrHorde) {
         targets = [...game.user.targets].slice(0, maxSquadTargets);
@@ -5353,7 +5787,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
       if (targets.length > 0) {
         let hitLocation;
-        if (item.type === "ability" && ((_k = item.system.calculator) == null ? void 0 : _k.enabled) && ((_l = item.system.calculator) == null ? void 0 : _l.targetLimb) && item.system.calculator.targetLimb !== "none") {
+        if (item.type === "ability" && ((_l = item.system.calculator) == null ? void 0 : _l.enabled) && ((_m = item.system.calculator) == null ? void 0 : _m.targetLimb) && item.system.calculator.targetLimb !== "none") {
           const limbKey = item.system.calculator.targetLimb;
           const limbOptions = {
             "head": "Head",
@@ -5528,19 +5962,48 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             <div class="roll-row-detail" style="margin-bottom: 5px;"><small>${ifStatement}</small></div>
         `;
     }
+    let saveButtonHtml = "";
+    if (item && item.type === "ability" && item.system.hasSave) {
+      const saveAgainst = item.system.saveAgainst || "dexterity";
+      const statLabelsForSave = {
+        strength: game.i18n.localize("TAMS.StatStrength"),
+        dexterity: game.i18n.localize("TAMS.StatDexterity"),
+        endurance: game.i18n.localize("TAMS.StatEndurance"),
+        wisdom: game.i18n.localize("TAMS.StatWisdom"),
+        intelligence: game.i18n.localize("TAMS.StatIntelligence"),
+        bravery: game.i18n.localize("TAMS.StatBravery")
+      };
+      const saveLabel = statLabelsForSave[saveAgainst] ?? saveAgainst;
+      saveButtonHtml = `
+            <div class="roll-row" style="margin-top: 5px;">
+                <button class="tams-save-button"
+                        data-save-against="${foundry.utils.escapeHTML(String(saveAgainst))}"
+                        data-dc="${finalTotal}"
+                        data-ability-name="${foundry.utils.escapeHTML(String(item.name))}">
+                    ${game.i18n.format("TAMS.Save.ButtonLabel", { stat: saveLabel, dc: finalTotal })}
+                </button>
+            </div>
+        `;
+    }
     let mishapButtonHtml = "";
     if (item && item.type === "ability") {
       const abilityTags = item.system.tags ? item.system.tags.split(",").map((t) => t.trim().toLowerCase()) : [];
       const isMagicAbility = abilityTags.some((t) => ["magic", "spell", "psychic", "alchemy", "divine"].includes(t));
       if (isMagicAbility) {
         let totalEffects = -1;
-        if ((_m = item.system.calculator) == null ? void 0 : _m.enabled) {
-          totalEffects = (item.system.calculator.effects || 0) + (item.system.calculator.guaranteedMax || 0) + (item.system.calculator.detriments || 0);
+        if ((_n = item.system.calculator) == null ? void 0 : _n.enabled) {
+          const _c2 = item.system.calculator;
+          totalEffects = (_c2.effects || 0) + Math.floor((_c2.rollBonus || 0) / 5) + (_c2.ignoreArmor || 0);
         }
+        const castTime = item.system.castTime || "immediate";
+        const mishapTagPriority = ["divine", "psychic", "alchemy", "magic", "spell"];
+        const mishapTag = mishapTagPriority.find((t) => abilityTags.includes(t)) ?? "magic";
         mishapButtonHtml = `
                 <div class="roll-row" style="margin-top: 5px;">
                     <button class="tams-mishap-check"
                             data-effects="${totalEffects}"
+                            data-cast-time="${castTime}"
+                            data-mishap-tag="${mishapTag}"
                             data-actor-uuid="${this.document.uuid}">
                         ${game.i18n.localize("TAMS.Mishap.ButtonLabel")}
                     </button>
@@ -5554,6 +6017,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         ${descriptionHtml}
         ${ifButtonHtml}
         ${mishapButtonHtml}
+        ${saveButtonHtml}
         ${damageInfo}
         ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
             ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", { original: originalResult })}
@@ -5584,9 +6048,12 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         rolls: [roll],
         flags: {
           tams: {
-            inflictsStatusId: ((_n = item == null ? void 0 : item.system) == null ? void 0 : _n.inflictsStatusId) || "",
+            inflictsStatusId: ((_o = item == null ? void 0 : item.system) == null ? void 0 : _o.inflictsStatusId) || "",
             attackerActorId: this.document.id,
-            attackerWeaponId: (item == null ? void 0 : item.id) || ""
+            attackerWeaponId: (item == null ? void 0 : item.id) || "",
+            hasSave: ((_p = item == null ? void 0 : item.system) == null ? void 0 : _p.hasSave) ?? false,
+            saveAgainst: ((_q = item == null ? void 0 : item.system) == null ? void 0 : _q.saveAgainst) ?? "",
+            saveDC: finalTotal
           }
         }
       });
@@ -5929,6 +6396,9 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         editImage: _TAMSItemSheet.prototype._onEditImage,
         modifierCreate: _TAMSItemSheet.prototype._onModifierCreate,
         modifierDelete: _TAMSItemSheet.prototype._onModifierDelete,
+        passiveTraitCreate: _TAMSItemSheet.prototype._onPassiveTraitCreate,
+        passiveTraitDelete: _TAMSItemSheet.prototype._onPassiveTraitDelete,
+        grantedAbilityDelete: _TAMSItemSheet.prototype._onGrantedAbilityDelete,
         tagToggle: _TAMSItemSheet.prototype._onTagToggle,
         toggleSection: _TAMSItemSheet.prototype._onToggleSection
       }
@@ -5999,7 +6469,8 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       "fire": "TAMS.DamageType.fire",
       "magic": "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
-      "acid": "TAMS.DamageType.acid"
+      "acid": "TAMS.DamageType.acid",
+      "divine": "TAMS.DamageType.divine"
     };
     context.passiveRollTypeOptions = {
       "all": "TAMS.PassiveRollType.All",
@@ -6120,6 +6591,19 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     };
     context.inflictsStatusPresetValue = isKnownPreset ? currentStatusId : "custom";
     context.inflictsStatusIsCustom = !isKnownPreset && currentStatusId !== "";
+    const SAVE_STAT_KEYS = /* @__PURE__ */ new Set(["strength", "dexterity", "endurance", "wisdom", "intelligence", "bravery"]);
+    const currentSaveAgainst = this.document.system.saveAgainst ?? "dexterity";
+    context.saveAgainstOptions = {
+      "strength": "TAMS.StatStrength",
+      "dexterity": "TAMS.StatDexterity",
+      "endurance": "TAMS.StatEndurance",
+      "wisdom": "TAMS.StatWisdom",
+      "intelligence": "TAMS.StatIntelligence",
+      "bravery": "TAMS.StatBravery",
+      "custom": "TAMS.SaveAgainst.CustomSkill"
+    };
+    context.saveAgainstPresetValue = SAVE_STAT_KEYS.has(currentSaveAgainst) ? currentSaveAgainst : "custom";
+    context.saveAgainstIsCustom = !SAVE_STAT_KEYS.has(currentSaveAgainst);
     if (this.document.type === "ability") {
       const sys = this.document.system;
       if (this._sectionOpen === void 0) {
@@ -6168,6 +6652,41 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         }
       });
     });
+    this.element.querySelectorAll(".save-against-preset").forEach((select) => {
+      select.addEventListener("change", (event) => {
+        const value = event.target.value;
+        const picker = event.target.closest(".save-against-picker");
+        const customInput = picker == null ? void 0 : picker.querySelector(".save-against-custom");
+        if (!customInput) return;
+        if (value === "custom") {
+          customInput.style.display = "";
+          customInput.focus();
+        } else {
+          customInput.style.display = "none";
+          customInput.value = value;
+          this.document.update({ "system.saveAgainst": value });
+        }
+      });
+    });
+  }
+  /** @override */
+  async _onDrop(event) {
+    if (this.document.type !== "race") return;
+    const data = TextEditor.getDragEventData(event);
+    if (data.type !== "Item") return;
+    let item;
+    try {
+      item = await Item.fromDropData(data);
+    } catch (e2) {
+      return;
+    }
+    if (!item || item.type !== "ability") {
+      return ui.notifications.warn(game.i18n.localize("TAMS.Race.GrantedAbilityOnly"));
+    }
+    const abilityData = item.toObject();
+    const abilities = foundry.utils.duplicate(this.document.system.grantedAbilities || []);
+    abilities.push(abilityData);
+    await this.document.update({ "system.grantedAbilities": abilities });
   }
   /**
    * Handle editing an image in the item sheet.
@@ -6211,6 +6730,24 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     const modifiers = foundry.utils.duplicate(this.document.system.modifiers || []);
     modifiers.splice(index, 1);
     await this.document.update({ "system.modifiers": modifiers });
+  }
+  async _onGrantedAbilityDelete(event, target) {
+    var _a;
+    const index = parseInt(target.dataset.index ?? ((_a = target.closest(".granted-ability-row")) == null ? void 0 : _a.dataset.index));
+    const abilities = foundry.utils.duplicate(this.document.system.grantedAbilities || []);
+    abilities.splice(index, 1);
+    await this.document.update({ "system.grantedAbilities": abilities });
+  }
+  async _onPassiveTraitCreate(event, target) {
+    const traits = foundry.utils.duplicate(this.document.system.passiveTraits || []);
+    traits.push({ name: "", description: "" });
+    await this.document.update({ "system.passiveTraits": traits });
+  }
+  async _onPassiveTraitDelete(event, target) {
+    const index = parseInt(target.closest(".passive-trait-row").dataset.index);
+    const traits = foundry.utils.duplicate(this.document.system.passiveTraits || []);
+    traits.splice(index, 1);
+    await this.document.update({ "system.passiveTraits": traits });
   }
   /**
    * Handle toggling a tag on the weapon.
@@ -6738,7 +7275,8 @@ const _TAMSItemMaker = class _TAMSItemMaker extends foundry.applications.api.Han
       "fire": "TAMS.DamageType.fire",
       "magic": "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
-      "acid": "TAMS.DamageType.acid"
+      "acid": "TAMS.DamageType.acid",
+      "divine": "TAMS.DamageType.divine"
     };
     context.sizeOptions = {
       "small": "TAMS.SizeOptions.Small",
@@ -7078,6 +7616,7 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.backpack = TAMSBackpackData;
   CONFIG.Item.dataModels.trait = TAMSTraitData;
   CONFIG.Item.dataModels.statusEffect = TAMSStatusEffectData;
+  CONFIG.Item.dataModels.race = TAMSRaceData;
   CONFIG.Item.systemDataModels = CONFIG.Item.dataModels;
   CONFIG.Actor.systemDataModels = CONFIG.Actor.dataModels;
   CONFIG.Actor.documentClass = TAMSActor;

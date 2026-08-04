@@ -199,7 +199,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.abilityPassiveBonuses = {};
     this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0 };
 
-    const traits = this.parent.items.filter(i => i.type === "trait");
+    const traits = this.parent.items.filter(i => i.type === "trait" || i.type === "race");
     for (const trait of traits) {
       const system = trait.system;
       for (const mod of system.modifiers) {
@@ -233,7 +233,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     let combatSize  = this.settings.effectiveCombatSize  || baseSize;
 
     for (const item of this.parent.items) {
-      if (item.type !== "trait" && item.type !== "ability") continue;
+      if (item.type !== "trait" && item.type !== "ability" && item.type !== "race") continue;
       const s = item.system;
       if (s.sizeGrantHP)      hpSize      = bestSize(hpSize,      s.sizeGrantHP);
       if (s.sizeGrantStealth) stealthSize = bestSize(stealthSize, s.sizeGrantStealth);

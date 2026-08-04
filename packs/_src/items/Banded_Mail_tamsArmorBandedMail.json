@@ -1,0 +1,47 @@
+{
+  "name": "Banded Mail",
+  "type": "armor",
+  "img": "icons/equipment/chest/breastplate-steel-grey.svg",
+  "system": {
+    "quantity": 1,
+    "size": "large",
+    "location": "stowed",
+    "slots": 5,
+    "equipped": false,
+    "limbs": {
+      "head": {
+        "value": 0,
+        "max": 0
+      },
+      "thorax": {
+        "value": 22,
+        "max": 22
+      },
+      "stomach": {
+        "value": 22,
+        "max": 22
+      },
+      "leftArm": {
+        "value": 22,
+        "max": 22
+      },
+      "rightArm": {
+        "value": 22,
+        "max": 22
+      },
+      "leftLeg": {
+        "value": 22,
+        "max": 22
+      },
+      "rightLeg": {
+        "value": 22,
+        "max": 22
+      }
+    },
+    "tags": "High",
+    "description": "Grade: High."
+  },
+  "flags": {},
+  "_id": "tamsArmorBandedMail",
+  "_key": "!items!tamsArmorBandedMail"
+}

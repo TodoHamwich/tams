@@ -1,0 +1,47 @@
+{
+  "name": "Full Plate",
+  "type": "armor",
+  "img": "icons/equipment/chest/plate-steel-grey.svg",
+  "system": {
+    "quantity": 1,
+    "size": "large",
+    "location": "stowed",
+    "slots": 6,
+    "equipped": false,
+    "limbs": {
+      "head": {
+        "value": 35,
+        "max": 30
+      },
+      "thorax": {
+        "value": 35,
+        "max": 30
+      },
+      "stomach": {
+        "value": 35,
+        "max": 30
+      },
+      "leftArm": {
+        "value": 35,
+        "max": 30
+      },
+      "rightArm": {
+        "value": 35,
+        "max": 30
+      },
+      "leftLeg": {
+        "value": 35,
+        "max": 30
+      },
+      "rightLeg": {
+        "value": 35,
+        "max": 30
+      }
+    },
+    "tags": "High",
+    "description": "Grade: High."
+  },
+  "flags": {},
+  "_id": "tamsArmorFullPlate",
+  "_key": "!items!tamsArmorFullPlate"
+}

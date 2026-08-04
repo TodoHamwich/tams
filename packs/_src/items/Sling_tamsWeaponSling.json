@@ -1,0 +1,39 @@
+{
+  "name": "Sling",
+  "type": "weapon",
+  "img": "icons/weapons/bows/bow-short.svg",
+  "system": {
+    "familiarity": 0,
+    "usedInScene": false,
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "equipped": false,
+    "isHeavy": false,
+    "isTwoHanded": false,
+    "isLight": false,
+    "isRanged": true,
+    "isThrown": false,
+    "hasArmourPen": false,
+    "armourPenetration": 0,
+    "rangedDamage": 0,
+    "ammo": {
+      "current": 0,
+      "total": 0
+    },
+    "fireRate": "1",
+    "fireRateCustom": 1,
+    "attackStat": "default",
+    "damageStat": "dexterity",
+    "consumeAmmo": true,
+    "special": "",
+    "isAoE": false,
+    "damageType": "",
+    "tags": "Ranged",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsWeaponSling",
+  "_key": "!items!tamsWeaponSling"
+}

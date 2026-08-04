@@ -652,6 +652,22 @@
 .tams .items-list .item:last-child {
   border-bottom: none;
 }
+.tams .items-list .item.drag-over {
+  outline: 2px solid var(--color-border-highlight, #ff6400);
+  outline-offset: -2px;
+  background: rgba(255, 100, 0, 0.07);
+}
+
+.tams .drag-handle {
+  cursor: grab;
+  color: rgba(0, 0, 0, 0.25);
+  padding: 0 4px;
+  font-size: 0.8em;
+  flex: 0 0 auto;
+}
+.tams .drag-handle:hover {
+  color: rgba(0, 0, 0, 0.55);
+}
 
 .tams .inventory-category-header,
 .tams .inventory-section-header {

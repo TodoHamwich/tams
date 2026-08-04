@@ -1,0 +1,47 @@
+{
+  "name": "Splint Mail",
+  "type": "armor",
+  "img": "icons/equipment/chest/breastplate-steel-grey.svg",
+  "system": {
+    "quantity": 1,
+    "size": "large",
+    "location": "stowed",
+    "slots": 5,
+    "equipped": false,
+    "limbs": {
+      "head": {
+        "value": 0,
+        "max": 0
+      },
+      "thorax": {
+        "value": 20,
+        "max": 20
+      },
+      "stomach": {
+        "value": 20,
+        "max": 20
+      },
+      "leftArm": {
+        "value": 20,
+        "max": 20
+      },
+      "rightArm": {
+        "value": 20,
+        "max": 20
+      },
+      "leftLeg": {
+        "value": 20,
+        "max": 20
+      },
+      "rightLeg": {
+        "value": 20,
+        "max": 20
+      }
+    },
+    "tags": "High",
+    "description": "Grade: High."
+  },
+  "flags": {},
+  "_id": "tamsArmorSplintMail",
+  "_key": "!items!tamsArmorSplintMail"
+}

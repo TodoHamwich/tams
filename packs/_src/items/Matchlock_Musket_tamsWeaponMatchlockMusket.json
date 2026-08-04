@@ -1,0 +1,39 @@
+{
+  "name": "Matchlock Musket",
+  "type": "weapon",
+  "img": "icons/weapons/guns/gun-musket.svg",
+  "system": {
+    "familiarity": 0,
+    "usedInScene": false,
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "equipped": false,
+    "isHeavy": false,
+    "isTwoHanded": false,
+    "isLight": false,
+    "isRanged": true,
+    "isThrown": false,
+    "hasArmourPen": true,
+    "armourPenetration": 13,
+    "rangedDamage": 52,
+    "ammo": {
+      "current": 0,
+      "total": 0
+    },
+    "fireRate": "1",
+    "fireRateCustom": 1,
+    "attackStat": "default",
+    "damageStat": "dexterity",
+    "consumeAmmo": true,
+    "special": "Reload 6. Apostles reduce reload by 1. Paper cartridges reduce reload by 2 but carry misfire risk. Prone to misfire in wet conditions.",
+    "isAoE": false,
+    "damageType": "",
+    "tags": "Ranged, Firearm",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsWeaponMatchlockMusket",
+  "_key": "!items!tamsWeaponMatchlockMusket"
+}

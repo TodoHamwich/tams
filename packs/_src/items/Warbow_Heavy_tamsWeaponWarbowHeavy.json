@@ -1,0 +1,39 @@
+{
+  "name": "Warbow (Heavy)",
+  "type": "weapon",
+  "img": "icons/weapons/bows/bow-long.svg",
+  "system": {
+    "familiarity": 0,
+    "usedInScene": false,
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "equipped": false,
+    "isHeavy": true,
+    "isTwoHanded": true,
+    "isLight": false,
+    "isRanged": true,
+    "isThrown": false,
+    "hasArmourPen": true,
+    "armourPenetration": 18,
+    "rangedDamage": 40,
+    "ammo": {
+      "current": 0,
+      "total": 0
+    },
+    "fireRate": "1",
+    "fireRateCustom": 1,
+    "attackStat": "default",
+    "damageStat": "dexterity",
+    "consumeAmmo": true,
+    "special": "STR Req: 37",
+    "isAoE": false,
+    "damageType": "",
+    "tags": "Ranged, Heavy Two-handed",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsWeaponWarbowHeavy",
+  "_key": "!items!tamsWeaponWarbowHeavy"
+}

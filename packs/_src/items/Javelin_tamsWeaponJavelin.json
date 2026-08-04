@@ -1,0 +1,39 @@
+{
+  "name": "Javelin",
+  "type": "weapon",
+  "img": "icons/weapons/polearms/pike.svg",
+  "system": {
+    "familiarity": 0,
+    "usedInScene": false,
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "equipped": false,
+    "isHeavy": false,
+    "isTwoHanded": false,
+    "isLight": false,
+    "isRanged": true,
+    "isThrown": true,
+    "hasArmourPen": false,
+    "armourPenetration": 0,
+    "rangedDamage": 0,
+    "ammo": {
+      "current": 0,
+      "total": 0
+    },
+    "fireRate": "1",
+    "fireRateCustom": 1,
+    "attackStat": "strength",
+    "damageStat": "strength",
+    "consumeAmmo": false,
+    "special": "",
+    "isAoE": false,
+    "damageType": "",
+    "tags": "Ranged, Thrown",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsWeaponJavelin",
+  "_key": "!items!tamsWeaponJavelin"
+}

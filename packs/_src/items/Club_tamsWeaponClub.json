@@ -1,0 +1,39 @@
+{
+  "name": "Club",
+  "type": "weapon",
+  "img": "icons/weapons/hammers/hammer-war.svg",
+  "system": {
+    "familiarity": 0,
+    "usedInScene": false,
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "equipped": false,
+    "isHeavy": false,
+    "isTwoHanded": false,
+    "isLight": false,
+    "isRanged": false,
+    "isThrown": false,
+    "hasArmourPen": false,
+    "armourPenetration": 0,
+    "rangedDamage": 0,
+    "ammo": {
+      "current": 0,
+      "total": 0
+    },
+    "fireRate": "1",
+    "fireRateCustom": 1,
+    "attackStat": "default",
+    "damageStat": "default",
+    "consumeAmmo": false,
+    "special": "",
+    "isAoE": false,
+    "damageType": "Blunt",
+    "tags": "Blunt",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsWeaponClub",
+  "_key": "!items!tamsWeaponClub"
+}

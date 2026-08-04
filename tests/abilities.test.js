@@ -223,10 +223,10 @@ describe('TAMSAbilityData — calculatedCost basic', () => {
     expect(a.calculatedCost).toBe(3);
   });
 
-  it('adds +2 per guaranteedMax', () => {
+  it('adds +2 for guaranteedMax', () => {
     const a = makeAbility();
-    a.calculator.guaranteedMax = 2;
-    expect(a.calculatedCost).toBe(4);
+    a.calculator.guaranteedMax = true;
+    expect(a.calculatedCost).toBe(2);
   });
 
   it('subtracts -1 per detriment', () => {

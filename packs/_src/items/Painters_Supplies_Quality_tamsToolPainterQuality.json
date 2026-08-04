@@ -1,0 +1,16 @@
+{
+  "name": "Painter's Supplies (Quality)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Quality, +5",
+    "description": "Painter's Supplies (Quality). Skill bonus: +5."
+  },
+  "flags": {},
+  "_id": "tamsToolPainterQuality",
+  "_key": "!items!tamsToolPainterQuality"
+}

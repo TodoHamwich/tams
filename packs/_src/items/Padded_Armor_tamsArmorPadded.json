@@ -1,0 +1,47 @@
+{
+  "name": "Padded Armor",
+  "type": "armor",
+  "img": "icons/equipment/chest/coat-simple-leather-brown.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 3,
+    "equipped": false,
+    "limbs": {
+      "head": {
+        "value": 0,
+        "max": 0
+      },
+      "thorax": {
+        "value": 4,
+        "max": 5
+      },
+      "stomach": {
+        "value": 4,
+        "max": 5
+      },
+      "leftArm": {
+        "value": 4,
+        "max": 5
+      },
+      "rightArm": {
+        "value": 4,
+        "max": 5
+      },
+      "leftLeg": {
+        "value": 4,
+        "max": 5
+      },
+      "rightLeg": {
+        "value": 4,
+        "max": 5
+      }
+    },
+    "tags": "Low",
+    "description": "Grade: Low."
+  },
+  "flags": {},
+  "_id": "tamsArmorPadded",
+  "_key": "!items!tamsArmorPadded"
+}

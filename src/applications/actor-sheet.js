@@ -49,7 +49,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         sceneReset: TAMSActorSheet.prototype._onSceneReset,
         callGroupCheck: TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: TAMSActorSheet.prototype._onItemSendDescription,
-        honorEdit: TAMSActorSheet.prototype._onHonorEdit
+        honorEdit: TAMSActorSheet.prototype._onHonorEdit,
+        raceRemove: TAMSActorSheet.prototype._onRaceRemove
       }
     }, { inplace: false });
   }
@@ -123,6 +124,13 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         const statusId = ev.currentTarget.dataset.statusId;
         await this.document.toggleStatusEffect(statusId, { active: false });
       });
+    });
+
+    // Drag-over highlight for reorderable rows (skills, weapons, abilities)
+    this.element.querySelectorAll('.item[data-item-id]').forEach(el => {
+      el.addEventListener('dragover', ev => { ev.preventDefault(); el.classList.add('drag-over'); });
+      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+      el.addEventListener('drop', () => el.classList.remove('drag-over'));
     });
   }
 
@@ -215,7 +223,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
     const limbLabels = this.document.system.limbs;
 
-    for (let i of this.document.items) {
+    for (let i of [...this.document.items].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))) {
       let isGreyedOut = false;
       let effectiveLocation = i.system.location;
 
@@ -281,6 +289,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       else if (i.type === 'questItem') inventoryQuestItems.push(itemData);
       else if (i.type === 'backpack') inventoryBackpacks.push(itemData);
       else if (i.type === 'trait') traits.push(itemData);
+      else if (i.type === 'race') { /* displayed in description tab, not inventory */ }
       else if (i.type === 'equipment') inventoryMisc.push(itemData);
     }
 
@@ -397,6 +406,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     context.skills = skills;
     context.abilities = abilities;
     context.traits = traits;
+    const raceDoc = this.document.items.find(i => i.type === 'race') ?? null;
+    context.raceItem = raceDoc ? { id: raceDoc.id, name: raceDoc.name, img: raceDoc.img, system: raceDoc.system } : null;
 
     // Scene tracker: weapons + skills + abilities, used items sorted to top
     const sceneItems = [
@@ -628,6 +639,19 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (confirmed) {
       item.delete();
     }
+  }
+
+  /**
+   * Handle removing the slotted race from the actor.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element.
+   * @protected
+   */
+  async _onRaceRemove(event, target) {
+    const existing = this.document.items.filter(i => i.type === 'race');
+    const granted = this.document.items.filter(i => i.getFlag('tams', 'raceGranted'));
+    const toDelete = [...existing.map(i => i.id), ...granted.map(i => i.id)];
+    if (toDelete.length) await this.document.deleteEmbeddedDocuments("Item", toDelete);
   }
 
   /**
@@ -1154,12 +1178,67 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
   }
 
   /** @override */
+  _canDragDrop(selector) {
+    return this.isEditable;
+  }
+
+  /** @override */
   async _onDrop(event) {
     const data = TextEditor.getDragEventData(event);
     if ( data.type !== "Item" ) return super._onDrop(event);
-    
-    const item = await Item.fromDropData(data);
-    if ( !item ) return;
+
+    let item;
+    try {
+      item = await Item.fromDropData(data);
+    } catch(err) {
+      // Foundry v13 validates _id format inside fromImport; items with non-standard IDs
+      // (e.g. legacy short IDs) throw before we can strip them. Fall back to direct
+      // collection or pack lookups that skip the strict-ID validation path.
+      if ( data.uuid ) {
+        const parts = data.uuid.split(".");
+        if ( parts[0] === "Item" ) {
+          item = game.items.get(parts[1]) ?? null;
+        } else if ( parts[0] === "Compendium" && parts.length >= 5 ) {
+          const packId = `${parts[1]}.${parts[2]}`;
+          const docId = parts[4];
+          const pack = game.packs.get(packId);
+          if ( pack ) {
+            try {
+              const docs = await pack.getDocuments();
+              item = docs.find(d => d.id === docId) ?? null;
+            } catch(e2) { /* pack load failed */ }
+          }
+        }
+      }
+      if ( !item ) {
+        console.error("TAMS | _onDrop: could not resolve item", err);
+        return;
+      }
+    }
+
+    // Race items: slot exclusively — replace any existing race and its granted abilities
+    if (item.type === 'race') {
+      if (!this.document.isOwner) return;
+      if (item.parent?.uuid === this.document.uuid) return;
+      const existing = this.document.items.filter(i => i.type === 'race');
+      const previouslyGranted = this.document.items.filter(i => i.getFlag('tams', 'raceGranted'));
+      const toDelete = [...existing.map(i => i.id), ...previouslyGranted.map(i => i.id)];
+      if (toDelete.length) await this.document.deleteEmbeddedDocuments("Item", toDelete);
+      const raceData = item.toObject();
+      delete raceData._id;
+      await this.document.createEmbeddedDocuments("Item", [raceData]);
+      const grantedAbilities = item.system.grantedAbilities ?? [];
+      if (grantedAbilities.length) {
+        const toCreate = grantedAbilities.map(a => {
+          const d = foundry.utils.duplicate(a);
+          delete d._id;
+          foundry.utils.setProperty(d, 'flags.tams.raceGranted', true);
+          return d;
+        });
+        await this.document.createEmbeddedDocuments("Item", toCreate);
+      }
+      return;
+    }
 
     // 1. Handle dropping ON a specific item or section
     const targetEl = event.target.closest(".item[data-item-id], .inventory-section[data-section-id]");
@@ -1182,19 +1261,41 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             }
         }
     }
-    
+
     // 2. Determine if it's the same actor
     const isSameActor = item.parent?.uuid === this.document.uuid;
 
+    // Reorder within the same-type list (skills, abilities, weapons)
+    if (isSameActor && ["skill", "ability", "weapon"].includes(item.type) && targetEl?.dataset.itemId) {
+        const targetItemId = targetEl.dataset.itemId;
+        if (targetItemId !== item.id) {
+            const targetItem = this.document.items.get(targetItemId);
+            if (targetItem && targetItem.type === item.type) {
+                const ordered = [...this.document.items]
+                    .filter(i => i.type === item.type)
+                    .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+                const withoutDragged = ordered.filter(i => i.id !== item.id);
+                const targetIdx = withoutDragged.findIndex(i => i.id === targetItem.id);
+                const targetBounds = targetEl.getBoundingClientRect();
+                const insertAfter = event.clientY > (targetBounds.top + targetBounds.height / 2);
+                withoutDragged.splice(insertAfter ? targetIdx + 1 : targetIdx, 0, item);
+                const updates = withoutDragged.map((i, idx) => ({ _id: i.id, sort: (idx + 1) * 100000 }));
+                await this.document.updateEmbeddedDocuments("Item", updates);
+                return;
+            }
+        }
+    }
+
     if ( isSameActor ) {
         await item.update({"system.location": newLocation});
-        return; 
+        return;
     }
-    
-    // 3. Create the item on the target actor (Cross-actor move)
+
+    // 3. Create the item on the target actor (cross-actor or sidebar drop)
     if ( !this.document.isOwner ) {
         game.socket.emit("system.tams", {
             type: "transferItem",
+            userId: game.user.id,
             itemData: item.toObject(),
             sourceActorUuid: item.parent?.uuid,
             targetActorUuid: this.document.uuid,
@@ -1204,12 +1305,17 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         return;
     }
 
-    return tamsHandleItemTransfer({
-        itemData: item.toObject(),
-        sourceActorUuid: item.parent?.uuid,
-        targetActorUuid: this.document.uuid,
-        newLocation: newLocation
-    });
+    try {
+      return await tamsHandleItemTransfer({
+          itemData: item.toObject(),
+          sourceActorUuid: item.parent?.uuid,
+          targetActorUuid: this.document.uuid,
+          newLocation: newLocation
+      });
+    } catch(err) {
+      console.error("TAMS | _onDrop: tamsHandleItemTransfer failed", err);
+      ui.notifications.error(`TAMS: Failed to add item "${item.name}" — see console for details.`);
+    }
   }
 
   /** @override */
@@ -1439,6 +1545,13 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             bonus += itemBonus;
             bonusSources.push({ label: game.i18n.localize("TAMS.ItemBonus"), value: itemBonus });
         }
+        if (item.system.calculator?.enabled) {
+            const calcRollBonus = parseInt(item.system.calculator.rollBonus) || 0;
+            if (calcRollBonus !== 0) {
+                bonus += calcRollBonus;
+                bonusSources.push({ label: game.i18n.localize("TAMS.CalculatorOptions.RollBonus"), value: calcRollBonus });
+            }
+        }
         if (item.system.isAttack) {
             statId = item.system.attackStat;
             addStatModSources(statId);
@@ -1536,24 +1649,33 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             return;
         }
 
+        // Reactions stack cost each use until actor's turn resets the counter
+        let effectiveCost = cost;
+        if (item.system.isReaction && cost > 0 && !isLimited) {
+            const reactionUses = this.document.getFlag('tams', 'reactionUses') ?? {};
+            const useCount = (reactionUses[item.id] ?? 0) + 1;
+            effectiveCost = cost * useCount;
+            await this.document.setFlag('tams', 'reactionUses', { ...reactionUses, [item.id]: useCount });
+        }
+
         if (isLimited) {
             if (usesVal <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoUsesLeft"));
             await item.update({"system.uses.value": usesVal - 1});
-        } else if (!item.system.isApex && cost > 0) {
+        } else if (!item.system.isApex && effectiveCost > 0) {
             const resourceKey = item.system.resource;
             if (resourceKey === 'stamina') {
                 const current = this.document.system.stamina.value;
-                if (current < cost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
-                await this.document.update({"system.stamina.value": current - cost});
+                if (current < effectiveCost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
+                await this.document.update({"system.stamina.value": current - effectiveCost});
             } else {
                 const idx = parseInt(resourceKey);
                 const res = this.document.system.customResources[idx];
                 if (res) {
-                    if (res.value < cost) {
-                        const remaining = cost - res.value;
+                    if (res.value < effectiveCost) {
+                        const remaining = effectiveCost - res.value;
                         const stamina = this.document.system.stamina.value;
                         if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", {resource: res.name}));
-                        
+
                         const useBoth = await new Promise(resolve => {
                             new Dialog({
                                 title: "Insufficient Resources",
@@ -1566,7 +1688,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                 close: () => resolve(false)
                             }).render(true);
                         });
-                        
+
                         if (!useBoth) return;
 
                         const resources = foundry.utils.duplicate(this.document.system.customResources);
@@ -1577,7 +1699,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         });
                     } else {
                         const resources = foundry.utils.duplicate(this.document.system.customResources);
-                        resources[idx].value -= cost;
+                        resources[idx].value -= effectiveCost;
                         await this.document.update({"system.customResources": resources});
                     }
                 }
@@ -1998,6 +2120,30 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         `;
     }
 
+    let saveButtonHtml = "";
+    if (item && item.type === 'ability' && item.system.hasSave) {
+        const saveAgainst = item.system.saveAgainst || "dexterity";
+        const statLabelsForSave = {
+            strength: game.i18n.localize("TAMS.StatStrength"),
+            dexterity: game.i18n.localize("TAMS.StatDexterity"),
+            endurance: game.i18n.localize("TAMS.StatEndurance"),
+            wisdom: game.i18n.localize("TAMS.StatWisdom"),
+            intelligence: game.i18n.localize("TAMS.StatIntelligence"),
+            bravery: game.i18n.localize("TAMS.StatBravery")
+        };
+        const saveLabel = statLabelsForSave[saveAgainst] ?? saveAgainst;
+        saveButtonHtml = `
+            <div class="roll-row" style="margin-top: 5px;">
+                <button class="tams-save-button"
+                        data-save-against="${foundry.utils.escapeHTML(String(saveAgainst))}"
+                        data-dc="${finalTotal}"
+                        data-ability-name="${foundry.utils.escapeHTML(String(item.name))}">
+                    ${game.i18n.format("TAMS.Save.ButtonLabel", {stat: saveLabel, dc: finalTotal})}
+                </button>
+            </div>
+        `;
+    }
+
     let mishapButtonHtml = "";
     if (item && item.type === 'ability') {
         const abilityTags = item.system.tags ? item.system.tags.split(",").map(t => t.trim().toLowerCase()) : [];
@@ -2005,14 +2151,20 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         if (isMagicAbility) {
             let totalEffects = -1;
             if (item.system.calculator?.enabled) {
-                totalEffects = (item.system.calculator.effects || 0)
-                    + (item.system.calculator.guaranteedMax || 0)
-                    + (item.system.calculator.detriments || 0);
+                const _c = item.system.calculator;
+                totalEffects = (_c.effects || 0)
+                    + Math.floor((_c.rollBonus || 0) / 5)
+                    + (_c.ignoreArmor || 0);
             }
+            const castTime = item.system.castTime || "immediate";
+            const mishapTagPriority = ["divine", "psychic", "alchemy", "magic", "spell"];
+            const mishapTag = mishapTagPriority.find(t => abilityTags.includes(t)) ?? "magic";
             mishapButtonHtml = `
                 <div class="roll-row" style="margin-top: 5px;">
                     <button class="tams-mishap-check"
                             data-effects="${totalEffects}"
+                            data-cast-time="${castTime}"
+                            data-mishap-tag="${mishapTag}"
                             data-actor-uuid="${this.document.uuid}">
                         ${game.i18n.localize("TAMS.Mishap.ButtonLabel")}
                     </button>
@@ -2027,6 +2179,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         ${descriptionHtml}
         ${ifButtonHtml}
         ${mishapButtonHtml}
+        ${saveButtonHtml}
         ${damageInfo}
         ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
             ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", {original: originalResult})}
@@ -2072,7 +2225,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
           tams: {
             inflictsStatusId: item?.system?.inflictsStatusId || "",
             attackerActorId: this.document.id,
-            attackerWeaponId: item?.id || ""
+            attackerWeaponId: item?.id || "",
+            hasSave: item?.system?.hasSave ?? false,
+            saveAgainst: item?.system?.saveAgainst ?? "",
+            saveDC: finalTotal
           }
         }
       });

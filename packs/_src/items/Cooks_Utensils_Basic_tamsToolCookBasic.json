@@ -1,0 +1,16 @@
+{
+  "name": "Cook's Utensils (Basic)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Basic, +0",
+    "description": "Cook's Utensils (Basic). Skill bonus: +0."
+  },
+  "flags": {},
+  "_id": "tamsToolCookBasic",
+  "_key": "!items!tamsToolCookBasic"
+}

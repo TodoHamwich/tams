@@ -1,4 +1,4 @@
-import { getMishapEntry, calculateMishapChance, getMishapModifier } from "./mishap.js";
+import { getMishapEntry, getMishapTable, calculateMishapChance, getMishapModifier, MISHAP_TABLE } from "./mishap.js";
 
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
 
@@ -527,6 +527,33 @@ function getWhisperIds(actor) {
 export async function tamsOnTurnStart(actor) {
     if (!actor || actor.type !== "character") return;
 
+    // Dying countdown
+    const dyingCountdown = actor.getFlag('tams', 'dyingCountdown');
+    if (dyingCountdown) {
+        const turnsLeft = dyingCountdown.turnsLeft - 1;
+        if (turnsLeft <= 0) {
+            await actor.setFlag('tams', 'dyingCountdown', null);
+            await ChatMessage.create({
+                speaker: ChatMessage.getSpeaker({ actor }),
+                content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.2em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Death", { name: actor.name })}</div></div>`,
+                whisper: getWhisperIds(actor)
+            });
+        } else {
+            await actor.setFlag('tams', 'dyingCountdown', { ...dyingCountdown, turnsLeft });
+            await ChatMessage.create({
+                speaker: ChatMessage.getSpeaker({ actor }),
+                content: `<div class="tams-roll"><div class="tams-crit failure">${game.i18n.format("TAMS.Dying.Countdown", { name: actor.name, turns: turnsLeft })}</div></div>`,
+                whisper: getWhisperIds(actor)
+            });
+        }
+    }
+
+    // Reset reaction use counts at start of actor's own turn
+    const reactionUses = actor.getFlag('tams', 'reactionUses') ?? {};
+    if (Object.keys(reactionUses).length > 0) {
+        await actor.setFlag('tams', 'reactionUses', {});
+    }
+
     // Expire duration-based status effects
     const statusTracking = actor.getFlag('tams', 'statusTracking') ?? {};
     if (Object.keys(statusTracking).length > 0 && game.combat) {
@@ -707,6 +734,11 @@ export async function tamsOnCombatEnd(combat) {
                 cleared.push(id);
             }
         }
+
+        // Clear per-combat flags
+        if (actor.getFlag('tams', 'dyingCountdown')) await actor.setFlag('tams', 'dyingCountdown', null);
+        const reactionUses = actor.getFlag('tams', 'reactionUses') ?? {};
+        if (Object.keys(reactionUses).length > 0) await actor.setFlag('tams', 'reactionUses', {});
 
         const totalHp = LIMB_KEYS.reduce((sum, k) => sum + (actor.system.limbs[k]?.value ?? 0), 0);
         const persistentStatuses = [...(actor.statuses ?? [])]
@@ -1100,6 +1132,82 @@ export async function tamsRenderChatMessage(message, html, data) {
       });
     });
 
+    // Save button
+    root.querySelectorAll(".tams-save-button").forEach(btn => {
+      btn.addEventListener("click", async ev => {
+        ev.preventDefault();
+
+        const saveAgainst = btn.dataset.saveAgainst;
+        const abilityName = btn.dataset.abilityName ?? "";
+
+        // Read DC from server-authoritative message flags; fall back to the
+        // dataset value only if the message can't be resolved.
+        const msgId = btn.closest("[data-message-id]")?.dataset.messageId;
+        const originMsg = game.messages.get(msgId);
+        const dc = originMsg?.flags?.tams?.saveDC ?? parseInt(btn.dataset.dc);
+
+        const actor =
+          canvas.tokens?.controlled[0]?.actor ??
+          game.user.character ??
+          game.actors.find(a => a.isOwner && a.type === "character");
+
+        if (!actor || !actor.isOwner) return ui.notifications.warn(game.i18n.localize("TAMS.Save.NoActor"));
+
+        const STAT_KEYS = new Set(["strength", "dexterity", "endurance", "wisdom", "intelligence", "bravery"]);
+        const statLabels = {
+          strength: game.i18n.localize("TAMS.StatStrength"),
+          dexterity: game.i18n.localize("TAMS.StatDexterity"),
+          endurance: game.i18n.localize("TAMS.StatEndurance"),
+          wisdom: game.i18n.localize("TAMS.StatWisdom"),
+          intelligence: game.i18n.localize("TAMS.StatIntelligence"),
+          bravery: game.i18n.localize("TAMS.StatBravery")
+        };
+
+        const roll = await new Roll("1d100").evaluate();
+        const raw = roll.total;
+        let total, saveLabel;
+
+        if (STAT_KEYS.has(saveAgainst)) {
+          const stat = actor.system.stats[saveAgainst];
+          const statValue = stat ? stat.value + (stat.mod || 0) + (stat.traitBonus || 0) : 0;
+          total = Math.min(raw, statValue);
+          saveLabel = statLabels[saveAgainst] ?? saveAgainst;
+        } else {
+          const skill = actor.items.find(i => i.type === "skill" && i.name.toLowerCase() === saveAgainst.toLowerCase());
+          if (skill) {
+            const sId = skill.system.stat;
+            const stat = actor.system.stats[sId];
+            const statValue = stat ? stat.value + (stat.mod || 0) + (stat.traitBonus || 0) : 0;
+            const fam = parseInt(skill.system.familiarity) || 0;
+            const bonus = parseInt(skill.system.bonus) || 0;
+            total = Math.min(raw, statValue) + fam + bonus;
+            saveLabel = skill.name;
+            await skill.update({ "system.usedInScene": true });
+          } else {
+            total = raw;
+            saveLabel = saveAgainst;
+          }
+        }
+
+        const success = total >= dc;
+
+        const report = `
+          <div class="tams-roll">
+            <h3 class="roll-label">${e(actor.name)}: ${game.i18n.format("TAMS.Save.Title", {ability: e(abilityName)})}</h3>
+            <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
+            <div class="roll-row"><span>${e(saveLabel)} ${game.i18n.localize("TAMS.Save.CheckLabel")}</span><span>${total}</span></div>
+            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total, dc})}</div>
+            ${success
+              ? `<div class="tams-success">${game.i18n.localize("TAMS.Save.Success")}</div>`
+              : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Save.Failure")}</div>`
+            }
+          </div>
+        `;
+
+        await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: report });
+      });
+    });
+
     // Take Damage button
     root.querySelectorAll(".tams-take-damage").forEach(el => el.addEventListener("click", async ev => {
       ev.preventDefault();
@@ -1323,54 +1431,80 @@ export async function tamsRenderChatMessage(message, html, data) {
         const btn = ev.currentTarget;
         const actorUuid = btn.dataset.actorUuid;
         let totalEffects = parseInt(btn.dataset.effects);
+        const castTime = btn.dataset.castTime ?? "immediate";
+        const mishapTag = btn.dataset.mishapTag ?? "magic";
+        const mishapTableObj = getMishapTable(mishapTag);
+        const mishapEntries = mishapTableObj ? mishapTableObj.entries : MISHAP_TABLE;
 
         const actor = actorUuid ? await fromUuid(actorUuid) : null;
 
-        if (totalEffects < 0) {
-            totalEffects = await new Promise(resolve => {
-                new Dialog({
-                    title: game.i18n.localize("TAMS.Mishap.DialogTitle"),
-                    content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.EffectsPrompt")}</label><input type="number" id="mishap-effects" value="1" min="0"/></div>`,
-                    buttons: {
-                        roll: { label: game.i18n.localize("TAMS.Mishap.RollButton"), callback: html => resolve(parseInt(html.find("#mishap-effects").val()) || 0) },
-                        cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(-1) }
-                    },
-                    default: "roll"
-                }).render(true);
-            });
-            if (totalEffects < 0) return;
-        }
+        const effectsRow = totalEffects < 0
+            ? `<div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.EffectsPrompt")}</label><input type="number" id="mishap-effects" value="1" min="0"/></div>`
+            : `<input type="hidden" id="mishap-effects" value="${totalEffects}"/>`;
 
-        const invokingTurns = await new Promise(resolve => {
+        const oneTurnChecked = castTime === "1turn" ? "checked" : "";
+
+        const result = await new Promise(resolve => {
             new Dialog({
                 title: game.i18n.localize("TAMS.Mishap.DialogTitle"),
-                content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.TurnsPrompt")}</label><input type="number" id="mishap-turns" value="0" min="0"/></div>`,
+                content: `${effectsRow}
+                    <div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.OneTurnCast")} (−100%)</label><input type="checkbox" id="mishap-oneturn" ${oneTurnChecked}/></div>
+                    <div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.TurnsPrompt")} (−50% each)</label><input type="number" id="mishap-turns" value="0" min="0"/></div>
+                    <div class="form-group"><label>${game.i18n.localize("TAMS.CalculatorOptions.ReducedMishap")} (+2 cost, −60%)</label><input type="checkbox" id="mishap-reduced"/></div>`,
                 buttons: {
-                    roll: { label: game.i18n.localize("TAMS.Mishap.RollButton"), callback: html => resolve(parseInt(html.find("#mishap-turns").val()) || 0) },
-                    cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(-1) }
+                    roll: { label: game.i18n.localize("TAMS.Mishap.RollButton"), callback: html => resolve({ effects: parseInt(html.find("#mishap-effects").val()) || 0, oneTurn: html.find("#mishap-oneturn").is(":checked"), turns: parseInt(html.find("#mishap-turns").val()) || 0, reduced: html.find("#mishap-reduced").is(":checked") }) },
+                    cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
                 },
                 default: "roll"
             }).render(true);
         });
-        if (invokingTurns < 0) return;
+        if (!result) return;
 
-        const chance = calculateMishapChance(totalEffects, invokingTurns);
+        totalEffects = result.effects;
+        const invokingTurns = result.turns;
+        let chance = calculateMishapChance(totalEffects, invokingTurns);
+        if (result.oneTurn) chance -= 100;
+        if (result.reduced) chance -= 60;
+        chance = Math.max(0, chance);
+
+        const chanceParts = [`${totalEffects} effects × 15% = ${totalEffects * 15}%`];
+        if (invokingTurns > 0) chanceParts.push(`${invokingTurns} invoking × −50% = −${invokingTurns * 50}%`);
+        if (result.oneTurn) chanceParts.push(`1 Turn cast: −100%`);
+        if (result.reduced) chanceParts.push(`Reduced Mishap: −60%`);
+        chanceParts.push(`<b>Final: ${chance}%</b>`);
+        const chanceBreakdown = chanceParts.join(" | ");
 
         if (chance <= 0) {
             ChatMessage.create({
                 speaker: actor ? ChatMessage.getSpeaker({ actor }) : {},
-                content: `<div class="tams-roll"><h3 class="roll-label">${game.i18n.localize("TAMS.Mishap.Title")}</h3><div class="roll-row">${game.i18n.localize("TAMS.Mishap.NoChance")}</div></div>`
+                content: `<div class="tams-roll"><h3 class="roll-label">${game.i18n.localize("TAMS.Mishap.Title")}</h3><div class="roll-row"><small>${chanceBreakdown}</small></div><div class="roll-row">${game.i18n.localize("TAMS.Mishap.NoChance")}</div></div>`
             });
             return;
+        }
+
+        // If chance < 100%, first roll to see if a mishap occurs at all.
+        // If chance >= 100%, mishap is guaranteed — skip the occurrence roll.
+        if (chance < 100) {
+            const occurrenceRoll = await new Roll("1d100").evaluate();
+            if (occurrenceRoll.total > chance) {
+                ChatMessage.create({
+                    speaker: actor ? ChatMessage.getSpeaker({ actor }) : {},
+                    content: `<div class="tams-roll"><h3 class="roll-label">${game.i18n.localize("TAMS.Mishap.Title")}</h3><div class="roll-row"><small>${chanceBreakdown}</small></div><div class="roll-row">${game.i18n.format("TAMS.Mishap.NoProcDisplay", {roll: occurrenceRoll.total, chance})}</div></div>`,
+                    rolls: [occurrenceRoll]
+                });
+                btn.disabled = true;
+                btn.innerText = game.i18n.localize("TAMS.Mishap.Rolled");
+                return;
+            }
         }
 
         const modifier = getMishapModifier(chance);
         const roll = await new Roll(`1d100 + ${modifier}`).evaluate();
         const rollTotal = roll.total;
-        const entry = getMishapEntry(rollTotal);
+        const entry = getMishapEntry(rollTotal, mishapEntries);
 
         const tierColors = { 1: "#2e7d32", 2: "#e65100", 3: "#b71c1c", 4: "#4a148c" };
-        const tierNames = {
+        const tierNames = mishapTableObj ? mishapTableObj.tierNames : {
             1: game.i18n.localize("TAMS.Mishap.Tier1"),
             2: game.i18n.localize("TAMS.Mishap.Tier2"),
             3: game.i18n.localize("TAMS.Mishap.Tier3"),
@@ -1383,8 +1517,8 @@ export async function tamsRenderChatMessage(message, html, data) {
         const content = `
             <div class="tams-roll">
                 <h3 class="roll-label" style="color:${tierColor};">${game.i18n.localize("TAMS.Mishap.Title")}</h3>
-                <div class="roll-row"><small>${game.i18n.format("TAMS.Mishap.ChanceDisplay", {chance, effects: totalEffects, turns: invokingTurns})}</small></div>
-                ${modifier > 0 ? `<div class="roll-row"><small>${game.i18n.format("TAMS.Mishap.ModifierDisplay", {modifier})}</small></div>` : ""}
+                <div class="roll-row"><small>${chanceBreakdown}</small></div>
+                ${modifier > 0 ? `<div class="roll-row"><small>Roll modifier: +${modifier} (chance exceeded 100%)</small></div>` : ""}
                 <div class="roll-row"><span>Roll:</span><span class="roll-value">${roll.dice[0]?.results[0]?.result ?? "?"} ${modifier > 0 ? `+ ${modifier}` : ""} = ${rollTotal}</span></div>
                 <hr>
                 <div class="roll-total" style="color:${tierColor};">${e(tierName)}${positiveTag}: <b>${e(entry.name)}</b></div>

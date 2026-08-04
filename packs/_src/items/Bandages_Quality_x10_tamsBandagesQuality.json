@@ -1,0 +1,20 @@
+{
+  "name": "Bandages Quality (x10)",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 10,
+      "max": 10
+    },
+    "tags": "Healing",
+    "description": "+10 to wound treatment"
+  },
+  "flags": {},
+  "_id": "tamsBandagesQuality",
+  "_key": "!items!tamsBandagesQuality"
+}

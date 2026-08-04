@@ -10,5 +10,5 @@
   },
   "flags": {},
   "_id": "tamsStatusBlinded",
-  "_key": "!items.tamsStatusBlinded"
+  "_key": "!items!tamsStatusBlinded"
 }

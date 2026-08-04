@@ -208,6 +208,7 @@
             <ol class="items-list">
                 {{#each equippedWeapons as |item id|}}
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
+                    <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
@@ -260,6 +261,7 @@
                 </li>
                 {{#each inventoryWeapons as |item id|}}
                 <li class="item flexrow item-unequipped {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
+                    <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
                     <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
@@ -319,6 +321,7 @@
             <ol class="items-list">
                 {{#each skills as |item id|}}
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
+                    <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
                     </h4>
@@ -383,6 +386,7 @@
             <ol class="items-list">
                 {{#each abilities as |item id|}}
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
+                    <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
                         {{#if item.system.isAttack}}
@@ -402,7 +406,7 @@
                     <input type="checkbox" class="passive-toggle" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.passiveEnabled" {{checked item.system.passiveEnabled}} title="{{localize 'TAMS.PassiveEnabledToggle'}}"/>
                     {{/if}}
                     <div class="item-controls">
-                        {{#if (and item.system.calculator.enabled (gt item.system.calculator.guaranteedMax 0))}}
+                        {{#if (and item.system.calculator.enabled item.system.calculator.guaranteedMax)}}
                         <a class="item-control rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}" data-is-max-roll="true" title="{{localize 'TAMS.MaxRoll'}}"><i class="fas fa-angle-double-up"></i></a>
                         {{/if}}
                         <a class="item-control" data-action="itemGive" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
@@ -570,6 +574,40 @@
 
         {{!-- Description Tab --}}
         <div class="tab description {{#if (eq activeTab 'description')}}active{{/if}}" data-group="primary" data-tab="description" data-scrollable data-scroll-id="tab-description">
+
+            {{!-- Race slot --}}
+            <div class="flexrow" style="align-items: center; margin-bottom: 5px; margin-top: 10px;">
+                <h3 style="margin: 0; border: none; flex: 1;">{{localize 'TAMS.RaceLabel'}}</h3>
+            </div>
+            {{#if raceItem}}
+            <div class="race-slot flexrow item" data-item-id="{{raceItem.id}}" style="align-items: flex-start; padding: 6px; border: 1px solid #aaa; border-radius: 4px; margin-bottom: 8px; background: rgba(0,0,0,0.04);">
+                <div style="background-image: url('{{raceItem.img}}'); width: 36px; height: 36px; background-size: cover; background-repeat: no-repeat; flex-shrink: 0; margin-right: 8px; border-radius: 3px;"></div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="flexrow" style="align-items: center;">
+                        <h4 style="margin: 0; flex: 1; cursor: pointer;" data-action="itemEdit" data-item-id="{{raceItem.id}}">{{raceItem.name}}</h4>
+                        <a data-action="itemEdit" data-item-id="{{raceItem.id}}" title="{{localize 'TAMS.EditItem'}}" style="margin-right: 4px;"><i class="fas fa-edit"></i></a>
+                        <a data-action="raceRemove" title="{{localize 'TAMS.Race.Remove'}}"><i class="fas fa-times"></i></a>
+                    </div>
+                    {{#if raceItem.system.passiveTraits.length}}
+                    <div class="race-passives" style="margin-top: 4px;">
+                        {{#each raceItem.system.passiveTraits as |trait|}}
+                        {{#if trait.name}}
+                        <div style="font-size: 0.82em; color: #444; line-height: 1.4;">
+                            <b>{{trait.name}}</b>{{#if trait.description}}: {{trait.description}}{{/if}}
+                        </div>
+                        {{/if}}
+                        {{/each}}
+                    </div>
+                    {{/if}}
+                </div>
+            </div>
+            {{else}}
+            <div class="race-drop-zone" style="border: 2px dashed #bbb; border-radius: 4px; padding: 14px; text-align: center; color: #999; font-style: italic; margin-bottom: 8px; font-size: 0.9em;">
+                {{localize 'TAMS.Race.DropHere'}}
+            </div>
+            {{/if}}
+
+            <hr>
             <div class="flexrow" style="align-items: center; margin-bottom: 5px; margin-top: 10px;">
                 <h3 style="margin: 0; border: none;">{{localize 'TAMS.Traits'}}</h3>
                 <a class="item-control item-create" title="{{localize 'TAMS.AddTrait'}}" data-action="itemCreate" data-type="trait" style="flex: 0 0 20px; text-align: right;">

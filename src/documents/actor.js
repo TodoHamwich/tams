@@ -270,18 +270,27 @@ export class TAMSActor extends Actor {
             });
         }
 
-        // Head/Thorax checks
-        const checkLethal = (key) => {
+        // Head/Thorax disabled → dying countdown instead of survival roll
+        const existingCountdown = this.getFlag('tams', 'dyingCountdown');
+        let dyingStarted = false;
+        for (const key of ['head', 'thorax']) {
             const limb = this.system.limbs[key];
-            if (limb.value < -limb.max) {
-                survivalNeeded = true;
-                const dc = Math.abs(limb.value);
-                if (dc > survivalDC) survivalDC = dc;
-                reasons.push(`${limb.label} ${game.i18n.localize("TAMS.Checks.ReasonLimbBeyondNegMax")} (${limb.value} / -${limb.max})`);
+            if (limb.value < -limb.max && !existingCountdown && !dyingStarted) {
+                dyingStarted = true;
+                const turnsLeft = Math.max(1, Math.floor(this.system.stats.endurance.total / 10));
+                await this.toggleStatusEffect("unconscious", { active: true });
+                await this.setFlag('tams', 'dyingCountdown', { turnsLeft, limbKey: key });
+                const ownerIds = Object.entries(this.ownership ?? {})
+                    .filter(([id, lvl]) => lvl >= 3 && id !== "default")
+                    .map(([id]) => id);
+                const whisperIds = [...new Set([...ownerIds, ...game.users.filter(u => u.isGM).map(u => u.id)])];
+                await ChatMessage.create({
+                    speaker: ChatMessage.getSpeaker({ actor: this }),
+                    content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Started", { name: this.name, limb: limb.label, turns: turnsLeft })}</div></div>`,
+                    whisper: whisperIds
+                });
             }
-        };
-        checkLethal('head');
-        checkLethal('thorax');
+        }
 
         if (survivalNeeded) {
             pendingChecks.push({ type: 'survival', dc: survivalDC, reasons });

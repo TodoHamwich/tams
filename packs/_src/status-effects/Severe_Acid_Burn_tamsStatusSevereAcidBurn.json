@@ -10,5 +10,5 @@
   },
   "flags": {},
   "_id": "tamsStatusSevereAcidBurn",
-  "_key": "!items.tamsStatusSevereAcidBurn"
+  "_key": "!items!tamsStatusSevereAcidBurn"
 }

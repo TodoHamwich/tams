@@ -1,0 +1,16 @@
+{
+  "name": "Simple Helmet",
+  "type": "equipment",
+  "img": "icons/equipment/head/helm-barbute-steel-grey.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Helmet, Armor",
+    "description": "AV: 5. AHP: 6. Covers head only."
+  },
+  "flags": {},
+  "_id": "tamsHelmetSimple",
+  "_key": "!items!tamsHelmetSimple"
+}

@@ -2,7 +2,7 @@
   "id": "tams",
   "title": "Todo's Advanced Modular System",
   "description": "A custom system for Foundry VTT",
-  "version": "1.7.1",
+  "version": "1.7.8",
   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
   "authors": [
@@ -43,13 +43,26 @@
         "ASSISTANT": "OWNER",
         "GAMEMASTER": "OWNER"
       }
+    },
+    {
+      "name": "items",
+      "label": "TAMS Items",
+      "path": "packs/items",
+      "type": "Item",
+      "system": "tams",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "TRUSTED": "OBSERVER",
+        "ASSISTANT": "OWNER",
+        "GAMEMASTER": "OWNER"
+      }
     }
   ],
   "packFolders": [
     {
       "name": "TAMS",
       "sorting": "a",
-      "packs": ["macros", "status-effects"]
+      "packs": ["macros", "status-effects", "items"]
     }
   ],
   "languages": [

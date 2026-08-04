@@ -10,5 +10,5 @@
   },
   "flags": {},
   "_id": "tamsStatusCharmed",
-  "_key": "!items.tamsStatusCharmed"
+  "_key": "!items!tamsStatusCharmed"
 }

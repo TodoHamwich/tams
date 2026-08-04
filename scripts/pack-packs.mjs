@@ -11,6 +11,7 @@ import { compilePack, extractPack } from '@foundryvtt/foundryvtt-cli';
 const PACKS = [
   { name: 'macros',         src: 'packs/_src/macros',         db: 'packs/macros' },
   { name: 'status-effects', src: 'packs/_src/status-effects', db: 'packs/status-effects' },
+  { name: 'items',          src: 'packs/_src/items',          db: 'packs/items' },
 ];
 
 const cmd = process.argv[2];

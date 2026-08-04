@@ -1,0 +1,47 @@
+{
+  "name": "Studded Leather",
+  "type": "armor",
+  "img": "icons/equipment/chest/coat-simple-leather-brown.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 3,
+    "equipped": false,
+    "limbs": {
+      "head": {
+        "value": 0,
+        "max": 0
+      },
+      "thorax": {
+        "value": 8,
+        "max": 8
+      },
+      "stomach": {
+        "value": 8,
+        "max": 8
+      },
+      "leftArm": {
+        "value": 8,
+        "max": 8
+      },
+      "rightArm": {
+        "value": 8,
+        "max": 8
+      },
+      "leftLeg": {
+        "value": 8,
+        "max": 8
+      },
+      "rightLeg": {
+        "value": 8,
+        "max": 8
+      }
+    },
+    "tags": "Low",
+    "description": "Grade: Low."
+  },
+  "flags": {},
+  "_id": "tamsArmorStuddedLeather",
+  "_key": "!items!tamsArmorStuddedLeather"
+}

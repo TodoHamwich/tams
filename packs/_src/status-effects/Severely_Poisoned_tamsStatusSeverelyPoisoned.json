@@ -10,5 +10,5 @@
   },
   "flags": {},
   "_id": "tamsStatusSeverelyPoisoned",
-  "_key": "!items.tamsStatusSeverelyPoisoned"
+  "_key": "!items!tamsStatusSeverelyPoisoned"
 }

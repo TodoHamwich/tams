@@ -1,0 +1,47 @@
+{
+  "name": "Leather Armor",
+  "type": "armor",
+  "img": "icons/equipment/chest/coat-simple-leather-brown.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 3,
+    "equipped": false,
+    "limbs": {
+      "head": {
+        "value": 0,
+        "max": 0
+      },
+      "thorax": {
+        "value": 6,
+        "max": 7
+      },
+      "stomach": {
+        "value": 6,
+        "max": 7
+      },
+      "leftArm": {
+        "value": 6,
+        "max": 7
+      },
+      "rightArm": {
+        "value": 6,
+        "max": 7
+      },
+      "leftLeg": {
+        "value": 6,
+        "max": 7
+      },
+      "rightLeg": {
+        "value": 6,
+        "max": 7
+      }
+    },
+    "tags": "Low",
+    "description": "Grade: Low."
+  },
+  "flags": {},
+  "_id": "tamsArmorLeather",
+  "_key": "!items!tamsArmorLeather"
+}

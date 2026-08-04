@@ -1,0 +1,20 @@
+{
+  "name": "Arrows (20)",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 20,
+      "max": 20
+    },
+    "tags": "Ammunition, Bow",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsAmmoArrows",
+  "_key": "!items!tamsAmmoArrows"
+}

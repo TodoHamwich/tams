@@ -1,0 +1,16 @@
+{
+  "name": "Cook's Utensils (Masterwork)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Masterwork, +10",
+    "description": "Cook's Utensils (Masterwork). Skill bonus: +10."
+  },
+  "flags": {},
+  "_id": "tamsToolCookMasterwork",
+  "_key": "!items!tamsToolCookMasterwork"
+}

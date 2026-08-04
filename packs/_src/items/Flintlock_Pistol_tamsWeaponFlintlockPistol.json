@@ -1,0 +1,39 @@
+{
+  "name": "Flintlock Pistol",
+  "type": "weapon",
+  "img": "icons/weapons/guns/gun-pistol.svg",
+  "system": {
+    "familiarity": 0,
+    "usedInScene": false,
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "equipped": false,
+    "isHeavy": false,
+    "isTwoHanded": false,
+    "isLight": false,
+    "isRanged": true,
+    "isThrown": false,
+    "hasArmourPen": true,
+    "armourPenetration": 12,
+    "rangedDamage": 45,
+    "ammo": {
+      "current": 0,
+      "total": 0
+    },
+    "fireRate": "1",
+    "fireRateCustom": 1,
+    "attackStat": "default",
+    "damageStat": "dexterity",
+    "consumeAmmo": true,
+    "special": "Reload 6. Paper cartridges reduce reload by 2.",
+    "isAoE": false,
+    "damageType": "",
+    "tags": "Ranged, Firearm",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsWeaponFlintlockPistol",
+  "_key": "!items!tamsWeaponFlintlockPistol"
+}

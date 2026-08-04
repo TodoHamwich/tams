@@ -15,6 +15,9 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         editImage: TAMSItemSheet.prototype._onEditImage,
         modifierCreate: TAMSItemSheet.prototype._onModifierCreate,
         modifierDelete: TAMSItemSheet.prototype._onModifierDelete,
+        passiveTraitCreate: TAMSItemSheet.prototype._onPassiveTraitCreate,
+        passiveTraitDelete: TAMSItemSheet.prototype._onPassiveTraitDelete,
+        grantedAbilityDelete: TAMSItemSheet.prototype._onGrantedAbilityDelete,
         tagToggle: TAMSItemSheet.prototype._onTagToggle,
         toggleSection: TAMSItemSheet.prototype._onToggleSection
       }
@@ -97,7 +100,8 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
       "fire": "TAMS.DamageType.fire",
       "magic": "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
-      "acid": "TAMS.DamageType.acid"
+      "acid": "TAMS.DamageType.acid",
+      "divine": "TAMS.DamageType.divine"
     };
 
     context.passiveRollTypeOptions = {
@@ -229,6 +233,20 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     context.inflictsStatusPresetValue = isKnownPreset ? currentStatusId : 'custom';
     context.inflictsStatusIsCustom = !isKnownPreset && currentStatusId !== '';
 
+    const SAVE_STAT_KEYS = new Set(["strength", "dexterity", "endurance", "wisdom", "intelligence", "bravery"]);
+    const currentSaveAgainst = this.document.system.saveAgainst ?? "dexterity";
+    context.saveAgainstOptions = {
+      "strength": "TAMS.StatStrength",
+      "dexterity": "TAMS.StatDexterity",
+      "endurance": "TAMS.StatEndurance",
+      "wisdom": "TAMS.StatWisdom",
+      "intelligence": "TAMS.StatIntelligence",
+      "bravery": "TAMS.StatBravery",
+      "custom": "TAMS.SaveAgainst.CustomSkill"
+    };
+    context.saveAgainstPresetValue = SAVE_STAT_KEYS.has(currentSaveAgainst) ? currentSaveAgainst : "custom";
+    context.saveAgainstIsCustom = !SAVE_STAT_KEYS.has(currentSaveAgainst);
+
     if (this.document.type === 'ability') {
       const sys = this.document.system;
       if (this._sectionOpen === undefined) {
@@ -279,6 +297,41 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         }
       });
     });
+
+    this.element.querySelectorAll('.save-against-preset').forEach(select => {
+      select.addEventListener('change', event => {
+        const value = event.target.value;
+        const picker = event.target.closest('.save-against-picker');
+        const customInput = picker?.querySelector('.save-against-custom');
+        if (!customInput) return;
+        if (value === 'custom') {
+          customInput.style.display = '';
+          customInput.focus();
+        } else {
+          customInput.style.display = 'none';
+          customInput.value = value;
+          this.document.update({ 'system.saveAgainst': value });
+        }
+      });
+    });
+  }
+
+  /** @override */
+  async _onDrop(event) {
+    if (this.document.type !== 'race') return;
+    const data = TextEditor.getDragEventData(event);
+    if (data.type !== 'Item') return;
+
+    let item;
+    try { item = await Item.fromDropData(data); } catch(e) { return; }
+    if (!item || item.type !== 'ability') {
+      return ui.notifications.warn(game.i18n.localize("TAMS.Race.GrantedAbilityOnly"));
+    }
+
+    const abilityData = item.toObject();
+    const abilities = foundry.utils.duplicate(this.document.system.grantedAbilities || []);
+    abilities.push(abilityData);
+    await this.document.update({ 'system.grantedAbilities': abilities });
   }
 
   /**
@@ -325,6 +378,26 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     const modifiers = foundry.utils.duplicate(this.document.system.modifiers || []);
     modifiers.splice(index, 1);
     await this.document.update({ "system.modifiers": modifiers });
+  }
+
+  async _onGrantedAbilityDelete(event, target) {
+    const index = parseInt(target.dataset.index ?? target.closest(".granted-ability-row")?.dataset.index);
+    const abilities = foundry.utils.duplicate(this.document.system.grantedAbilities || []);
+    abilities.splice(index, 1);
+    await this.document.update({ "system.grantedAbilities": abilities });
+  }
+
+  async _onPassiveTraitCreate(event, target) {
+    const traits = foundry.utils.duplicate(this.document.system.passiveTraits || []);
+    traits.push({ name: "", description: "" });
+    await this.document.update({ "system.passiveTraits": traits });
+  }
+
+  async _onPassiveTraitDelete(event, target) {
+    const index = parseInt(target.closest(".passive-trait-row").dataset.index);
+    const traits = foundry.utils.duplicate(this.document.system.passiveTraits || []);
+    traits.splice(index, 1);
+    await this.document.update({ "system.passiveTraits": traits });
   }
 
   /**

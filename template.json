@@ -133,7 +133,7 @@
     }
   },
   "Item": {
-    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect"],
+    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect", "race"],
     "weapon": {
       "familiarity": 0,
       "quantity": 1,
@@ -295,6 +295,16 @@
       "isProfession": false,
       "profession": "",
       "modifiers": [],
+      "tags": "",
+      "description": ""
+    },
+    "race": {
+      "passiveTraits": [],
+      "modifiers": [],
+      "size": "normal",
+      "sizeGrantHP": "",
+      "sizeGrantStealth": "",
+      "sizeGrantCombat": "",
       "tags": "",
       "description": ""
     }

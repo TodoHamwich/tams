@@ -99,7 +99,8 @@ export class TAMSItemMaker extends foundry.applications.api.HandlebarsApplicatio
       "fire":    "TAMS.DamageType.fire",
       "magic":   "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
-      "acid":    "TAMS.DamageType.acid"
+      "acid":    "TAMS.DamageType.acid",
+      "divine":  "TAMS.DamageType.divine"
     };
 
     context.sizeOptions = {

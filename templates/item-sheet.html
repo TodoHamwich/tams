@@ -494,8 +494,8 @@
                             <input type="number" name="system.calculator.effects" value="{{system.calculator.effects}}" min="0"/>
                         </div>
                         <div class="flexrow">
-                            <label title="+2 per guaranteed max">{{localize 'TAMS.CalculatorOptions.GuaranteedMax'}}</label>
-                            <input type="number" name="system.calculator.guaranteedMax" value="{{system.calculator.guaranteedMax}}" min="0"/>
+                            <label title="+2 cost; ability executes at stat cap (no dice, no crits)">{{localize 'TAMS.CalculatorOptions.GuaranteedMax'}}</label>
+                            <input type="checkbox" name="system.calculator.guaranteedMax" {{checked system.calculator.guaranteedMax}}/>
                         </div>
                         <div class="flexrow">
                             <label title="-1 per detriment">{{localize 'TAMS.CalculatorOptions.Detriments'}}</label>
@@ -615,6 +615,10 @@
                             <input type="number" name="system.calculator.drValue" value="{{system.calculator.drValue}}" min="0"/>
                         </div>
                         {{/unless}}
+                        <div class="flexrow">
+                            <label title="+1 per +5 stat">{{localize 'TAMS.CalculatorOptions.StatIncrease'}}</label>
+                            <input type="number" name="system.calculator.statIncrease" value="{{system.calculator.statIncrease}}" min="0"/>
+                        </div>
                     </div>
                 </div>
 
@@ -649,6 +653,40 @@
                             <label title="x2 cost">{{localize 'TAMS.CalculatorOptions.Stackable'}}</label>
                             <input type="checkbox" name="system.calculator.isStackable" {{checked system.calculator.isStackable}}/>
                         </div>
+                    </div>
+                </div>
+
+                <div class="ability-calculator__group">
+                    <p class="ability-calculator__group-title">{{localize 'TAMS.CalculatorOptions.TagsGroup'}}</p>
+                    <div class="grid grid-3col">
+                        <div class="flexrow">
+                            <label title="+1: flat +5 to roll">{{localize 'TAMS.CalculatorOptions.TagAccurate'}}</label>
+                            <input type="checkbox" name="system.calculator.tagAccurate" {{checked system.calculator.tagAccurate}}/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+1: reroll on ≤4">{{localize 'TAMS.CalculatorOptions.TagReliable'}}</label>
+                            <input type="checkbox" name="system.calculator.tagReliable" {{checked system.calculator.tagReliable}}/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="−1: crit fail on ≤4">{{localize 'TAMS.CalculatorOptions.TagUnreliable'}}</label>
+                            <input type="checkbox" name="system.calculator.tagUnreliable" {{checked system.calculator.tagUnreliable}}/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+1: ×1.5 dmg on crit">{{localize 'TAMS.CalculatorOptions.TagVicious'}}</label>
+                            <input type="checkbox" name="system.calculator.tagVicious" {{checked system.calculator.tagVicious}}/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="+2: always crits">{{localize 'TAMS.CalculatorOptions.TagBrutal'}}</label>
+                            <input type="checkbox" name="system.calculator.tagBrutal" {{checked system.calculator.tagBrutal}}/>
+                        </div>
+                        <div class="flexrow">
+                            <label title="±0">{{localize 'TAMS.CalculatorOptions.TagTransformation'}}</label>
+                            <input type="checkbox" name="system.calculator.tagTransformation" {{checked system.calculator.tagTransformation}}/>
+                        </div>
+                    </div>
+                    <div class="flexrow" style="margin-top:4px;">
+                        <label title="+1 each (Compact, Reach, Silent, etc.)">{{localize 'TAMS.CalculatorOptions.TagOther'}}</label>
+                        <input type="number" name="system.calculator.tagOther" value="{{system.calculator.tagOther}}" min="0"/>
                     </div>
                 </div>
             </div>
@@ -750,6 +788,27 @@
                                {{#unless inflictsStatusIsCustom}}style="display:none"{{/unless}}/>
                     </div>
                 </div>
+
+                <div class="flexrow" style="margin-top: 8px;">
+                    <label><b>{{localize 'TAMS.HasSaveQ'}}</b></label>
+                    <input type="checkbox" name="system.hasSave" {{checked system.hasSave}}/>
+                </div>
+                {{#if system.hasSave}}
+                <div class="flexrow" style="margin-top: 4px;">
+                    <label>{{localize 'TAMS.SaveAgainstLabel'}}</label>
+                    <div class="save-against-picker" style="display:flex; gap:4px; flex:1;">
+                        <select class="save-against-preset">
+                            {{selectOptions saveAgainstOptions selected=saveAgainstPresetValue localize=true}}
+                        </select>
+                        <input type="text"
+                               name="system.saveAgainst"
+                               value="{{system.saveAgainst}}"
+                               placeholder="Skill name..."
+                               class="save-against-custom"
+                               {{#unless saveAgainstIsCustom}}style="display:none"{{/unless}}/>
+                    </div>
+                </div>
+                {{/if}}
             </div>
 
             {{/unless}}
@@ -785,6 +844,98 @@
             {{/if}}
 
             {{!-- ═══════════════════════════════════════════════════════════ --}}
+            {{!--  RACE SHEET                                                  --}}
+            {{!-- ═══════════════════════════════════════════════════════════ --}}
+            {{#if (eq item.type "race")}}
+
+            {{!-- Innate Traits --}}
+            <div class="flexrow" style="align-items: center; margin-bottom: 4px; margin-top: 6px;">
+                <h3 style="margin: 0; border: none; flex: 1;">{{localize 'TAMS.Race.PassiveTraits'}}</h3>
+                <a data-action="passiveTraitCreate" title="{{localize 'TAMS.Race.AddPassiveTrait'}}" style="flex: 0 0 20px; text-align: right;">
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
+            <div class="passive-traits-list flexcol" style="gap: 4px; margin-bottom: 8px;">
+                {{#each system.passiveTraits as |trait index|}}
+                <div class="passive-trait-row flexrow" data-index="{{index}}" style="align-items: center; gap: 5px; border-bottom: 1px solid #ccc; padding: 3px 0;">
+                    <input type="text" name="system.passiveTraits.{{index}}.name" value="{{trait.name}}" placeholder="Darkvision" style="flex: 0 0 38%; font-weight: bold;"/>
+                    <input type="text" name="system.passiveTraits.{{index}}.description" value="{{trait.description}}" placeholder="Description..." style="flex: 1;"/>
+                    <a data-action="passiveTraitDelete" title="{{localize 'TAMS.RemoveModifier'}}" style="flex: 0 0 20px; text-align: right;"><i class="fas fa-trash"></i></a>
+                </div>
+                {{/each}}
+                {{#unless system.passiveTraits.length}}
+                <p style="color: #888; font-style: italic; font-size: 0.85em; margin: 2px 0;">{{localize 'TAMS.Race.NoPassiveTraits'}}</p>
+                {{/unless}}
+            </div>
+            <hr>
+
+            {{!-- Granted Abilities --}}
+            <div class="flexrow" style="align-items: center; margin-bottom: 4px; margin-top: 6px;">
+                <h3 style="margin: 0; border: none; flex: 1;">{{localize 'TAMS.Race.GrantedAbilities'}}</h3>
+            </div>
+            <div class="granted-abilities-list flexcol" style="gap: 3px; margin-bottom: 8px; min-height: 36px; border: 1px dashed #bbb; border-radius: 3px; padding: 6px;">
+                {{#each system.grantedAbilities as |ability index|}}
+                <div class="granted-ability-row flexrow" data-index="{{index}}" style="align-items: center; gap: 5px; border-bottom: 1px solid #eee; padding: 3px 0;">
+                    <div style="background-image: url('{{ability.img}}'); width: 20px; height: 20px; background-size: cover; flex-shrink: 0; border-radius: 2px; margin-right: 4px;"></div>
+                    <span style="flex: 1; font-weight: bold; font-size: 0.9em;">{{ability.name}}</span>
+                    {{#if ability.system.cost}}<span style="color: #666; font-size: 0.8em; margin-right: 6px;">Cost {{ability.system.cost}}</span>{{/if}}
+                    <a data-action="grantedAbilityDelete" data-index="{{index}}" title="{{localize 'TAMS.RemoveModifier'}}" style="flex: 0 0 16px; text-align: right;"><i class="fas fa-times"></i></a>
+                </div>
+                {{/each}}
+                {{#unless system.grantedAbilities.length}}
+                <p style="color: #999; font-style: italic; font-size: 0.82em; text-align: center; margin: 4px 0;">{{localize 'TAMS.Race.DropAbilityHere'}}</p>
+                {{/unless}}
+            </div>
+            <hr>
+
+            {{!-- Stat Modifiers --}}
+            <div class="flexrow" style="align-items: center; margin-bottom: 5px;">
+                <h3 style="margin: 0; border: none; flex: 1;">{{localize 'TAMS.Modifiers'}}</h3>
+                <a class="modifier-control" data-action="modifierCreate" title="{{localize 'TAMS.AddModifier'}}" style="flex: 0 0 20px; text-align: right;">
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
+            <div class="modifiers-list flexcol" style="gap: 5px; margin-bottom: 8px;">
+                {{#each system.modifiers as |mod index|}}
+                <div class="modifier-row flexrow" data-index="{{index}}" style="align-items: center; gap: 5px;">
+                    <select name="system.modifiers.{{index}}.target" style="flex: 2;">
+                        {{selectOptions ../modifierTargetOptions selected=mod.target localize=true}}
+                    </select>
+                    <input type="number" name="system.modifiers.{{index}}.value" value="{{mod.value}}" style="flex: 0 0 50px; text-align: center;"/>
+                    <a class="modifier-control" data-action="modifierDelete" style="flex: 0 0 20px; text-align: right;"><i class="fas fa-trash"></i></a>
+                </div>
+                {{/each}}
+            </div>
+            <hr>
+
+            {{!-- Size Grants --}}
+            <h3>{{localize 'TAMS.SizeGrants'}}</h3>
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.SizeGrantHP'}}</label>
+                <select name="system.sizeGrantHP">
+                    <option value="">{{localize 'TAMS.None'}}</option>
+                    {{selectOptions creatureSizeOptions selected=system.sizeGrantHP localize=true}}
+                </select>
+            </div>
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.SizeGrantStealth'}}</label>
+                <select name="system.sizeGrantStealth">
+                    <option value="">{{localize 'TAMS.None'}}</option>
+                    {{selectOptions creatureSizeOptions selected=system.sizeGrantStealth localize=true}}
+                </select>
+            </div>
+            <div class="flexrow" style="margin-bottom: 6px;">
+                <label>{{localize 'TAMS.SizeGrantCombat'}}</label>
+                <select name="system.sizeGrantCombat">
+                    <option value="">{{localize 'TAMS.None'}}</option>
+                    {{selectOptions creatureSizeOptions selected=system.sizeGrantCombat localize=true}}
+                </select>
+            </div>
+            <hr>
+
+            {{/if}}
+
+            {{!-- ═══════════════════════════════════════════════════════════ --}}
             {{!--  STATUS EFFECT SHEET                                        --}}
             {{!-- ═══════════════════════════════════════════════════════════ --}}
             {{#if (eq item.type "statusEffect")}}
@@ -811,6 +962,15 @@
                 <input type="text" name="system.tags" value="{{system.tags}}"/>
             </div>
             {{/unless}}
+            {{#if (eq item.type "ability")}}
+            <div class="flexrow" style="margin-top: 4px;">
+                <label>{{localize 'TAMS.CastTime.Label'}}</label>
+                <select name="system.castTime">
+                    <option value="immediate" {{#if (eq system.castTime "immediate")}}selected{{/if}}>{{localize 'TAMS.CastTime.Immediate'}}</option>
+                    <option value="1turn" {{#if (eq system.castTime "1turn")}}selected{{/if}}>{{localize 'TAMS.CastTime.OneTurn'}}</option>
+                </select>
+            </div>
+            {{/if}}
             <hr>
             <label>{{localize 'TAMS.Description'}}</label>
             <textarea name="system.description" rows="10">{{system.description}}</textarea>

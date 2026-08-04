@@ -1,0 +1,39 @@
+{
+  "name": "Longbow (Standard)",
+  "type": "weapon",
+  "img": "icons/weapons/bows/bow-long.svg",
+  "system": {
+    "familiarity": 0,
+    "usedInScene": false,
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "equipped": false,
+    "isHeavy": false,
+    "isTwoHanded": false,
+    "isLight": false,
+    "isRanged": true,
+    "isThrown": false,
+    "hasArmourPen": true,
+    "armourPenetration": 12,
+    "rangedDamage": 33,
+    "ammo": {
+      "current": 0,
+      "total": 0
+    },
+    "fireRate": "1",
+    "fireRateCustom": 1,
+    "attackStat": "default",
+    "damageStat": "dexterity",
+    "consumeAmmo": true,
+    "special": "STR Req: 32",
+    "isAoE": false,
+    "damageType": "",
+    "tags": "Ranged",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsWeaponLongbowStandard",
+  "_key": "!items!tamsWeaponLongbowStandard"
+}

@@ -1,0 +1,18 @@
+{
+  "name": "Tower Shield",
+  "type": "shield",
+  "img": "icons/equipment/shield/tower-shield.svg",
+  "system": {
+    "armorValue": 15,
+    "equipped": false,
+    "quantity": 1,
+    "size": "large",
+    "location": "hand",
+    "slots": 3,
+    "tags": "Shield",
+    "description": "AHP: 20."
+  },
+  "flags": {},
+  "_id": "tamsShieldTower",
+  "_key": "!items!tamsShieldTower"
+}

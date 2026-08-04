@@ -1,5 +1,5 @@
 import { TAMSCharacterData } from './models/character.js';
-import { TAMSWeaponData, TAMSSkillData, TAMSEquipmentData, TAMSArmorData, TAMSConsumableData, TAMSToolData, TAMSShieldData, TAMSQuestItemData, TAMSBackpackData, TAMSAbilityData, TAMSTraitData, TAMSStatusEffectData } from './models/item.js';
+import { TAMSWeaponData, TAMSSkillData, TAMSEquipmentData, TAMSArmorData, TAMSConsumableData, TAMSToolData, TAMSShieldData, TAMSQuestItemData, TAMSBackpackData, TAMSAbilityData, TAMSTraitData, TAMSStatusEffectData, TAMSRaceData } from './models/item.js';
 import { TAMSActor } from './documents/actor.js';
 import { TAMSItem } from './documents/item.js';
 import { TAMSActorSheet } from './applications/actor-sheet.js';
@@ -120,6 +120,7 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.backpack = TAMSBackpackData;
   CONFIG.Item.dataModels.trait = TAMSTraitData;
   CONFIG.Item.dataModels.statusEffect = TAMSStatusEffectData;
+  CONFIG.Item.dataModels.race = TAMSRaceData;
 
   // v12: Ensure types are also in systemDataModels if needed
   CONFIG.Item.systemDataModels = CONFIG.Item.dataModels;

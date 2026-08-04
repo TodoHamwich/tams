@@ -262,7 +262,10 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       isAoE: new fields.BooleanField({initial: false}),
       damageType: new fields.StringField({initial: ""}),
       inflictsStatusId: new fields.StringField({initial: ""}),
+      hasSave: new fields.BooleanField({initial: false}),
+      saveAgainst: new fields.StringField({initial: "dexterity"}),
       tags: new fields.StringField({initial: ""}),
+      castTime: new fields.StringField({initial: "immediate"}),
       description: new fields.HTMLField({initial: ""}),
       sizeGrantHP:      new fields.StringField({initial: ""}),
       sizeGrantStealth: new fields.StringField({initial: ""}),
@@ -273,7 +276,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         enabled: new fields.BooleanField({initial: false}),
         isUtility: new fields.BooleanField({initial: false}),
         effects: new fields.NumberField({initial: 0, integer: true, nullable: true}),
-        guaranteedMax: new fields.NumberField({initial: 0, integer: true, nullable: true}),
+        guaranteedMax: new fields.BooleanField({initial: false}),
         detriments: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         movementDoubleOwn: new fields.BooleanField({initial: false}),
         movementHalveEnemy: new fields.BooleanField({initial: false}),
@@ -296,7 +299,15 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         aoeRadius: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         range: new fields.NumberField({initial: 0, integer: true, nullable: true}),
         duration: new fields.StringField({initial: "instant"}),
-        isStackable: new fields.BooleanField({initial: false})
+        isStackable: new fields.BooleanField({initial: false}),
+        tagAccurate: new fields.BooleanField({initial: false}),
+        tagReliable: new fields.BooleanField({initial: false}),
+        tagUnreliable: new fields.BooleanField({initial: false}),
+        tagVicious: new fields.BooleanField({initial: false}),
+        tagBrutal: new fields.BooleanField({initial: false}),
+        tagTransformation: new fields.BooleanField({initial: false}),
+        tagOther: new fields.NumberField({initial: 0, integer: true, nullable: true}),
+        statIncrease: new fields.NumberField({initial: 0, integer: true, nullable: true}),
       }),
       rechargeType: new fields.StringField({initial: "rest"}),
       isPassive:       new fields.BooleanField({initial: false}),
@@ -332,12 +343,13 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     const c = this.calculator;
     let cost = 0;
     cost += (c.effects || 0) * 1;
-    cost += (c.guaranteedMax || 0) * 2;
+    if (c.guaranteedMax) cost += 2;
     cost -= (c.detriments || 0) * 1;
     if (c.movementDoubleOwn) cost += 2;
     if (c.movementHalveEnemy) cost += 4;
     cost += (c.movementFlat || 0) * 2;
     cost += Math.floor((c.rollBonus || 0) / 5) * 1;
+    cost += Math.floor((c.statIncrease || 0) / 5) * 1;
     if (c.ignoreArmor > 0) {
       cost += 1;
       if (c.ignoreArmor > 1) cost += (c.ignoreArmor - 1) * 2;
@@ -389,6 +401,12 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       else if (c.duration === "3rounds") cost += 4;
     }
     if (c.isStackable) cost *= 2;
+    if (c.tagAccurate) cost += 1;
+    if (c.tagReliable) cost += 1;
+    if (c.tagUnreliable) cost -= 1;
+    if (c.tagVicious) cost += 1;
+    if (c.tagBrutal) cost += 2;
+    cost += (c.tagOther || 0) * 1;
     return Math.max(1, Math.floor(cost));
   }
 
@@ -410,6 +428,33 @@ export class TAMSStatusEffectData extends foundry.abstract.TypeDataModel {
       mechanicalSummary: new fields.StringField({initial: ""}),
       durationRounds:    new fields.NumberField({initial: 0, integer: true, min: 0}),
       description:       new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+/**
+ * DataModel for Race items.
+ */
+export class TAMSRaceData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      passiveTraits: new fields.ArrayField(new fields.SchemaField({
+        name: new fields.StringField({initial: ""}),
+        description: new fields.StringField({initial: ""})
+      })),
+      grantedAbilities: new fields.ArrayField(new fields.ObjectField()),
+      modifiers: new fields.ArrayField(new fields.SchemaField({
+        target: new fields.StringField({initial: "stats.strength.value"}),
+        value: new fields.NumberField({initial: 0}),
+        type: new fields.StringField({initial: "add"})
+      })),
+      size: new fields.StringField({initial: "normal"}),
+      sizeGrantHP: new fields.StringField({initial: ""}),
+      sizeGrantStealth: new fields.StringField({initial: ""}),
+      sizeGrantCombat: new fields.StringField({initial: ""}),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
     };
   }
 }

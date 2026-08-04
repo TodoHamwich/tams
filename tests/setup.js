@@ -78,7 +78,8 @@ global.game = {
   i18n: {
     localize: (key) => key,
     format: (key, data) => key
-  }
+  },
+  users: { filter: () => [] }
 };
 
 global.Hooks = {
@@ -103,6 +104,8 @@ global.Actor = class {
     this.name = data.name || "Test Actor";
     this.system = data.system || {};
     this.items = data.items || [];
+    this.ownership = {};
+    this._flags = {};
     this.update = vi.fn(async (data) => {
       for (const [path, value] of Object.entries(data)) {
         const parts = path.split('.');
@@ -115,8 +118,16 @@ global.Actor = class {
       }
       return data;
     });
+    this.getFlag = vi.fn((scope, key) => this._flags[`${scope}.${key}`] ?? null);
+    this.setFlag = vi.fn(async (scope, key, value) => { this._flags[`${scope}.${key}`] = value; });
+    this.toggleStatusEffect = vi.fn(async () => {});
   }
   async _preUpdate() { return true; }
+};
+
+global.ChatMessage = {
+  create: vi.fn(async () => {}),
+  getSpeaker: vi.fn(() => ({}))
 };
 
 global.Item = class {

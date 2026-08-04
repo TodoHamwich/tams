@@ -1,0 +1,20 @@
+{
+  "name": "Powder Horn",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 20,
+      "max": 20
+    },
+    "tags": "Equipment, Firearm",
+    "description": "Holds ~20 charges of black powder."
+  },
+  "flags": {},
+  "_id": "tamsAmmoPowderHorn",
+  "_key": "!items!tamsAmmoPowderHorn"
+}
