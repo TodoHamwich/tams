@@ -491,6 +491,10 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
         current: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
         total: new fields.NumberField({ initial: 0, integer: true, min: 0 })
       }),
+      ammoItemId: new fields.StringField({ initial: "custom" }),
+      firelockType: new fields.StringField({ initial: "" }),
+      isLoaded: new fields.BooleanField({ initial: true }),
+      misfireThreshold: new fields.NumberField({ initial: 4, integer: true, min: 0, max: 100 }),
       fireRate: new fields.StringField({ initial: "1" }),
       fireRateCustom: new fields.NumberField({ initial: 1, nullable: true }),
       attackStat: new fields.StringField({ initial: "default" }),
@@ -572,6 +576,24 @@ class TAMSArmorData extends foundry.abstract.TypeDataModel {
         leftLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }), max: new fields.NumberField({ initial: 0 }) }),
         rightLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }), max: new fields.NumberField({ initial: 0 }) })
       }),
+      tags: new fields.StringField({ initial: "" }),
+      description: new fields.HTMLField({ initial: "" })
+    };
+  }
+}
+class TAMSAmmoData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
+      size: new fields.StringField({ initial: "small" }),
+      location: new fields.StringField({ initial: "stowed" }),
+      slots: new fields.NumberField({ initial: 1, integer: true, min: 1 }),
+      uses: new fields.SchemaField({
+        value: new fields.NumberField({ initial: 0 }),
+        max: new fields.NumberField({ initial: 0 })
+      }),
+      misfireRisk: new fields.BooleanField({ initial: false }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
@@ -4083,7 +4105,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: _TAMSActorSheet.prototype._onItemSendDescription,
         honorEdit: _TAMSActorSheet.prototype._onHonorEdit,
-        raceRemove: _TAMSActorSheet.prototype._onRaceRemove
+        raceRemove: _TAMSActorSheet.prototype._onRaceRemove,
+        toggleFirearmLoaded: _TAMSActorSheet.prototype._onToggleFirearmLoaded
       }
     }, { inplace: false });
   }
@@ -4216,6 +4239,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const abilities = [];
     const inventoryArmor = [];
     const inventoryConsumables = [];
+    const inventoryAmmo = [];
     const inventoryTools = [];
     const inventoryQuestItems = [];
     const inventoryMisc = [];
@@ -4280,6 +4304,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       } else if (i.type === "skill") skills.push(itemData);
       else if (i.type === "ability") abilities.push(itemData);
       else if (i.type === "armor" || i.type === "shield") inventoryArmor.push(itemData);
+      else if (i.type === "ammo") inventoryAmmo.push(itemData);
       else if (i.type === "consumable") inventoryConsumables.push(itemData);
       else if (i.type === "tool") inventoryTools.push(itemData);
       else if (i.type === "questItem") inventoryQuestItems.push(itemData);
@@ -4287,6 +4312,19 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       else if (i.type === "trait") traits.push(itemData);
       else if (i.type === "race") ;
       else if (i.type === "equipment") inventoryMisc.push(itemData);
+    }
+    const ammoItems = inventoryAmmo;
+    for (const weapon of weapons) {
+      if (!weapon.system.isRanged) continue;
+      const linkedId = weapon.system.ammoItemId;
+      weapon.ammoOptions = ammoItems.map((a) => ({
+        id: a.id,
+        name: a.name,
+        current: a.system.uses.value,
+        max: a.system.uses.max,
+        selected: a.id === linkedId
+      }));
+      weapon.linkedAmmo = linkedId && linkedId !== "custom" ? ammoItems.find((a) => a.id === linkedId) || null : null;
     }
     const equippedSection = { id: "hand", label: game.i18n.localize("TAMS.Inventory.SectionEquipped"), items: [], type: "status" };
     const containerSectionMap = {};
@@ -4323,8 +4361,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
     }
     const rawSections = [equippedSection, ...Object.values(containerSectionMap), stowedSection];
-    const typeLabels = { weapon: "Weapons", armor: "Armor", consumable: "Consumables", tool: "Tools", questItem: "Quest Items", equipment: "Miscellaneous" };
-    const typeOrder = ["Weapons", "Armor", "Consumables", "Tools", "Quest Items", "Miscellaneous"];
+    const typeLabels = { weapon: "Weapons", armor: "Armor", ammo: "Ammunition", consumable: "Consumables", tool: "Tools", questItem: "Quest Items", equipment: "Miscellaneous" };
+    const typeOrder = ["Weapons", "Armor", "Ammunition", "Consumables", "Tools", "Quest Items", "Miscellaneous"];
     const sortKey = this._inventorySort || "name";
     const filterType = this._inventoryFilter || "all";
     const search = (this._inventorySearch || "").trim().toLowerCase();
@@ -4377,6 +4415,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       weapon: "TAMS.Weapon",
       armor: "TAMS.Armor",
       shield: "TAMS.Shield",
+      ammo: "TAMS.Ammo",
       consumable: "TAMS.Consumable",
       tool: "TAMS.Tool",
       questItem: "TAMS.QuestItem",
@@ -4388,6 +4427,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     context.equippedWeapons = equippedWeapons;
     context.inventoryWeapons = inventoryWeapons;
     context.inventoryArmor = inventoryArmor;
+    context.inventoryAmmo = inventoryAmmo;
     context.inventoryConsumables = inventoryConsumables;
     context.inventoryTools = inventoryTools;
     context.inventoryQuestItems = inventoryQuestItems;
@@ -4647,6 +4687,12 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const granted = this.document.items.filter((i) => i.getFlag("tams", "raceGranted"));
     const toDelete = [...existing.map((i) => i.id), ...granted.map((i) => i.id)];
     if (toDelete.length) await this.document.deleteEmbeddedDocuments("Item", toDelete);
+  }
+  async _onToggleFirearmLoaded(event, target) {
+    const itemId = target.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+    await item.update({ "system.isLoaded": !item.system.isLoaded });
   }
   /**
    * Handle giving an item to another actor.
@@ -5266,7 +5312,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   async _onRoll(event, target) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s;
     const dataset = target.dataset;
     const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
     const tToken = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0] ?? null;
@@ -5602,6 +5648,29 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     const isMaxRoll = dataset.isMaxRoll === "true";
     const effectiveStat = statValue + statMod;
+    if ((item == null ? void 0 : item.type) === "weapon" && item.system.firelockType) {
+      if (!item.system.isLoaded) {
+        return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.FirearmNotLoaded", { item: item.name }));
+      }
+      const ammoId = item.system.ammoItemId ?? "custom";
+      if (item.system.firelockType === "matchlock" && item.system.consumeAmmo && ammoId && ammoId !== "custom") {
+        const ammoItem = this.document.items.get(ammoId);
+        if (ammoItem == null ? void 0 : ammoItem.system.misfireRisk) {
+          const threshold = item.system.misfireThreshold ?? 4;
+          const misfireRoll = (await new Roll("1d100").evaluate()).total;
+          if (misfireRoll <= threshold) {
+            const currentAmmo = ((_e = ammoItem.system.uses) == null ? void 0 : _e.value) || 0;
+            if (currentAmmo > 0) await ammoItem.update({ "system.uses.value": currentAmmo - 1 });
+            await item.update({ "system.isLoaded": false });
+            await ChatMessage.create({
+              content: `<div class="tams-roll tams-misfire"><strong>⚠️ ${game.i18n.localize("TAMS.Firearm.MisfireLabel")}</strong> — ${game.i18n.format("TAMS.Firearm.MisfireResult", { weapon: item.name, roll: misfireRoll, threshold })}</div>`,
+              speaker: ChatMessage.getSpeaker({ actor: this.document })
+            });
+            return;
+          }
+        }
+      }
+    }
     let roll, rawResult, originalResult, rerolled = false, isJammed = false;
     if (isMaxRoll) {
       roll = await new Roll(`${effectiveStat}`).evaluate();
@@ -5639,7 +5708,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const attackerSize = SIZE_STEPS[this.document.system.effectiveCombatSize ?? "normal"] ?? 0;
       const targets = [...game.user.targets];
       if (targets.length > 0) {
-        const targetSize = SIZE_STEPS[((_f = (_e = targets[0].actor) == null ? void 0 : _e.system) == null ? void 0 : _f.effectiveCombatSize) ?? "normal"] ?? 0;
+        const targetSize = SIZE_STEPS[((_g = (_f = targets[0].actor) == null ? void 0 : _f.system) == null ? void 0 : _g.effectiveCombatSize) ?? "normal"] ?? 0;
         const sizeDiff = attackerSize - targetSize;
         if (sizeDiff !== 0) {
           const sizeBonus = sizeDiff * 10;
@@ -5654,7 +5723,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let squadBonus = 0;
     let maxSquadTargets = 1;
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
-      item.type === "weapon" ? !!item.system.isRanged : ((_g = item.system.calculator) == null ? void 0 : _g.range) > 10;
+      item.type === "weapon" ? !!item.system.isRanged : ((_h = item.system.calculator) == null ? void 0 : _h.range) > 10;
       if (isSquadOrHorde) {
         maxSquadTargets = squadSize;
         maxSquadTargets = Math.max(1, maxSquadTargets);
@@ -5736,7 +5805,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
         damage = weaponOverride.system.calculatedDamage;
       }
-      const isRanged = item.type === "weapon" ? !!item.system.isRanged : weaponOverride ? !!weaponOverride.system.isRanged : ((_h = item.system.calculator) == null ? void 0 : _h.range) > 10;
+      const isRanged = item.type === "weapon" ? !!item.system.isRanged : weaponOverride ? !!weaponOverride.system.isRanged : ((_i = item.system.calculator) == null ? void 0 : _i.range) > 10;
       const isCrit = difficulty > 0 && dcTotal >= difficulty * 2;
       let forceCrit = false;
       if (item && item.system.tags) {
@@ -5754,20 +5823,43 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         else if (item.system.fireRate === "auto") multiVal = 10;
         else if (item.system.fireRate === "custom") multiVal = item.system.fireRateCustom || 1;
         if (item.system.consumeAmmo) {
-          const currentAmmo = ((_i = item.system.ammo) == null ? void 0 : _i.current) || 0;
-          if (currentAmmo < multiVal) {
-            if (currentAmmo <= 0) {
-              return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", { item: item.name }));
-            }
-            ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", { count: currentAmmo }));
-            multiVal = currentAmmo;
+          const ammoItemId = item.system.ammoItemId ?? "custom";
+          if (!ammoItemId) {
+            return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoAmmoSelected", { item: item.name }));
           }
-          await item.update({ "system.ammo.current": Math.max(0, currentAmmo - multiVal) });
+          if (ammoItemId === "custom") {
+            const currentAmmo = ((_j = item.system.ammo) == null ? void 0 : _j.current) || 0;
+            if (currentAmmo < multiVal) {
+              if (currentAmmo <= 0) {
+                return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", { item: item.name }));
+              }
+              ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", { count: currentAmmo }));
+              multiVal = currentAmmo;
+            }
+            await item.update({ "system.ammo.current": Math.max(0, currentAmmo - multiVal) });
+          } else {
+            const ammoItem = this.document.items.get(ammoItemId);
+            if (!ammoItem) {
+              return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoAmmoSelected", { item: item.name }));
+            }
+            const currentAmmo = ((_k = ammoItem.system.uses) == null ? void 0 : _k.value) || 0;
+            if (currentAmmo < multiVal) {
+              if (currentAmmo <= 0) {
+                return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", { item: ammoItem.name }));
+              }
+              ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", { count: currentAmmo }));
+              multiVal = currentAmmo;
+            }
+            await ammoItem.update({ "system.uses.value": Math.max(0, currentAmmo - multiVal) });
+          }
+        }
+        if (item.system.firelockType) {
+          await item.update({ "system.isLoaded": false });
         }
       } else if (item.type === "ability") {
         multiVal = item.system.multiAttack || 1;
       }
-      const targetLimb = item.type === "ability" && ((_j = item.system.calculator) == null ? void 0 : _j.enabled) ? item.system.calculator.targetLimb : "none";
+      const targetLimb = item.type === "ability" && ((_l = item.system.calculator) == null ? void 0 : _l.enabled) ? item.system.calculator.targetLimb : "none";
       let armourPen = 0;
       if (item.type === "weapon" && item.system.hasArmourPen) {
         armourPen = item.system.armourPenetration || 0;
@@ -5779,7 +5871,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
       }
       const damageType = (weaponOverride ? weaponOverride.system.damageType : item.system.damageType) || "";
-      const isAoE = !!item.system.isAoE || ((_k = item.system.calculator) == null ? void 0 : _k.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
+      const isAoE = !!item.system.isAoE || ((_m = item.system.calculator) == null ? void 0 : _m.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
       let targets = isAoE ? [...game.user.targets] : tToken ? [tToken] : [];
       if (isSquadOrHorde) {
         targets = [...game.user.targets].slice(0, maxSquadTargets);
@@ -5787,7 +5879,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
       if (targets.length > 0) {
         let hitLocation;
-        if (item.type === "ability" && ((_l = item.system.calculator) == null ? void 0 : _l.enabled) && ((_m = item.system.calculator) == null ? void 0 : _m.targetLimb) && item.system.calculator.targetLimb !== "none") {
+        if (item.type === "ability" && ((_n = item.system.calculator) == null ? void 0 : _n.enabled) && ((_o = item.system.calculator) == null ? void 0 : _o.targetLimb) && item.system.calculator.targetLimb !== "none") {
           const limbKey = item.system.calculator.targetLimb;
           const limbOptions = {
             "head": "Head",
@@ -5991,7 +6083,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const isMagicAbility = abilityTags.some((t) => ["magic", "spell", "psychic", "alchemy", "divine"].includes(t));
       if (isMagicAbility) {
         let totalEffects = -1;
-        if ((_n = item.system.calculator) == null ? void 0 : _n.enabled) {
+        if ((_p = item.system.calculator) == null ? void 0 : _p.enabled) {
           const _c2 = item.system.calculator;
           totalEffects = (_c2.effects || 0) + Math.floor((_c2.rollBonus || 0) / 5) + (_c2.ignoreArmor || 0);
         }
@@ -6048,11 +6140,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         rolls: [roll],
         flags: {
           tams: {
-            inflictsStatusId: ((_o = item == null ? void 0 : item.system) == null ? void 0 : _o.inflictsStatusId) || "",
+            inflictsStatusId: ((_q = item == null ? void 0 : item.system) == null ? void 0 : _q.inflictsStatusId) || "",
             attackerActorId: this.document.id,
             attackerWeaponId: (item == null ? void 0 : item.id) || "",
-            hasSave: ((_p = item == null ? void 0 : item.system) == null ? void 0 : _p.hasSave) ?? false,
-            saveAgainst: ((_q = item == null ? void 0 : item.system) == null ? void 0 : _q.saveAgainst) ?? "",
+            hasSave: ((_r = item == null ? void 0 : item.system) == null ? void 0 : _r.hasSave) ?? false,
+            saveAgainst: ((_s = item == null ? void 0 : item.system) == null ? void 0 : _s.saveAgainst) ?? "",
             saveDC: finalTotal
           }
         }
@@ -7609,6 +7701,7 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.ability = TAMSAbilityData;
   CONFIG.Item.dataModels.equipment = TAMSEquipmentData;
   CONFIG.Item.dataModels.armor = TAMSArmorData;
+  CONFIG.Item.dataModels.ammo = TAMSAmmoData;
   CONFIG.Item.dataModels.consumable = TAMSConsumableData;
   CONFIG.Item.dataModels.tool = TAMSToolData;
   CONFIG.Item.dataModels.shield = TAMSShieldData;

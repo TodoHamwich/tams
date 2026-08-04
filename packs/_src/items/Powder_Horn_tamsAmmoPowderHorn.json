@@ -1,6 +1,6 @@
 {
   "name": "Powder Horn",
-  "type": "consumable",
+  "type": "ammo",
   "img": "icons/svg/item-bag.svg",
   "system": {
     "quantity": 1,

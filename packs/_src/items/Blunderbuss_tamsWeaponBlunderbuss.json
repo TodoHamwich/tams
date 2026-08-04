@@ -31,7 +31,10 @@
     "isAoE": true,
     "damageType": "",
     "tags": "Ranged, Firearm, AoE",
-    "description": ""
+    "description": "",
+    "firelockType": "blunderbuss",
+    "isLoaded": true,
+    "misfireThreshold": 0
   },
   "flags": {},
   "_id": "tamsWeaponBlunderbuss",

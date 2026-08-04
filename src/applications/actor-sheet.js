@@ -50,7 +50,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         callGroupCheck: TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: TAMSActorSheet.prototype._onItemSendDescription,
         honorEdit: TAMSActorSheet.prototype._onHonorEdit,
-        raceRemove: TAMSActorSheet.prototype._onRaceRemove
+        raceRemove: TAMSActorSheet.prototype._onRaceRemove,
+        toggleFirearmLoaded: TAMSActorSheet.prototype._onToggleFirearmLoaded
       }
     }, { inplace: false });
   }
@@ -210,6 +211,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const abilities = [];
     const inventoryArmor = [];
     const inventoryConsumables = [];
+    const inventoryAmmo = [];
     const inventoryTools = [];
     const inventoryQuestItems = [];
     const inventoryMisc = [];
@@ -284,6 +286,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       else if (i.type === 'skill') skills.push(itemData);
       else if (i.type === 'ability') abilities.push(itemData);
       else if (i.type === 'armor' || i.type === 'shield') inventoryArmor.push(itemData);
+      else if (i.type === 'ammo') inventoryAmmo.push(itemData);
       else if (i.type === 'consumable') inventoryConsumables.push(itemData);
       else if (i.type === 'tool') inventoryTools.push(itemData);
       else if (i.type === 'questItem') inventoryQuestItems.push(itemData);
@@ -291,6 +294,23 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       else if (i.type === 'trait') traits.push(itemData);
       else if (i.type === 'race') { /* displayed in description tab, not inventory */ }
       else if (i.type === 'equipment') inventoryMisc.push(itemData);
+    }
+
+    // Annotate ranged weapons with ammo selector data
+    const ammoItems = inventoryAmmo;
+    for (const weapon of weapons) {
+      if (!weapon.system.isRanged) continue;
+      const linkedId = weapon.system.ammoItemId;
+      weapon.ammoOptions = ammoItems.map(a => ({
+        id: a.id,
+        name: a.name,
+        current: a.system.uses.value,
+        max: a.system.uses.max,
+        selected: a.id === linkedId
+      }));
+      weapon.linkedAmmo = (linkedId && linkedId !== 'custom')
+        ? (ammoItems.find(a => a.id === linkedId) || null)
+        : null;
     }
 
     // --- Unified Inventory Grouping ---
@@ -331,8 +351,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     }
 
     const rawSections = [equippedSection, ...Object.values(containerSectionMap), stowedSection];
-    const typeLabels = { weapon: "Weapons", armor: "Armor", consumable: "Consumables", tool: "Tools", questItem: "Quest Items", equipment: "Miscellaneous" };
-    const typeOrder = ["Weapons", "Armor", "Consumables", "Tools", "Quest Items", "Miscellaneous"];
+    const typeLabels = { weapon: "Weapons", armor: "Armor", ammo: "Ammunition", consumable: "Consumables", tool: "Tools", questItem: "Quest Items", equipment: "Miscellaneous" };
+    const typeOrder = ["Weapons", "Armor", "Ammunition", "Consumables", "Tools", "Quest Items", "Miscellaneous"];
 
     // --- Sorting / filtering / search state ---
     const sortKey = this._inventorySort || "name";
@@ -386,6 +406,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       weapon: "TAMS.Weapon",
       armor: "TAMS.Armor",
       shield: "TAMS.Shield",
+      ammo: "TAMS.Ammo",
       consumable: "TAMS.Consumable",
       tool: "TAMS.Tool",
       questItem: "TAMS.QuestItem",
@@ -398,6 +419,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     context.equippedWeapons = equippedWeapons;
     context.inventoryWeapons = inventoryWeapons;
     context.inventoryArmor = inventoryArmor;
+    context.inventoryAmmo = inventoryAmmo;
     context.inventoryConsumables = inventoryConsumables;
     context.inventoryTools = inventoryTools;
     context.inventoryQuestItems = inventoryQuestItems;
@@ -652,6 +674,13 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const granted = this.document.items.filter(i => i.getFlag('tams', 'raceGranted'));
     const toDelete = [...existing.map(i => i.id), ...granted.map(i => i.id)];
     if (toDelete.length) await this.document.deleteEmbeddedDocuments("Item", toDelete);
+  }
+
+  async _onToggleFirearmLoaded(event, target) {
+    const itemId = target.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+    await item.update({"system.isLoaded": !item.system.isLoaded});
   }
 
   /**
@@ -1724,6 +1753,31 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const isMaxRoll = dataset.isMaxRoll === "true";
     const effectiveStat = statValue + statMod;
 
+    // Firearm checks: loaded state and misfire
+    if (item?.type === 'weapon' && item.system.firelockType) {
+        if (!item.system.isLoaded) {
+            return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.FirearmNotLoaded", {item: item.name}));
+        }
+        const ammoId = item.system.ammoItemId ?? "custom";
+        if (item.system.firelockType === "matchlock" && item.system.consumeAmmo && ammoId && ammoId !== "custom") {
+            const ammoItem = this.document.items.get(ammoId);
+            if (ammoItem?.system.misfireRisk) {
+                const threshold = item.system.misfireThreshold ?? 4;
+                const misfireRoll = (await new Roll("1d100").evaluate()).total;
+                if (misfireRoll <= threshold) {
+                    const currentAmmo = ammoItem.system.uses?.value || 0;
+                    if (currentAmmo > 0) await ammoItem.update({"system.uses.value": currentAmmo - 1});
+                    await item.update({"system.isLoaded": false});
+                    await ChatMessage.create({
+                        content: `<div class="tams-roll tams-misfire"><strong>⚠️ ${game.i18n.localize("TAMS.Firearm.MisfireLabel")}</strong> — ${game.i18n.format("TAMS.Firearm.MisfireResult", {weapon: item.name, roll: misfireRoll, threshold})}</div>`,
+                        speaker: ChatMessage.getSpeaker({actor: this.document})
+                    });
+                    return;
+                }
+            }
+        }
+    }
+
     let roll, rawResult, originalResult, rerolled = false, isJammed = false;
 
     if (isMaxRoll) {
@@ -1895,15 +1949,38 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             else if (item.system.fireRate === 'custom') multiVal = item.system.fireRateCustom || 1;
             
             if (item.system.consumeAmmo) {
-                const currentAmmo = item.system.ammo?.current || 0;
-                if (currentAmmo < multiVal) {
-                    if (currentAmmo <= 0) {
-                        return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: item.name}));
-                    }
-                    ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", {count: currentAmmo}));
-                    multiVal = currentAmmo;
+                const ammoItemId = item.system.ammoItemId ?? "custom";
+                if (!ammoItemId) {
+                    return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoAmmoSelected", {item: item.name}));
                 }
-                await item.update({"system.ammo.current": Math.max(0, currentAmmo - multiVal)});
+                if (ammoItemId === "custom") {
+                    const currentAmmo = item.system.ammo?.current || 0;
+                    if (currentAmmo < multiVal) {
+                        if (currentAmmo <= 0) {
+                            return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: item.name}));
+                        }
+                        ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", {count: currentAmmo}));
+                        multiVal = currentAmmo;
+                    }
+                    await item.update({"system.ammo.current": Math.max(0, currentAmmo - multiVal)});
+                } else {
+                    const ammoItem = this.document.items.get(ammoItemId);
+                    if (!ammoItem) {
+                        return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoAmmoSelected", {item: item.name}));
+                    }
+                    const currentAmmo = ammoItem.system.uses?.value || 0;
+                    if (currentAmmo < multiVal) {
+                        if (currentAmmo <= 0) {
+                            return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: ammoItem.name}));
+                        }
+                        ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", {count: currentAmmo}));
+                        multiVal = currentAmmo;
+                    }
+                    await ammoItem.update({"system.uses.value": Math.max(0, currentAmmo - multiVal)});
+                }
+            }
+            if (item.system.firelockType) {
+                await item.update({"system.isLoaded": false});
             }
         } else if (item.type === 'ability') {
             multiVal = item.system.multiAttack || 1;

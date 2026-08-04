@@ -13,7 +13,7 @@
     <section class="sheet-body" data-scrollable data-scroll-id="item-body">
         <div class="flexcol">
             {{!-- Common Physical Fields --}}
-            {{#if (or (eq item.type 'weapon') (eq item.type 'equipment') (eq item.type 'armor') (eq item.type 'consumable') (eq item.type 'tool') (eq item.type 'shield') (eq item.type 'questItem') (eq item.type 'backpack'))}}
+            {{#if (or (eq item.type 'weapon') (eq item.type 'equipment') (eq item.type 'armor') (eq item.type 'ammo') (eq item.type 'consumable') (eq item.type 'tool') (eq item.type 'shield') (eq item.type 'questItem') (eq item.type 'backpack'))}}
             <div class="flexrow">
                 <label>{{localize 'TAMS.Quantity'}}</label>
                 <input type="number" name="system.quantity" value="{{system.quantity}}"/>
@@ -187,6 +187,32 @@
                 </div>
                 <hr>
 
+                <h3>{{localize "TAMS.WeaponSheet.FirearmMechanics"}}</h3>
+                <div class="grid grid-2col">
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.FirelockType'}}</label>
+                        <select name="system.firelockType">
+                            <option value="" {{#if (eq system.firelockType "")}}selected{{/if}}>— {{localize 'TAMS.FirelockNone'}} —</option>
+                            <option value="matchlock" {{#if (eq system.firelockType "matchlock")}}selected{{/if}}>{{localize 'TAMS.FirelockMatchlock'}}</option>
+                            <option value="flintlock" {{#if (eq system.firelockType "flintlock")}}selected{{/if}}>{{localize 'TAMS.FirelockFlintlock'}}</option>
+                            <option value="wheellock" {{#if (eq system.firelockType "wheellock")}}selected{{/if}}>{{localize 'TAMS.FirelockWheellock'}}</option>
+                            <option value="blunderbuss" {{#if (eq system.firelockType "blunderbuss")}}selected{{/if}}>{{localize 'TAMS.FirelockBlunderbuss'}}</option>
+                        </select>
+                    </div>
+                    {{#if system.firelockType}}
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.IsLoaded'}}</label>
+                        <input type="checkbox" name="system.isLoaded" {{checked system.isLoaded}}/>
+                    </div>
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.MisfireThreshold'}}</label>
+                        <input type="number" name="system.misfireThreshold" value="{{system.misfireThreshold}}" min="0" max="100"/>
+                        <span style="font-size:11px; color:#888; margin-left:4px;">/ 100</span>
+                    </div>
+                    {{/if}}
+                </div>
+                <hr>
+
                 <h3>{{localize "TAMS.WeaponSheet.DamageAndPenalties"}}</h3>
                 <div class="grid grid-2col">
                     <div class="flexrow">
@@ -315,6 +341,18 @@
             {{/if}}
             {{/if}}
 
+            {{#if (eq item.type "ammo")}}
+            <div class="flexrow">
+                <label>{{localize 'TAMS.Uses'}}</label>
+                <input type="number" name="system.uses.value" value="{{system.uses.value}}"/>
+                <span> / </span>
+                <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
+            </div>
+            <div class="flexrow">
+                <label>{{localize 'TAMS.MisfireRiskQ'}}</label>
+                <input type="checkbox" name="system.misfireRisk" {{checked system.misfireRisk}}/>
+            </div>
+            {{/if}}
             {{#if (eq item.type "consumable")}}
             <div class="flexrow">
                 <label>{{localize 'TAMS.Uses'}}</label>

@@ -31,7 +31,10 @@
     "isAoE": false,
     "damageType": "",
     "tags": "Ranged, Firearm",
-    "description": ""
+    "description": "",
+    "firelockType": "matchlock",
+    "isLoaded": true,
+    "misfireThreshold": 4
   },
   "flags": {},
   "_id": "tamsWeaponMatchlockMusket",

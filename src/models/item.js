@@ -24,6 +24,10 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
         current: new fields.NumberField({initial: 0, integer: true, min: 0}),
         total: new fields.NumberField({initial: 0, integer: true, min: 0})
       }),
+      ammoItemId: new fields.StringField({initial: "custom"}),
+      firelockType: new fields.StringField({initial: ""}),
+      isLoaded: new fields.BooleanField({initial: true}),
+      misfireThreshold: new fields.NumberField({initial: 4, integer: true, min: 0, max: 100}),
       fireRate: new fields.StringField({initial: "1"}),
       fireRateCustom: new fields.NumberField({initial: 1, nullable: true}),
       attackStat: new fields.StringField({initial: "default"}),
@@ -120,6 +124,28 @@ export class TAMSArmorData extends foundry.abstract.TypeDataModel {
         leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
         rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) })
       }),
+      tags: new fields.StringField({initial: ""}),
+      description: new fields.HTMLField({initial: ""})
+    };
+  }
+}
+
+/**
+ * DataModel for Ammunition items.
+ */
+export class TAMSAmmoData extends foundry.abstract.TypeDataModel {
+  static defineSchema() {
+    const fields = foundry.data.fields;
+    return {
+      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
+      size: new fields.StringField({initial: "small"}),
+      location: new fields.StringField({initial: "stowed"}),
+      slots: new fields.NumberField({initial: 1, integer: true, min: 1}),
+      uses: new fields.SchemaField({
+        value: new fields.NumberField({initial: 0}),
+        max: new fields.NumberField({initial: 0})
+      }),
+      misfireRisk: new fields.BooleanField({initial: false}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };

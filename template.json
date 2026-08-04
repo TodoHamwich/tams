@@ -133,7 +133,7 @@
     }
   },
   "Item": {
-    "types": ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect", "race"],
+    "types": ["weapon", "skill", "ability", "equipment", "armor", "ammo", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect", "race"],
     "weapon": {
       "familiarity": 0,
       "quantity": 1,
@@ -238,6 +238,15 @@
         "leftLeg": { "value": 0, "max": 0 },
         "rightLeg": { "value": 0, "max": 0 }
       },
+      "tags": "",
+      "description": ""
+    },
+    "ammo": {
+      "quantity": 1,
+      "size": "small",
+      "location": "stowed",
+      "uses": { "value": 0, "max": 0 },
+      "misfireRisk": false,
       "tags": "",
       "description": ""
     },

@@ -1,5 +1,5 @@
 import { TAMSCharacterData } from './models/character.js';
-import { TAMSWeaponData, TAMSSkillData, TAMSEquipmentData, TAMSArmorData, TAMSConsumableData, TAMSToolData, TAMSShieldData, TAMSQuestItemData, TAMSBackpackData, TAMSAbilityData, TAMSTraitData, TAMSStatusEffectData, TAMSRaceData } from './models/item.js';
+import { TAMSWeaponData, TAMSSkillData, TAMSEquipmentData, TAMSArmorData, TAMSAmmoData, TAMSConsumableData, TAMSToolData, TAMSShieldData, TAMSQuestItemData, TAMSBackpackData, TAMSAbilityData, TAMSTraitData, TAMSStatusEffectData, TAMSRaceData } from './models/item.js';
 import { TAMSActor } from './documents/actor.js';
 import { TAMSItem } from './documents/item.js';
 import { TAMSActorSheet } from './applications/actor-sheet.js';
@@ -113,6 +113,7 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.ability = TAMSAbilityData;
   CONFIG.Item.dataModels.equipment = TAMSEquipmentData;
   CONFIG.Item.dataModels.armor = TAMSArmorData;
+  CONFIG.Item.dataModels.ammo = TAMSAmmoData;
   CONFIG.Item.dataModels.consumable = TAMSConsumableData;
   CONFIG.Item.dataModels.tool = TAMSToolData;
   CONFIG.Item.dataModels.shield = TAMSShieldData;

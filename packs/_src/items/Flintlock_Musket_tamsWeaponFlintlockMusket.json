@@ -31,7 +31,10 @@
     "isAoE": false,
     "damageType": "",
     "tags": "Ranged, Firearm",
-    "description": ""
+    "description": "",
+    "firelockType": "flintlock",
+    "isLoaded": true,
+    "misfireThreshold": 0
   },
   "flags": {},
   "_id": "tamsWeaponFlintlockMusket",
