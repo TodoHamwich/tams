@@ -1,0 +1,24 @@
+2026/08/04-17:00:44.791642 7fe5127bf6c0 Recovering log #7
+2026/08/04-17:00:44.791780 7fe5127bf6c0 Level-0 table #9: started
+2026/08/04-17:00:44.800303 7fe5127bf6c0 Level-0 table #9: 20585 bytes OK
+2026/08/04-17:00:44.815548 7fe5127bf6c0 Delete type=0 #7
+2026/08/04-17:00:44.815571 7fe5127bf6c0 Delete type=3 #6
+2026/08/04-17:00:44.818596 7fe4f3fff6c0 Level-0 table #12: started
+2026/08/04-17:00:44.823233 7fe4f3fff6c0 Level-0 table #12: 15008 bytes OK
+2026/08/04-17:00:44.834129 7fe4f3fff6c0 Delete type=0 #10
+2026/08/04-17:00:44.834196 7fe4f3fff6c0 Manual compaction at level-0 from '!items!tamsAmmoApostles' @ 72057594037927935 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at '!items!tamsWeaponSickle' @ 238 : 1
+2026/08/04-17:00:44.834201 7fe4f3fff6c0 Compacting 2@0 + 0@1 files
+2026/08/04-17:00:44.843921 7fe4f3fff6c0 Generated table #13@0: 122 keys, 14999 bytes
+2026/08/04-17:00:44.843929 7fe4f3fff6c0 Compacted 2@0 + 0@1 files => 14999 bytes
+2026/08/04-17:00:44.858814 7fe4f3fff6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/08/04-17:00:44.858847 7fe4f3fff6c0 Delete type=2 #9
+2026/08/04-17:00:44.858890 7fe4f3fff6c0 Delete type=2 #12
+2026/08/04-17:00:44.858918 7fe4f3fff6c0 Manual compaction at level-0 from '!items!tamsWeaponSickle' @ 238 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at (end)
+2026/08/04-17:00:44.858929 7fe4f3fff6c0 Manual compaction at level-1 from '!items!tamsAmmoApostles' @ 72057594037927935 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at '!items!tamsWeaponWheellockPistol' @ 363 : 1
+2026/08/04-17:00:44.858930 7fe4f3fff6c0 Compacting 1@1 + 1@2 files
+2026/08/04-17:00:44.863756 7fe4f3fff6c0 Generated table #14@1: 122 keys, 14999 bytes
+2026/08/04-17:00:44.863764 7fe4f3fff6c0 Compacted 1@1 + 1@2 files => 14999 bytes
+2026/08/04-17:00:44.873302 7fe4f3fff6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/08/04-17:00:44.873338 7fe4f3fff6c0 Delete type=2 #5
+2026/08/04-17:00:44.873389 7fe4f3fff6c0 Delete type=2 #13
+2026/08/04-17:00:44.873420 7fe4f3fff6c0 Manual compaction at level-1 from '!items!tamsWeaponWheellockPistol' @ 363 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at (end)

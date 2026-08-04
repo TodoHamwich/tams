@@ -22,10 +22,7 @@ package-lock.json
 .claude/
 CLAUDE.md
 
-# Compiled LevelDB packs — built from packs/_src/ via `npm run pack`, not committed
-packs/macros/
-packs/status-effects/
-packs/*.db
+# Compiled LevelDB packs are committed so Forge/GitHub installs work out of the box
 
 # Screenshots and images
 *.png
