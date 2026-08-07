@@ -183,6 +183,21 @@
                         <span> / </span>
                         <input type="number" name="system.ammo.total" value="{{system.ammo.total}}" data-dtype="Number"/>
                     </div>
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.MagazineCapacity'}}</label>
+                        <input type="number" name="system.magazineCapacity" value="{{system.magazineCapacity}}" min="0"/>
+                    </div>
+                    <div class="flexrow">
+                        <label>{{localize 'TAMS.RangeCategoryLabel'}}</label>
+                        <select name="system.rangeCategory">
+                            <option value="" {{#if (eq system.rangeCategory "")}}selected{{/if}}>— {{localize 'TAMS.RangeCategory.None'}} —</option>
+                            <option value="pistol" {{#if (eq system.rangeCategory "pistol")}}selected{{/if}}>{{localize 'TAMS.RangeCategory.Pistol'}}</option>
+                            <option value="shotgun" {{#if (eq system.rangeCategory "shotgun")}}selected{{/if}}>{{localize 'TAMS.RangeCategory.Shotgun'}}</option>
+                            <option value="lightRifle" {{#if (eq system.rangeCategory "lightRifle")}}selected{{/if}}>{{localize 'TAMS.RangeCategory.LightRifle'}}</option>
+                            <option value="mediumRifle" {{#if (eq system.rangeCategory "mediumRifle")}}selected{{/if}}>{{localize 'TAMS.RangeCategory.MediumRifle'}}</option>
+                            <option value="heavyRifle" {{#if (eq system.rangeCategory "heavyRifle")}}selected{{/if}}>{{localize 'TAMS.RangeCategory.HeavyRifle'}}</option>
+                        </select>
+                    </div>
                     {{/if}}
                 </div>
                 <hr>
@@ -190,20 +205,33 @@
                 <h3>{{localize "TAMS.WeaponSheet.FirearmMechanics"}}</h3>
                 <div class="grid grid-2col">
                     <div class="flexrow">
-                        <label>{{localize 'TAMS.FirelockType'}}</label>
-                        <select name="system.firelockType">
-                            <option value="" {{#if (eq system.firelockType "")}}selected{{/if}}>— {{localize 'TAMS.FirelockNone'}} —</option>
-                            <option value="matchlock" {{#if (eq system.firelockType "matchlock")}}selected{{/if}}>{{localize 'TAMS.FirelockMatchlock'}}</option>
-                            <option value="flintlock" {{#if (eq system.firelockType "flintlock")}}selected{{/if}}>{{localize 'TAMS.FirelockFlintlock'}}</option>
-                            <option value="wheellock" {{#if (eq system.firelockType "wheellock")}}selected{{/if}}>{{localize 'TAMS.FirelockWheellock'}}</option>
-                            <option value="blunderbuss" {{#if (eq system.firelockType "blunderbuss")}}selected{{/if}}>{{localize 'TAMS.FirelockBlunderbuss'}}</option>
+                        <label>{{localize 'TAMS.FirearmTypeLabel'}}</label>
+                        <select name="system.firearmType">
+                            <option value="" {{#if (eq system.firearmType "")}}selected{{/if}}>— {{localize 'TAMS.FirelockNone'}} —</option>
+                            <optgroup label="{{localize 'TAMS.FirearmType.EarlyFirearms'}}">
+                                <option value="matchlock" {{#if (eq system.firearmType "matchlock")}}selected{{/if}}>{{localize 'TAMS.FirelockMatchlock'}}</option>
+                                <option value="flintlock" {{#if (eq system.firearmType "flintlock")}}selected{{/if}}>{{localize 'TAMS.FirelockFlintlock'}}</option>
+                                <option value="wheellock" {{#if (eq system.firearmType "wheellock")}}selected{{/if}}>{{localize 'TAMS.FirelockWheellock'}}</option>
+                                <option value="blunderbuss" {{#if (eq system.firearmType "blunderbuss")}}selected{{/if}}>{{localize 'TAMS.FirelockBlunderbuss'}}</option>
+                            </optgroup>
+                            <optgroup label="{{localize 'TAMS.FirearmType.ModernFirearms'}}">
+                                <option value="pistol-sa" {{#if (eq system.firearmType "pistol-sa")}}selected{{/if}}>{{localize 'TAMS.FirearmType.PistolSA'}}</option>
+                                <option value="revolver" {{#if (eq system.firearmType "revolver")}}selected{{/if}}>{{localize 'TAMS.FirearmType.Revolver'}}</option>
+                                <option value="smg" {{#if (eq system.firearmType "smg")}}selected{{/if}}>{{localize 'TAMS.FirearmType.SMG'}}</option>
+                                <option value="shotgun-pump" {{#if (eq system.firearmType "shotgun-pump")}}selected{{/if}}>{{localize 'TAMS.FirearmType.ShotgunPump'}}</option>
+                                <option value="shotgun-sa" {{#if (eq system.firearmType "shotgun-sa")}}selected{{/if}}>{{localize 'TAMS.FirearmType.ShotgunSA'}}</option>
+                                <option value="carbine" {{#if (eq system.firearmType "carbine")}}selected{{/if}}>{{localize 'TAMS.FirearmType.Carbine'}}</option>
+                                <option value="assault-rifle" {{#if (eq system.firearmType "assault-rifle")}}selected{{/if}}>{{localize 'TAMS.FirearmType.AssaultRifle'}}</option>
+                                <option value="battle-rifle" {{#if (eq system.firearmType "battle-rifle")}}selected{{/if}}>{{localize 'TAMS.FirearmType.BattleRifle'}}</option>
+                                <option value="dmr" {{#if (eq system.firearmType "dmr")}}selected{{/if}}>{{localize 'TAMS.FirearmType.DMR'}}</option>
+                                <option value="bolt-sniper" {{#if (eq system.firearmType "bolt-sniper")}}selected{{/if}}>{{localize 'TAMS.FirearmType.BoltSniper'}}</option>
+                                <option value="semi-sniper" {{#if (eq system.firearmType "semi-sniper")}}selected{{/if}}>{{localize 'TAMS.FirearmType.SemiSniper'}}</option>
+                                <option value="lmg" {{#if (eq system.firearmType "lmg")}}selected{{/if}}>{{localize 'TAMS.FirearmType.LMG'}}</option>
+                                <option value="hmg" {{#if (eq system.firearmType "hmg")}}selected{{/if}}>{{localize 'TAMS.FirearmType.HMG'}}</option>
+                            </optgroup>
                         </select>
                     </div>
-                    {{#if system.firelockType}}
-                    <div class="flexrow">
-                        <label>{{localize 'TAMS.IsLoaded'}}</label>
-                        <input type="checkbox" name="system.isLoaded" {{checked system.isLoaded}}/>
-                    </div>
+                    {{#if isEarlyFirearm}}
                     <div class="flexrow">
                         <label>{{localize 'TAMS.MisfireThreshold'}}</label>
                         <input type="number" name="system.misfireThreshold" value="{{system.misfireThreshold}}" min="0" max="100"/>
@@ -351,6 +379,10 @@
             <div class="flexrow">
                 <label>{{localize 'TAMS.MisfireRiskQ'}}</label>
                 <input type="checkbox" name="system.misfireRisk" {{checked system.misfireRisk}}/>
+            </div>
+            <div class="flexrow">
+                <label>{{localize 'TAMS.IsSlugQ'}}</label>
+                <input type="checkbox" name="system.isSlug" {{checked system.isSlug}}/>
             </div>
             {{/if}}
             {{#if (eq item.type "consumable")}}
@@ -968,6 +1000,56 @@
                     <option value="">{{localize 'TAMS.None'}}</option>
                     {{selectOptions creatureSizeOptions selected=system.sizeGrantCombat localize=true}}
                 </select>
+            </div>
+            <hr>
+
+            {{!-- Injury Check Bonus --}}
+            <div class="flexrow" style="align-items: center; margin-bottom: 8px;">
+                <label style="flex: 1;" title="{{localize 'TAMS.Race.InjuryCheckBonusHint'}}">{{localize 'TAMS.Race.InjuryCheckBonus'}}</label>
+                <input type="number" name="system.injuryCheckBonus" value="{{system.injuryCheckBonus}}" style="flex: 0 0 60px; text-align: center;"/>
+            </div>
+            <hr>
+
+            {{!-- Granted Resistances --}}
+            <div class="flexrow" style="align-items: center; margin-bottom: 4px;">
+                <h3 style="margin: 0; border: none; flex: 1;">{{localize 'TAMS.Race.Resistances'}}</h3>
+                <a data-action="raceResistanceCreate" title="{{localize 'TAMS.Race.AddResistance'}}" style="flex: 0 0 20px; text-align: right;">
+                    <i class="fas fa-plus"></i>
+                </a>
+            </div>
+            <div class="flexcol" style="gap: 6px; margin-bottom: 8px;">
+                {{#each enrichedResistances as |res|}}
+                <div data-index="{{res.index}}">
+                    {{!-- Main row: damage type / category / value / delete --}}
+                    <div class="flexrow" style="align-items: center; gap: 5px;">
+                        <input type="text" name="system.resistances.{{res.index}}.damageType" value="{{res.damageType}}" placeholder="blunt" style="flex: 1;"/>
+                        <select name="system.resistances.{{res.index}}.category" style="flex: 1;">
+                            <option value="resistance"    {{#if (eq res.category "resistance")}}selected{{/if}}>{{localize 'TAMS.Resistance'}}</option>
+                            <option value="immunity"      {{#if (eq res.category "immunity")}}selected{{/if}}>{{localize 'TAMS.Immunity'}}</option>
+                            <option value="vulnerability" {{#if (eq res.category "vulnerability")}}selected{{/if}}>{{localize 'TAMS.Vulnerability'}}</option>
+                            <option value="healing"       {{#if (eq res.category "healing")}}selected{{/if}}>{{localize 'TAMS.Healing'}}</option>
+                        </select>
+                        <input type="number" name="system.resistances.{{res.index}}.value" value="{{res.value}}" style="flex: 0 0 50px; text-align: center;"/>
+                        <a data-action="raceResistanceDelete" data-index="{{res.index}}" style="flex: 0 0 20px; text-align: right;"><i class="fas fa-trash"></i></a>
+                    </div>
+                    {{!-- Limb scope sub-row --}}
+                    <details class="limb-filter" {{#unless res.isGlobal}}open{{/unless}} style="margin-top: 3px; text-align: center;">
+                        <summary style="font-size: 0.72em; color: #888; cursor: pointer; list-style: none; display: block;">{{localize 'TAMS.Race.LimbScope.Label'}} <span class="limb-arrow-down">▼</span><span class="limb-arrow-up">▲</span></summary>
+                        <div class="flexrow" style="justify-content: center; gap: 2px; flex-wrap: nowrap; margin-top: 2px;">
+                        {{#each res.limbButtons as |btn|}}
+                        <a data-action="raceResistanceLimbToggle" data-limb-key="{{btn.key}}"
+                           title="{{localize btn.i18nKey}}"
+                           style="font-size: 0.68em; padding: 0 3px; border-radius: 3px; cursor: pointer; white-space: nowrap;
+                                  border: 1px solid {{#if btn.active}}#2e7d32{{else}}#aaa{{/if}};
+                                  background: {{#if btn.active}}rgba(46,125,50,0.18){{else}}transparent{{/if}};
+                                  color: {{#if btn.active}}#2e7d32{{else}}#666{{/if}};">
+                            {{localize btn.abbrevKey}}
+                        </a>
+                        {{/each}}
+                        </div>
+                    </details>
+                </div>
+                {{/each}}
             </div>
             <hr>
 

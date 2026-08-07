@@ -44,14 +44,14 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         setInventoryFilter: TAMSActorSheet.prototype._onSetInventoryFilter,
         resistanceAdd: TAMSActorSheet.prototype._onResistanceAdd,
         resistanceDelete: TAMSActorSheet.prototype._onResistanceDelete,
+        resistanceLimbToggle: TAMSActorSheet.prototype._onResistanceLimbToggle,
         barrierAdd: TAMSActorSheet.prototype._onBarrierAdd,
         barrierClear: TAMSActorSheet.prototype._onBarrierClear,
         sceneReset: TAMSActorSheet.prototype._onSceneReset,
         callGroupCheck: TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: TAMSActorSheet.prototype._onItemSendDescription,
         honorEdit: TAMSActorSheet.prototype._onHonorEdit,
-        raceRemove: TAMSActorSheet.prototype._onRaceRemove,
-        toggleFirearmLoaded: TAMSActorSheet.prototype._onToggleFirearmLoaded
+        raceRemove: TAMSActorSheet.prototype._onRaceRemove
       }
     }, { inplace: false });
   }
@@ -472,7 +472,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       "fire": "TAMS.DamageType.fire",
       "magic": "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
-      "acid": "TAMS.DamageType.acid"
+      "acid": "TAMS.DamageType.acid",
+      "divine": "TAMS.DamageType.divine"
     };
 
     const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.Backpack" };
@@ -480,6 +481,32 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         locationOptions[bp.id] = game.i18n.format("TAMS.LocationOptions.InContainer", {name: bp.name});
     }
     context.locationOptions = locationOptions;
+
+    const LIMB_KEYS = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+    const LIMB_I18N = {
+        head: 'TAMS.HitLocations.Head', thorax: 'TAMS.HitLocations.Thorax',
+        stomach: 'TAMS.HitLocations.Stomach', leftArm: 'TAMS.HitLocations.LeftArm',
+        rightArm: 'TAMS.HitLocations.RightArm', leftLeg: 'TAMS.HitLocations.LeftLeg',
+        rightLeg: 'TAMS.HitLocations.RightLeg'
+    };
+    const LIMB_ABBREV = {
+        head: 'TAMS.Race.LimbAbbrev.Head', thorax: 'TAMS.Race.LimbAbbrev.Thorax',
+        stomach: 'TAMS.Race.LimbAbbrev.Stomach', leftArm: 'TAMS.Race.LimbAbbrev.LeftArm',
+        rightArm: 'TAMS.Race.LimbAbbrev.RightArm', leftLeg: 'TAMS.Race.LimbAbbrev.LeftLeg',
+        rightLeg: 'TAMS.Race.LimbAbbrev.RightLeg'
+    };
+    context.enrichedResistances = (this.document.system.resistances ?? []).map((res, index) => {
+        const active = new Set(res.limbs ?? []);
+        return {
+            ...res, index,
+            isGlobal: active.size === 0,
+            limbButtons: LIMB_KEYS.map(key => ({
+                key, active: active.has(key),
+                i18nKey: LIMB_I18N[key],
+                abbrevKey: LIMB_ABBREV[key]
+            }))
+        };
+    });
   }
 
   /**
@@ -674,13 +701,6 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const granted = this.document.items.filter(i => i.getFlag('tams', 'raceGranted'));
     const toDelete = [...existing.map(i => i.id), ...granted.map(i => i.id)];
     if (toDelete.length) await this.document.deleteEmbeddedDocuments("Item", toDelete);
-  }
-
-  async _onToggleFirearmLoaded(event, target) {
-    const itemId = target.dataset.itemId;
-    const item = this.document.items.get(itemId);
-    if (!item) return;
-    await item.update({"system.isLoaded": !item.system.isLoaded});
   }
 
   /**
@@ -1753,13 +1773,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const isMaxRoll = dataset.isMaxRoll === "true";
     const effectiveStat = statValue + statMod;
 
-    // Firearm checks: loaded state and misfire
-    if (item?.type === 'weapon' && item.system.firelockType) {
-        if (!item.system.isLoaded) {
-            return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.FirearmNotLoaded", {item: item.name}));
-        }
+    // Firearm misfire check (matchlock only)
+    if (item?.type === 'weapon' && item.system.firearmType === "matchlock" && item.system.consumeAmmo) {
         const ammoId = item.system.ammoItemId ?? "custom";
-        if (item.system.firelockType === "matchlock" && item.system.consumeAmmo && ammoId && ammoId !== "custom") {
+        if (ammoId && ammoId !== "custom") {
             const ammoItem = this.document.items.get(ammoId);
             if (ammoItem?.system.misfireRisk) {
                 const threshold = item.system.misfireThreshold ?? 4;
@@ -1767,7 +1784,6 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 if (misfireRoll <= threshold) {
                     const currentAmmo = ammoItem.system.uses?.value || 0;
                     if (currentAmmo > 0) await ammoItem.update({"system.uses.value": currentAmmo - 1});
-                    await item.update({"system.isLoaded": false});
                     await ChatMessage.create({
                         content: `<div class="tams-roll tams-misfire"><strong>⚠️ ${game.i18n.localize("TAMS.Firearm.MisfireLabel")}</strong> — ${game.i18n.format("TAMS.Firearm.MisfireResult", {weapon: item.name, roll: misfireRoll, threshold})}</div>`,
                         speaker: ChatMessage.getSpeaker({actor: this.document})
@@ -1979,9 +1995,6 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                     await ammoItem.update({"system.uses.value": Math.max(0, currentAmmo - multiVal)});
                 }
             }
-            if (item.system.firelockType) {
-                await item.update({"system.isLoaded": false});
-            }
         } else if (item.type === 'ability') {
             multiVal = item.system.multiAttack || 1;
         }
@@ -2030,6 +2043,26 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             const pcs = targets.filter(t => !t.actor?.system?.settings?.isNPC);
             const npcs = targets.filter(t => !!t.actor?.system?.settings?.isNPC);
 
+            const RANGE_BANDS = {
+                pistol:      { close: 50,  medium: 75  },
+                shotgun:     { close: 5,   medium: 15  },
+                slug:        { close: 100, medium: 150 },
+                lightRifle:  { close: 200, medium: 300 },
+                mediumRifle: { close: 300, medium: 500 },
+                heavyRifle:  { close: 500, medium: 800 },
+            };
+            const _rangedWeapon = isRanged && item.type === 'weapon' && item.system.rangeCategory;
+            const attackerToken = _rangedWeapon
+                ? (this.document.token?.object || canvas.tokens.controlled.find(t => t.actor?.id === this.document.id))
+                : null;
+            const isShotgun = item.type === 'weapon' && item.system.rangeCategory === 'shotgun';
+            const _linkedAmmoId = item.type === 'weapon' ? (item.system.ammoItemId ?? 'custom') : 'custom';
+            const isSlugAmmo = isShotgun && _linkedAmmoId !== 'custom'
+                ? !!(this.document.items.get(_linkedAmmoId)?.system.isSlug)
+                : false;
+            const effectiveRangeCategory = (isShotgun && isSlugAmmo) ? 'slug' : (item.system.rangeCategory || '');
+            const rangeBands = RANGE_BANDS[effectiveRangeCategory] ?? null;
+
             damageInfo = `<div class="tams-targets-container">`;
 
             // Process PCs
@@ -2044,15 +2077,32 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                     tHits.push((i === 0 && !isAoE) ? hitLocation : await getHitLocation());
                 }
 
+                let targetDamage = damage;
+                let rangeInfo = "";
+                if (attackerToken && rangeBands) {
+                    const dist = canvas?.grid?.measureDistance(attackerToken.center, targetToken.center) ?? 0;
+                    const distM = Math.round(dist);
+                    if (dist <= rangeBands.close) {
+                        rangeInfo = `${distM}m`;
+                    } else if (dist <= rangeBands.medium) {
+                        targetDamage = Math.floor(targetDamage * 2 / 3);
+                        rangeInfo = `${distM}m (2/3)`;
+                    } else {
+                        targetDamage = Math.floor(targetDamage / 3);
+                        rangeInfo = `${distM}m (1/3)`;
+                    }
+                    if (isSlugAmmo) rangeInfo += " [Slug]";
+                }
+
                 damageInfo += `
                     <div class="tams-target-block" style="border: 1px solid #7a7971; padding: 5px; margin-bottom: 5px; background: rgba(0,0,0,0.05);">
                         <div class="roll-row"><span>Target:</span><span class="roll-value">${targetName}</span></div>
-                        <div class="roll-row"><b>Damage: ${damage}</b></div>
+                        <div class="roll-row"><b>Damage: ${targetDamage}${rangeInfo ? ` — ${rangeInfo}` : ""}</b></div>
                         <div class="roll-row"><b>Hit Locations: ${tHits.join(", ")}</b></div>
                         <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
                         <div class="roll-row" style="gap:6px; flex-wrap: wrap; justify-content: flex-start;">
                           <button class="tams-take-damage"
-                                  data-damage="${damage}"
+                                  data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-type="${damageType}"
                                   data-locations='${JSON.stringify(tHits)}'
@@ -2067,7 +2117,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-location="${hitLocation}"
-                                  data-damage="${damage}"
+                                  data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-type="${damageType}"
                                   data-is-ranged="${isRanged ? '1' : '0'}"
@@ -2081,7 +2131,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-location="${hitLocation}"
-                                  data-damage="${damage}"
+                                  data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-type="${damageType}"
                                   data-is-ranged="${isRanged ? '1' : '0'}"
@@ -2096,7 +2146,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-locations='${JSON.stringify(tHits)}'
-                                  data-damage="${damage}"
+                                  data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-type="${damageType}"
                                   data-target-actor-uuid="${targetActor?.uuid || ''}">Block</button>
@@ -2125,37 +2175,54 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 tHits.push((i === 0 && !isAoE) ? hitLocation : await getHitLocation());
             }
 
+            let targetDamage = damage;
+            let rangeInfo = "";
+            if (attackerToken && rangeBands) {
+                const dist = canvas?.grid?.measureDistance(attackerToken.center, targetToken.center) ?? 0;
+                const distM = Math.round(dist);
+                if (dist <= rangeBands.close) {
+                    rangeInfo = `${distM}m`;
+                } else if (dist <= rangeBands.medium) {
+                    targetDamage = Math.floor(targetDamage * 2 / 3);
+                    rangeInfo = `${distM}m (2/3)`;
+                } else {
+                    targetDamage = Math.floor(targetDamage / 3);
+                    rangeInfo = `${distM}m (1/3)`;
+                }
+                if (isSlugAmmo) rangeInfo += " [Slug]";
+            }
+
             damageInfo += `
                 <div class="tams-npc-row" style="display: flex; flex-direction: column; background: rgba(255,255,255,0.2); padding: 2px 4px; border-radius: 2px; margin-bottom: 2px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: bold; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;" title="${targetName}">${targetName}</span>
                         <div class="tams-npc-buttons" style="display: flex; gap: 2px;">
                             <button class="tams-take-damage" title="Apply Damage"
-                                    data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-locations='${JSON.stringify(tHits)}' data-target-limb="${targetLimb}"
+                                    data-damage="${targetDamage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-locations='${JSON.stringify(tHits)}' data-target-limb="${targetLimb}"
                                     data-is-aoe="${isAoE ? '1' : '0'}"
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
                             <button class="tams-dodge" title="Dodge"
-                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${targetDamage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">D</button>
                             <button class="tams-retaliate" title="Retaliate"
-                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${targetDamage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isAoE ? '1' : '0'}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ''}" data-target-actor-id="${targetActorId || ''}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     data-attacker-name="${this.document.name}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
                             <button class="tams-block" title="Block"
-                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${targetDamage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}"
                                     data-target-actor-uuid="${targetActor?.uuid || ''}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">Sh</button>
                             <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
                             <button class="tams-unaware-toggle" title="Unaware" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">U</button>
                         </div>
                     </div>
-                    <div style="font-size: 0.75em; color: #555;">Locs: ${tHits.join(", ")}</div>
+                    <div style="font-size: 0.75em; color: #555;">Locs: ${tHits.join(", ")} | Dmg: ${targetDamage}${rangeInfo ? ` (${rangeInfo})` : ""}</div>
                 </div>
             `;
         }
@@ -2374,7 +2441,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
   async _onResistanceAdd(event, target) {
     const resistances = [...(this.document.system.resistances || [])];
-    resistances.push({ damageType: "", category: "resistance", value: 0 });
+    resistances.push({ damageType: "", category: "resistance", value: 0, limbs: [] });
     return this.document.update({"system.resistances": resistances});
   }
 
@@ -2382,6 +2449,20 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const index = parseInt(target.dataset.index);
     const resistances = [...(this.document.system.resistances || [])];
     resistances.splice(index, 1);
+    return this.document.update({"system.resistances": resistances});
+  }
+
+  async _onResistanceLimbToggle(event, target) {
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const limbKey = target.dataset.limbKey;
+    const resistances = foundry.utils.duplicate(this.document.system.resistances || []);
+    const entry = resistances[index];
+    if (!entry) return;
+    const limbs = [...(entry.limbs ?? [])];
+    const pos = limbs.indexOf(limbKey);
+    if (pos === -1) limbs.push(limbKey);
+    else limbs.splice(pos, 1);
+    resistances[index] = {...entry, limbs};
     return this.document.update({"system.resistances": resistances});
   }
 

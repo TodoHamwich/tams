@@ -562,6 +562,22 @@
   background: rgb(95.5234042553, 94.7404255319, 88.4765957447);
 }
 
+details.limb-filter summary {
+  user-select: none;
+}
+details.limb-filter summary .limb-arrow-up {
+  display: none;
+}
+details.limb-filter summary .limb-arrow-down {
+  display: inline;
+}
+details.limb-filter[open] summary .limb-arrow-up {
+  display: inline;
+}
+details.limb-filter[open] summary .limb-arrow-down {
+  display: none;
+}
+
 .tams .tab:not(.stats) > h3,
 .tams .sheet-body > h3 {
   display: flex;
@@ -1038,23 +1054,20 @@
   padding: 0;
 }
 
-.tams .firearm-loaded-indicator {
-  font-size: 9px;
-  margin-left: 5px;
-  cursor: pointer;
-  vertical-align: middle;
-  pointer-events: all;
-}
-.tams .firearm-loaded-indicator.loaded {
-  color: #4caf50;
-}
-.tams .firearm-loaded-indicator.unloaded {
-  color: #e53935;
-}
-
 .tams .ammo-select-cell {
   min-width: 90px;
   flex: 1.5;
+}
+
+.tams .item-stat.ammo-total-cell {
+  flex: 0 0 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.tams .item-stat.ammo-total-cell .small-input {
+  width: 28px !important;
 }
 
 .tams .ammo-select {

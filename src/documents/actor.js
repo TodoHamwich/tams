@@ -84,8 +84,17 @@ export class TAMSActor extends Actor {
 
         let resistanceLabel = "";
         const damageType = hit.damageType || "";
-        if (damageType && this.system.resistances?.length) {
-            const match = this.system.resistances.find(r => r.damageType === damageType);
+        if (damageType && this.system.effectiveResistances?.length) {
+            let match = this.system.effectiveResistances.find(
+                r => r.damageType === damageType
+                  && (r.limbs ?? []).length > 0
+                  && r.limbs.includes(limbKey)
+            );
+            if (!match) {
+                match = this.system.effectiveResistances.find(
+                    r => r.damageType === damageType && (r.limbs ?? []).length === 0
+                );
+            }
             if (match) {
                 const typeName = game.i18n.localize(`TAMS.DamageType.${match.damageType}`);
                 if (match.category === "immunity") {
@@ -98,6 +107,14 @@ export class TAMSActor extends Actor {
                 } else if (match.category === "vulnerability") {
                     effective = effective + match.value;
                     resistanceLabel = game.i18n.format("TAMS.Combat.Vulnerable", {value: match.value, type: typeName});
+                } else if (match.category === "healing") {
+                    const healAmount = effective + (match.value || 0);
+                    resistanceLabel = game.i18n.format("TAMS.Combat.HealedFrom", {value: healAmount, type: typeName});
+                    const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
+                    updates[`system.limbs.${limbKey}.value`] = Math.min(limb.max, currentHp + healAmount);
+                    report += `• ${game.i18n.format("TAMS.Checks.HealReport", {loc, amount: healAmount})}<br>`;
+                    report += `  ↳ ${resistanceLabel}<br>`;
+                    continue;
                 }
             }
         }

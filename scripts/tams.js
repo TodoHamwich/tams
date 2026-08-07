@@ -148,6 +148,13 @@ class StatModifier extends foundry.abstract.DataModel {
     return this.value + (this.mod || 0) + (this.traitBonus || 0);
   }
 }
+function sameLimbScope(a, b) {
+  const aL = a.limbs ?? [], bL = b.limbs ?? [];
+  if (aL.length !== bL.length) return false;
+  if (aL.length === 0) return true;
+  const bSet = new Set(bL);
+  return aL.every((l) => bSet.has(l));
+}
 class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
@@ -250,7 +257,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       resistances: new fields.ArrayField(new fields.SchemaField({
         damageType: new fields.StringField({ initial: "" }),
         category: new fields.StringField({ initial: "resistance" }),
-        value: new fields.NumberField({ initial: 0, integer: true, min: 0 })
+        value: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+        limbs: new fields.ArrayField(new fields.StringField({ initial: "" }), { initial: [] })
       })),
       honor: new fields.SchemaField({
         valor: new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 }),
@@ -325,6 +333,23 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.effectiveHPSize = hpSize;
     this.effectiveStealthSize = stealthSize;
     this.effectiveCombatSize = combatSize;
+    this.injuryCheckBonus = 0;
+    this.effectiveResistances = (this.resistances ?? []).map((r) => ({ ...r, limbs: [...r.limbs ?? []] }));
+    for (const item of this.parent.items) {
+      if (item.type !== "race") continue;
+      this.injuryCheckBonus += item.system.injuryCheckBonus || 0;
+      for (const r of item.system.resistances || []) {
+        if (!r.damageType) continue;
+        const existing = this.effectiveResistances.find(
+          (e2) => e2.damageType === r.damageType && sameLimbScope(e2, r)
+        );
+        if (existing) {
+          existing.value = Math.max(existing.value, r.value);
+        } else {
+          this.effectiveResistances.push({ ...r, limbs: [...r.limbs ?? []] });
+        }
+      }
+    }
     for (const item of this.parent.items) {
       if (item.type !== "ability") continue;
       if (!item.system.isPassive || !item.system.passiveEnabled) continue;
@@ -492,8 +517,9 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
         total: new fields.NumberField({ initial: 0, integer: true, min: 0 })
       }),
       ammoItemId: new fields.StringField({ initial: "custom" }),
-      firelockType: new fields.StringField({ initial: "" }),
-      isLoaded: new fields.BooleanField({ initial: true }),
+      magazineCapacity: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+      rangeCategory: new fields.StringField({ initial: "" }),
+      firearmType: new fields.StringField({ initial: "" }),
       misfireThreshold: new fields.NumberField({ initial: 4, integer: true, min: 0, max: 100 }),
       fireRate: new fields.StringField({ initial: "1" }),
       fireRateCustom: new fields.NumberField({ initial: 1, nullable: true }),
@@ -594,6 +620,7 @@ class TAMSAmmoData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({ initial: 0 })
       }),
       misfireRisk: new fields.BooleanField({ initial: false }),
+      isSlug: new fields.BooleanField({ initial: false }),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
@@ -892,6 +919,13 @@ class TAMSRaceData extends foundry.abstract.TypeDataModel {
       sizeGrantHP: new fields.StringField({ initial: "" }),
       sizeGrantStealth: new fields.StringField({ initial: "" }),
       sizeGrantCombat: new fields.StringField({ initial: "" }),
+      injuryCheckBonus: new fields.NumberField({ initial: 0, integer: true }),
+      resistances: new fields.ArrayField(new fields.SchemaField({
+        damageType: new fields.StringField({ initial: "" }),
+        category: new fields.StringField({ initial: "resistance" }),
+        value: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+        limbs: new fields.ArrayField(new fields.StringField({ initial: "" }), { initial: [] })
+      })),
       tags: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" })
     };
@@ -1219,6 +1253,9 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
         const check = pendingChecks[idx];
         const statCap = check.type === "morale" ? target.system.stats.bravery.total : target.system.stats.endurance.total;
         let bonus = 0;
+        if (check.type === "injured" || check.type === "crit") {
+          bonus += target.system.injuryCheckBonus || 0;
+        }
         const roll = await new Roll("1d100").evaluate();
         const raw = roll.total;
         const capped = Math.min(raw, statCap);
@@ -1231,7 +1268,8 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                             <h3 class="roll-label" style="color: #f39c12;">${game.i18n.format("TAMS.Checks.EnduranceCheckInjury", { loc: check.loc })}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end: statCap })}</span><span>${capped}</span></div>
-                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total: capped, dc: check.dc })}</div>
+                            ${bonus ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.RacialBonus")}</span><span>+${bonus}</span></div>` : ""}
+                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total, dc: check.dc })}</div>
                             ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Checks.SuccessNotInjured")}</div>` : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Checks.FailedInjured")}</div>`}
                         </div>
                     `;
@@ -1244,7 +1282,8 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                             <h3 class="roll-label">${game.i18n.format("TAMS.Checks.EnduranceCheck", { loc: check.loc })}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", { end: statCap })}</span><span>${capped}</span></div>
-                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total: capped, dc: check.dc })}</div>
+                            ${bonus ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.RacialBonus")}</span><span>+${bonus}</span></div>` : ""}
+                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", { total, dc: check.dc })}</div>
                             ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Checks.Success")}</div>` : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Checks.FailedCrit")}</div>`}
                         </div>
                     `;
@@ -1798,7 +1837,7 @@ async function tamsOnCombatEnd(combat) {
         const def = (_a2 = CONFIG.statusEffects) == null ? void 0 : _a2.find((e2) => e2.id === id);
         return def ? game.i18n.localize(def.name) : id;
       });
-      row += `<br><span style="color:#2e7d32;">Cleared: ${clearedNames.join(", ")}</span>`;
+      row += `<br><span style="color:#2e7d32;">${game.i18n.localize("TAMS.CombatEnd.Cleared")}: ${clearedNames.join(", ")}</span>`;
     }
     row += `</div>`;
     rows.push(row);
@@ -3291,8 +3330,15 @@ class TAMSActor extends Actor {
       let overflow = 0;
       let resistanceLabel = "";
       const damageType = hit.damageType || "";
-      if (damageType && ((_c = this.system.resistances) == null ? void 0 : _c.length)) {
-        const match = this.system.resistances.find((r) => r.damageType === damageType);
+      if (damageType && ((_c = this.system.effectiveResistances) == null ? void 0 : _c.length)) {
+        let match = this.system.effectiveResistances.find(
+          (r) => r.damageType === damageType && (r.limbs ?? []).length > 0 && r.limbs.includes(limbKey)
+        );
+        if (!match) {
+          match = this.system.effectiveResistances.find(
+            (r) => r.damageType === damageType && (r.limbs ?? []).length === 0
+          );
+        }
         if (match) {
           const typeName = game.i18n.localize(`TAMS.DamageType.${match.damageType}`);
           if (match.category === "immunity") {
@@ -3305,6 +3351,14 @@ class TAMSActor extends Actor {
           } else if (match.category === "vulnerability") {
             effective = effective + match.value;
             resistanceLabel = game.i18n.format("TAMS.Combat.Vulnerable", { value: match.value, type: typeName });
+          } else if (match.category === "healing") {
+            const healAmount = effective + (match.value || 0);
+            resistanceLabel = game.i18n.format("TAMS.Combat.HealedFrom", { value: healAmount, type: typeName });
+            const currentHp2 = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
+            updates[`system.limbs.${limbKey}.value`] = Math.min(limb.max, currentHp2 + healAmount);
+            report += `• ${game.i18n.format("TAMS.Checks.HealReport", { loc, amount: healAmount })}<br>`;
+            report += `  ↳ ${resistanceLabel}<br>`;
+            continue;
           }
         }
       }
@@ -3821,7 +3875,7 @@ class TAMSItem extends Item {
    */
   static get metadata() {
     return foundry.utils.mergeObject(super.metadata, {
-      types: ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect"]
+      types: ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect", "ammo", "race"]
     }, { inplace: false });
   }
 }
@@ -4099,14 +4153,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         setInventoryFilter: _TAMSActorSheet.prototype._onSetInventoryFilter,
         resistanceAdd: _TAMSActorSheet.prototype._onResistanceAdd,
         resistanceDelete: _TAMSActorSheet.prototype._onResistanceDelete,
+        resistanceLimbToggle: _TAMSActorSheet.prototype._onResistanceLimbToggle,
         barrierAdd: _TAMSActorSheet.prototype._onBarrierAdd,
         barrierClear: _TAMSActorSheet.prototype._onBarrierClear,
         sceneReset: _TAMSActorSheet.prototype._onSceneReset,
         callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: _TAMSActorSheet.prototype._onItemSendDescription,
         honorEdit: _TAMSActorSheet.prototype._onHonorEdit,
-        raceRemove: _TAMSActorSheet.prototype._onRaceRemove,
-        toggleFirearmLoaded: _TAMSActorSheet.prototype._onToggleFirearmLoaded
+        raceRemove: _TAMSActorSheet.prototype._onRaceRemove
       }
     }, { inplace: false });
   }
@@ -4483,13 +4537,47 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       "fire": "TAMS.DamageType.fire",
       "magic": "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
-      "acid": "TAMS.DamageType.acid"
+      "acid": "TAMS.DamageType.acid",
+      "divine": "TAMS.DamageType.divine"
     };
     const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.Backpack" };
     for (const bp of context.inventoryBackpacks || []) {
       locationOptions[bp.id] = game.i18n.format("TAMS.LocationOptions.InContainer", { name: bp.name });
     }
     context.locationOptions = locationOptions;
+    const LIMB_KEYS2 = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+    const LIMB_I18N = {
+      head: "TAMS.HitLocations.Head",
+      thorax: "TAMS.HitLocations.Thorax",
+      stomach: "TAMS.HitLocations.Stomach",
+      leftArm: "TAMS.HitLocations.LeftArm",
+      rightArm: "TAMS.HitLocations.RightArm",
+      leftLeg: "TAMS.HitLocations.LeftLeg",
+      rightLeg: "TAMS.HitLocations.RightLeg"
+    };
+    const LIMB_ABBREV = {
+      head: "TAMS.Race.LimbAbbrev.Head",
+      thorax: "TAMS.Race.LimbAbbrev.Thorax",
+      stomach: "TAMS.Race.LimbAbbrev.Stomach",
+      leftArm: "TAMS.Race.LimbAbbrev.LeftArm",
+      rightArm: "TAMS.Race.LimbAbbrev.RightArm",
+      leftLeg: "TAMS.Race.LimbAbbrev.LeftLeg",
+      rightLeg: "TAMS.Race.LimbAbbrev.RightLeg"
+    };
+    context.enrichedResistances = (this.document.system.resistances ?? []).map((res, index) => {
+      const active = new Set(res.limbs ?? []);
+      return {
+        ...res,
+        index,
+        isGlobal: active.size === 0,
+        limbButtons: LIMB_KEYS2.map((key) => ({
+          key,
+          active: active.has(key),
+          i18nKey: LIMB_I18N[key],
+          abbrevKey: LIMB_ABBREV[key]
+        }))
+      };
+    });
   }
   /**
    * Prepare currency data and settings.
@@ -4687,12 +4775,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const granted = this.document.items.filter((i) => i.getFlag("tams", "raceGranted"));
     const toDelete = [...existing.map((i) => i.id), ...granted.map((i) => i.id)];
     if (toDelete.length) await this.document.deleteEmbeddedDocuments("Item", toDelete);
-  }
-  async _onToggleFirearmLoaded(event, target) {
-    const itemId = target.dataset.itemId;
-    const item = this.document.items.get(itemId);
-    if (!item) return;
-    await item.update({ "system.isLoaded": !item.system.isLoaded });
   }
   /**
    * Handle giving an item to another actor.
@@ -5312,7 +5394,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   async _onRoll(event, target) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
     const dataset = target.dataset;
     const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
     const tToken = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0] ?? null;
@@ -5648,12 +5730,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     const isMaxRoll = dataset.isMaxRoll === "true";
     const effectiveStat = statValue + statMod;
-    if ((item == null ? void 0 : item.type) === "weapon" && item.system.firelockType) {
-      if (!item.system.isLoaded) {
-        return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.FirearmNotLoaded", { item: item.name }));
-      }
+    if ((item == null ? void 0 : item.type) === "weapon" && item.system.firearmType === "matchlock" && item.system.consumeAmmo) {
       const ammoId = item.system.ammoItemId ?? "custom";
-      if (item.system.firelockType === "matchlock" && item.system.consumeAmmo && ammoId && ammoId !== "custom") {
+      if (ammoId && ammoId !== "custom") {
         const ammoItem = this.document.items.get(ammoId);
         if (ammoItem == null ? void 0 : ammoItem.system.misfireRisk) {
           const threshold = item.system.misfireThreshold ?? 4;
@@ -5661,7 +5740,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           if (misfireRoll <= threshold) {
             const currentAmmo = ((_e = ammoItem.system.uses) == null ? void 0 : _e.value) || 0;
             if (currentAmmo > 0) await ammoItem.update({ "system.uses.value": currentAmmo - 1 });
-            await item.update({ "system.isLoaded": false });
             await ChatMessage.create({
               content: `<div class="tams-roll tams-misfire"><strong>⚠️ ${game.i18n.localize("TAMS.Firearm.MisfireLabel")}</strong> — ${game.i18n.format("TAMS.Firearm.MisfireResult", { weapon: item.name, roll: misfireRoll, threshold })}</div>`,
               speaker: ChatMessage.getSpeaker({ actor: this.document })
@@ -5853,9 +5931,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             await ammoItem.update({ "system.uses.value": Math.max(0, currentAmmo - multiVal) });
           }
         }
-        if (item.system.firelockType) {
-          await item.update({ "system.isLoaded": false });
-        }
       } else if (item.type === "ability") {
         multiVal = item.system.multiAttack || 1;
       }
@@ -5902,6 +5977,24 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           var _a2, _b2, _c2;
           return !!((_c2 = (_b2 = (_a2 = t.actor) == null ? void 0 : _a2.system) == null ? void 0 : _b2.settings) == null ? void 0 : _c2.isNPC);
         });
+        const RANGE_BANDS = {
+          pistol: { close: 50, medium: 75 },
+          shotgun: { close: 5, medium: 15 },
+          slug: { close: 100, medium: 150 },
+          lightRifle: { close: 200, medium: 300 },
+          mediumRifle: { close: 300, medium: 500 },
+          heavyRifle: { close: 500, medium: 800 }
+        };
+        const _rangedWeapon = isRanged && item.type === "weapon" && item.system.rangeCategory;
+        const attackerToken = _rangedWeapon ? ((_p = this.document.token) == null ? void 0 : _p.object) || canvas.tokens.controlled.find((t) => {
+          var _a2;
+          return ((_a2 = t.actor) == null ? void 0 : _a2.id) === this.document.id;
+        }) : null;
+        const isShotgun = item.type === "weapon" && item.system.rangeCategory === "shotgun";
+        const _linkedAmmoId = item.type === "weapon" ? item.system.ammoItemId ?? "custom" : "custom";
+        const isSlugAmmo = isShotgun && _linkedAmmoId !== "custom" ? !!((_q = this.document.items.get(_linkedAmmoId)) == null ? void 0 : _q.system.isSlug) : false;
+        const effectiveRangeCategory = isShotgun && isSlugAmmo ? "slug" : item.system.rangeCategory || "";
+        const rangeBands = RANGE_BANDS[effectiveRangeCategory] ?? null;
         damageInfo = `<div class="tams-targets-container">`;
         for (const targetToken of pcs) {
           const targetActor = targetToken.actor;
@@ -5912,15 +6005,31 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           for (let i = 0; i < multiVal; i++) {
             tHits.push(i === 0 && !isAoE ? hitLocation : await getHitLocation());
           }
+          let targetDamage = damage;
+          let rangeInfo = "";
+          if (attackerToken && rangeBands) {
+            const dist = ((_r = canvas == null ? void 0 : canvas.grid) == null ? void 0 : _r.measureDistance(attackerToken.center, targetToken.center)) ?? 0;
+            const distM = Math.round(dist);
+            if (dist <= rangeBands.close) {
+              rangeInfo = `${distM}m`;
+            } else if (dist <= rangeBands.medium) {
+              targetDamage = Math.floor(targetDamage * 2 / 3);
+              rangeInfo = `${distM}m (2/3)`;
+            } else {
+              targetDamage = Math.floor(targetDamage / 3);
+              rangeInfo = `${distM}m (1/3)`;
+            }
+            if (isSlugAmmo) rangeInfo += " [Slug]";
+          }
           damageInfo += `
                     <div class="tams-target-block" style="border: 1px solid #7a7971; padding: 5px; margin-bottom: 5px; background: rgba(0,0,0,0.05);">
                         <div class="roll-row"><span>Target:</span><span class="roll-value">${targetName}</span></div>
-                        <div class="roll-row"><b>Damage: ${damage}</b></div>
+                        <div class="roll-row"><b>Damage: ${targetDamage}${rangeInfo ? ` — ${rangeInfo}` : ""}</b></div>
                         <div class="roll-row"><b>Hit Locations: ${tHits.join(", ")}</b></div>
                         <div class="roll-row"><b>Max Hits: ${multiVal}</b></div>
                         <div class="roll-row" style="gap:6px; flex-wrap: wrap; justify-content: flex-start;">
                           <button class="tams-take-damage"
-                                  data-damage="${damage}"
+                                  data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-type="${damageType}"
                                   data-locations='${JSON.stringify(tHits)}'
@@ -5935,7 +6044,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-location="${hitLocation}"
-                                  data-damage="${damage}"
+                                  data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-type="${damageType}"
                                   data-is-ranged="${isRanged ? "1" : "0"}"
@@ -5949,7 +6058,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-location="${hitLocation}"
-                                  data-damage="${damage}"
+                                  data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-type="${damageType}"
                                   data-is-ranged="${isRanged ? "1" : "0"}"
@@ -5964,7 +6073,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-locations='${JSON.stringify(tHits)}'
-                                  data-damage="${damage}"
+                                  data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-type="${damageType}"
                                   data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}">Block</button>
@@ -5989,37 +6098,53 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             for (let i = 0; i < multiVal; i++) {
               tHits.push(i === 0 && !isAoE ? hitLocation : await getHitLocation());
             }
+            let targetDamage = damage;
+            let rangeInfo = "";
+            if (attackerToken && rangeBands) {
+              const dist = ((_s = canvas == null ? void 0 : canvas.grid) == null ? void 0 : _s.measureDistance(attackerToken.center, targetToken.center)) ?? 0;
+              const distM = Math.round(dist);
+              if (dist <= rangeBands.close) {
+                rangeInfo = `${distM}m`;
+              } else if (dist <= rangeBands.medium) {
+                targetDamage = Math.floor(targetDamage * 2 / 3);
+                rangeInfo = `${distM}m (2/3)`;
+              } else {
+                targetDamage = Math.floor(targetDamage / 3);
+                rangeInfo = `${distM}m (1/3)`;
+              }
+              if (isSlugAmmo) rangeInfo += " [Slug]";
+            }
             damageInfo += `
                 <div class="tams-npc-row" style="display: flex; flex-direction: column; background: rgba(255,255,255,0.2); padding: 2px 4px; border-radius: 2px; margin-bottom: 2px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: bold; font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px;" title="${targetName}">${targetName}</span>
                         <div class="tams-npc-buttons" style="display: flex; gap: 2px;">
                             <button class="tams-take-damage" title="Apply Damage"
-                                    data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-locations='${JSON.stringify(tHits)}' data-target-limb="${targetLimb}"
+                                    data-damage="${targetDamage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-locations='${JSON.stringify(tHits)}' data-target-limb="${targetLimb}"
                                     data-is-aoe="${isAoE ? "1" : "0"}"
                                     data-target-token-id="${targetTokenId || ""}" data-target-actor-id="${targetActorId || ""}"
                                     data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">A</button>
                             <button class="tams-dodge" title="Dodge"
-                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isAoE ? "1" : "0"}" data-target-limb="${targetLimb}"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${targetDamage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isAoE ? "1" : "0"}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ""}" data-target-actor-id="${targetActorId || ""}"
                                     data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">D</button>
                             <button class="tams-retaliate" title="Retaliate"
-                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isAoE ? "1" : "0"}" data-target-limb="${targetLimb}"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${targetDamage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}" data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isAoE ? "1" : "0"}" data-target-limb="${targetLimb}"
                                     data-target-token-id="${targetTokenId || ""}" data-target-actor-id="${targetActorId || ""}"
                                     data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}"
                                     data-attacker-name="${this.document.name}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">R</button>
                             <button class="tams-block" title="Block"
-                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}"
+                                    data-raw="${rawResult}" data-total="${finalTotal}" data-multi="${multiVal}" data-locations='${JSON.stringify(tHits)}' data-damage="${targetDamage}" data-armour-pen="${armourPen}" data-damage-type="${damageType}"
                                     data-target-actor-uuid="${(targetActor == null ? void 0 : targetActor.uuid) || ""}"
                                     style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px;">Sh</button>
                             <button class="tams-behind-toggle" title="Behind" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">B</button>
                             <button class="tams-unaware-toggle" title="Unaware" style="padding: 0 5px; line-height: 1.4; font-size: 0.8em; min-width: 24px; background: #444; color: white;">U</button>
                         </div>
                     </div>
-                    <div style="font-size: 0.75em; color: #555;">Locs: ${tHits.join(", ")}</div>
+                    <div style="font-size: 0.75em; color: #555;">Locs: ${tHits.join(", ")} | Dmg: ${targetDamage}${rangeInfo ? ` (${rangeInfo})` : ""}</div>
                 </div>
             `;
           }
@@ -6083,7 +6208,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const isMagicAbility = abilityTags.some((t) => ["magic", "spell", "psychic", "alchemy", "divine"].includes(t));
       if (isMagicAbility) {
         let totalEffects = -1;
-        if ((_p = item.system.calculator) == null ? void 0 : _p.enabled) {
+        if ((_t = item.system.calculator) == null ? void 0 : _t.enabled) {
           const _c2 = item.system.calculator;
           totalEffects = (_c2.effects || 0) + Math.floor((_c2.rollBonus || 0) / 5) + (_c2.ignoreArmor || 0);
         }
@@ -6140,11 +6265,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         rolls: [roll],
         flags: {
           tams: {
-            inflictsStatusId: ((_q = item == null ? void 0 : item.system) == null ? void 0 : _q.inflictsStatusId) || "",
+            inflictsStatusId: ((_u = item == null ? void 0 : item.system) == null ? void 0 : _u.inflictsStatusId) || "",
             attackerActorId: this.document.id,
             attackerWeaponId: (item == null ? void 0 : item.id) || "",
-            hasSave: ((_r = item == null ? void 0 : item.system) == null ? void 0 : _r.hasSave) ?? false,
-            saveAgainst: ((_s = item == null ? void 0 : item.system) == null ? void 0 : _s.saveAgainst) ?? "",
+            hasSave: ((_v = item == null ? void 0 : item.system) == null ? void 0 : _v.hasSave) ?? false,
+            saveAgainst: ((_w = item == null ? void 0 : item.system) == null ? void 0 : _w.saveAgainst) ?? "",
             saveDC: finalTotal
           }
         }
@@ -6207,13 +6332,26 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   }
   async _onResistanceAdd(event, target) {
     const resistances = [...this.document.system.resistances || []];
-    resistances.push({ damageType: "", category: "resistance", value: 0 });
+    resistances.push({ damageType: "", category: "resistance", value: 0, limbs: [] });
     return this.document.update({ "system.resistances": resistances });
   }
   async _onResistanceDelete(event, target) {
     const index = parseInt(target.dataset.index);
     const resistances = [...this.document.system.resistances || []];
     resistances.splice(index, 1);
+    return this.document.update({ "system.resistances": resistances });
+  }
+  async _onResistanceLimbToggle(event, target) {
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const limbKey = target.dataset.limbKey;
+    const resistances = foundry.utils.duplicate(this.document.system.resistances || []);
+    const entry = resistances[index];
+    if (!entry) return;
+    const limbs = [...entry.limbs ?? []];
+    const pos = limbs.indexOf(limbKey);
+    if (pos === -1) limbs.push(limbKey);
+    else limbs.splice(pos, 1);
+    resistances[index] = { ...entry, limbs };
     return this.document.update({ "system.resistances": resistances });
   }
   /**
@@ -6491,6 +6629,9 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         passiveTraitCreate: _TAMSItemSheet.prototype._onPassiveTraitCreate,
         passiveTraitDelete: _TAMSItemSheet.prototype._onPassiveTraitDelete,
         grantedAbilityDelete: _TAMSItemSheet.prototype._onGrantedAbilityDelete,
+        raceResistanceCreate: _TAMSItemSheet.prototype._onRaceResistanceCreate,
+        raceResistanceDelete: _TAMSItemSheet.prototype._onRaceResistanceDelete,
+        raceResistanceLimbToggle: _TAMSItemSheet.prototype._onRaceResistanceLimbToggle,
         tagToggle: _TAMSItemSheet.prototype._onTagToggle,
         toggleSection: _TAMSItemSheet.prototype._onToggleSection
       }
@@ -6598,6 +6739,44 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         label: game.i18n.localize(`TAMS.WeaponTags.${t.charAt(0).toUpperCase() + t.slice(1)}`),
         active: activeTags.includes(t)
       }));
+      const EARLY_TYPES = /* @__PURE__ */ new Set(["matchlock", "flintlock", "wheellock", "blunderbuss"]);
+      context.isEarlyFirearm = EARLY_TYPES.has(this.document.system.firearmType);
+      context.isModernFirearm = !!this.document.system.firearmType && !context.isEarlyFirearm;
+    }
+    if (this.document.type === "race") {
+      const LIMB_KEYS2 = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
+      const LIMB_I18N = {
+        head: "TAMS.HitLocations.Head",
+        thorax: "TAMS.HitLocations.Thorax",
+        stomach: "TAMS.HitLocations.Stomach",
+        leftArm: "TAMS.HitLocations.LeftArm",
+        rightArm: "TAMS.HitLocations.RightArm",
+        leftLeg: "TAMS.HitLocations.LeftLeg",
+        rightLeg: "TAMS.HitLocations.RightLeg"
+      };
+      const LIMB_ABBREV = {
+        head: "TAMS.Race.LimbAbbrev.Head",
+        thorax: "TAMS.Race.LimbAbbrev.Thorax",
+        stomach: "TAMS.Race.LimbAbbrev.Stomach",
+        leftArm: "TAMS.Race.LimbAbbrev.LeftArm",
+        rightArm: "TAMS.Race.LimbAbbrev.RightArm",
+        leftLeg: "TAMS.Race.LimbAbbrev.LeftLeg",
+        rightLeg: "TAMS.Race.LimbAbbrev.RightLeg"
+      };
+      context.enrichedResistances = (this.document.system.resistances || []).map((res, index) => {
+        const active = new Set(res.limbs ?? []);
+        return {
+          ...res,
+          index,
+          isGlobal: active.size === 0,
+          limbButtons: LIMB_KEYS2.map((key) => ({
+            key,
+            active: active.has(key),
+            i18nKey: LIMB_I18N[key],
+            abbrevKey: LIMB_ABBREV[key]
+          }))
+        };
+      });
     }
     context.rechargeTypeOptions = {
       "combat": "TAMS.Ability.RechargeOnCombat",
@@ -6829,6 +7008,30 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     const abilities = foundry.utils.duplicate(this.document.system.grantedAbilities || []);
     abilities.splice(index, 1);
     await this.document.update({ "system.grantedAbilities": abilities });
+  }
+  async _onRaceResistanceCreate(event, target) {
+    const resistances = foundry.utils.duplicate(this.document.system.resistances || []);
+    resistances.push({ damageType: "", category: "resistance", value: 0, limbs: [] });
+    await this.document.update({ "system.resistances": resistances });
+  }
+  async _onRaceResistanceDelete(event, target) {
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const resistances = foundry.utils.duplicate(this.document.system.resistances || []);
+    resistances.splice(index, 1);
+    await this.document.update({ "system.resistances": resistances });
+  }
+  async _onRaceResistanceLimbToggle(event, target) {
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const limbKey = target.dataset.limbKey;
+    const resistances = foundry.utils.duplicate(this.document.system.resistances || []);
+    const entry = resistances[index];
+    if (!entry) return;
+    const limbs = [...entry.limbs ?? []];
+    const pos = limbs.indexOf(limbKey);
+    if (pos === -1) limbs.push(limbKey);
+    else limbs.splice(pos, 1);
+    resistances[index] = { ...entry, limbs };
+    await this.document.update({ "system.resistances": resistances });
   }
   async _onPassiveTraitCreate(event, target) {
     const traits = foundry.utils.duplicate(this.document.system.passiveTraits || []);

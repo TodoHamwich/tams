@@ -18,6 +18,9 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         passiveTraitCreate: TAMSItemSheet.prototype._onPassiveTraitCreate,
         passiveTraitDelete: TAMSItemSheet.prototype._onPassiveTraitDelete,
         grantedAbilityDelete: TAMSItemSheet.prototype._onGrantedAbilityDelete,
+        raceResistanceCreate: TAMSItemSheet.prototype._onRaceResistanceCreate,
+        raceResistanceDelete: TAMSItemSheet.prototype._onRaceResistanceDelete,
+        raceResistanceLimbToggle: TAMSItemSheet.prototype._onRaceResistanceLimbToggle,
         tagToggle: TAMSItemSheet.prototype._onTagToggle,
         toggleSection: TAMSItemSheet.prototype._onToggleSection
       }
@@ -141,6 +144,37 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
             label: game.i18n.localize(`TAMS.WeaponTags.${t.charAt(0).toUpperCase() + t.slice(1)}`),
             active: activeTags.includes(t)
         }));
+        const EARLY_TYPES = new Set(["matchlock", "flintlock", "wheellock", "blunderbuss"]);
+        context.isEarlyFirearm = EARLY_TYPES.has(this.document.system.firearmType);
+        context.isModernFirearm = !!this.document.system.firearmType && !context.isEarlyFirearm;
+    }
+
+    if (this.document.type === 'race') {
+        const LIMB_KEYS = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+        const LIMB_I18N = {
+            head: 'TAMS.HitLocations.Head', thorax: 'TAMS.HitLocations.Thorax',
+            stomach: 'TAMS.HitLocations.Stomach', leftArm: 'TAMS.HitLocations.LeftArm',
+            rightArm: 'TAMS.HitLocations.RightArm', leftLeg: 'TAMS.HitLocations.LeftLeg',
+            rightLeg: 'TAMS.HitLocations.RightLeg'
+        };
+        const LIMB_ABBREV = {
+            head: 'TAMS.Race.LimbAbbrev.Head', thorax: 'TAMS.Race.LimbAbbrev.Thorax',
+            stomach: 'TAMS.Race.LimbAbbrev.Stomach', leftArm: 'TAMS.Race.LimbAbbrev.LeftArm',
+            rightArm: 'TAMS.Race.LimbAbbrev.RightArm', leftLeg: 'TAMS.Race.LimbAbbrev.LeftLeg',
+            rightLeg: 'TAMS.Race.LimbAbbrev.RightLeg'
+        };
+        context.enrichedResistances = (this.document.system.resistances || []).map((res, index) => {
+            const active = new Set(res.limbs ?? []);
+            return {
+                ...res, index,
+                isGlobal: active.size === 0,
+                limbButtons: LIMB_KEYS.map(key => ({
+                    key, active: active.has(key),
+                    i18nKey: LIMB_I18N[key],
+                    abbrevKey: LIMB_ABBREV[key]
+                }))
+            };
+        });
     }
 
     context.rechargeTypeOptions = {
@@ -385,6 +419,33 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     const abilities = foundry.utils.duplicate(this.document.system.grantedAbilities || []);
     abilities.splice(index, 1);
     await this.document.update({ "system.grantedAbilities": abilities });
+  }
+
+  async _onRaceResistanceCreate(event, target) {
+    const resistances = foundry.utils.duplicate(this.document.system.resistances || []);
+    resistances.push({ damageType: "", category: "resistance", value: 0, limbs: [] });
+    await this.document.update({ "system.resistances": resistances });
+  }
+
+  async _onRaceResistanceDelete(event, target) {
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const resistances = foundry.utils.duplicate(this.document.system.resistances || []);
+    resistances.splice(index, 1);
+    await this.document.update({ "system.resistances": resistances });
+  }
+
+  async _onRaceResistanceLimbToggle(event, target) {
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const limbKey = target.dataset.limbKey;
+    const resistances = foundry.utils.duplicate(this.document.system.resistances || []);
+    const entry = resistances[index];
+    if (!entry) return;
+    const limbs = [...(entry.limbs ?? [])];
+    const pos = limbs.indexOf(limbKey);
+    if (pos === -1) limbs.push(limbKey);
+    else limbs.splice(pos, 1);
+    resistances[index] = {...entry, limbs};
+    await this.document.update({ "system.resistances": resistances });
   }
 
   async _onPassiveTraitCreate(event, target) {

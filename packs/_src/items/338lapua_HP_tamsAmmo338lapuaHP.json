@@ -1,0 +1,21 @@
+{
+  "name": ".338 Lapua Magnum (Hollowpoint)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 10,
+      "max": 10
+    },
+    "tags": "Ammunition, .338 Lapua, Sniper",
+    "misfireRisk": false,
+    "description": "Hollowpoint \u2014 expanded damage against soft targets. AP = 0."
+  },
+  "flags": {},
+  "_id": "tamsAmmo338lapuaHP",
+  "_key": "!items!tamsAmmo338lapuaHP"
+}

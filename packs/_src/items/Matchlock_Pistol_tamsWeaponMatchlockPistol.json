@@ -32,9 +32,10 @@
     "damageType": "",
     "tags": "Ranged, Firearm",
     "description": "",
-    "firelockType": "matchlock",
-    "isLoaded": true,
-    "misfireThreshold": 4
+    "misfireThreshold": 4,
+    "firearmType": "matchlock",
+    "magazineCapacity": 1,
+    "rangeCategory": "pistol"
   },
   "flags": {},
   "_id": "tamsWeaponMatchlockPistol",

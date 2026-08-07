@@ -32,9 +32,10 @@
     "damageType": "",
     "tags": "Ranged, Firearm",
     "description": "",
-    "firelockType": "wheellock",
-    "isLoaded": true,
-    "misfireThreshold": 0
+    "misfireThreshold": 0,
+    "firearmType": "wheellock",
+    "magazineCapacity": 1,
+    "rangeCategory": "pistol"
   },
   "flags": {},
   "_id": "tamsWeaponWheellockPistol",

@@ -102,6 +102,9 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                     : target.system.stats.endurance.total;
 
                 let bonus = 0;
+                if (check.type === 'injured' || check.type === 'crit') {
+                    bonus += target.system.injuryCheckBonus || 0;
+                }
                 let resourceSpent = null;
 
                 const roll = await new Roll("1d100").evaluate();
@@ -117,7 +120,8 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                             <h3 class="roll-label" style="color: #f39c12;">${game.i18n.format("TAMS.Checks.EnduranceCheckInjury", {loc: check.loc})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
-                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total: capped, dc: check.dc})}</div>
+                            ${bonus ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.RacialBonus")}</span><span>+${bonus}</span></div>` : ''}
+                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total, dc: check.dc})}</div>
                             ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Checks.SuccessNotInjured")}</div>` : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Checks.FailedInjured")}</div>`}
                         </div>
                     `;
@@ -130,7 +134,8 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                             <h3 class="roll-label">${game.i18n.format("TAMS.Checks.EnduranceCheck", {loc: check.loc})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
-                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total: capped, dc: check.dc})}</div>
+                            ${bonus ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.RacialBonus")}</span><span>+${bonus}</span></div>` : ''}
+                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total, dc: check.dc})}</div>
                             ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Checks.Success")}</div>` : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Checks.FailedCrit")}</div>`}
                         </div>
                     `;
@@ -757,7 +762,7 @@ export async function tamsOnCombatEnd(combat) {
                 const def = CONFIG.statusEffects?.find(e => e.id === id);
                 return def ? game.i18n.localize(def.name) : id;
             });
-            row += `<br><span style="color:#2e7d32;">Cleared: ${clearedNames.join(", ")}</span>`;
+            row += `<br><span style="color:#2e7d32;">${game.i18n.localize("TAMS.CombatEnd.Cleared")}: ${clearedNames.join(", ")}</span>`;
         }
         row += `</div>`;
         rows.push(row);

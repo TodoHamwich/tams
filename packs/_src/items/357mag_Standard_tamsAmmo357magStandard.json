@@ -1,0 +1,21 @@
+{
+  "name": ".357 Magnum (Standard)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 18,
+      "max": 18
+    },
+    "tags": "Ammunition, .357 Magnum, Revolver",
+    "misfireRisk": false,
+    "description": "Standard ammunition."
+  },
+  "flags": {},
+  "_id": "tamsAmmo357magStandard",
+  "_key": "!items!tamsAmmo357magStandard"
+}

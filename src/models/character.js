@@ -54,6 +54,14 @@ export class StatModifier extends foundry.abstract.DataModel {
   }
 }
 
+function sameLimbScope(a, b) {
+  const aL = a.limbs ?? [], bL = b.limbs ?? [];
+  if (aL.length !== bL.length) return false;
+  if (aL.length === 0) return true;
+  const bSet = new Set(bL);
+  return aL.every(l => bSet.has(l));
+}
+
 /**
  * The DataModel for Character actors.
  */
@@ -159,7 +167,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       resistances: new fields.ArrayField(new fields.SchemaField({
         damageType: new fields.StringField({initial: ""}),
         category: new fields.StringField({initial: "resistance"}),
-        value: new fields.NumberField({initial: 0, integer: true, min: 0})
+        value: new fields.NumberField({initial: 0, integer: true, min: 0}),
+        limbs: new fields.ArrayField(new fields.StringField({initial: ""}), {initial: []})
       })),
       honor: new fields.SchemaField({
         valor:    new fields.NumberField({ initial: 0, integer: true, min: -100, max: 100 }),
@@ -243,6 +252,25 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.effectiveHPSize      = hpSize;
     this.effectiveStealthSize = stealthSize;
     this.effectiveCombatSize  = combatSize;
+
+    // Accumulate injury check bonus and resistances from race items.
+    this.injuryCheckBonus = 0;
+    this.effectiveResistances = (this.resistances ?? []).map(r => ({...r, limbs: [...(r.limbs ?? [])]}));
+    for (const item of this.parent.items) {
+      if (item.type !== "race") continue;
+      this.injuryCheckBonus += item.system.injuryCheckBonus || 0;
+      for (const r of (item.system.resistances || [])) {
+        if (!r.damageType) continue;
+        const existing = this.effectiveResistances.find(
+          e => e.damageType === r.damageType && sameLimbScope(e, r)
+        );
+        if (existing) {
+          existing.value = Math.max(existing.value, r.value);
+        } else {
+          this.effectiveResistances.push({...r, limbs: [...(r.limbs ?? [])]});
+        }
+      }
+    }
 
     // Accumulate passive roll bonuses from abilities.
     for (const item of this.parent.items) {

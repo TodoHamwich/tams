@@ -1,0 +1,21 @@
+{
+  "name": ".44 Magnum (Hollowpoint)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 6,
+      "max": 6
+    },
+    "tags": "Ammunition, .44 Magnum, Revolver",
+    "misfireRisk": false,
+    "description": "Hollowpoint \u2014 expanded damage against soft targets. AP = 0."
+  },
+  "flags": {},
+  "_id": "tamsAmmo44magHP",
+  "_key": "!items!tamsAmmo44magHP"
+}

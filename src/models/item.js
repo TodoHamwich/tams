@@ -25,8 +25,9 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
         total: new fields.NumberField({initial: 0, integer: true, min: 0})
       }),
       ammoItemId: new fields.StringField({initial: "custom"}),
-      firelockType: new fields.StringField({initial: ""}),
-      isLoaded: new fields.BooleanField({initial: true}),
+      magazineCapacity: new fields.NumberField({initial: 0, integer: true, min: 0}),
+      rangeCategory: new fields.StringField({initial: ""}),
+      firearmType: new fields.StringField({initial: ""}),
       misfireThreshold: new fields.NumberField({initial: 4, integer: true, min: 0, max: 100}),
       fireRate: new fields.StringField({initial: "1"}),
       fireRateCustom: new fields.NumberField({initial: 1, nullable: true}),
@@ -146,6 +147,7 @@ export class TAMSAmmoData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({initial: 0})
       }),
       misfireRisk: new fields.BooleanField({initial: false}),
+      isSlug: new fields.BooleanField({initial: false}),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };
@@ -479,6 +481,13 @@ export class TAMSRaceData extends foundry.abstract.TypeDataModel {
       sizeGrantHP: new fields.StringField({initial: ""}),
       sizeGrantStealth: new fields.StringField({initial: ""}),
       sizeGrantCombat: new fields.StringField({initial: ""}),
+      injuryCheckBonus: new fields.NumberField({initial: 0, integer: true}),
+      resistances: new fields.ArrayField(new fields.SchemaField({
+        damageType: new fields.StringField({initial: ""}),
+        category: new fields.StringField({initial: "resistance"}),
+        value: new fields.NumberField({initial: 0, integer: true, min: 0}),
+        limbs: new fields.ArrayField(new fields.StringField({initial: ""}), {initial: []})
+      })),
       tags: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""})
     };

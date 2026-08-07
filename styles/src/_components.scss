@@ -458,3 +458,13 @@
         }
     }
 }
+
+details.limb-filter {
+    summary { user-select: none; }
+    summary .limb-arrow-up { display: none; }
+    summary .limb-arrow-down { display: inline; }
+    &[open] {
+        summary .limb-arrow-up { display: inline; }
+        summary .limb-arrow-down { display: none; }
+    }
+}

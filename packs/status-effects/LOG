@@ -1,17 +1,14 @@
-2026/08/04-23:44:59.538742 7f781ffff6c0 Recovering log #94
-2026/08/04-23:44:59.538777 7f781ffff6c0 Level-0 table #96: started
-2026/08/04-23:44:59.543418 7f781ffff6c0 Level-0 table #96: 3184 bytes OK
-2026/08/04-23:44:59.558654 7f781ffff6c0 Delete type=0 #94
-2026/08/04-23:44:59.558684 7f781ffff6c0 Delete type=3 #93
-2026/08/04-23:44:59.560273 7f781f7fe6c0 Level-0 table #99: started
-2026/08/04-23:44:59.564925 7f781f7fe6c0 Level-0 table #99: 2401 bytes OK
-2026/08/04-23:44:59.574497 7f781f7fe6c0 Delete type=0 #97
-2026/08/04-23:44:59.574554 7f781f7fe6c0 Manual compaction at level-0 from '!items!tamsStatusAcidBurn' @ 72057594037927935 : 1 .. '!items!tamsStatusSuppressed' @ 0 : 0; will stop at '!items!tamsStatusOnFire' @ 280 : 1
-2026/08/04-23:44:59.574557 7f781f7fe6c0 Compacting 2@0 + 1@1 files
-2026/08/04-23:44:59.579993 7f781f7fe6c0 Generated table #100@0: 44 keys, 2708 bytes
-2026/08/04-23:44:59.580001 7f781f7fe6c0 Compacted 2@0 + 1@1 files => 2708 bytes
-2026/08/04-23:44:59.589675 7f781f7fe6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
-2026/08/04-23:44:59.589707 7f781f7fe6c0 Delete type=2 #92
-2026/08/04-23:44:59.589751 7f781f7fe6c0 Delete type=2 #96
-2026/08/04-23:44:59.589770 7f781f7fe6c0 Delete type=2 #99
-2026/08/04-23:44:59.589800 7f781f7fe6c0 Manual compaction at level-0 from '!items!tamsStatusOnFire' @ 280 : 1 .. '!items!tamsStatusSuppressed' @ 0 : 0; will stop at (end)
+2026/08/07-23:32:35.440825 7f5e7e7fc6c0 Recovering log #121
+2026/08/07-23:32:35.468559 7f5e7e7fc6c0 Delete type=3 #119
+2026/08/07-23:32:35.468590 7f5e7e7fc6c0 Delete type=0 #121
+2026/08/07-23:32:35.470574 7f5e7dffb6c0 Level-0 table #127: started
+2026/08/07-23:32:35.475241 7f5e7dffb6c0 Level-0 table #127: 2388 bytes OK
+2026/08/07-23:32:35.484996 7f5e7dffb6c0 Delete type=0 #125
+2026/08/07-23:32:35.485061 7f5e7dffb6c0 Manual compaction at level-0 from '!items!tamsStatusAcidBurn' @ 72057594037927935 : 1 .. '!items!tamsStatusSuppressed' @ 0 : 0; will stop at '!items!tamsStatusSuppressed' @ 444 : 1
+2026/08/07-23:32:35.485063 7f5e7dffb6c0 Compacting 1@0 + 1@1 files
+2026/08/07-23:32:35.490496 7f5e7dffb6c0 Generated table #128@0: 44 keys, 2708 bytes
+2026/08/07-23:32:35.490507 7f5e7dffb6c0 Compacted 1@0 + 1@1 files => 2708 bytes
+2026/08/07-23:32:35.500272 7f5e7dffb6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/08/07-23:32:35.500300 7f5e7dffb6c0 Delete type=2 #123
+2026/08/07-23:32:35.500341 7f5e7dffb6c0 Delete type=2 #127
+2026/08/07-23:32:35.500378 7f5e7dffb6c0 Manual compaction at level-0 from '!items!tamsStatusSuppressed' @ 444 : 1 .. '!items!tamsStatusSuppressed' @ 0 : 0; will stop at (end)

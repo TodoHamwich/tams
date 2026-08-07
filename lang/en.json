@@ -278,7 +278,24 @@
         "NoPassiveTraits": "No innate traits yet. Click + to add one.",
         "GrantedAbilities": "Granted Abilities",
         "DropAbilityHere": "Drag ability items here to grant them with this race",
-        "GrantedAbilityOnly": "Only ability items can be added to a Race."
+        "GrantedAbilityOnly": "Only ability items can be added to a Race.",
+        "InjuryCheckBonus": "Injury Check Bonus",
+        "InjuryCheckBonusHint": "Bonus added to Endurance Stat Checks when resisting Injury or Critical Injury.",
+        "Resistances": "Granted Resistances",
+        "AddResistance": "Add Resistance",
+        "LimbScope": {
+            "AllLimbs": "All Limbs",
+            "Label": "Limb Filter"
+        },
+        "LimbAbbrev": {
+            "Head":     "Hd",
+            "Thorax":   "Th",
+            "Stomach":  "St",
+            "LeftArm":  "LA",
+            "RightArm": "RA",
+            "LeftLeg":  "LL",
+            "RightLeg": "RL"
+        }
     },
     "Traits": "Traits",
     "WeaponTags": {
@@ -352,9 +369,38 @@
     "FirelockFlintlock": "Flintlock",
     "FirelockWheellock": "Wheellock",
     "FirelockBlunderbuss": "Blunderbuss",
-    "IsLoaded": "Loaded?",
+    "FirearmTypeLabel": "Firearm Type",
+    "FirearmType": {
+      "None": "Not a Firearm",
+      "EarlyFirearms": "Early Firearms",
+      "ModernFirearms": "Modern Firearms",
+      "PistolSA": "Semi-Auto Pistol",
+      "Revolver": "Revolver",
+      "SMG": "Submachine Gun (SMG)",
+      "ShotgunPump": "Shotgun (Pump-Action)",
+      "ShotgunSA": "Shotgun (Semi-Auto)",
+      "Carbine": "Carbine",
+      "AssaultRifle": "Assault Rifle",
+      "BattleRifle": "Battle Rifle",
+      "DMR": "Designated Marksman Rifle (DMR)",
+      "BoltSniper": "Sniper Rifle (Bolt-Action)",
+      "SemiSniper": "Sniper Rifle (Semi-Auto)",
+      "LMG": "Light Machine Gun (LMG)",
+      "HMG": "Heavy Machine Gun / Anti-Materiel"
+    },
     "MisfireThreshold": "Misfire Threshold",
     "MisfireRiskQ": "Misfire Risk?",
+    "IsSlugQ": "Slug Ammo?",
+    "MagazineCapacity": "Magazine Capacity",
+    "RangeCategoryLabel": "Range Category",
+    "RangeCategory": {
+      "None": "Not a Firearm",
+      "Pistol": "Pistol (50 / 75m)",
+      "Shotgun": "Shotgun Pellets (5 / 15m)",
+      "LightRifle": "Light Rifle (200 / 300m)",
+      "MediumRifle": "Medium Rifle (300 / 500m)",
+      "HeavyRifle": "Heavy Rifle (500 / 800m)"
+    },
     "AttackStat": "Attack Stat",
     "DamageStat": "Damage Stat",
     "HeavyQ": "Heavy?",
@@ -555,7 +601,8 @@
       "StatusReminder": "Conditions: {statuses}"
     },
     "CombatEnd": {
-      "Title": "Combat Summary"
+      "Title": "Combat Summary",
+      "Cleared": "Cleared"
     },
     "Dying": {
       "Started": "{name} is dying! {limb} was destroyed. {turns} turn(s) until death.",
@@ -765,6 +812,7 @@
       "Immune": "Immune to {type} damage (negated)",
       "Resisted": "Resisted {value} {type} damage",
       "Vulnerable": "Vulnerable to {type} (+{value} damage)",
+      "HealedFrom": "Healed {value} from {type}",
       "TempDRAbsorbed": "Barrier absorbed {absorbed} damage ({remaining} remaining)"
     },
     "DamageType": {
@@ -781,6 +829,7 @@
     "Resistance": "Resistance",
     "Immunity": "Immunity",
     "Vulnerability": "Vulnerability",
+    "Healing": "Healing",
     "AddResistance": "Add Entry",
     "ResistanceValue": "Value",
     "DamageTypeLabel": "Damage Type",
@@ -821,6 +870,7 @@
       "EnduranceCheckInjury": "Endurance Check (Injury): {loc}",
       "EnduranceCheck": "Endurance Check: {loc}",
       "Dice": "Dice:",
+      "RacialBonus": "Racial Bonus:",
       "Capped": "Capped (End {end}):",
       "TotalVsDC": "Total: {total} vs DC {dc}",
       "SuccessNotInjured": "Success! Not Injured",
@@ -837,6 +887,7 @@
       "ApplyDamageTo": "Apply Damage to {name}",
       "ApplyAllHits": "Apply All Hits",
       "DamageReport": "{loc}: {effective} damage ({blocked} armor blocked{penLabel}{lossLabel}) {overflowLabel}",
+      "HealReport": "{loc}: Healed +{amount}",
       "ArmorPenetrated": " (Penetrated {pen})",
       "ArmorHPLost": "1 armor HP lost",
       "ArmorPointLost": "1 armor point lost",

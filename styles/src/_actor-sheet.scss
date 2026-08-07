@@ -441,20 +441,20 @@
     padding: 0;
 }
 
-.tams .firearm-loaded-indicator {
-    font-size: 9px;
-    margin-left: 5px;
-    cursor: pointer;
-    vertical-align: middle;
-    pointer-events: all;
-
-    &.loaded { color: #4caf50; }
-    &.unloaded { color: #e53935; }
-}
 
 .tams .ammo-select-cell {
     min-width: 90px;
     flex: 1.5;
+}
+
+.tams .item-stat.ammo-total-cell {
+    flex: 0 0 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+
+    .small-input { width: 28px !important; }
 }
 
 .tams .ammo-select {
