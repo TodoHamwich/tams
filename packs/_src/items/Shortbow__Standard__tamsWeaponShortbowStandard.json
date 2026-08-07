@@ -1,0 +1,40 @@
+{
+  "name": "Shortbow (Standard)",
+  "type": "weapon",
+  "img": "icons/weapons/bows/bow-short.svg",
+  "system": {
+    "familiarity": 0,
+    "usedInScene": false,
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "equipped": false,
+    "isHeavy": false,
+    "isTwoHanded": false,
+    "isLight": false,
+    "isRanged": true,
+    "isThrown": false,
+    "hasArmourPen": true,
+    "armourPenetration": 3,
+    "rangedDamage": 20,
+    "ammo": {
+      "current": 0,
+      "total": 0
+    },
+    "fireRate": "1",
+    "fireRateCustom": 1,
+    "attackStat": "default",
+    "damageStat": "dexterity",
+    "consumeAmmo": true,
+    "special": "STR Req: 22",
+    "isAoE": false,
+    "damageType": "",
+    "tags": "Ranged",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsWeaponShortbowStandard",
+  "effects": [],
+  "_key": "!items!tamsWeaponShortbowStandard"
+}

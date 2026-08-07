@@ -1,0 +1,21 @@
+{
+  "name": "Apostles / Bandolier (10)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 10,
+      "max": 10
+    },
+    "tags": "Ammunition, Firearm",
+    "description": "Reload -1. Safe for matchlock use."
+  },
+  "flags": {},
+  "_id": "tamsAmmoApostles",
+  "effects": [],
+  "_key": "!items!tamsAmmoApostles"
+}

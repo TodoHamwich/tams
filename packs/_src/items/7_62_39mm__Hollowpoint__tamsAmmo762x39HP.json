@@ -1,0 +1,22 @@
+{
+  "name": "7.62×39mm (Hollowpoint)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 30,
+      "max": 30
+    },
+    "tags": "Ammunition, 7.62×39mm, Rifle",
+    "misfireRisk": false,
+    "description": "Hollowpoint — expanded damage against soft targets. AP = 0."
+  },
+  "flags": {},
+  "_id": "tamsAmmo762x39HP",
+  "effects": [],
+  "_key": "!items!tamsAmmo762x39HP"
+}

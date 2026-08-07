@@ -1,0 +1,22 @@
+{
+  "name": ".45 ACP (Armour Piercing)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 25,
+      "max": 25
+    },
+    "tags": "Ammunition, .45 ACP, Pistol",
+    "misfireRisk": false,
+    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+  },
+  "flags": {},
+  "_id": "tamsAmmo45acpAP",
+  "effects": [],
+  "_key": "!items!tamsAmmo45acpAP"
+}

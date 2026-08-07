@@ -1,0 +1,22 @@
+{
+  "name": "Paper Cartridges (10)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 10,
+      "max": 10
+    },
+    "tags": "Ammunition, Firearm",
+    "description": "Reload -2 for all firearms. Misfire risk on matchlocks.",
+    "misfireRisk": true
+  },
+  "flags": {},
+  "_id": "tamsAmmoPaperCartridges",
+  "effects": [],
+  "_key": "!items!tamsAmmoPaperCartridges"
+}

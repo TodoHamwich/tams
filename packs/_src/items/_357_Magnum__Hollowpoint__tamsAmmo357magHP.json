@@ -1,0 +1,22 @@
+{
+  "name": ".357 Magnum (Hollowpoint)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 18,
+      "max": 18
+    },
+    "tags": "Ammunition, .357 Magnum, Revolver",
+    "misfireRisk": false,
+    "description": "Hollowpoint — expanded damage against soft targets. AP = 0."
+  },
+  "flags": {},
+  "_id": "tamsAmmo357magHP",
+  "effects": [],
+  "_key": "!items!tamsAmmo357magHP"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Crossbow Bolts (20)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 20,
+      "max": 20
+    },
+    "tags": "Ammunition, Crossbow",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsAmmoCrossbowBolts",
+  "effects": [],
+  "_key": "!items!tamsAmmoCrossbowBolts"
+}

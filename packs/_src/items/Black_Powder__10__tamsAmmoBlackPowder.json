@@ -1,0 +1,21 @@
+{
+  "name": "Black Powder (10)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 10,
+      "max": 10
+    },
+    "tags": "Ammunition, Firearm",
+    "description": "10 charges."
+  },
+  "flags": {},
+  "_id": "tamsAmmoBlackPowder",
+  "effects": [],
+  "_key": "!items!tamsAmmoBlackPowder"
+}

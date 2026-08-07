@@ -1,0 +1,21 @@
+{
+  "name": "Healing Poultice (Quality)",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 1,
+      "max": 1
+    },
+    "tags": "Healing, Poultice",
+    "description": "+15 to recovery rolls"
+  },
+  "flags": {},
+  "_id": "tamsPoulticeQuality",
+  "effects": [],
+  "_key": "!items!tamsPoulticeQuality"
+}

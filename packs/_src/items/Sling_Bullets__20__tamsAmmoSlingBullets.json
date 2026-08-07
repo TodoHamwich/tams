@@ -1,0 +1,21 @@
+{
+  "name": "Sling Bullets (20)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 20,
+      "max": 20
+    },
+    "tags": "Ammunition, Sling",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsAmmoSlingBullets",
+  "effects": [],
+  "_key": "!items!tamsAmmoSlingBullets"
+}

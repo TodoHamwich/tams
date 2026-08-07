@@ -1,0 +1,22 @@
+{
+  "name": ".338 Lapua Magnum (Armour Piercing)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 10,
+      "max": 10
+    },
+    "tags": "Ammunition, .338 Lapua, Sniper",
+    "misfireRisk": false,
+    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+  },
+  "flags": {},
+  "_id": "tamsAmmo338lapuaAP",
+  "effects": [],
+  "_key": "!items!tamsAmmo338lapuaAP"
+}

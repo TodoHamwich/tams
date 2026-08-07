@@ -2,7 +2,7 @@
   "name": "Barrett M82A1",
   "type": "weapon",
   "img": "icons/weapons/guns/gun-musket.svg",
-  "folder": "tamsModernFirearmsFolder",
+  "folder": "QzMibLFJxkOO2Z7i",
   "system": {
     "familiarity": 0,
     "usedInScene": false,
@@ -40,5 +40,6 @@
   },
   "flags": {},
   "_id": "tamsWeaponBarrettM82A1",
+  "effects": [],
   "_key": "!items!tamsWeaponBarrettM82A1"
 }

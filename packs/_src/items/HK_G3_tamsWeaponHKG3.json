@@ -2,7 +2,7 @@
   "name": "HK G3",
   "type": "weapon",
   "img": "icons/weapons/guns/gun-rifle.svg",
-  "folder": "tamsModernFirearmsFolder",
+  "folder": "QzMibLFJxkOO2Z7i",
   "system": {
     "familiarity": 0,
     "usedInScene": false,
@@ -40,5 +40,6 @@
   },
   "flags": {},
   "_id": "tamsWeaponHKG3",
+  "effects": [],
   "_key": "!items!tamsWeaponHKG3"
 }

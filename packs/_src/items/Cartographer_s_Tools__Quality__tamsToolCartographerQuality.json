@@ -1,0 +1,17 @@
+{
+  "name": "Cartographer's Tools (Quality)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Quality, +5",
+    "description": "Cartographer's Tools (Quality). Skill bonus: +5."
+  },
+  "flags": {},
+  "_id": "tamsToolCartographerQuality",
+  "effects": [],
+  "_key": "!items!tamsToolCartographerQuality"
+}

@@ -2,7 +2,7 @@
   "name": "M2 Browning",
   "type": "weapon",
   "img": "icons/weapons/guns/gun-musket.svg",
-  "folder": "tamsModernFirearmsFolder",
+  "folder": "QzMibLFJxkOO2Z7i",
   "system": {
     "familiarity": 0,
     "usedInScene": false,
@@ -40,5 +40,6 @@
   },
   "flags": {},
   "_id": "tamsWeaponM2Browning",
+  "effects": [],
   "_key": "!items!tamsWeaponM2Browning"
 }

@@ -1,15 +1,15 @@
-2026/08/07-23:32:35.501460 7f5e7ffff6c0 Recovering log #45
-2026/08/07-23:32:35.515979 7f5e7ffff6c0 Delete type=3 #43
-2026/08/07-23:32:35.516006 7f5e7ffff6c0 Delete type=0 #45
-2026/08/07-23:32:35.519957 7f5e7dffb6c0 Level-0 table #51: started
-2026/08/07-23:32:35.525804 7f5e7dffb6c0 Level-0 table #51: 30255 bytes OK
-2026/08/07-23:32:35.535585 7f5e7dffb6c0 Delete type=0 #49
-2026/08/07-23:32:35.535654 7f5e7dffb6c0 Manual compaction at level-0 from '!folders!tamsModernFirearmsFolder' @ 72057594037927935 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at (end)
-2026/08/07-23:32:35.535665 7f5e7dffb6c0 Manual compaction at level-1 from '!folders!tamsModernFirearmsFolder' @ 72057594037927935 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at '!items!tamsWeaponWheellockPistol' @ 1638 : 1
-2026/08/07-23:32:35.535667 7f5e7dffb6c0 Compacting 1@1 + 1@2 files
-2026/08/07-23:32:35.540645 7f5e7dffb6c0 Generated table #52@1: 196 keys, 30255 bytes
-2026/08/07-23:32:35.540652 7f5e7dffb6c0 Compacted 1@1 + 1@2 files => 30255 bytes
-2026/08/07-23:32:35.550386 7f5e7dffb6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
-2026/08/07-23:32:35.550415 7f5e7dffb6c0 Delete type=2 #47
-2026/08/07-23:32:35.550455 7f5e7dffb6c0 Delete type=2 #51
-2026/08/07-23:32:35.550487 7f5e7dffb6c0 Manual compaction at level-1 from '!items!tamsWeaponWheellockPistol' @ 1638 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at (end)
+2026/08/07-23:41:04.489671 7f7c9f7bf6c0 Recovering log #54
+2026/08/07-23:41:04.504058 7f7c9f7bf6c0 Delete type=0 #54
+2026/08/07-23:41:04.504082 7f7c9f7bf6c0 Delete type=3 #53
+2026/08/07-23:41:04.508195 7f7c9d7bb6c0 Level-0 table #58: started
+2026/08/07-23:41:04.514422 7f7c9d7bb6c0 Level-0 table #58: 30380 bytes OK
+2026/08/07-23:41:04.524240 7f7c9d7bb6c0 Delete type=0 #56
+2026/08/07-23:41:04.524301 7f7c9d7bb6c0 Manual compaction at level-0 from '!folders!QzMibLFJxkOO2Z7i' @ 72057594037927935 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at (end)
+2026/08/07-23:41:04.524312 7f7c9d7bb6c0 Manual compaction at level-1 from '!folders!QzMibLFJxkOO2Z7i' @ 72057594037927935 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at '!items!tamsWeaponWheellockPistol' @ 1819 : 1
+2026/08/07-23:41:04.524314 7f7c9d7bb6c0 Compacting 1@1 + 1@2 files
+2026/08/07-23:41:04.529280 7f7c9d7bb6c0 Generated table #59@1: 196 keys, 30357 bytes
+2026/08/07-23:41:04.529287 7f7c9d7bb6c0 Compacted 1@1 + 1@2 files => 30357 bytes
+2026/08/07-23:41:04.539151 7f7c9d7bb6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/08/07-23:41:04.539180 7f7c9d7bb6c0 Delete type=2 #52
+2026/08/07-23:41:04.539228 7f7c9d7bb6c0 Delete type=2 #58
+2026/08/07-23:41:04.539259 7f7c9d7bb6c0 Manual compaction at level-1 from '!items!tamsWeaponWheellockPistol' @ 1819 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at (end)

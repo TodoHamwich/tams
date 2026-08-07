@@ -2,7 +2,7 @@
   "name": "AK-74",
   "type": "weapon",
   "img": "icons/weapons/guns/gun-rifle.svg",
-  "folder": "tamsModernFirearmsFolder",
+  "folder": "QzMibLFJxkOO2Z7i",
   "system": {
     "familiarity": 0,
     "usedInScene": false,
@@ -40,5 +40,6 @@
   },
   "flags": {},
   "_id": "tamsWeaponAK74",
+  "effects": [],
   "_key": "!items!tamsWeaponAK74"
 }

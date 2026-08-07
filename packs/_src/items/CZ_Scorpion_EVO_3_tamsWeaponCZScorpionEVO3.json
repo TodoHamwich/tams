@@ -2,7 +2,7 @@
   "name": "CZ Scorpion EVO 3",
   "type": "weapon",
   "img": "icons/weapons/guns/gun-pistol.svg",
-  "folder": "tamsModernFirearmsFolder",
+  "folder": "QzMibLFJxkOO2Z7i",
   "system": {
     "familiarity": 0,
     "usedInScene": false,
@@ -40,5 +40,6 @@
   },
   "flags": {},
   "_id": "tamsWeaponCZScorpionEVO3",
+  "effects": [],
   "_key": "!items!tamsWeaponCZScorpionEVO3"
 }

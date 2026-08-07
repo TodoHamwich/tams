@@ -1,0 +1,21 @@
+{
+  "name": "Lead Shot (20)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 20,
+      "max": 20
+    },
+    "tags": "Ammunition, Firearm",
+    "description": ""
+  },
+  "flags": {},
+  "_id": "tamsAmmoLeadShot",
+  "effects": [],
+  "_key": "!items!tamsAmmoLeadShot"
+}

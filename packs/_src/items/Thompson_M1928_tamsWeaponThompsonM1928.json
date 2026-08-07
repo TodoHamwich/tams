@@ -2,7 +2,7 @@
   "name": "Thompson M1928",
   "type": "weapon",
   "img": "icons/weapons/guns/gun-pistol.svg",
-  "folder": "tamsModernFirearmsFolder",
+  "folder": "QzMibLFJxkOO2Z7i",
   "system": {
     "familiarity": 0,
     "usedInScene": false,
@@ -40,5 +40,6 @@
   },
   "flags": {},
   "_id": "tamsWeaponThompsonM1928",
+  "effects": [],
   "_key": "!items!tamsWeaponThompsonM1928"
 }

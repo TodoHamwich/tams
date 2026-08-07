@@ -1,0 +1,22 @@
+{
+  "name": "5.56×45mm NATO (Armour Piercing)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 30,
+      "max": 30
+    },
+    "tags": "Ammunition, 5.56mm, Rifle",
+    "misfireRisk": false,
+    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+  },
+  "flags": {},
+  "_id": "tamsAmmo556natoAP",
+  "effects": [],
+  "_key": "!items!tamsAmmo556natoAP"
+}

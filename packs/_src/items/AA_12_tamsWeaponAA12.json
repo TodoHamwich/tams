@@ -2,7 +2,7 @@
   "name": "AA-12",
   "type": "weapon",
   "img": "icons/weapons/guns/gun-blunderbuss.svg",
-  "folder": "tamsModernFirearmsFolder",
+  "folder": "QzMibLFJxkOO2Z7i",
   "system": {
     "familiarity": 0,
     "usedInScene": false,
@@ -40,5 +40,6 @@
   },
   "flags": {},
   "_id": "tamsWeaponAA12",
+  "effects": [],
   "_key": "!items!tamsWeaponAA12"
 }

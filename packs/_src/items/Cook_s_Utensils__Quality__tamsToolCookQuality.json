@@ -1,0 +1,17 @@
+{
+  "name": "Cook's Utensils (Quality)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Quality, +5",
+    "description": "Cook's Utensils (Quality). Skill bonus: +5."
+  },
+  "flags": {},
+  "_id": "tamsToolCookQuality",
+  "effects": [],
+  "_key": "!items!tamsToolCookQuality"
+}

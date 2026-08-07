@@ -1,0 +1,22 @@
+{
+  "name": ".44 Magnum (Armour Piercing)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 6,
+      "max": 6
+    },
+    "tags": "Ammunition, .44 Magnum, Revolver",
+    "misfireRisk": false,
+    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+  },
+  "flags": {},
+  "_id": "tamsAmmo44magAP",
+  "effects": [],
+  "_key": "!items!tamsAmmo44magAP"
+}

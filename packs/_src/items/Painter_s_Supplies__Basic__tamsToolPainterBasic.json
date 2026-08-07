@@ -1,0 +1,17 @@
+{
+  "name": "Painter's Supplies (Basic)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Basic, +0",
+    "description": "Painter's Supplies (Basic). Skill bonus: +0."
+  },
+  "flags": {},
+  "_id": "tamsToolPainterBasic",
+  "effects": [],
+  "_key": "!items!tamsToolPainterBasic"
+}

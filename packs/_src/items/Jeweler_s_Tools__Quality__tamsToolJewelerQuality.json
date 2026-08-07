@@ -1,0 +1,17 @@
+{
+  "name": "Jeweler's Tools (Quality)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Quality, +5",
+    "description": "Jeweler's Tools (Quality). Skill bonus: +5."
+  },
+  "flags": {},
+  "_id": "tamsToolJewelerQuality",
+  "effects": [],
+  "_key": "!items!tamsToolJewelerQuality"
+}

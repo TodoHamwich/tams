@@ -1,0 +1,17 @@
+{
+  "name": "Carpenter's Tools (Masterwork)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Masterwork, +10",
+    "description": "Carpenter's Tools (Masterwork). Skill bonus: +10."
+  },
+  "flags": {},
+  "_id": "tamsToolCarpenterMasterwork",
+  "effects": [],
+  "_key": "!items!tamsToolCarpenterMasterwork"
+}
