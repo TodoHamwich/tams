@@ -13,10 +13,11 @@
     },
     "tags": "Ammunition, .338 Lapua, Sniper",
     "misfireRisk": false,
-    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+    "description": "Armour Piercing \u2014 hardened core. Reduced damage, increased armour penetration."
   },
   "flags": {},
   "_id": "tamsAmmo338lapuaAP",
   "effects": [],
-  "_key": "!items!tamsAmmo338lapuaAP"
+  "_key": "!items!tamsAmmo338lapuaAP",
+  "folder": "hh6n3d4o9s1y8czg"
 }

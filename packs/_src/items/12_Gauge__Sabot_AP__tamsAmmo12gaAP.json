@@ -13,11 +13,12 @@
     },
     "tags": "Ammunition, 12 Gauge, Shotgun",
     "misfireRisk": false,
-    "description": "Armour-Piercing sabot slug. No range falloff. Hardened core — reduced raw damage, increased armour penetration.",
+    "description": "Armour-Piercing sabot slug. No range falloff. Hardened core \u2014 reduced raw damage, increased armour penetration.",
     "isSlug": true
   },
   "flags": {},
   "_id": "tamsAmmo12gaAP",
   "effects": [],
-  "_key": "!items!tamsAmmo12gaAP"
+  "_key": "!items!tamsAmmo12gaAP",
+  "folder": "hh6n3d4o9s1y8czg"
 }

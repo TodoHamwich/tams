@@ -1,5 +1,5 @@
 {
-  "name": "5.56×45mm NATO (Hollowpoint)",
+  "name": "5.56\u00d745mm NATO (Hollowpoint)",
   "type": "ammo",
   "img": "icons/svg/item-bag.svg",
   "system": {
@@ -13,10 +13,11 @@
     },
     "tags": "Ammunition, 5.56mm, Rifle",
     "misfireRisk": false,
-    "description": "Hollowpoint — expanded damage against soft targets. AP = 0."
+    "description": "Hollowpoint \u2014 expanded damage against soft targets. AP = 0."
   },
   "flags": {},
   "_id": "tamsAmmo556natoHP",
   "effects": [],
-  "_key": "!items!tamsAmmo556natoHP"
+  "_key": "!items!tamsAmmo556natoHP",
+  "folder": "hh6n3d4o9s1y8czg"
 }

@@ -13,11 +13,12 @@
     },
     "tags": "Ammunition, 12 Gauge, Shotgun",
     "misfireRisk": false,
-    "description": "Standard buckshot load — multiple pellets. Damage falls off significantly with range.",
+    "description": "Standard buckshot load \u2014 multiple pellets. Damage falls off significantly with range.",
     "isSlug": false
   },
   "flags": {},
   "_id": "tamsAmmo12gaStandard",
   "effects": [],
-  "_key": "!items!tamsAmmo12gaStandard"
+  "_key": "!items!tamsAmmo12gaStandard",
+  "folder": "hh6n3d4o9s1y8czg"
 }

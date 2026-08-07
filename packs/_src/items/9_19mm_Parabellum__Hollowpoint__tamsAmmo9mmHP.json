@@ -1,5 +1,5 @@
 {
-  "name": "9×19mm Parabellum (Hollowpoint)",
+  "name": "9\u00d719mm Parabellum (Hollowpoint)",
   "type": "ammo",
   "img": "icons/svg/item-bag.svg",
   "system": {
@@ -13,10 +13,11 @@
     },
     "tags": "Ammunition, 9mm, Pistol",
     "misfireRisk": false,
-    "description": "Hollowpoint — expanded damage against soft targets. AP = 0."
+    "description": "Hollowpoint \u2014 expanded damage against soft targets. AP = 0."
   },
   "flags": {},
   "_id": "tamsAmmo9mmHP",
   "effects": [],
-  "_key": "!items!tamsAmmo9mmHP"
+  "_key": "!items!tamsAmmo9mmHP",
+  "folder": "hh6n3d4o9s1y8czg"
 }

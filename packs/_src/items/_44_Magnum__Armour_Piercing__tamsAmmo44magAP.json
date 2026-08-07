@@ -13,10 +13,11 @@
     },
     "tags": "Ammunition, .44 Magnum, Revolver",
     "misfireRisk": false,
-    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+    "description": "Armour Piercing \u2014 hardened core. Reduced damage, increased armour penetration."
   },
   "flags": {},
   "_id": "tamsAmmo44magAP",
   "effects": [],
-  "_key": "!items!tamsAmmo44magAP"
+  "_key": "!items!tamsAmmo44magAP",
+  "folder": "hh6n3d4o9s1y8czg"
 }

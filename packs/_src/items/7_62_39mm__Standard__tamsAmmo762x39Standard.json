@@ -1,5 +1,5 @@
 {
-  "name": "7.62×39mm (Standard)",
+  "name": "7.62\u00d739mm (Standard)",
   "type": "ammo",
   "img": "icons/svg/item-bag.svg",
   "system": {
@@ -11,12 +11,13 @@
       "value": 30,
       "max": 30
     },
-    "tags": "Ammunition, 7.62×39mm, Rifle",
+    "tags": "Ammunition, 7.62\u00d739mm, Rifle",
     "misfireRisk": false,
     "description": "Standard ammunition."
   },
   "flags": {},
   "_id": "tamsAmmo762x39Standard",
   "effects": [],
-  "_key": "!items!tamsAmmo762x39Standard"
+  "_key": "!items!tamsAmmo762x39Standard",
+  "folder": "hh6n3d4o9s1y8czg"
 }

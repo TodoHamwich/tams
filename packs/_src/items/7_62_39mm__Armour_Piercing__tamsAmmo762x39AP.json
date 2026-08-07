@@ -1,5 +1,5 @@
 {
-  "name": "7.62×39mm (Armour Piercing)",
+  "name": "7.62\u00d739mm (Armour Piercing)",
   "type": "ammo",
   "img": "icons/svg/item-bag.svg",
   "system": {
@@ -11,12 +11,13 @@
       "value": 30,
       "max": 30
     },
-    "tags": "Ammunition, 7.62×39mm, Rifle",
+    "tags": "Ammunition, 7.62\u00d739mm, Rifle",
     "misfireRisk": false,
-    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+    "description": "Armour Piercing \u2014 hardened core. Reduced damage, increased armour penetration."
   },
   "flags": {},
   "_id": "tamsAmmo762x39AP",
   "effects": [],
-  "_key": "!items!tamsAmmo762x39AP"
+  "_key": "!items!tamsAmmo762x39AP",
+  "folder": "hh6n3d4o9s1y8czg"
 }

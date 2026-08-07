@@ -1,5 +1,5 @@
 {
-  "name": "7.62×51mm NATO (Standard)",
+  "name": "7.62\u00d751mm NATO (Standard)",
   "type": "ammo",
   "img": "icons/svg/item-bag.svg",
   "system": {
@@ -18,5 +18,6 @@
   "flags": {},
   "_id": "tamsAmmo762natoStandard",
   "effects": [],
-  "_key": "!items!tamsAmmo762natoStandard"
+  "_key": "!items!tamsAmmo762natoStandard",
+  "folder": "hh6n3d4o9s1y8czg"
 }

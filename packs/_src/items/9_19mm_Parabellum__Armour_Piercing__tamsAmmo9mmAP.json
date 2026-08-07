@@ -1,5 +1,5 @@
 {
-  "name": "9×19mm Parabellum (Armour Piercing)",
+  "name": "9\u00d719mm Parabellum (Armour Piercing)",
   "type": "ammo",
   "img": "icons/svg/item-bag.svg",
   "system": {
@@ -13,10 +13,11 @@
     },
     "tags": "Ammunition, 9mm, Pistol",
     "misfireRisk": false,
-    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+    "description": "Armour Piercing \u2014 hardened core. Reduced damage, increased armour penetration."
   },
   "flags": {},
   "_id": "tamsAmmo9mmAP",
   "effects": [],
-  "_key": "!items!tamsAmmo9mmAP"
+  "_key": "!items!tamsAmmo9mmAP",
+  "folder": "hh6n3d4o9s1y8czg"
 }

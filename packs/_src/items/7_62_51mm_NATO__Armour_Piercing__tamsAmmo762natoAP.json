@@ -1,5 +1,5 @@
 {
-  "name": "7.62×51mm NATO (Armour Piercing)",
+  "name": "7.62\u00d751mm NATO (Armour Piercing)",
   "type": "ammo",
   "img": "icons/svg/item-bag.svg",
   "system": {
@@ -13,10 +13,11 @@
     },
     "tags": "Ammunition, 7.62mm, Rifle",
     "misfireRisk": false,
-    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+    "description": "Armour Piercing \u2014 hardened core. Reduced damage, increased armour penetration."
   },
   "flags": {},
   "_id": "tamsAmmo762natoAP",
   "effects": [],
-  "_key": "!items!tamsAmmo762natoAP"
+  "_key": "!items!tamsAmmo762natoAP",
+  "folder": "hh6n3d4o9s1y8czg"
 }

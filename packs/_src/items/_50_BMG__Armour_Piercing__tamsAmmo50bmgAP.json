@@ -13,10 +13,11 @@
     },
     "tags": "Ammunition, .50 BMG, Heavy",
     "misfireRisk": false,
-    "description": "Armour Piercing — hardened core. Reduced damage, increased armour penetration."
+    "description": "Armour Piercing \u2014 hardened core. Reduced damage, increased armour penetration."
   },
   "flags": {},
   "_id": "tamsAmmo50bmgAP",
   "effects": [],
-  "_key": "!items!tamsAmmo50bmgAP"
+  "_key": "!items!tamsAmmo50bmgAP",
+  "folder": "hh6n3d4o9s1y8czg"
 }
