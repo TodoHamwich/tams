@@ -36,7 +36,7 @@ describe('TAMSActor applyDamage', () => {
 
   it('applies basic damage correctly to a limb', async () => {
     const hits = [{ damage: 3, location: "Thorax", armourPen: 0 }];
-    await actor.applyDamage(hits);
+    await actor.applyTAMSDamage(hits);
     
     expect(actor.system.limbs.thorax.value).toBe(7); // 10 - 3
   });
@@ -44,7 +44,7 @@ describe('TAMSActor applyDamage', () => {
   it('reduces damage by armor', async () => {
     actor.system.limbs.thorax.armor = 2;
     const hits = [{ damage: 5, location: "Thorax", armourPen: 0 }];
-    await actor.applyDamage(hits);
+    await actor.applyTAMSDamage(hits);
     
     // 5 damage - 2 armor = 3 effective damage. 10 - 3 = 7
     expect(actor.system.limbs.thorax.value).toBe(7);
@@ -53,7 +53,7 @@ describe('TAMSActor applyDamage', () => {
   it('applies armor penetration', async () => {
     actor.system.limbs.thorax.armor = 5;
     const hits = [{ damage: 10, location: "Thorax", armourPen: 3 }];
-    await actor.applyDamage(hits);
+    await actor.applyTAMSDamage(hits);
     
     // 5 armor - 3 pen = 2 effective armor. 10 damage - 2 armor = 8 effective. 10 - 8 = 2.
     expect(actor.system.limbs.thorax.value).toBe(2);
@@ -63,7 +63,7 @@ describe('TAMSActor applyDamage', () => {
     actor.system.limbs.thorax.armor = 2;
     actor.system.limbs.thorax.otherArmor = 3;
     const hits = [{ damage: 10, location: "Thorax", armourPen: 0 }];
-    await actor.applyDamage(hits);
+    await actor.applyTAMSDamage(hits);
     
     // (2 armor + 3 other) = 5 total. 10 damage - 5 armor = 5 effective. 10 - 5 = 5.
     expect(actor.system.limbs.thorax.value).toBe(5);
@@ -87,7 +87,7 @@ describe('TAMSActor applyDamage', () => {
       // Thorax individual max is 10. Squad thorax max is 50.
       // Hit for 25 damage. Should be capped at 10.
       const hits = [{ damage: 25, location: "Thorax", armourPen: 0 }];
-      await actor.applyDamage(hits);
+      await actor.applyTAMSDamage(hits);
       
       expect(actor.system.limbs.thorax.value).toBe(40); // 50 - 10
     });
@@ -96,7 +96,7 @@ describe('TAMSActor applyDamage', () => {
       // AoE with multiplier 3. Cap should be 3 * individualMax = 30.
       // Hit for 25 damage. Should NOT be capped as 25 < 30.
       const hits = [{ damage: 25, location: "Thorax", armourPen: 0 }];
-      await actor.applyDamage(hits, { isAoE: true, multiplier: 3 });
+      await actor.applyTAMSDamage(hits, { isAoE: true, multiplier: 3 });
       
       expect(actor.system.limbs.thorax.value).toBe(25); // 50 - 25
     });
@@ -105,7 +105,7 @@ describe('TAMSActor applyDamage', () => {
         // AoE with multiplier 2. Cap should be 2 * 10 = 20.
         // Hit for 25 damage. Capped at 20.
         const hits = [{ damage: 25, location: "Thorax", armourPen: 0 }];
-        await actor.applyDamage(hits, { isAoE: true, multiplier: 2 });
+        await actor.applyTAMSDamage(hits, { isAoE: true, multiplier: 2 });
         
         expect(actor.system.limbs.thorax.value).toBe(30); // 50 - 20
     });
@@ -119,7 +119,7 @@ describe('TAMSActor applyDamage', () => {
             { damage: 7, location: "Thorax", armourPen: 0 },
             { damage: 8, location: "Thorax", armourPen: 0 }
         ];
-        await actor.applyDamage(hits);
+        await actor.applyTAMSDamage(hits);
         expect(actor.system.limbs.thorax.value).toBe(35); // 50 - 15
     });
 
@@ -132,7 +132,7 @@ describe('TAMSActor applyDamage', () => {
             { damage: 15, location: "Thorax", armourPen: 0 },
             { damage: 15, location: "Thorax", armourPen: 0 }
         ];
-        await actor.applyDamage(hits);
+        await actor.applyTAMSDamage(hits);
         expect(actor.system.limbs.thorax.value).toBe(30); // 50 - 20
     });
 
@@ -147,7 +147,7 @@ describe('TAMSActor applyDamage', () => {
         // effective = 10 (capped by indMax).
         // totalDamageOfHit = 20 (before capping).
         const hits = [{ damage: 20, location: "Thorax", armourPen: 0 }];
-        const result = await actor.applyDamage(hits);
+        const result = await actor.applyTAMSDamage(hits);
         
         // indMax = 10.
         // damageTakenAlready = 50 - 40 = 10.
@@ -162,7 +162,7 @@ describe('TAMSActor applyDamage', () => {
         actor.system.settings.npcRank = "mook";
         actor.system.limbs.thorax.value = 40;
         const hits = [{ damage: 20, location: "Thorax", armourPen: 0 }];
-        const result = await actor.applyDamage(hits);
+        const result = await actor.applyTAMSDamage(hits);
         
         expect(result.report).not.toContain('tams-squad-crit-roll');
     });
@@ -174,7 +174,7 @@ describe('TAMSActor applyDamage', () => {
         // Since we don't have full derivation, we manually set it
         actor.system.hp.value = -5;
         const hits = [{ damage: 1, location: "Thorax", armourPen: 0 }];
-        const result = await actor.applyDamage(hits);
+        const result = await actor.applyTAMSDamage(hits);
         
         expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: "unconscious" }));
     });
@@ -183,7 +183,7 @@ describe('TAMSActor applyDamage', () => {
         actor.system.hp.value = -60;
         actor.system.hp.max = 50;
         const hits = [{ damage: 1, location: "Thorax", armourPen: 0 }];
-        const result = await actor.applyDamage(hits);
+        const result = await actor.applyTAMSDamage(hits);
         
         expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: "survival" }));
     });
@@ -191,7 +191,7 @@ describe('TAMSActor applyDamage', () => {
     it('triggers an injury check if a limb is damaged and not already injured', async () => {
         actor.system.limbs.leftArm.label = "Left Arm";
         const hits = [{ damage: 8, location: "Left Arm", armourPen: 0 }];
-        const result = await actor.applyDamage(hits);
+        const result = await actor.applyTAMSDamage(hits);
         
         expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: "injured", limbKey: "leftArm" }));
     });
@@ -201,7 +201,7 @@ describe('TAMSActor applyDamage', () => {
         actor.system.limbs.leftArm.injured = true;
         actor.system.limbs.leftArm.value = 0;
         const hits = [{ damage: 10, location: "Left Arm", armourPen: 0 }];
-        const result = await actor.applyDamage(hits);
+        const result = await actor.applyTAMSDamage(hits);
         
         expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: 'crit', limbKey: "leftArm" }));
     });
@@ -210,7 +210,7 @@ describe('TAMSActor applyDamage', () => {
         actor.system.limbs.thorax.label = "Thorax";
         // Limb is not injured, but forceCrit is "1"
         const hits = [{ damage: 5, location: "Thorax", armourPen: 0, forceCrit: "1" }];
-        const result = await actor.applyDamage(hits);
+        const result = await actor.applyTAMSDamage(hits);
 
         expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: 'crit', limbKey: "thorax" }));
     });
@@ -222,7 +222,7 @@ describe('TAMSActor applyDamage', () => {
         actor.system.limbs.leftArm.injured = true;
         actor.system.limbs.leftArm.criticallyInjured = false;
         const hits = [{ damage: 1, location: "Left Arm", armourPen: 0 }];
-        const result = await actor.applyDamage(hits);
+        const result = await actor.applyTAMSDamage(hits);
 
         expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: 'crit', limbKey: "leftArm" }));
     });
@@ -231,7 +231,7 @@ describe('TAMSActor applyDamage', () => {
         actor.system.limbs.leftArm.label = "Left Arm";
         // Full health: value=7, max=7, not injured. Hit for 20 → lands at -13, well below -max (-7).
         const hits = [{ damage: 20, location: "Left Arm", armourPen: 0 }];
-        const result = await actor.applyDamage(hits);
+        const result = await actor.applyTAMSDamage(hits);
 
         // Injured status is auto-set (no injured roll queued)
         expect(result.pendingChecks).not.toContainEqual(expect.objectContaining({ type: 'injured', limbKey: "leftArm" }));

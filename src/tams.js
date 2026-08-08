@@ -123,10 +123,6 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.statusEffect = TAMSStatusEffectData;
   CONFIG.Item.dataModels.race = TAMSRaceData;
 
-  // v12: Ensure types are also in systemDataModels if needed
-  CONFIG.Item.systemDataModels = CONFIG.Item.dataModels;
-  CONFIG.Actor.systemDataModels = CONFIG.Actor.dataModels;
-
   CONFIG.Actor.documentClass = TAMSActor;
   CONFIG.Item.documentClass = TAMSItem;
 
@@ -233,7 +229,7 @@ Hooks.once("init", async function() {
 
   Hooks.on("renderChatLog", (app, html) => {
     if (!game.user.isGM) return;
-    const root = (html instanceof jQuery) ? html[0] : html;
+    const root = (html instanceof HTMLElement) ? html : html[0];
     const controls = root.querySelector("#chat-controls")
       ?? root.querySelector(".control-buttons")
       ?? root.querySelector("#chat-form");

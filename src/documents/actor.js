@@ -13,7 +13,7 @@ export class TAMSActor extends Actor {
    * @param {number} [options.multiplier=1] For squads/hordes, how many members were hit by the AoE.
    * @returns {Promise<object>} Result including updates, itemUpdates, pendingChecks, and report.
    */
-  async applyDamage(hits, { isAoE = false, multiplier = 1 } = {}) {
+  async applyTAMSDamage(hits, { isAoE = false, multiplier = 1 } = {}) {
     const updates = {};
     const itemUpdates = {}; 
     const pendingChecks = [];
@@ -555,33 +555,25 @@ export class TAMSActor extends Actor {
 
   async _offerHPPaymentForStamina(deficit) {
     const hpCost = 5 * deficit;
-    return new Promise(resolve => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.HPPayment.Title"),
-        content: `<p>${game.i18n.format("TAMS.HPPayment.Prompt", { amount: deficit, hp: hpCost })}</p>`,
-        buttons: {
-          yes: { label: game.i18n.localize("TAMS.HPPayment.Pay"),    callback: () => resolve(true)  },
-          no:  { label: game.i18n.localize("TAMS.HPPayment.Decline"), callback: () => resolve(false) }
-        },
-        default: "no",
-        close: () => resolve(false)
-      }).render(true);
+    const result = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("TAMS.HPPayment.Title") },
+      content: `<p>${game.i18n.format("TAMS.HPPayment.Prompt", { amount: deficit, hp: hpCost })}</p>`,
+      yes: { label: game.i18n.localize("TAMS.HPPayment.Pay"), default: false },
+      no: { label: game.i18n.localize("TAMS.HPPayment.Decline"), default: true },
+      rejectClose: false
     });
+    return result === true;
   }
 
   async _offerStaminaPayment(resourceName, deficit) {
-    return new Promise(resolve => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.StaminaPayment.Title"),
-        content: `<p>${game.i18n.format("TAMS.StaminaPayment.Prompt", { resource: resourceName, amount: deficit })}</p>`,
-        buttons: {
-          yes: { label: game.i18n.localize("TAMS.StaminaPayment.Pay"),    callback: () => resolve(true)  },
-          no:  { label: game.i18n.localize("TAMS.StaminaPayment.Decline"), callback: () => resolve(false) }
-        },
-        default: "no",
-        close: () => resolve(false)
-      }).render(true);
+    const result = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("TAMS.StaminaPayment.Title") },
+      content: `<p>${game.i18n.format("TAMS.StaminaPayment.Prompt", { resource: resourceName, amount: deficit })}</p>`,
+      yes: { label: game.i18n.localize("TAMS.StaminaPayment.Pay"), default: false },
+      no: { label: game.i18n.localize("TAMS.StaminaPayment.Decline"), default: true },
+      rejectClose: false
     });
+    return result === true;
   }
 
   /**
@@ -658,9 +650,9 @@ export class TAMSActor extends Actor {
   }
 
   /** @override */
-  async _onCreateDescendantDocuments(parent, collection, documents, data, options, userId) {
-    await super._onCreateDescendantDocuments(parent, collection, documents, data, options, userId);
-    if (collection !== "items" || game.userId !== userId) return;
+  async _onCreateEmbeddedDocuments(embeddedName, documents, result, options, userId) {
+    await super._onCreateEmbeddedDocuments(embeddedName, documents, result, options, userId);
+    if (embeddedName !== "Item" || game.userId !== userId) return;
 
     let endDelta = 0;
     const statDeltas = {};
@@ -680,9 +672,9 @@ export class TAMSActor extends Actor {
   }
 
   /** @override */
-  async _onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId) {
-    await super._onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId);
-    if (collection !== "items" || game.userId !== userId) return;
+  async _onDeleteEmbeddedDocuments(embeddedName, documents, result, options, userId) {
+    await super._onDeleteEmbeddedDocuments(embeddedName, documents, result, options, userId);
+    if (embeddedName !== "Item" || game.userId !== userId) return;
 
     let endDelta = 0;
     const statDeltas = {};

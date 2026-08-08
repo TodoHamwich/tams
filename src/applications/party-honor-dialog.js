@@ -37,18 +37,16 @@ export class TAMSPartyHonorApp extends foundry.applications.api.HandlebarsApplic
     const pathData = HONOR_PATHS[path];
     if (!pathData) return;
 
-    new Dialog({
-      title: `${game.i18n.localize(pathData.labelKey)} — ${game.i18n.localize("TAMS.Honor.EditScore")}`,
+    foundry.applications.api.DialogV2.wait({
+      window: { title: `${game.i18n.localize(pathData.labelKey)} — ${game.i18n.localize("TAMS.Honor.EditScore")}` },
       content: `<div class="form-group" style="padding: 10px;">
         <label>${game.i18n.localize("TAMS.Honor.Score")} (-100 ${game.i18n.localize("TAMS.Honor.To")} 100)</label>
         <input type="number" name="score" value="${current}" min="-100" max="100" style="width: 80px; margin-left: 10px;"/>
       </div>`,
-      buttons: {
-        save: {
-          icon: '<i class="fas fa-save"></i>',
-          label: game.i18n.localize("TAMS.Save"),
-          callback: async (html) => {
-            const val = parseInt(html.find('[name="score"]').val());
+      rejectClose: false,
+      buttons: [
+        { action: "save", icon: "fa-solid fa-save", label: game.i18n.localize("TAMS.Save"), default: true, callback: async (event, button, dialog) => {
+            const val = parseInt(dialog.element.querySelector('[name="score"]').value);
             if (!isNaN(val)) {
               partyHonor[path] = Math.clamp(val, -100, 100);
               await setPartyHonor(partyHonor);
@@ -56,12 +54,8 @@ export class TAMSPartyHonorApp extends foundry.applications.api.HandlebarsApplic
             }
           }
         },
-        cancel: {
-          icon: '<i class="fas fa-times"></i>',
-          label: game.i18n.localize("TAMS.Cancel")
-        }
-      },
-      default: "save"
-    }).render(true);
+        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel") }
+      ]
+    });
   }
 }

@@ -1242,14 +1242,15 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
     }
   });
   content += `</div>`;
-  new Dialog({
-    title: game.i18n.format("TAMS.Checks.InjuriesAndSurvival", { name: target.name }),
+  foundry.applications.api.DialogV2.wait({
+    window: { title: game.i18n.format("TAMS.Checks.InjuriesAndSurvival", { name: target.name }) },
     content,
-    buttons: { close: { label: game.i18n.localize("TAMS.Checks.Close") } },
-    render: (html) => {
-      html.find(".roll-check").click(async (ev) => {
-        const btn = ev.currentTarget;
-        const idx = parseInt(btn.dataset.index);
+    rejectClose: false,
+    buttons: [{ action: "close", label: game.i18n.localize("TAMS.Checks.Close"), default: true }],
+    render: (event, dialog) => {
+      dialog.element.querySelectorAll(".roll-check").forEach((btn) => btn.addEventListener("click", async (ev) => {
+        const btn2 = ev.currentTarget;
+        const idx = parseInt(btn2.dataset.index);
         const check = pendingChecks[idx];
         const statCap = check.type === "morale" ? target.system.stats.bravery.total : target.system.stats.endurance.total;
         let bonus = 0;
@@ -1334,14 +1335,14 @@ async function showCombinedInjuryDialog(target, pendingChecks) {
                     `;
         }
         ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: target }), content: report });
-        btn.disabled = true;
+        btn2.disabled = true;
         const passKey = { crit: "TAMS.Checks.CritAvoided", unconscious: "TAMS.Checks.Conscious", survival: "TAMS.Checks.SurvivalPass", morale: "TAMS.Checks.MoralePass" }[check.type];
         const failKey = { crit: "TAMS.Checks.CritWound", unconscious: "TAMS.Checks.Unconscious", survival: "TAMS.Checks.SurvivalFail", morale: "TAMS.Checks.MoraleFail" }[check.type];
-        btn.innerText = success ? game.i18n.localize(passKey) : game.i18n.localize(failKey);
-        btn.style.background = success ? "#2e7d32" : "#c62828";
-      });
+        btn2.innerText = success ? game.i18n.localize(passKey) : game.i18n.localize(failKey);
+        btn2.style.background = success ? "#2e7d32" : "#c62828";
+      }));
     }
-  }).render(true);
+  });
 }
 function buildContestedCheckContent(initiatorName, label, initiatorTotal, initiatorRaw, contests) {
   const contestRows = contests.map((c) => {
@@ -1461,41 +1462,40 @@ async function tamsCallGroupCheck() {
   const statOptions = statDefs.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
   const skillOptions = [...skillNames].sort().map((n) => `<option value="skill:${n}">${n}</option>`).join("");
   const skillGroup = skillOptions ? `<optgroup label="${game.i18n.localize("TAMS.Skills")}">${skillOptions}</optgroup>` : "";
-  const config = await new Promise((resolve) => {
-    new Dialog({
-      title: game.i18n.localize("TAMS.GroupCheck.CallForCheck"),
-      content: `
-        <div class="form-group">
-          <label>${game.i18n.localize("TAMS.GroupCheck.Label")}</label>
-          <input type="text" id="gc-label" placeholder="${game.i18n.localize("TAMS.GroupCheck.LabelPlaceholder")}"/>
-        </div>
-        <div class="form-group">
-          <label>${game.i18n.localize("TAMS.GroupCheck.WhatToRoll")}</label>
-          <select id="gc-roll">
-            <optgroup label="${game.i18n.localize("TAMS.GroupCheck.Stats")}">${statOptions}</optgroup>
-            ${skillGroup}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>${game.i18n.localize("TAMS.GroupCheck.Difficulty")}</label>
-          <input type="number" id="gc-difficulty" value="0" min="0"/>
-        </div>
-        ${selectedTokens.length > 0 ? `<p><small>${game.i18n.format("TAMS.GroupCheck.RollingFor", { count: selectedTokens.length })}</small></p>` : ""}
-      `,
-      buttons: {
-        roll: {
-          label: game.i18n.localize("TAMS.GroupCheck.RollAll"),
-          callback: (html) => resolve({
-            label: html.find("#gc-label").val().trim(),
-            rollChoice: html.find("#gc-roll").val(),
-            difficulty: parseInt(html.find("#gc-difficulty").val()) || 0
-          })
-        },
-        cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
+  const config = await foundry.applications.api.DialogV2.wait({
+    window: { title: game.i18n.localize("TAMS.GroupCheck.CallForCheck") },
+    content: `
+      <div class="form-group">
+        <label>${game.i18n.localize("TAMS.GroupCheck.Label")}</label>
+        <input type="text" id="gc-label" placeholder="${game.i18n.localize("TAMS.GroupCheck.LabelPlaceholder")}"/>
+      </div>
+      <div class="form-group">
+        <label>${game.i18n.localize("TAMS.GroupCheck.WhatToRoll")}</label>
+        <select id="gc-roll">
+          <optgroup label="${game.i18n.localize("TAMS.GroupCheck.Stats")}">${statOptions}</optgroup>
+          ${skillGroup}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>${game.i18n.localize("TAMS.GroupCheck.Difficulty")}</label>
+        <input type="number" id="gc-difficulty" value="0" min="0"/>
+      </div>
+      ${selectedTokens.length > 0 ? `<p><small>${game.i18n.format("TAMS.GroupCheck.RollingFor", { count: selectedTokens.length })}</small></p>` : ""}
+    `,
+    rejectClose: false,
+    buttons: [
+      {
+        action: "roll",
+        label: game.i18n.localize("TAMS.GroupCheck.RollAll"),
+        default: true,
+        callback: (event, button, dialog) => ({
+          label: dialog.element.querySelector("#gc-label").value.trim(),
+          rollChoice: dialog.element.querySelector("#gc-roll").value,
+          difficulty: parseInt(dialog.element.querySelector("#gc-difficulty").value) || 0
+        })
       },
-      default: "roll",
-      close: () => resolve(null)
-    }).render(true);
+      { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+    ]
   });
   if (!config) return;
   const { rollChoice, difficulty } = config;
@@ -1912,23 +1912,20 @@ async function tamsRenderChatMessage(message, html, data) {
         (s) => `<option value="${s.id}" ${gmRollChoice === s.id ? "selected" : ""}>${s.label}</option>`
       ).join("");
       const skillGroup = skillOptions ? `<optgroup label="${game.i18n.localize("TAMS.Skills")}">${skillOptions}</optgroup>` : "";
-      const chosenRollChoice = await new Promise((resolve) => {
-        new Dialog({
-          title: game.i18n.localize("TAMS.GroupCheck.JoinTitle"),
-          content: `<div class="form-group">
-              <label>${game.i18n.localize("TAMS.GroupCheck.WhatToRoll")}</label>
-              <select id="gc-player-roll">
-                <optgroup label="${game.i18n.localize("TAMS.GroupCheck.Stats")}">${statOptions}</optgroup>
-                ${skillGroup}
-              </select>
-            </div>`,
-          buttons: {
-            roll: { label: game.i18n.localize("TAMS.GroupCheck.RollAll"), callback: (html2) => resolve(html2.find("#gc-player-roll").val()) },
-            cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-          },
-          default: "roll",
-          close: () => resolve(null)
-        }).render(true);
+      const chosenRollChoice = await foundry.applications.api.DialogV2.wait({
+        window: { title: game.i18n.localize("TAMS.GroupCheck.JoinTitle") },
+        content: `<div class="form-group">
+            <label>${game.i18n.localize("TAMS.GroupCheck.WhatToRoll")}</label>
+            <select id="gc-player-roll">
+              <optgroup label="${game.i18n.localize("TAMS.GroupCheck.Stats")}">${statOptions}</optgroup>
+              ${skillGroup}
+            </select>
+          </div>`,
+        rejectClose: false,
+        buttons: [
+          { action: "roll", label: game.i18n.localize("TAMS.GroupCheck.RollAll"), default: true, callback: (event, button, dialog) => dialog.element.querySelector("#gc-player-roll").value },
+          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        ]
       });
       if (!chosenRollChoice) return;
       const isStatRoll = chosenRollChoice.startsWith("stat:");
@@ -2041,20 +2038,17 @@ async function tamsRenderChatMessage(message, html, data) {
         const eligible = game.actors.filter((a) => a.type === "character" && a.id !== (currentFlags == null ? void 0 : currentFlags.initiatorId) && !contested.has(a.id));
         if (!eligible.length) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
         const actorOptions = eligible.map((a) => `<option value="${a.id}">${a.name}</option>`).join("");
-        currentActor = await new Promise((resolve) => {
-          new Dialog({
-            title: game.i18n.localize("TAMS.ContestedCheck.DialogTitle"),
-            content: `<div class="form-group">
-                <label>${game.i18n.localize("TAMS.ContestedCheck.ChooseActor")}</label>
-                <select id="cc-actor-choice">${actorOptions}</select>
-              </div>`,
-            buttons: {
-              ok: { label: game.i18n.localize("TAMS.ContestedCheck.Roll"), callback: (html2) => resolve(game.actors.get(html2.find("#cc-actor-choice").val())) },
-              cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-            },
-            default: "ok",
-            close: () => resolve(null)
-          }).render(true);
+        currentActor = await foundry.applications.api.DialogV2.wait({
+          window: { title: game.i18n.localize("TAMS.ContestedCheck.DialogTitle") },
+          content: `<div class="form-group">
+              <label>${game.i18n.localize("TAMS.ContestedCheck.ChooseActor")}</label>
+              <select id="cc-actor-choice">${actorOptions}</select>
+            </div>`,
+          rejectClose: false,
+          buttons: [
+            { action: "ok", label: game.i18n.localize("TAMS.ContestedCheck.Roll"), default: true, callback: (event, button, dialog) => game.actors.get(dialog.element.querySelector("#cc-actor-choice").value) },
+            { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+          ]
         });
       } else {
         currentActor = ((_c2 = (_b2 = canvas.tokens) == null ? void 0 : _b2.controlled[0]) == null ? void 0 : _c2.actor) ?? game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
@@ -2078,23 +2072,20 @@ async function tamsRenderChatMessage(message, html, data) {
       const actorSkills = currentActor.items.filter((i) => i.type === "skill").sort((a, b) => a.name.localeCompare(b.name));
       const skillOptions = actorSkills.map((s) => `<option value="skill:${s.name}">${s.name}</option>`).join("");
       const skillGroup = skillOptions ? `<optgroup label="${game.i18n.localize("TAMS.Skills")}">${skillOptions}</optgroup>` : "";
-      const chosenRollChoice = await new Promise((resolve) => {
-        new Dialog({
-          title: game.i18n.localize("TAMS.ContestedCheck.DialogTitle"),
-          content: `<div class="form-group">
-              <label>${game.i18n.localize("TAMS.ContestedCheck.WhatToRoll")}</label>
-              <select id="cc-roll-choice">
-                <optgroup label="${game.i18n.localize("TAMS.GroupCheck.Stats")}">${statOptions}</optgroup>
-                ${skillGroup}
-              </select>
-            </div>`,
-          buttons: {
-            roll: { label: game.i18n.localize("TAMS.ContestedCheck.Roll"), callback: (html2) => resolve(html2.find("#cc-roll-choice").val()) },
-            cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-          },
-          default: "roll",
-          close: () => resolve(null)
-        }).render(true);
+      const chosenRollChoice = await foundry.applications.api.DialogV2.wait({
+        window: { title: game.i18n.localize("TAMS.ContestedCheck.DialogTitle") },
+        content: `<div class="form-group">
+            <label>${game.i18n.localize("TAMS.ContestedCheck.WhatToRoll")}</label>
+            <select id="cc-roll-choice">
+              <optgroup label="${game.i18n.localize("TAMS.GroupCheck.Stats")}">${statOptions}</optgroup>
+              ${skillGroup}
+            </select>
+          </div>`,
+        rejectClose: false,
+        buttons: [
+          { action: "roll", label: game.i18n.localize("TAMS.ContestedCheck.Roll"), default: true, callback: (event, button, dialog) => dialog.element.querySelector("#cc-roll-choice").value },
+          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        ]
       });
       if (!chosenRollChoice) return;
       let total, raw, skillDisplayName;
@@ -2290,41 +2281,51 @@ async function tamsRenderChatMessage(message, html, data) {
                 </div>
             </div>`;
     });
-    new Dialog({
-      title: game.i18n.format("TAMS.Checks.ApplyDamageTo", { name: target.name }),
+    foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.format("TAMS.Checks.ApplyDamageTo", { name: target.name }) },
       content: dialogContent,
-      render: (html2) => {
+      rejectClose: false,
+      render: (event, dialog) => {
+        var _a2, _b2, _c;
+        const form = dialog.element;
         const updateDamage = () => {
-          const multiplier = isAoEHit && isSquadOrHorde ? parseInt(html2.find("#aoe-targets-hit").val()) || 1 : 1;
-          const coverSelect = html2.find("#cover-select").val();
+          var _a3, _b3, _c2;
+          const multiplier = isAoEHit && isSquadOrHorde ? parseInt((_a3 = form.querySelector("#aoe-targets-hit")) == null ? void 0 : _a3.value) || 1 : 1;
+          const coverSelect = (_b3 = form.querySelector("#cover-select")) == null ? void 0 : _b3.value;
           let coverVal = 0;
           if (coverSelect === "custom") {
-            html2.find("#cover-custom").show();
-            coverVal = parseInt(html2.find("#cover-custom").val()) || 0;
+            const customEl = form.querySelector("#cover-custom");
+            if (customEl) customEl.style.display = "";
+            coverVal = parseInt((_c2 = form.querySelector("#cover-custom")) == null ? void 0 : _c2.value) || 0;
           } else {
-            html2.find("#cover-custom").hide();
+            const customEl = form.querySelector("#cover-custom");
+            if (customEl) customEl.style.display = "none";
             coverVal = parseInt(coverSelect) || 0;
           }
-          html2.find(".hit-dmg").each(function() {
-            const idx = $(this).data("index");
-            const isCovered = html2.find(`.hit-in-cover[data-index="${idx}"]`).is(":checked");
+          form.querySelectorAll(".hit-dmg").forEach((el2) => {
+            var _a4;
+            const idx = el2.dataset.index;
+            const isCovered = (_a4 = form.querySelector(`.hit-in-cover[data-index="${idx}"]`)) == null ? void 0 : _a4.checked;
             let effectiveBaseDmg = damageBase;
-            if (isCovered) {
-              effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
-            }
-            $(this).val(effectiveBaseDmg * multiplier);
+            if (isCovered) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
+            el2.value = effectiveBaseDmg * multiplier;
           });
         };
-        html2.find("#aoe-targets-hit, #cover-select, #cover-custom").on("input change", updateDamage);
-        html2.find(".hit-in-cover").on("change", updateDamage);
+        (_a2 = form.querySelector("#aoe-targets-hit")) == null ? void 0 : _a2.addEventListener("input", updateDamage);
+        (_b2 = form.querySelector("#cover-select")) == null ? void 0 : _b2.addEventListener("change", updateDamage);
+        (_c = form.querySelector("#cover-custom")) == null ? void 0 : _c.addEventListener("input", updateDamage);
+        form.querySelectorAll(".hit-in-cover").forEach((el2) => el2.addEventListener("change", updateDamage));
       },
-      buttons: {
-        apply: {
+      buttons: [
+        {
+          action: "apply",
           label: game.i18n.localize("TAMS.Checks.ApplyAllHits"),
-          callback: async (html2) => {
-            var _a2;
-            const multiplier = isAoEHit && isSquadOrHorde ? parseInt(html2.find("#aoe-targets-hit").val()) || 1 : 1;
-            const dmgInputs = html2.find(".hit-dmg");
+          default: true,
+          callback: async (event, button, dialog) => {
+            var _a2, _b2;
+            const form = dialog.element;
+            const multiplier = isAoEHit && isSquadOrHorde ? parseInt((_a2 = form.querySelector("#aoe-targets-hit")) == null ? void 0 : _a2.value) || 1 : 1;
+            const dmgInputs = form.querySelectorAll(".hit-dmg");
             const hits = [];
             for (let i = 0; i < locations.length; i++) {
               const totalIncoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
@@ -2338,7 +2339,7 @@ async function tamsRenderChatMessage(message, html, data) {
                 hits.push({ location: loc, damage: incoming, armourPen, damageType: btn.dataset.damageType || "", forceCrit: forceCrit ? "1" : "0" });
               }
             }
-            const { pendingChecks, report } = await target.applyDamage(hits, { isAoE: isAoEHit, multiplier });
+            const { pendingChecks, report } = await target.applyTAMSDamage(hits, { isAoE: isAoEHit, multiplier });
             ChatMessage.create({ content: report });
             if (pendingChecks.length > 0) showCombinedInjuryDialog(target, pendingChecks);
             const inflictsStatusId = message.getFlag("tams", "inflictsStatusId");
@@ -2347,14 +2348,13 @@ async function tamsRenderChatMessage(message, html, data) {
               const currentTracking = await target.getFlag("tams", "statusTracking") ?? {};
               await target.setFlag("tams", "statusTracking", {
                 ...currentTracking,
-                [inflictsStatusId]: ((_a2 = game.combat) == null ? void 0 : _a2.round) ?? 0
+                [inflictsStatusId]: ((_b2 = game.combat) == null ? void 0 : _b2.round) ?? 0
               });
             }
           }
         }
-      },
-      default: "apply"
-    }).render(true);
+      ]
+    });
   }));
   root.querySelectorAll(".tams-apply-if-cost").forEach((el) => el.addEventListener("click", async (ev) => {
     ev.preventDefault();
@@ -2379,17 +2379,12 @@ async function tamsRenderChatMessage(message, html, data) {
           const remaining = cost - res.value;
           const stamina = actor.system.stamina.value;
           if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", { resource: res.name }));
-          const useBoth = await new Promise((resolve) => {
-            new Dialog({
-              title: game.i18n.localize("TAMS.Combat.InsufficientResources"),
-              content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", { val: res.value, res: res.name, rem: remaining })}</p>`,
-              buttons: {
-                yes: { label: game.i18n.localize("TAMS.Yes"), callback: () => resolve(true) },
-                no: { label: game.i18n.localize("TAMS.No"), callback: () => resolve(false) }
-              },
-              default: "yes",
-              close: () => resolve(false)
-            }).render(true);
+          const useBoth = await foundry.applications.api.DialogV2.confirm({
+            window: { title: game.i18n.localize("TAMS.Combat.InsufficientResources") },
+            content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", { val: res.value, res: res.name, rem: remaining })}</p>`,
+            yes: { label: game.i18n.localize("TAMS.Yes"), default: true },
+            no: { label: game.i18n.localize("TAMS.No") },
+            rejectClose: false
           });
           if (!useBoth) return;
           const resources = foundry.utils.duplicate(actor.system.customResources);
@@ -2422,19 +2417,21 @@ async function tamsRenderChatMessage(message, html, data) {
     const actor = actorUuid ? await fromUuid(actorUuid) : null;
     const effectsRow = totalEffects < 0 ? `<div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.EffectsPrompt")}</label><input type="number" id="mishap-effects" value="1" min="0"/></div>` : `<input type="hidden" id="mishap-effects" value="${totalEffects}"/>`;
     const oneTurnChecked = castTime === "1turn" ? "checked" : "";
-    const result = await new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.Mishap.DialogTitle"),
-        content: `${effectsRow}
-                    <div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.OneTurnCast")} (−100%)</label><input type="checkbox" id="mishap-oneturn" ${oneTurnChecked}/></div>
-                    <div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.TurnsPrompt")} (−50% each)</label><input type="number" id="mishap-turns" value="0" min="0"/></div>
-                    <div class="form-group"><label>${game.i18n.localize("TAMS.CalculatorOptions.ReducedMishap")} (+2 cost, −60%)</label><input type="checkbox" id="mishap-reduced"/></div>`,
-        buttons: {
-          roll: { label: game.i18n.localize("TAMS.Mishap.RollButton"), callback: (html2) => resolve({ effects: parseInt(html2.find("#mishap-effects").val()) || 0, oneTurn: html2.find("#mishap-oneturn").is(":checked"), turns: parseInt(html2.find("#mishap-turns").val()) || 0, reduced: html2.find("#mishap-reduced").is(":checked") }) },
-          cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-        },
-        default: "roll"
-      }).render(true);
+    const result = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize("TAMS.Mishap.DialogTitle") },
+      content: `${effectsRow}
+                <div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.OneTurnCast")} (−100%)</label><input type="checkbox" id="mishap-oneturn" ${oneTurnChecked}/></div>
+                <div class="form-group"><label>${game.i18n.localize("TAMS.Mishap.TurnsPrompt")} (−50% each)</label><input type="number" id="mishap-turns" value="0" min="0"/></div>
+                <div class="form-group"><label>${game.i18n.localize("TAMS.CalculatorOptions.ReducedMishap")} (+2 cost, −60%)</label><input type="checkbox" id="mishap-reduced"/></div>`,
+      rejectClose: false,
+      buttons: [
+        { action: "roll", label: game.i18n.localize("TAMS.Mishap.RollButton"), default: true, callback: (event, button, dialog) => {
+          var _a2, _b2, _c, _d;
+          const form = dialog.element;
+          return { effects: parseInt((_a2 = form.querySelector("#mishap-effects")) == null ? void 0 : _a2.value) || 0, oneTurn: (_b2 = form.querySelector("#mishap-oneturn")) == null ? void 0 : _b2.checked, turns: parseInt((_c = form.querySelector("#mishap-turns")) == null ? void 0 : _c.value) || 0, reduced: (_d = form.querySelector("#mishap-reduced")) == null ? void 0 : _d.checked };
+        } },
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      ]
     });
     if (!result) return;
     totalEffects = result.effects;
@@ -2621,33 +2618,32 @@ async function tamsRenderChatMessage(message, html, data) {
       resources.push({ id: idx.toString(), name: res.name, value: res.value });
     });
     const options = resources.map((r) => `<option value="${r.id}">${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
-    const spending = await new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.Combat.BoostDodgeTitle"),
-        content: `
-            <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
-            <div class="form-group">
-                <label>${game.i18n.localize("TAMS.Combat.PointsSpentMax10")}</label>
-                <input type="number" id="res-points" value="${Math.min(pointsNeeded, 10)}" min="0" max="10"/>
-                <p><small>${game.i18n.localize("TAMS.Combat.BoostDodgeHint")}</small></p>
-                <p><i>${pointsNeeded > 0 ? game.i18n.format("TAMS.Combat.MinToDodge", { points: pointsNeeded }) : game.i18n.localize("TAMS.Combat.AlreadyDodged")}</i></p>
-            </div>
-            <div class="form-group">
-                <label>${game.i18n.localize("TAMS.Combat.UnawareCheckbox")}</label>
-                <input type="checkbox" id="unaware" ${isUnawareFromData ? "checked" : ""}/>
-            </div>`,
-        buttons: {
-          go: { label: game.i18n.localize("TAMS.Combat.ApplyBoost"), callback: (html2) => {
-            const resId2 = html2.find("#res-type").val();
-            const res = resources.find((r) => r.id === resId2);
-            let requestedPoints = Math.clamp(parseInt(html2.find("#res-points").val()) || 0, 0, 10);
-            if (requestedPoints > res.value) requestedPoints = res.value;
-            resolve({ resId: resId2, points: requestedPoints, unaware: html2.find("#unaware").is(":checked") });
-          } },
-          cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-        },
-        default: "go"
-      }).render(true);
+    const spending = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize("TAMS.Combat.BoostDodgeTitle") },
+      content: `
+          <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
+          <div class="form-group">
+              <label>${game.i18n.localize("TAMS.Combat.PointsSpentMax10")}</label>
+              <input type="number" id="res-points" value="${Math.min(pointsNeeded, 10)}" min="0" max="10"/>
+              <p><small>${game.i18n.localize("TAMS.Combat.BoostDodgeHint")}</small></p>
+              <p><i>${pointsNeeded > 0 ? game.i18n.format("TAMS.Combat.MinToDodge", { points: pointsNeeded }) : game.i18n.localize("TAMS.Combat.AlreadyDodged")}</i></p>
+          </div>
+          <div class="form-group">
+              <label>${game.i18n.localize("TAMS.Combat.UnawareCheckbox")}</label>
+              <input type="checkbox" id="unaware" ${isUnawareFromData ? "checked" : ""}/>
+          </div>`,
+      rejectClose: false,
+      buttons: [
+        { action: "go", label: game.i18n.localize("TAMS.Combat.ApplyBoost"), default: true, callback: (event, button, dialog) => {
+          const form = dialog.element;
+          const resId2 = form.querySelector("#res-type").value;
+          const res = resources.find((r) => r.id === resId2);
+          let requestedPoints = Math.clamp(parseInt(form.querySelector("#res-points").value) || 0, 0, 10);
+          if (requestedPoints > res.value) requestedPoints = res.value;
+          return { resId: resId2, points: requestedPoints, unaware: form.querySelector("#unaware").checked };
+        } },
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      ]
     });
     if (!spending) return;
     const { resId, points, unaware } = spending;
@@ -2746,13 +2742,14 @@ async function tamsRenderChatMessage(message, html, data) {
     const weapons = actor.items.filter((i) => i.type === "weapon" || i.type === "ability" && i.system.isReaction && i.system.isAttack);
     if (!weapons.length) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoValidWeapons"));
     const options = weapons.map((w) => `<option value="${w.id}">${w.name} (${w.type === "ability" ? "Ability" : "Weapon"}, Fam ${w.system.familiarity || 0})</option>`).join("");
-    let chosenId = await new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.Combat.ChooseWeaponRetaliate"),
-        content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Weapon")}</label><select id="ret-weapon">${options}</select></div>`,
-        buttons: { go: { label: game.i18n.localize("TAMS.Combat.RetaliateButton"), callback: (html2) => resolve(html2.find("#ret-weapon").val()) } },
-        default: "go"
-      }).render(true);
+    let chosenId = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize("TAMS.Combat.ChooseWeaponRetaliate") },
+      content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Weapon")}</label><select id="ret-weapon">${options}</select></div>`,
+      rejectClose: false,
+      buttons: [
+        { action: "go", label: game.i18n.localize("TAMS.Combat.RetaliateButton"), default: true, callback: (event, button, dialog) => dialog.element.querySelector("#ret-weapon").value },
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      ]
     });
     const weapon = actor.items.get(chosenId);
     if (!weapon) return;
@@ -2770,14 +2767,12 @@ async function tamsRenderChatMessage(message, html, data) {
             if (res.value < cost) {
               const remaining = cost - res.value;
               if (actor.system.stamina.value < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", { resource: res.name }));
-              const useBoth = await new Promise((resolve) => {
-                new Dialog({
-                  title: game.i18n.localize("TAMS.Combat.InsufficientResources"),
-                  content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", { val: res.value, res: res.name, rem: remaining })}</p>`,
-                  buttons: { yes: { label: game.i18n.localize("TAMS.Yes"), callback: () => resolve(true) }, no: { label: game.i18n.localize("TAMS.No"), callback: () => resolve(false) } },
-                  default: "yes",
-                  close: () => resolve(false)
-                }).render(true);
+              const useBoth = await foundry.applications.api.DialogV2.confirm({
+                window: { title: game.i18n.localize("TAMS.Combat.InsufficientResources") },
+                content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", { val: res.value, res: res.name, rem: remaining })}</p>`,
+                yes: { label: game.i18n.localize("TAMS.Yes"), default: true },
+                no: { label: game.i18n.localize("TAMS.No") },
+                rejectClose: false
               });
               if (!useBoth) return;
               const resources = foundry.utils.duplicate(actor.system.customResources);
@@ -2900,7 +2895,7 @@ async function tamsRenderChatMessage(message, html, data) {
           <button class="tams-behind-toggle" style="background: #444; color: white;">B</button>
           <button class="tams-unaware-toggle" style="background: #444; color: white;">U</button>
       ` : isMutual ? `<button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-type="${retDamageType}" data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? "1" : "0"}">${applyToAttackerLabel}</button>` : "";
-    const retAbilityDescHtml = weapon.type === "ability" && weapon.system.description ? `<div class="roll-description">${await TextEditor.enrichHTML(weapon.system.description, { secrets: false, async: true })}</div>` : "";
+    const retAbilityDescHtml = weapon.type === "ability" && weapon.system.description ? `<div class="roll-description">${await TextEditor.enrichHTML(weapon.system.description, { secrets: false })}</div>` : "";
     const msg = `
         <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-attacker-damage-type="${retDamageType}" data-is-ranged="${isRanged ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? "1" : "0"}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.RetaliationWith", { name: e(actor.name), weapon: e(weapon.name) })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
@@ -2941,28 +2936,27 @@ async function tamsRenderChatMessage(message, html, data) {
     const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
     actor.system.customResources.forEach((res, idx) => resources.push({ id: idx.toString(), name: res.name, value: res.value }));
     const options = resources.map((r) => `<option value="${r.id}">${e(r.name)} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
-    const spending = await new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.Combat.BoostUnconsciousTitle"),
-        content: `
-                    <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
-                    <div class="form-group">
-                        <label>${game.i18n.localize("TAMS.Combat.PointsSpentMax10")}</label>
-                        <input type="number" id="res-points" value="${Math.min(pointsNeeded, 10)}" min="0" max="10"/>
-                        <p><small>${game.i18n.localize("TAMS.Combat.BoostDodgeHint")}</small></p>
-                    </div>`,
-        buttons: {
-          go: { label: game.i18n.localize("TAMS.Combat.ApplyBoost"), callback: (html2) => {
-            const resId2 = html2.find("#res-type").val();
-            const res = resources.find((r) => r.id === resId2);
-            let pts2 = Math.clamp(parseInt(html2.find("#res-points").val()) || 0, 0, 10);
-            if (pts2 > res.value) pts2 = res.value;
-            resolve({ resId: resId2, pts: pts2 });
-          } },
-          cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-        },
-        default: "go"
-      }).render(true);
+    const spending = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize("TAMS.Combat.BoostUnconsciousTitle") },
+      content: `
+                <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
+                <div class="form-group">
+                    <label>${game.i18n.localize("TAMS.Combat.PointsSpentMax10")}</label>
+                    <input type="number" id="res-points" value="${Math.min(pointsNeeded, 10)}" min="0" max="10"/>
+                    <p><small>${game.i18n.localize("TAMS.Combat.BoostDodgeHint")}</small></p>
+                </div>`,
+      rejectClose: false,
+      buttons: [
+        { action: "go", label: game.i18n.localize("TAMS.Combat.ApplyBoost"), default: true, callback: (event, button, dialog) => {
+          const form = dialog.element;
+          const resId2 = form.querySelector("#res-type").value;
+          const res = resources.find((r) => r.id === resId2);
+          let pts2 = Math.clamp(parseInt(form.querySelector("#res-points").value) || 0, 0, 10);
+          if (pts2 > res.value) pts2 = res.value;
+          return { resId: resId2, pts: pts2 };
+        } },
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      ]
     });
     if (!spending) return;
     const { resId, pts } = spending;
@@ -3000,28 +2994,27 @@ async function tamsRenderChatMessage(message, html, data) {
     const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
     actor.system.customResources.forEach((res, idx) => resources.push({ id: idx.toString(), name: res.name, value: res.value }));
     const options = resources.map((r) => `<option value="${r.id}">${e(r.name)} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
-    const spending = await new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.Combat.BoostSurvivalTitle"),
-        content: `
-                    <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
-                    <div class="form-group">
-                        <label>${game.i18n.localize("TAMS.Combat.PointsSpentMax10")}</label>
-                        <input type="number" id="res-points" value="${Math.min(pointsNeeded, 10)}" min="0" max="10"/>
-                        <p><small>${game.i18n.localize("TAMS.Combat.BoostDodgeHint")}</small></p>
-                    </div>`,
-        buttons: {
-          go: { label: game.i18n.localize("TAMS.Combat.ApplyBoost"), callback: (html2) => {
-            const resId2 = html2.find("#res-type").val();
-            const res = resources.find((r) => r.id === resId2);
-            let pts2 = Math.clamp(parseInt(html2.find("#res-points").val()) || 0, 0, 10);
-            if (pts2 > res.value) pts2 = res.value;
-            resolve({ resId: resId2, pts: pts2 });
-          } },
-          cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-        },
-        default: "go"
-      }).render(true);
+    const spending = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize("TAMS.Combat.BoostSurvivalTitle") },
+      content: `
+                <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
+                <div class="form-group">
+                    <label>${game.i18n.localize("TAMS.Combat.PointsSpentMax10")}</label>
+                    <input type="number" id="res-points" value="${Math.min(pointsNeeded, 10)}" min="0" max="10"/>
+                    <p><small>${game.i18n.localize("TAMS.Combat.BoostDodgeHint")}</small></p>
+                </div>`,
+      rejectClose: false,
+      buttons: [
+        { action: "go", label: game.i18n.localize("TAMS.Combat.ApplyBoost"), default: true, callback: (event, button, dialog) => {
+          const form = dialog.element;
+          const resId2 = form.querySelector("#res-type").value;
+          const res = resources.find((r) => r.id === resId2);
+          let pts2 = Math.clamp(parseInt(form.querySelector("#res-points").value) || 0, 0, 10);
+          if (pts2 > res.value) pts2 = res.value;
+          return { resId: resId2, pts: pts2 };
+        } },
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      ]
     });
     if (!spending) return;
     const { resId, pts } = spending;
@@ -3059,28 +3052,27 @@ async function tamsRenderChatMessage(message, html, data) {
     const resources = [{ id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value }];
     actor.system.customResources.forEach((res, idx) => resources.push({ id: idx.toString(), name: res.name, value: res.value }));
     const options = resources.map((r) => `<option value="${r.id}">${e(r.name)} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
-    const spending = await new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.BoostRollTitle"),
-        content: `
-                    <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
-                    <div class="form-group">
-                        <label>${game.i18n.localize("TAMS.Combat.PointsSpent")}</label>
-                        <input type="number" id="res-points" value="${pointsNeeded}" min="0"/>
-                        <p><small>${game.i18n.localize("TAMS.Combat.BoostLabel")} (+5/pt)</small></p>
-                    </div>`,
-        buttons: {
-          go: { label: game.i18n.localize("TAMS.Combat.ApplyBoost"), callback: (html2) => {
-            const resId2 = html2.find("#res-type").val();
-            const res = resources.find((r) => r.id === resId2);
-            let pts2 = parseInt(html2.find("#res-points").val()) || 0;
-            if (pts2 > res.value) pts2 = res.value;
-            resolve({ resId: resId2, pts: pts2 });
-          } },
-          cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-        },
-        default: "go"
-      }).render(true);
+    const spending = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize("TAMS.BoostRollTitle") },
+      content: `
+                <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
+                <div class="form-group">
+                    <label>${game.i18n.localize("TAMS.Combat.PointsSpent")}</label>
+                    <input type="number" id="res-points" value="${pointsNeeded}" min="0"/>
+                    <p><small>${game.i18n.localize("TAMS.Combat.BoostLabel")} (+5/pt)</small></p>
+                </div>`,
+      rejectClose: false,
+      buttons: [
+        { action: "go", label: game.i18n.localize("TAMS.Combat.ApplyBoost"), default: true, callback: (event, button, dialog) => {
+          const form = dialog.element;
+          const resId2 = form.querySelector("#res-type").value;
+          const res = resources.find((r) => r.id === resId2);
+          let pts2 = parseInt(form.querySelector("#res-points").value) || 0;
+          if (pts2 > res.value) pts2 = res.value;
+          return { resId: resId2, pts: pts2 };
+        } },
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      ]
     });
     if (!spending) return;
     const { resId, pts } = spending;
@@ -3127,14 +3119,17 @@ async function tamsRenderChatMessage(message, html, data) {
             <select id="block-loc">
                 ${locations.map((loc, i) => `<option value="${i}">${loc}</option>`).join("")}
             </select>`;
-    new Dialog({
-      title: game.i18n.localize("TAMS.Combat.ShieldBlock"),
+    foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.localize("TAMS.Combat.ShieldBlock") },
       content,
-      buttons: {
-        block: {
+      rejectClose: false,
+      buttons: [
+        {
+          action: "block",
           label: game.i18n.localize("TAMS.Combat.BlockHit"),
-          callback: async (html2) => {
-            const idx = parseInt(html2.find("#block-loc").val());
+          default: true,
+          callback: async (event, button, dialog) => {
+            const idx = parseInt(dialog.element.querySelector("#block-loc").value);
             const locationToBlock = locations[idx];
             const damage = parseInt(btn.dataset.damage);
             const armourPen = parseInt(btn.dataset.armourPen) || 0;
@@ -3156,10 +3151,9 @@ async function tamsRenderChatMessage(message, html, data) {
             ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: report });
           }
         },
-        cancel: { label: game.i18n.localize("TAMS.Cancel") }
-      },
-      default: "block"
-    }).render(true);
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel") }
+      ]
+    });
   }));
   ["behind", "unaware"].forEach((type) => {
     root.querySelectorAll(`.tams-${type}-toggle`).forEach((el) => el.addEventListener("click", async (ev) => {
@@ -3181,13 +3175,14 @@ async function tamsRenderChatMessage(message, html, data) {
     let dcs = dcsAttr ? dcsAttr.split(",").map(Number) : [];
     let dc = 0;
     if (dcs.length === 0) {
-      dc = await new Promise((resolve) => {
-        new Dialog({
-          title: game.i18n.localize("TAMS.Combat.CritDC"),
-          content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Combat.EnterDC")}</label><input type="number" id="dc" value="0"/></div>`,
-          buttons: { roll: { label: game.i18n.localize("TAMS.Combat.Roll"), callback: (html2) => resolve(parseInt(html2.find("#dc").val()) || 0) }, cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) } },
-          default: "roll"
-        }).render(true);
+      dc = await foundry.applications.api.DialogV2.wait({
+        window: { title: game.i18n.localize("TAMS.Combat.CritDC") },
+        content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Combat.EnterDC")}</label><input type="number" id="dc" value="0"/></div>`,
+        rejectClose: false,
+        buttons: [
+          { action: "roll", label: game.i18n.localize("TAMS.Combat.Roll"), default: true, callback: (event, button, dialog) => parseInt(dialog.element.querySelector("#dc").value) || 0 },
+          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        ]
       });
       if (dc === null) return;
     }
@@ -3264,7 +3259,7 @@ class TAMSActor extends Actor {
    * @param {number} [options.multiplier=1] For squads/hordes, how many members were hit by the AoE.
    * @returns {Promise<object>} Result including updates, itemUpdates, pendingChecks, and report.
    */
-  async applyDamage(hits, { isAoE = false, multiplier = 1 } = {}) {
+  async applyTAMSDamage(hits, { isAoE = false, multiplier = 1 } = {}) {
     var _a, _b, _c;
     const updates = {};
     const itemUpdates = {};
@@ -3722,32 +3717,24 @@ class TAMSActor extends Actor {
   }
   async _offerHPPaymentForStamina(deficit) {
     const hpCost = 5 * deficit;
-    return new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.HPPayment.Title"),
-        content: `<p>${game.i18n.format("TAMS.HPPayment.Prompt", { amount: deficit, hp: hpCost })}</p>`,
-        buttons: {
-          yes: { label: game.i18n.localize("TAMS.HPPayment.Pay"), callback: () => resolve(true) },
-          no: { label: game.i18n.localize("TAMS.HPPayment.Decline"), callback: () => resolve(false) }
-        },
-        default: "no",
-        close: () => resolve(false)
-      }).render(true);
+    const result = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("TAMS.HPPayment.Title") },
+      content: `<p>${game.i18n.format("TAMS.HPPayment.Prompt", { amount: deficit, hp: hpCost })}</p>`,
+      yes: { label: game.i18n.localize("TAMS.HPPayment.Pay"), default: false },
+      no: { label: game.i18n.localize("TAMS.HPPayment.Decline"), default: true },
+      rejectClose: false
     });
+    return result === true;
   }
   async _offerStaminaPayment(resourceName, deficit) {
-    return new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.localize("TAMS.StaminaPayment.Title"),
-        content: `<p>${game.i18n.format("TAMS.StaminaPayment.Prompt", { resource: resourceName, amount: deficit })}</p>`,
-        buttons: {
-          yes: { label: game.i18n.localize("TAMS.StaminaPayment.Pay"), callback: () => resolve(true) },
-          no: { label: game.i18n.localize("TAMS.StaminaPayment.Decline"), callback: () => resolve(false) }
-        },
-        default: "no",
-        close: () => resolve(false)
-      }).render(true);
+    const result = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("TAMS.StaminaPayment.Title") },
+      content: `<p>${game.i18n.format("TAMS.StaminaPayment.Prompt", { resource: resourceName, amount: deficit })}</p>`,
+      yes: { label: game.i18n.localize("TAMS.StaminaPayment.Pay"), default: false },
+      no: { label: game.i18n.localize("TAMS.StaminaPayment.Decline"), default: true },
+      rejectClose: false
     });
+    return result === true;
   }
   /**
    * Adjust stamina and custom resource current values when stat totals change
@@ -3818,10 +3805,10 @@ class TAMSActor extends Actor {
     }
   }
   /** @override */
-  async _onCreateDescendantDocuments(parent, collection, documents, data, options, userId) {
+  async _onCreateEmbeddedDocuments(embeddedName, documents, result, options, userId) {
     var _a, _b;
-    await super._onCreateDescendantDocuments(parent, collection, documents, data, options, userId);
-    if (collection !== "items" || game.userId !== userId) return;
+    await super._onCreateEmbeddedDocuments(embeddedName, documents, result, options, userId);
+    if (embeddedName !== "Item" || game.userId !== userId) return;
     let endDelta = 0;
     const statDeltas = {};
     for (const doc of documents) {
@@ -3839,10 +3826,10 @@ class TAMSActor extends Actor {
     if (Object.values(statDeltas).some((v) => v !== 0)) await this._adjustResourcesForStatDeltas(statDeltas);
   }
   /** @override */
-  async _onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId) {
+  async _onDeleteEmbeddedDocuments(embeddedName, documents, result, options, userId) {
     var _a, _b;
-    await super._onDeleteDescendantDocuments(parent, collection, documents, ids, options, userId);
-    if (collection !== "items" || game.userId !== userId) return;
+    await super._onDeleteEmbeddedDocuments(embeddedName, documents, result, options, userId);
+    if (embeddedName !== "Item" || game.userId !== userId) return;
     let endDelta = 0;
     const statDeltas = {};
     for (const doc of documents) {
@@ -4753,12 +4740,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (event.shiftKey) {
       return item.delete();
     }
-    const confirmed = await Dialog.confirm({
-      title: game.i18n.localize("TAMS.DeleteConfirmTitle"),
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("TAMS.DeleteConfirmTitle") },
       content: game.i18n.format("TAMS.DeleteConfirmContent", { name: item.name }),
-      yes: () => true,
-      no: () => false,
-      defaultYes: false
+      yes: { default: false },
+      rejectClose: false
     });
     if (confirmed) {
       item.delete();
@@ -4812,15 +4798,18 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             </select>
         </div>
     `;
-    new Dialog({
-      title: `${game.i18n.localize("TAMS.GiveItem")}: ${item.name}`,
+    foundry.applications.api.DialogV2.wait({
+      window: { title: `${game.i18n.localize("TAMS.GiveItem")}: ${item.name}` },
       content,
-      buttons: {
-        give: {
-          icon: '<i class="fas fa-gift"></i>',
+      rejectClose: false,
+      buttons: [
+        {
+          action: "give",
+          icon: "fa-solid fa-gift",
           label: game.i18n.localize("TAMS.Give"),
-          callback: async (html) => {
-            const recipientUuid = html.find('[name="recipientUuid"]').val();
+          default: true,
+          callback: async (event2, button, dialog) => {
+            const recipientUuid = dialog.element.querySelector('[name="recipientUuid"]').value;
             const targetActor = await fromUuid(recipientUuid);
             if (!targetActor) return;
             if (targetActor.isOwner) {
@@ -4842,13 +4831,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             }
           }
         },
-        cancel: {
-          icon: '<i class="fas fa-times"></i>',
-          label: game.i18n.localize("TAMS.Cancel")
-        }
-      },
-      default: "give"
-    }).render(true);
+        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel") }
+      ]
+    });
   }
   /**
    * Handle exporting an item to the sidebar.
@@ -4888,7 +4873,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const itemId = target.dataset.itemId || ((_a = target.closest(".item")) == null ? void 0 : _a.dataset.itemId);
     const item = this.document.items.get(itemId);
     if (!item) return;
-    const enrichedDesc = item.system.description ? await TextEditor.enrichHTML(item.system.description, { secrets: false, async: true }) : `<em>${game.i18n.localize("TAMS.NoDescription")}</em>`;
+    const enrichedDesc = item.system.description ? await TextEditor.enrichHTML(item.system.description, { secrets: false }) : `<em>${game.i18n.localize("TAMS.NoDescription")}</em>`;
     const content = `
       <div class="tams-item-description">
         <div class="item-desc-header" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.2); padding-bottom:4px;">
@@ -4984,25 +4969,23 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       </div>
       ${costInfo}
     `;
-    new Dialog({
-      title: game.i18n.format("TAMS.RechargeTitle", { name: item.name }),
+    foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.format("TAMS.RechargeTitle", { name: item.name }) },
       content,
-      buttons: {
-        recharge: {
-          icon: '<i class="fas fa-bolt"></i>',
+      rejectClose: false,
+      buttons: [
+        {
+          action: "recharge",
+          icon: "fa-solid fa-bolt",
           label: game.i18n.localize("TAMS.Recharge"),
-          callback: (html) => {
-            const amount = html.find('[name="amount"]').val();
-            doRecharge(amount);
+          default: true,
+          callback: (event2, button, dialog) => {
+            doRecharge(dialog.element.querySelector('[name="amount"]').value);
           }
         },
-        cancel: {
-          icon: '<i class="fas fa-times"></i>',
-          label: game.i18n.localize("TAMS.Cancel")
-        }
-      },
-      default: "recharge"
-    }).render(true);
+        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel") }
+      ]
+    });
   }
   /**
    * Handle updating an item's field directly from the sheet.
@@ -5152,16 +5135,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const skills = this.document.items.filter((i) => i.type === "skill");
     let optionsHtml = `<option value="int">${game.i18n.localize("TAMS.StatIntelligence")}</option>`;
     for (const s of skills) optionsHtml += `<option value="${s.id}">${s.name}</option>`;
-    const choice = await new Promise((resolve) => {
-      new Dialog({
-        title: game.i18n.format("TAMS.Repair.Title", { name: item.name }),
-        content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Repair.SelectSkill")}</label><select name="skill" style="width:100%">${optionsHtml}</select></div>`,
-        buttons: {
-          repair: { icon: '<i class="fas fa-hammer"></i>', label: game.i18n.localize("TAMS.Repair.Action"), callback: (html) => resolve(html.find('[name="skill"]').val()) },
-          cancel: { icon: '<i class="fas fa-times"></i>', label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-        },
-        default: "repair"
-      }).render(true);
+    const choice = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.format("TAMS.Repair.Title", { name: item.name }) },
+      content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Repair.SelectSkill")}</label><select name="skill" style="width:100%">${optionsHtml}</select></div>`,
+      rejectClose: false,
+      buttons: [
+        { action: "repair", icon: "fa-solid fa-hammer", label: game.i18n.localize("TAMS.Repair.Action"), default: true, callback: (event2, button, dialog) => dialog.element.querySelector('[name="skill"]').value },
+        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      ]
     });
     if (!choice) return;
     let checkLabel;
@@ -5546,16 +5527,12 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       statValue = stat ? stat.value : 0;
       statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
       if (name.includes("(") && name.includes(")")) {
-        const confirmed = await new Promise((resolve) => {
-          new Dialog({
-            title: game.i18n.localize("TAMS.SkillCheckTitle"),
-            content: `<p>${game.i18n.format("TAMS.SkillCheckSpecificPrompt", { name })}</p>`,
-            buttons: {
-              yes: { label: game.i18n.localize("TAMS.YesFullFam"), callback: () => resolve(true) },
-              no: { label: game.i18n.localize("TAMS.NoHalfFam"), callback: () => resolve(false) }
-            },
-            default: "yes"
-          }).render(true);
+        const confirmed = await foundry.applications.api.DialogV2.confirm({
+          window: { title: game.i18n.localize("TAMS.SkillCheckTitle") },
+          content: `<p>${game.i18n.format("TAMS.SkillCheckSpecificPrompt", { name })}</p>`,
+          yes: { label: game.i18n.localize("TAMS.YesFullFam"), default: true },
+          no: { label: game.i18n.localize("TAMS.NoHalfFam") },
+          rejectClose: false
         });
         if (!confirmed) familiarity = Math.floor(familiarity / 2);
       }
@@ -5621,8 +5598,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         });
         const resourceKey = item.system.resource;
         const options = resources.map((r) => `<option value="${r.id}" ${r.id === resourceKey ? "selected" : ""}>${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
-        new Dialog({
-          title: game.i18n.format("TAMS.RefillUses", { name: item.name }),
+        foundry.applications.api.DialogV2.wait({
+          window: { title: game.i18n.format("TAMS.RefillUses", { name: item.name }) },
           content: `
                     <div class="form-group">
                         <label>${game.i18n.format("TAMS.AmountToRefill", { max: missing })}</label>
@@ -5635,12 +5612,16 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                     <p>${game.i18n.format("TAMS.CostPerUse", { cost })}</p>
                     <p><i>${game.i18n.localize("TAMS.CostMultiplierHint")}</i></p>
                 `,
-          buttons: {
-            refill: {
+          rejectClose: false,
+          buttons: [
+            {
+              action: "refill",
               label: game.i18n.localize("TAMS.Refill"),
-              callback: async (html) => {
-                const amount = parseInt(html.find("#refill-amount").val()) || 0;
-                const resId = html.find("#refill-resource").val();
+              default: true,
+              callback: async (event2, button, dialog) => {
+                const form = dialog.element;
+                const amount = parseInt(form.querySelector("#refill-amount").value) || 0;
+                const resId = form.querySelector("#refill-resource").value;
                 if (amount <= 0) return;
                 const totalCost = amount * cost;
                 const res = resources.find((r) => r.id === resId);
@@ -5657,10 +5638,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                 ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.RefilledUses", { amount, item: item.name }));
               }
             },
-            cancel: { label: game.i18n.localize("TAMS.Cancel") }
-          },
-          default: "refill"
-        }).render(true);
+            { action: "cancel", label: game.i18n.localize("TAMS.Cancel") }
+          ]
+        });
         return;
       }
       let effectiveCost = cost;
@@ -5687,17 +5667,12 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
               const remaining = effectiveCost - res.value;
               const stamina = this.document.system.stamina.value;
               if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", { resource: res.name }));
-              const useBoth = await new Promise((resolve) => {
-                new Dialog({
-                  title: "Insufficient Resources",
-                  content: `<p>You only have ${res.value} ${res.name}. Spend ${res.value} ${res.name} and ${remaining} Stamina to use this ability?</p>`,
-                  buttons: {
-                    yes: { label: "Yes", callback: () => resolve(true) },
-                    no: { label: "No", callback: () => resolve(false) }
-                  },
-                  default: "yes",
-                  close: () => resolve(false)
-                }).render(true);
+              const useBoth = await foundry.applications.api.DialogV2.confirm({
+                window: { title: "Insufficient Resources" },
+                content: `<p>You only have ${res.value} ${res.name}. Spend ${res.value} ${res.name} and ${remaining} Stamina to use this ability?</p>`,
+                yes: { label: "Yes", default: true },
+                no: { label: "No" },
+                rejectClose: false
               });
               if (!useBoth) return;
               const resources = foundry.utils.duplicate(this.document.system.customResources);
@@ -5717,16 +5692,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     let difficulty = 0;
     if (event.shiftKey) {
-      difficulty = await new Promise((resolve) => {
-        new Dialog({
-          title: "Roll Parameters",
-          content: `<div class="form-group"><label>Difficulty / Target Result</label><input type="number" id="diff" value="0"/></div>`,
-          buttons: {
-            roll: { label: "Roll", callback: (html) => resolve(parseInt(html.find("#diff").val()) || 0) }
-          },
-          default: "roll"
-        }).render(true);
-      });
+      difficulty = await foundry.applications.api.DialogV2.wait({
+        window: { title: "Roll Parameters" },
+        content: `<div class="form-group"><label>Difficulty / Target Result</label><input type="number" id="diff" value="0"/></div>`,
+        rejectClose: false,
+        buttons: [
+          { action: "roll", label: "Roll", default: true, callback: (event2, button, dialog) => parseInt(dialog.element.querySelector("#diff").value) || 0 }
+        ]
+      }) ?? 0;
     }
     const isMaxRoll = dataset.isMaxRoll === "true";
     const effectiveStat = statValue + statMod;
@@ -5867,17 +5840,14 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           weaponOverride = weapons[0];
         } else {
           const opts = weapons.map((w) => `<option value="${w.id}">${w.name} (${w.system.calculatedDamage} ${game.i18n.localize("TAMS.Dmg")})</option>`).join("");
-          weaponOverride = await new Promise((resolve) => {
-            new Dialog({
-              title: game.i18n.format("TAMS.ChooseWeaponForAbility", { name: item.name }),
-              content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Weapon")}</label><select id="tams-weapon-picker">${opts}</select></div>`,
-              buttons: {
-                ok: { label: game.i18n.localize("TAMS.Confirm"), callback: (html) => resolve(weapons.find((w) => w.id === html.find("#tams-weapon-picker").val())) },
-                cancel: { label: game.i18n.localize("TAMS.Cancel"), callback: () => resolve(null) }
-              },
-              default: "ok",
-              close: () => resolve(null)
-            }).render(true);
+          weaponOverride = await foundry.applications.api.DialogV2.wait({
+            window: { title: game.i18n.format("TAMS.ChooseWeaponForAbility", { name: item.name }) },
+            content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Weapon")}</label><select id="tams-weapon-picker">${opts}</select></div>`,
+            rejectClose: false,
+            buttons: [
+              { action: "ok", label: game.i18n.localize("TAMS.Confirm"), default: true, callback: (event2, button, dialog) => weapons.find((w) => w.id === dialog.element.querySelector("#tams-weapon-picker").value) },
+              { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+            ]
           });
           if (!weaponOverride) return;
         }
@@ -6160,7 +6130,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
     }
     const rawDesc = item && (item.type === "ability" || item.type === "skill") ? item.system.description || "" : "";
-    const descriptionHtml = rawDesc ? `<div class="roll-description">${await TextEditor.enrichHTML(rawDesc, { secrets: false, async: true })}</div>` : "";
+    const descriptionHtml = rawDesc ? `<div class="roll-description">${await TextEditor.enrichHTML(rawDesc, { secrets: false })}</div>` : "";
     let ifButtonHtml = "";
     if (item && item.type === "ability" && item.system.ifStatement && item.system.ifCost) {
       const ifStatement = item.system.ifStatement;
@@ -6377,30 +6347,29 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const pathData = HONOR_PATHS[path];
     if (!pathData) return;
     const current = ((_a = this.document.system.honor) == null ? void 0 : _a[path]) ?? 0;
-    new Dialog({
-      title: `${game.i18n.localize(pathData.labelKey)} — ${game.i18n.localize("TAMS.Honor.EditScore")}`,
+    foundry.applications.api.DialogV2.wait({
+      window: { title: `${game.i18n.localize(pathData.labelKey)} — ${game.i18n.localize("TAMS.Honor.EditScore")}` },
       content: `<div class="form-group" style="padding: 10px;">
         <label>${game.i18n.localize("TAMS.Honor.Score")} (-100 ${game.i18n.localize("TAMS.Honor.To")} 100)</label>
         <input type="number" name="score" value="${current}" min="-100" max="100" style="width: 80px; margin-left: 10px;"/>
       </div>`,
-      buttons: {
-        save: {
-          icon: '<i class="fas fa-save"></i>',
+      rejectClose: false,
+      buttons: [
+        {
+          action: "save",
+          icon: "fa-solid fa-save",
           label: game.i18n.localize("TAMS.Save"),
-          callback: async (html) => {
-            const val = parseInt(html.find('[name="score"]').val());
+          default: true,
+          callback: async (event2, button, dialog) => {
+            const val = parseInt(dialog.element.querySelector('[name="score"]').value);
             if (!isNaN(val)) {
               await this.document.update({ [`system.honor.${path}`]: Math.clamp(val, -100, 100) });
             }
           }
         },
-        cancel: {
-          icon: '<i class="fas fa-times"></i>',
-          label: game.i18n.localize("TAMS.Cancel")
-        }
-      },
-      default: "save"
-    }).render(true);
+        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel") }
+      ]
+    });
   }
 };
 __publicField(_TAMSActorSheet, "PARTS", {
@@ -6494,12 +6463,11 @@ const _TAMSDowntimeSheet = class _TAMSDowntimeSheet extends TAMSActorSheet {
    * @protected
    */
   async _onResetDowntime(event, target) {
-    const confirmed = await Dialog.confirm({
-      title: game.i18n.localize("TAMS.DowntimeReset"),
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("TAMS.DowntimeReset") },
       content: `<p>Are you sure you want to reset all downtime trackers to 0 for ${this.document.name}?</p>`,
-      yes: () => true,
-      no: () => false,
-      defaultYes: false
+      yes: { default: false },
+      rejectClose: false
     });
     if (confirmed) {
       const updates = {};
@@ -6522,12 +6490,11 @@ const _TAMSDowntimeSheet = class _TAMSDowntimeSheet extends TAMSActorSheet {
     const actor = this.document;
     const downtime = actor.system.downtime;
     const healingDays = downtime.trackers.healing ?? 0;
-    const confirmed = await Dialog.confirm({
-      title: game.i18n.localize("TAMS.Downtime.CompleteDowntime"),
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("TAMS.Downtime.CompleteDowntime") },
       content: `<p>${game.i18n.format("TAMS.Downtime.CompleteDowntimeConfirm", { name: actor.name })}</p>`,
-      yes: () => true,
-      no: () => false,
-      defaultYes: false
+      yes: { default: false },
+      rejectClose: false
     });
     if (!confirmed) return;
     const updates = {};
@@ -7776,18 +7743,21 @@ const _TAMSPartyHonorApp = class _TAMSPartyHonorApp extends foundry.applications
     const current = partyHonor[path] ?? 0;
     const pathData = HONOR_PATHS[path];
     if (!pathData) return;
-    new Dialog({
-      title: `${game.i18n.localize(pathData.labelKey)} — ${game.i18n.localize("TAMS.Honor.EditScore")}`,
+    foundry.applications.api.DialogV2.wait({
+      window: { title: `${game.i18n.localize(pathData.labelKey)} — ${game.i18n.localize("TAMS.Honor.EditScore")}` },
       content: `<div class="form-group" style="padding: 10px;">
         <label>${game.i18n.localize("TAMS.Honor.Score")} (-100 ${game.i18n.localize("TAMS.Honor.To")} 100)</label>
         <input type="number" name="score" value="${current}" min="-100" max="100" style="width: 80px; margin-left: 10px;"/>
       </div>`,
-      buttons: {
-        save: {
-          icon: '<i class="fas fa-save"></i>',
+      rejectClose: false,
+      buttons: [
+        {
+          action: "save",
+          icon: "fa-solid fa-save",
           label: game.i18n.localize("TAMS.Save"),
-          callback: async (html) => {
-            const val = parseInt(html.find('[name="score"]').val());
+          default: true,
+          callback: async (event2, button, dialog) => {
+            const val = parseInt(dialog.element.querySelector('[name="score"]').value);
             if (!isNaN(val)) {
               partyHonor[path] = Math.clamp(val, -100, 100);
               await setPartyHonor(partyHonor);
@@ -7795,13 +7765,9 @@ const _TAMSPartyHonorApp = class _TAMSPartyHonorApp extends foundry.applications
             }
           }
         },
-        cancel: {
-          icon: '<i class="fas fa-times"></i>',
-          label: game.i18n.localize("TAMS.Cancel")
-        }
-      },
-      default: "save"
-    }).render(true);
+        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel") }
+      ]
+    });
   }
 };
 __publicField(_TAMSPartyHonorApp, "DEFAULT_OPTIONS", {
@@ -7913,8 +7879,6 @@ Hooks.once("init", async function() {
   CONFIG.Item.dataModels.trait = TAMSTraitData;
   CONFIG.Item.dataModels.statusEffect = TAMSStatusEffectData;
   CONFIG.Item.dataModels.race = TAMSRaceData;
-  CONFIG.Item.systemDataModels = CONFIG.Item.dataModels;
-  CONFIG.Actor.systemDataModels = CONFIG.Actor.dataModels;
   CONFIG.Actor.documentClass = TAMSActor;
   CONFIG.Item.documentClass = TAMSItem;
   game.tams = {
@@ -7990,7 +7954,7 @@ Hooks.once("init", async function() {
   });
   Hooks.on("renderChatLog", (app, html) => {
     if (!game.user.isGM) return;
-    const root = html instanceof jQuery ? html[0] : html;
+    const root = html instanceof HTMLElement ? html : html[0];
     const controls = root.querySelector("#chat-controls") ?? root.querySelector(".control-buttons") ?? root.querySelector("#chat-form");
     if (!controls) return;
     if (root.querySelector(".tams-call-group-check")) return;

@@ -104,12 +104,11 @@ export class TAMSDowntimeSheet extends TAMSActorSheet {
    * @protected
    */
   async _onResetDowntime(event, target) {
-    const confirmed = await Dialog.confirm({
-      title: game.i18n.localize("TAMS.DowntimeReset"),
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("TAMS.DowntimeReset") },
       content: `<p>Are you sure you want to reset all downtime trackers to 0 for ${this.document.name}?</p>`,
-      yes: () => true,
-      no: () => false,
-      defaultYes: false
+      yes: { default: false },
+      rejectClose: false
     });
 
     if (confirmed) {
@@ -135,10 +134,11 @@ export class TAMSDowntimeSheet extends TAMSActorSheet {
     const downtime = actor.system.downtime;
     const healingDays = downtime.trackers.healing ?? 0;
 
-    const confirmed = await Dialog.confirm({
-      title: game.i18n.localize("TAMS.Downtime.CompleteDowntime"),
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("TAMS.Downtime.CompleteDowntime") },
       content: `<p>${game.i18n.format("TAMS.Downtime.CompleteDowntimeConfirm", { name: actor.name })}</p>`,
-      yes: () => true, no: () => false, defaultYes: false
+      yes: { default: false },
+      rejectClose: false
     });
     if (!confirmed) return;
 
