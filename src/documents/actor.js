@@ -1,5 +1,7 @@
 import { getHitLocation } from '../utils/combat.js';
 
+const e = s => foundry.utils.escapeHTML(String(s ?? ""));
+
 /**
  * The TAMS Actor document class.
  * Extends the core Actor class.
@@ -36,7 +38,7 @@ export class TAMSActor extends Actor {
         limbDamageReceived[key] = 0;
     }
 
-    let report = `<b>${this.name}</b> ${game.i18n.localize("TAMS.TakingDamage")}:<br>`;
+    let report = `<b>${e(this.name)}</b> ${game.i18n.localize("TAMS.TakingDamage")}:<br>`;
     const isSquadOrHorde = this.system.settings?.isNPC && (this.system.settings.npcType === "squad" || this.system.settings.npcType === "horde");
     const currentSquadSize = this.system.settings.squadSize || 1;
     const limbLosses = {};
@@ -173,7 +175,7 @@ export class TAMSActor extends Actor {
 
         const limbMax = originalLimbStatus[limbKey].max;
         if (newHp <= -limbMax && !originalLimbStatus[limbKey].injured && !updates[`system.limbs.${limbKey}.injured`]) {
-            report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", {limb: limb.label})} !!!</b><br>`;
+            report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", {limb: e(limb.label)})} !!!</b><br>`;
             updates[`system.limbs.${limbKey}.injured`] = true;
         }
     }
@@ -200,7 +202,7 @@ export class TAMSActor extends Actor {
             const isMook = npcRank === "mook";
             if (isMook) {
                 updates["system.settings.squadSize"] = finalSquadSize;
-                report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadLostMembers", {name: this.name, lostCount, finalSquadSize})} !!!</b><br>`;
+                report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadLostMembers", {name: e(this.name), lostCount, finalSquadSize})} !!!</b><br>`;
                 
                 // Ensure all limbs are capped to the new squad size
                 const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
@@ -220,16 +222,16 @@ export class TAMSActor extends Actor {
                     }
                 }
             } else {
-                report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadThreatenedMembers", {name: this.name, lostCount})} !!!</b><br>`;
+                report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadThreatenedMembers", {name: e(this.name), lostCount})} !!!</b><br>`;
             }
             
             if (!isMook) {
                 const dcs = (bottleneckLimb && limbLosses[bottleneckLimb]) ? limbLosses[bottleneckLimb].slice(0, lostCount) : [];
                 const dcsAttr = dcs.length > 0 ? ` data-dcs="${dcs.join(',')}"` : "";
-                report += `<button class="tams-squad-crit-roll" data-actor-uuid="${this.uuid}" data-count="${lostCount}" data-name="${this.name}"${dcsAttr}>${game.i18n.format("TAMS.Checks.RollForCriticalWounds", {count: lostCount})}</button><br>`;
+                report += `<button class="tams-squad-crit-roll" data-actor-uuid="${this.uuid}" data-count="${lostCount}" data-name="${e(this.name)}"${dcsAttr}>${game.i18n.format("TAMS.Checks.RollForCriticalWounds", {count: lostCount})}</button><br>`;
             }
             if (finalSquadSize === 0 && isMook) {
-                report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadDestroyed", {name: this.name})} !!!</b><br>`;
+                report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadDestroyed", {name: e(this.name)})} !!!</b><br>`;
             }
         }
     }
@@ -303,7 +305,7 @@ export class TAMSActor extends Actor {
                 const whisperIds = [...new Set([...ownerIds, ...game.users.filter(u => u.isGM).map(u => u.id)])];
                 await ChatMessage.create({
                     speaker: ChatMessage.getSpeaker({ actor: this }),
-                    content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Started", { name: this.name, limb: limb.label, turns: turnsLeft })}</div></div>`,
+                    content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Started", { name: e(this.name), limb: e(limb.label), turns: turnsLeft })}</div></div>`,
                     whisper: whisperIds
                 });
             }

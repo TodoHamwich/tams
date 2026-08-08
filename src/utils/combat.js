@@ -49,39 +49,39 @@ export async function getHitLocation(rollValue = null) {
  */
 export async function showCombinedInjuryDialog(target, pendingChecks) {
     let content = `<div class="tams-injury-dialog">
-        <p><b>${target.name}</b> ${game.i18n.localize("TAMS.Checks.MustMakeChecks")}:</p>`;
+        <p><b>${e(target.name)}</b> ${game.i18n.localize("TAMS.Checks.MustMakeChecks")}:</p>`;
 
     pendingChecks.forEach((check, i) => {
         if (check.type === 'injured') {
             content += `
                 <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
-                    <label><b>${game.i18n.format("TAMS.Checks.InjuryCheck", {loc: check.loc})}</b> (DC ${check.dc})</label>
+                    <label><b>${game.i18n.format("TAMS.Checks.InjuryCheck", {loc: e(check.loc)})}</b> (DC ${check.dc})</label>
                     <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px;">${game.i18n.localize("TAMS.Checks.RollVsInjury")}</button>
                 </div>`;
         } else if (check.type === 'crit') {
             content += `
                 <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
-                    <label><b>${game.i18n.format("TAMS.Checks.CritCheck", {loc: check.loc})}</b> (DC ${check.dc})</label>
+                    <label><b>${game.i18n.format("TAMS.Checks.CritCheck", {loc: e(check.loc)})}</b> (DC ${check.dc})</label>
                     <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px;">${game.i18n.localize("TAMS.Checks.RollVsCrit")}</button>
                 </div>`;
         } else if (check.type === 'unconscious') {
             content += `
                 <div class="check-row" style="background: rgba(52, 152, 219, 0.1); padding: 5px; margin-top: 5px; border: 1px solid #3498db; border-radius: 4px;">
                     <label><b>${game.i18n.localize("TAMS.Checks.UnconsciousCheck")}</b> (DC ${check.dc})</label>
-                    <p style="font-size: 0.8em; margin: 2px 0;">${check.reasons.join("<br>")}</p>
+                    <p style="font-size: 0.8em; margin: 2px 0;">${check.reasons.map(r => e(String(r))).join("<br>")}</p>
                     <button class="roll-check" data-index="${i}" style="width: 100%; margin-top: 5px; background: #2980b9; color: white; font-size: 12px;">${game.i18n.localize("TAMS.Checks.RollStayAwake")}</button>
                 </div>`;
         } else if (check.type === 'survival') {
             content += `
                 <div class="check-row" style="background: rgba(231, 76, 60, 0.1); padding: 5px; margin-top: 5px; border: 1px solid #e74c3c; border-radius: 4px;">
                     <label><b>${game.i18n.localize("TAMS.Checks.SurvivalCheck")}</b> (DC ${check.dc})</label>
-                    <p style="font-size: 0.8em; margin: 2px 0;">${check.reasons.join("<br>")}</p>
+                    <p style="font-size: 0.8em; margin: 2px 0;">${check.reasons.map(r => e(String(r))).join("<br>")}</p>
                     <button class="roll-check" data-index="${i}" style="width: 100%; margin-top: 5px; background: #4a0000; color: white; font-size: 12px;">${game.i18n.localize("TAMS.Checks.RollSurvival")}</button>
                 </div>`;
         } else if (check.type === 'morale') {
             content += `
                 <div class="check-row" style="background: rgba(52, 73, 94, 0.15); padding: 5px; margin-top: 5px; border: 1px solid #34495e; border-radius: 4px;">
-                    <label><b>${game.i18n.localize("TAMS.Checks.MoraleCheck")}</b> — ${check.statusName ?? check.statusId} (DC ${check.dc})</label>
+                    <label><b>${game.i18n.localize("TAMS.Checks.MoraleCheck")}</b> — ${e(check.statusName ?? check.statusId)} (DC ${check.dc})</label>
                     <button class="roll-check" data-index="${i}" style="width: 100%; margin-top: 5px; background: #34495e; color: white; font-size: 12px;">${game.i18n.localize("TAMS.Checks.RollMorale")}</button>
                 </div>`;
         }
@@ -89,7 +89,7 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
     content += `</div>`;
 
     foundry.applications.api.DialogV2.wait({
-        window: { title: game.i18n.format("TAMS.Checks.InjuriesAndSurvival", {name: target.name}) },
+        window: { title: game.i18n.format("TAMS.Checks.InjuriesAndSurvival", {name: e(target.name)}) },
         content: content,
         rejectClose: false,
         buttons: [{ action: "close", label: game.i18n.localize("TAMS.Checks.Close"), default: true }],
@@ -118,7 +118,7 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                 if (check.type === 'injured') {
                     report = `
                         <div class="tams-roll">
-                            <h3 class="roll-label" style="color: #f39c12;">${game.i18n.format("TAMS.Checks.EnduranceCheckInjury", {loc: check.loc})}</h3>
+                            <h3 class="roll-label" style="color: #f39c12;">${game.i18n.format("TAMS.Checks.EnduranceCheckInjury", {loc: e(check.loc)})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
                             ${bonus ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.RacialBonus")}</span><span>+${bonus}</span></div>` : ''}
@@ -132,7 +132,7 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                 } else if (check.type === 'crit') {
                     report = `
                         <div class="tams-roll">
-                            <h3 class="roll-label">${game.i18n.format("TAMS.Checks.EnduranceCheck", {loc: check.loc})}</h3>
+                            <h3 class="roll-label">${game.i18n.format("TAMS.Checks.EnduranceCheck", {loc: e(check.loc)})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
                             ${bonus ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.RacialBonus")}</span><span>+${bonus}</span></div>` : ''}
@@ -146,13 +146,13 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                 } else if (check.type === 'unconscious') {
                     report = `
                         <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${statCap}" data-reasons='${JSON.stringify(check.reasons)}'>
-                            <h3 class="roll-label" style="color: #2980b9;">${game.i18n.format("TAMS.Checks.UnconsciousCheckLabel", {name: target.name})}</h3>
+                            <h3 class="roll-label" style="color: #2980b9;">${game.i18n.format("TAMS.Checks.UnconsciousCheckLabel", {name: e(target.name)})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
                             <div class="roll-boost-container"></div>
                             <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total: capped, dc: check.dc})}</div>
                             ${success ? `<div class="tams-success" style="font-size:1.1em; font-weight:bold;">${game.i18n.localize("TAMS.Checks.RemainsConscious")}</div>` : `<div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.localize("TAMS.Checks.FallsUnconscious")}</div>`}
-                            <div class="roll-contest-hint"><small>${game.i18n.format("TAMS.Checks.Reasons", {reasons: check.reasons.join(", ")})}</small></div>
+                            <div class="roll-contest-hint"><small>${game.i18n.format("TAMS.Checks.Reasons", {reasons: check.reasons.map(r => e(String(r))).join(", ")})}</small></div>
                             <div class="roll-row" style="margin-top: 5px;">
                                 <button class="tams-boost-unconscious">${game.i18n.localize("TAMS.Checks.SpendResourceToBoost")}</button>
                             </div>
@@ -161,11 +161,11 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                 } else if (check.type === 'morale') {
                     report = `
                         <div class="tams-roll">
-                            <h3 class="roll-label" style="color: #34495e;">${game.i18n.format("TAMS.Checks.MoraleCheckLabel", {name: target.name})}</h3>
+                            <h3 class="roll-label" style="color: #34495e;">${game.i18n.format("TAMS.Checks.MoraleCheckLabel", {name: e(target.name)})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
                             <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total: capped, dc: check.dc})}</div>
-                            ${success ? `<div class="tams-success" style="font-size:1.1em; font-weight:bold;">${game.i18n.format("TAMS.Checks.MoraleRecovery", {name: target.name})}</div>` : `<div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.format("TAMS.Checks.MoraleStillAffected", {name: target.name, status: check.statusName ?? check.statusId})}</div>`}
+                            ${success ? `<div class="tams-success" style="font-size:1.1em; font-weight:bold;">${game.i18n.format("TAMS.Checks.MoraleRecovery", {name: e(target.name)})}</div>` : `<div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.format("TAMS.Checks.MoraleStillAffected", {name: e(target.name), status: e(check.statusName ?? check.statusId)})}</div>`}
                         </div>
                     `;
                     if (success) {
@@ -174,7 +174,7 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                 } else {
                     report = `
                         <div class="tams-roll" data-actor-uuid="${target.uuid}" data-actor-id="${target.id}" data-dc="${check.dc}" data-raw="${raw}" data-end="${statCap}">
-                            <h3 class="roll-label" style="color: #8b0000;">${game.i18n.format("TAMS.Checks.SurvivalCheckLabel", {name: target.name})}</h3>
+                            <h3 class="roll-label" style="color: #8b0000;">${game.i18n.format("TAMS.Checks.SurvivalCheckLabel", {name: e(target.name)})}</h3>
                             <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
                             <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
                             <div class="roll-boost-container"></div>
@@ -211,15 +211,15 @@ function buildContestedCheckContent(initiatorName, label, initiatorTotal, initia
         ? `<span style="color:#2e7d32; font-weight:bold;">[WIN]</span>`
         : `<span style="color:#c0392b; font-weight:bold;">[LOSS]</span>`;
     return `<div class="roll-row" style="border-bottom:1px solid #eee; padding:2px 0;">
-      <span style="flex:1;"><b>${c.actorName}</b> — ${c.label}</span>
+      <span style="flex:1;"><b>${e(c.actorName)}</b> — ${e(c.label)}</span>
       <span>${c.total} <small style="color:#888;">(raw: ${c.raw})</small> ${badge}</span>
     </div>`;
   }).join('');
 
   return `<div class="tams-roll tams-contested-check">
-    <h3 class="roll-label">${game.i18n.format("TAMS.ContestedCheck.Title", {label})}</h3>
+    <h3 class="roll-label">${game.i18n.format("TAMS.ContestedCheck.Title", {label: e(label)})}</h3>
     <div class="roll-row" style="border-bottom:1px solid #eee; padding:2px 0;">
-      <span style="flex:1;"><b>${initiatorName}</b> — ${label}</span>
+      <span style="flex:1;"><b>${e(initiatorName)}</b> — ${e(label)}</span>
       <span><b>${initiatorTotal}</b> <small style="color:#888;">(raw: ${initiatorRaw})</small></span>
     </div>
     ${contestRows}
@@ -283,11 +283,11 @@ function buildGroupCheckContent(label, difficulty, results) {
     const rollDisplay = r.raw !== undefined && r.raw !== r.total
       ? `${r.raw} → ${r.total}`
       : `${r.total}`;
-    return `<div class="roll-row"><span>${r.actorName}: <em>${r.skillName}</em></span><span class="roll-value">${rollDisplay}${passFailHtml}</span></div>`;
+    return `<div class="roll-row"><span>${e(r.actorName)}: <em>${e(r.skillName)}</em></span><span class="roll-value">${rollDisplay}${passFailHtml}</span></div>`;
   }).join("");
 
   return `<div class="tams-roll tams-group-check">
-    <h3 class="roll-label">${game.i18n.format("TAMS.GroupCheck.Title", {label})}</h3>
+    <h3 class="roll-label">${game.i18n.format("TAMS.GroupCheck.Title", {label: e(label)})}</h3>
     ${difficultyRow}
     <hr>
     <div class="tams-group-check-results">${resultsHtml}</div>

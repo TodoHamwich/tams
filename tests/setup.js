@@ -70,7 +70,8 @@ global.foundry = {
       }
       current[parts[parts.length - 1]] = value;
       return true;
-    }
+    },
+    escapeHTML: (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;")
   }
 };
 

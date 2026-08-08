@@ -4,6 +4,7 @@ import { tamsCreateContestedCheck } from '../utils/combat.js';
 import { HONOR_PATHS, getHonorTier, isHonorEnabled } from '../utils/honor.js';
 
 const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
+const e = s => foundry.utils.escapeHTML(String(s ?? ""));
 
 /**
  * The TAMS Actor Sheet Application.
@@ -679,7 +680,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       window: { title: game.i18n.localize("TAMS.DeleteConfirmTitle") },
-      content: game.i18n.format("TAMS.DeleteConfirmContent", {name: item.name}),
+      content: game.i18n.format("TAMS.DeleteConfirmContent", {name: e(item.name)}),
       yes: { default: false },
       rejectClose: false
     });
@@ -730,10 +731,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         });
     }
 
-    const options = tokens.map(t => `<option value="${t.actor.uuid}">${t.name}${t.actor.isToken ? ` (${game.i18n.localize("TAMS.Loot")})` : ""}</option>`).join("");
+    const options = tokens.map(t => `<option value="${t.actor.uuid}">${e(t.name)}${t.actor.isToken ? ` (${game.i18n.localize("TAMS.Loot")})` : ""}</option>`).join("");
     const content = `
         <div class="form-group">
-            <p>${game.i18n.localize('TAMS.GiveItem')}: <b>${item.name}</b></p>
+            <p>${game.i18n.localize('TAMS.GiveItem')}: <b>${e(item.name)}</b></p>
             <label>${game.i18n.localize('TAMS.Recipient')}</label>
             <select name="recipientUuid" style="width: 100%; margin-bottom: 10px;">
                 ${options}
@@ -742,7 +743,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     `;
 
     foundry.applications.api.DialogV2.wait({
-        window: { title: `${game.i18n.localize('TAMS.GiveItem')}: ${item.name}` },
+        window: { title: `${game.i18n.localize('TAMS.GiveItem')}: ${e(item.name)}` },
         content: content,
         rejectClose: false,
         buttons: [
@@ -766,7 +767,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         targetActorUuid: recipientUuid,
                         newLocation: "stowed"
                     });
-                    ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.GivingItem", {item: item.name, target: targetActor.name}));
+                    ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.GivingItem", {item: e(item.name), target: e(targetActor.name)}));
                 }
             }
           },
@@ -1706,7 +1707,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
                         const useBoth = await foundry.applications.api.DialogV2.confirm({
                             window: { title: "Insufficient Resources" },
-                            content: `<p>You only have ${res.value} ${res.name}. Spend ${res.value} ${res.name} and ${remaining} Stamina to use this ability?</p>`,
+                            content: `<p>You only have ${res.value} ${e(res.name)}. Spend ${res.value} ${e(res.name)} and ${remaining} Stamina to use this ability?</p>`,
                             yes: { label: "Yes", default: true },
                             no: { label: "No" },
                             rejectClose: false

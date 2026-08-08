@@ -1,5 +1,7 @@
 import { TAMSActorSheet } from './actor-sheet.js';
 
+const e = s => foundry.utils.escapeHTML(String(s ?? ""));
+
 /**
  * A simplified actor sheet specifically for Downtime tracking.
  */
@@ -56,7 +58,7 @@ export class TAMSDowntimeSheet extends TAMSActorSheet {
 
     let content = `
       <div class="tams-roll">
-        <h3 class="roll-label">${game.i18n.localize('TAMS.DowntimeTracking')}: ${actor.name}</h3>
+        <h3 class="roll-label">${game.i18n.localize('TAMS.DowntimeTracking')}: ${e(actor.name)}</h3>
         <div class="roll-row">
           <span>${game.i18n.localize('TAMS.DowntimeDays')}:</span>
           <span class="roll-value">${downtime.days}</span>
@@ -106,7 +108,7 @@ export class TAMSDowntimeSheet extends TAMSActorSheet {
   async _onResetDowntime(event, target) {
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       window: { title: game.i18n.localize("TAMS.DowntimeReset") },
-      content: `<p>Are you sure you want to reset all downtime trackers to 0 for ${this.document.name}?</p>`,
+      content: `<p>Are you sure you want to reset all downtime trackers to 0 for ${e(this.document.name)}?</p>`,
       yes: { default: false },
       rejectClose: false
     });
@@ -136,7 +138,7 @@ export class TAMSDowntimeSheet extends TAMSActorSheet {
 
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       window: { title: game.i18n.localize("TAMS.Downtime.CompleteDowntime") },
-      content: `<p>${game.i18n.format("TAMS.Downtime.CompleteDowntimeConfirm", { name: actor.name })}</p>`,
+      content: `<p>${game.i18n.format("TAMS.Downtime.CompleteDowntimeConfirm", { name: e(actor.name) })}</p>`,
       yes: { default: false },
       rejectClose: false
     });
