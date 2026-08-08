@@ -555,27 +555,6 @@ export async function tamsOnTurnStart(actor) {
         await actor.setFlag('tams', 'reactionUses', {});
     }
 
-    // Expire duration-based status effects
-    const statusTracking = actor.getFlag('tams', 'statusTracking') ?? {};
-    if (Object.keys(statusTracking).length > 0 && game.combat) {
-        const updatedTracking = { ...statusTracking };
-        let trackingChanged = false;
-        for (const [statusId, roundApplied] of Object.entries(statusTracking)) {
-            const statusItem = actor.items.find(i => i.type === 'statusEffect' && i.system.statusId === statusId);
-            if (statusItem && statusItem.system.durationRounds > 0 && game.combat.round >= roundApplied + statusItem.system.durationRounds) {
-                await actor.toggleStatusEffect(statusId, { active: false });
-                delete updatedTracking[statusId];
-                trackingChanged = true;
-                await ChatMessage.create({
-                    speaker: ChatMessage.getSpeaker({ actor }),
-                    content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.StatusEffect.Expired", { name: actor.name, status: statusItem.name })}</div></div>`,
-                    whisper: getWhisperIds(actor)
-                });
-            }
-        }
-        if (trackingChanged) await actor.setFlag('tams', 'statusTracking', updatedTracking);
-    }
-
     const statuses = actor.statuses ?? new Set();
     const allPendingChecks = [];
 
@@ -644,17 +623,6 @@ export async function tamsOnTurnStart(actor) {
                 reasons: [game.i18n.localize("TAMS.TurnStart.KnockedOutReason")]
             });
         }
-    }
-
-    // --- Stunned: announce restriction then clear for this turn ---
-    if (statuses.has("stunned")) {
-        const whisper = getWhisperIds(actor);
-        await ChatMessage.create({
-            speaker: ChatMessage.getSpeaker({ actor }),
-            content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.format("TAMS.TurnStart.StunnedReminder", { name: actor.name })}</div></div>`,
-            whisper
-        });
-        await actor.toggleStatusEffect("stunned", { active: false });
     }
 
     // --- Morale checks for frozen/fleeing ---
@@ -1346,11 +1314,6 @@ export async function tamsRenderChatMessage(message, html, data) {
               const inflictsStatusId = message.getFlag('tams', 'inflictsStatusId');
               if (inflictsStatusId && hits.length > 0) {
                 await target.toggleStatusEffect(inflictsStatusId, { active: true });
-                const currentTracking = await target.getFlag('tams', 'statusTracking') ?? {};
-                await target.setFlag('tams', 'statusTracking', {
-                  ...currentTracking,
-                  [inflictsStatusId]: game.combat?.round ?? 0
-                });
               }
             }
           }

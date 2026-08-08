@@ -1,3 +1,49 @@
+// ── Shared field helpers ──────────────────────────────────────────────────────
+
+function sharedFields(fields) {
+  return {
+    tags: new fields.StringField({ initial: "" }),
+    description: new fields.HTMLField({ initial: "" }),
+  };
+}
+
+function inventoryFields(fields, { size = "small", location = "stowed", slots = 2 } = {}) {
+  return {
+    quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
+    size: new fields.StringField({ initial: size }),
+    location: new fields.StringField({ initial: location }),
+    slots: new fields.NumberField({ initial: slots, integer: true, min: 1 }),
+  };
+}
+
+// Note: uses.value and uses.max intentionally have no integer/min constraints —
+// matching the existing schema exactly.
+function usesFields(fields) {
+  return {
+    uses: new fields.SchemaField({
+      value: new fields.NumberField({ initial: 0 }),
+      max: new fields.NumberField({ initial: 0 }),
+    }),
+  };
+}
+
+function familiarityFields(fields) {
+  return {
+    familiarity: new fields.NumberField({ initial: 0, nullable: true }),
+    usedInScene: new fields.BooleanField({ initial: false }),
+  };
+}
+
+function sizeGrantFields(fields) {
+  return {
+    sizeGrantHP: new fields.StringField({ initial: "" }),
+    sizeGrantStealth: new fields.StringField({ initial: "" }),
+    sizeGrantCombat: new fields.StringField({ initial: "" }),
+  };
+}
+
+// ── DataModel classes ─────────────────────────────────────────────────────────
+
 /**
  * DataModel for Weapon items.
  */
@@ -5,12 +51,8 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      familiarity: new fields.NumberField({initial: 0, nullable: true}),
-      usedInScene: new fields.BooleanField({initial: false}),
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      size: new fields.StringField({initial: "medium"}),
-      location: new fields.StringField({initial: "hand"}),
-      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
+      ...familiarityFields(fields),
+      ...inventoryFields(fields, { size: "medium", location: "hand" }),
       equipped: new fields.BooleanField({initial: false}),
       isHeavy: new fields.BooleanField({initial: false}),
       isTwoHanded: new fields.BooleanField({initial: false}),
@@ -38,21 +80,15 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       isAoE: new fields.BooleanField({initial: false}),
       damageType: new fields.StringField({initial: ""}),
       inflictsStatusId: new fields.StringField({initial: ""}),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...sharedFields(fields),
     };
   }
 
-  /**
-   * The calculated damage of the weapon, derived from actor stats if melee.
-   * @type {number}
-   */
   get calculatedDamage() {
-    // If ranged, damage is player-set and not derived from stats
     if (this.isRanged) return Math.floor(this.rangedDamage || 0);
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
-    
+
     let statKey = "strength";
     if (this.damageStat && this.damageStat !== "default") {
         statKey = this.damageStat;
@@ -77,12 +113,10 @@ export class TAMSSkillData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      familiarity: new fields.NumberField({initial: 0, nullable: true}),
-      usedInScene: new fields.BooleanField({initial: false}),
+      ...familiarityFields(fields),
       bonus: new fields.NumberField({initial: 0, nullable: true}),
       stat: new fields.StringField({initial: "strength"}),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...sharedFields(fields),
     };
   }
 }
@@ -94,12 +128,8 @@ export class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      size: new fields.StringField({initial: "small"}),
-      location: new fields.StringField({initial: "stowed"}),
-      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...inventoryFields(fields),
+      ...sharedFields(fields),
     };
   }
 }
@@ -111,10 +141,7 @@ export class TAMSArmorData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      size: new fields.StringField({initial: "large"}),
-      location: new fields.StringField({initial: "stowed"}),
-      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
+      ...inventoryFields(fields, { size: "large" }),
       equipped: new fields.BooleanField({initial: false}),
       limbs: new fields.SchemaField({
         head: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
@@ -125,8 +152,7 @@ export class TAMSArmorData extends foundry.abstract.TypeDataModel {
         leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
         rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) })
       }),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...sharedFields(fields),
     };
   }
 }
@@ -138,18 +164,11 @@ export class TAMSAmmoData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      size: new fields.StringField({initial: "small"}),
-      location: new fields.StringField({initial: "stowed"}),
-      slots: new fields.NumberField({initial: 1, integer: true, min: 1}),
-      uses: new fields.SchemaField({
-        value: new fields.NumberField({initial: 0}),
-        max: new fields.NumberField({initial: 0})
-      }),
+      ...inventoryFields(fields, { slots: 1 }),
+      ...usesFields(fields),
       misfireRisk: new fields.BooleanField({initial: false}),
       isSlug: new fields.BooleanField({initial: false}),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...sharedFields(fields),
     };
   }
 }
@@ -161,16 +180,9 @@ export class TAMSConsumableData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      size: new fields.StringField({initial: "small"}),
-      location: new fields.StringField({initial: "stowed"}),
-      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
-      uses: new fields.SchemaField({
-        value: new fields.NumberField({initial: 0}),
-        max: new fields.NumberField({initial: 0})
-      }),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...inventoryFields(fields),
+      ...usesFields(fields),
+      ...sharedFields(fields),
     };
   }
 }
@@ -182,12 +194,8 @@ export class TAMSToolData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      size: new fields.StringField({initial: "medium"}),
-      location: new fields.StringField({initial: "stowed"}),
-      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...inventoryFields(fields, { size: "medium" }),
+      ...sharedFields(fields),
     };
   }
 }
@@ -201,12 +209,8 @@ export class TAMSShieldData extends foundry.abstract.TypeDataModel {
     return {
       armorValue: new fields.NumberField({initial: 5, integer: true, min: 0}),
       equipped: new fields.BooleanField({initial: false}),
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      size: new fields.StringField({initial: "medium"}),
-      location: new fields.StringField({initial: "hand"}),
-      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...inventoryFields(fields, { size: "medium", location: "hand" }),
+      ...sharedFields(fields),
     };
   }
 }
@@ -218,12 +222,8 @@ export class TAMSQuestItemData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      size: new fields.StringField({initial: "small"}),
-      location: new fields.StringField({initial: "stowed"}),
-      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...inventoryFields(fields),
+      ...sharedFields(fields),
     };
   }
 }
@@ -235,10 +235,7 @@ export class TAMSBackpackData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({initial: 1, integer: true, min: 0}),
-      size: new fields.StringField({initial: "medium"}),
-      location: new fields.StringField({initial: "stowed"}),
-      slots: new fields.NumberField({initial: 2, integer: true, min: 1}),
+      ...inventoryFields(fields, { size: "medium" }),
       equipped: new fields.BooleanField({initial: false}),
       capacity: new fields.NumberField({initial: 10, integer: true, min: 0}),
       modifier: new fields.NumberField({initial: 0.5, step: 0.1, min: 0}),
@@ -250,11 +247,8 @@ export class TAMSBackpackData extends foundry.abstract.TypeDataModel {
         attack: new fields.NumberField({initial: 0, integer: true}),
         movement: new fields.NumberField({initial: 0, integer: true})
       }),
-      tags: new fields.StringField({initial: ""}),
-      sizeGrantHP:      new fields.StringField({initial: ""}),
-      sizeGrantStealth: new fields.StringField({initial: ""}),
-      sizeGrantCombat:  new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...sizeGrantFields(fields),
+      ...sharedFields(fields),
     };
   }
 }
@@ -266,17 +260,13 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      familiarity: new fields.NumberField({initial: 0, nullable: true}),
-      usedInScene: new fields.BooleanField({initial: false}),
+      ...familiarityFields(fields),
       bonus: new fields.NumberField({initial: 0, nullable: true}),
       cost: new fields.NumberField({initial: 0, nullable: true}),
       resource: new fields.StringField({initial: "stamina"}),
       isApex: new fields.BooleanField({initial: false}),
       isReaction: new fields.BooleanField({initial: false}),
-      uses: new fields.SchemaField({
-        value: new fields.NumberField({initial: 0}),
-        max: new fields.NumberField({initial: 0})
-      }),
+      ...usesFields(fields),
       isAttack: new fields.BooleanField({initial: false}),
       useWeaponDamage: new fields.BooleanField({initial: false}),
       damage: new fields.NumberField({initial: 0, nullable: true}),
@@ -292,12 +282,9 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       inflictsStatusId: new fields.StringField({initial: ""}),
       hasSave: new fields.BooleanField({initial: false}),
       saveAgainst: new fields.StringField({initial: "dexterity"}),
-      tags: new fields.StringField({initial: ""}),
       castTime: new fields.StringField({initial: "immediate"}),
-      description: new fields.HTMLField({initial: ""}),
-      sizeGrantHP:      new fields.StringField({initial: ""}),
-      sizeGrantStealth: new fields.StringField({initial: ""}),
-      sizeGrantCombat:  new fields.StringField({initial: ""}),
+      ...sizeGrantFields(fields),
+      ...sharedFields(fields),
       ifStatement: new fields.StringField({initial: ""}),
       ifCost: new fields.NumberField({initial: 0, integer: true, nullable: true}),
       calculator: new fields.SchemaField({
@@ -346,10 +333,6 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     };
   }
 
-  /**
-   * The calculated damage of the ability, derived from actor stats if applicable.
-   * @type {number}
-   */
   get calculatedDamage() {
     if ( !this.isAttack ) return 0;
     const actor = this.parent?.actor;
@@ -363,10 +346,6 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     return Math.floor(damageStatValue * this.damageMult) + this.damageBonus + (this.damage || 0);
   }
 
-  /**
-   * The calculated resource cost of the ability, derived from calculator fields.
-   * @type {number}
-   */
   get calculatedCost() {
     const c = this.calculator;
     let cost = 0;
@@ -455,7 +434,7 @@ export class TAMSStatusEffectData extends foundry.abstract.TypeDataModel {
       statusId:          new fields.StringField({initial: ""}),
       mechanicalSummary: new fields.StringField({initial: ""}),
       durationRounds:    new fields.NumberField({initial: 0, integer: true, min: 0}),
-      description:       new fields.HTMLField({initial: ""})
+      ...sharedFields(fields),
     };
   }
 }
@@ -478,9 +457,7 @@ export class TAMSRaceData extends foundry.abstract.TypeDataModel {
         type: new fields.StringField({initial: "add"})
       })),
       size: new fields.StringField({initial: "normal"}),
-      sizeGrantHP: new fields.StringField({initial: ""}),
-      sizeGrantStealth: new fields.StringField({initial: ""}),
-      sizeGrantCombat: new fields.StringField({initial: ""}),
+      ...sizeGrantFields(fields),
       injuryCheckBonus: new fields.NumberField({initial: 0, integer: true}),
       resistances: new fields.ArrayField(new fields.SchemaField({
         damageType: new fields.StringField({initial: ""}),
@@ -488,8 +465,7 @@ export class TAMSRaceData extends foundry.abstract.TypeDataModel {
         value: new fields.NumberField({initial: 0, integer: true, min: 0}),
         limbs: new fields.ArrayField(new fields.StringField({initial: ""}), {initial: []})
       })),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...sharedFields(fields),
     };
   }
 }
@@ -508,8 +484,7 @@ export class TAMSTraitData extends foundry.abstract.TypeDataModel {
         value: new fields.NumberField({initial: 0}),
         type: new fields.StringField({initial: "add"})
       })),
-      tags: new fields.StringField({initial: ""}),
-      description: new fields.HTMLField({initial: ""})
+      ...sharedFields(fields),
     };
   }
 }

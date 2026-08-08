@@ -493,16 +493,47 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     downtime.daysRemaining = Math.max(0, downtime.days - usedDays);
   }
 }
+function sharedFields(fields) {
+  return {
+    tags: new fields.StringField({ initial: "" }),
+    description: new fields.HTMLField({ initial: "" })
+  };
+}
+function inventoryFields(fields, { size = "small", location = "stowed", slots = 2 } = {}) {
+  return {
+    quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
+    size: new fields.StringField({ initial: size }),
+    location: new fields.StringField({ initial: location }),
+    slots: new fields.NumberField({ initial: slots, integer: true, min: 1 })
+  };
+}
+function usesFields(fields) {
+  return {
+    uses: new fields.SchemaField({
+      value: new fields.NumberField({ initial: 0 }),
+      max: new fields.NumberField({ initial: 0 })
+    })
+  };
+}
+function familiarityFields(fields) {
+  return {
+    familiarity: new fields.NumberField({ initial: 0, nullable: true }),
+    usedInScene: new fields.BooleanField({ initial: false })
+  };
+}
+function sizeGrantFields(fields) {
+  return {
+    sizeGrantHP: new fields.StringField({ initial: "" }),
+    sizeGrantStealth: new fields.StringField({ initial: "" }),
+    sizeGrantCombat: new fields.StringField({ initial: "" })
+  };
+}
 class TAMSWeaponData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      familiarity: new fields.NumberField({ initial: 0, nullable: true }),
-      usedInScene: new fields.BooleanField({ initial: false }),
-      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
-      size: new fields.StringField({ initial: "medium" }),
-      location: new fields.StringField({ initial: "hand" }),
-      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
+      ...familiarityFields(fields),
+      ...inventoryFields(fields, { size: "medium", location: "hand" }),
       equipped: new fields.BooleanField({ initial: false }),
       isHeavy: new fields.BooleanField({ initial: false }),
       isTwoHanded: new fields.BooleanField({ initial: false }),
@@ -530,14 +561,9 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       isAoE: new fields.BooleanField({ initial: false }),
       damageType: new fields.StringField({ initial: "" }),
       inflictsStatusId: new fields.StringField({ initial: "" }),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...sharedFields(fields)
     };
   }
-  /**
-   * The calculated damage of the weapon, derived from actor stats if melee.
-   * @type {number}
-   */
   get calculatedDamage() {
     var _a, _b;
     if (this.isRanged) return Math.floor(this.rangedDamage || 0);
@@ -562,12 +588,10 @@ class TAMSSkillData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      familiarity: new fields.NumberField({ initial: 0, nullable: true }),
-      usedInScene: new fields.BooleanField({ initial: false }),
+      ...familiarityFields(fields),
       bonus: new fields.NumberField({ initial: 0, nullable: true }),
       stat: new fields.StringField({ initial: "strength" }),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...sharedFields(fields)
     };
   }
 }
@@ -575,12 +599,8 @@ class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
-      size: new fields.StringField({ initial: "small" }),
-      location: new fields.StringField({ initial: "stowed" }),
-      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...inventoryFields(fields),
+      ...sharedFields(fields)
     };
   }
 }
@@ -588,10 +608,7 @@ class TAMSArmorData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
-      size: new fields.StringField({ initial: "large" }),
-      location: new fields.StringField({ initial: "stowed" }),
-      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
+      ...inventoryFields(fields, { size: "large" }),
       equipped: new fields.BooleanField({ initial: false }),
       limbs: new fields.SchemaField({
         head: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }), max: new fields.NumberField({ initial: 0 }) }),
@@ -602,8 +619,7 @@ class TAMSArmorData extends foundry.abstract.TypeDataModel {
         leftLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }), max: new fields.NumberField({ initial: 0 }) }),
         rightLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 0 }), max: new fields.NumberField({ initial: 0 }) })
       }),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...sharedFields(fields)
     };
   }
 }
@@ -611,18 +627,11 @@ class TAMSAmmoData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
-      size: new fields.StringField({ initial: "small" }),
-      location: new fields.StringField({ initial: "stowed" }),
-      slots: new fields.NumberField({ initial: 1, integer: true, min: 1 }),
-      uses: new fields.SchemaField({
-        value: new fields.NumberField({ initial: 0 }),
-        max: new fields.NumberField({ initial: 0 })
-      }),
+      ...inventoryFields(fields, { slots: 1 }),
+      ...usesFields(fields),
       misfireRisk: new fields.BooleanField({ initial: false }),
       isSlug: new fields.BooleanField({ initial: false }),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...sharedFields(fields)
     };
   }
 }
@@ -630,16 +639,9 @@ class TAMSConsumableData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
-      size: new fields.StringField({ initial: "small" }),
-      location: new fields.StringField({ initial: "stowed" }),
-      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
-      uses: new fields.SchemaField({
-        value: new fields.NumberField({ initial: 0 }),
-        max: new fields.NumberField({ initial: 0 })
-      }),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...inventoryFields(fields),
+      ...usesFields(fields),
+      ...sharedFields(fields)
     };
   }
 }
@@ -647,12 +649,8 @@ class TAMSToolData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
-      size: new fields.StringField({ initial: "medium" }),
-      location: new fields.StringField({ initial: "stowed" }),
-      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...inventoryFields(fields, { size: "medium" }),
+      ...sharedFields(fields)
     };
   }
 }
@@ -662,12 +660,8 @@ class TAMSShieldData extends foundry.abstract.TypeDataModel {
     return {
       armorValue: new fields.NumberField({ initial: 5, integer: true, min: 0 }),
       equipped: new fields.BooleanField({ initial: false }),
-      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
-      size: new fields.StringField({ initial: "medium" }),
-      location: new fields.StringField({ initial: "hand" }),
-      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...inventoryFields(fields, { size: "medium", location: "hand" }),
+      ...sharedFields(fields)
     };
   }
 }
@@ -675,12 +669,8 @@ class TAMSQuestItemData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
-      size: new fields.StringField({ initial: "small" }),
-      location: new fields.StringField({ initial: "stowed" }),
-      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...inventoryFields(fields),
+      ...sharedFields(fields)
     };
   }
 }
@@ -688,10 +678,7 @@ class TAMSBackpackData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
-      size: new fields.StringField({ initial: "medium" }),
-      location: new fields.StringField({ initial: "stowed" }),
-      slots: new fields.NumberField({ initial: 2, integer: true, min: 1 }),
+      ...inventoryFields(fields, { size: "medium" }),
       equipped: new fields.BooleanField({ initial: false }),
       capacity: new fields.NumberField({ initial: 10, integer: true, min: 0 }),
       modifier: new fields.NumberField({ initial: 0.5, step: 0.1, min: 0 }),
@@ -703,11 +690,8 @@ class TAMSBackpackData extends foundry.abstract.TypeDataModel {
         attack: new fields.NumberField({ initial: 0, integer: true }),
         movement: new fields.NumberField({ initial: 0, integer: true })
       }),
-      tags: new fields.StringField({ initial: "" }),
-      sizeGrantHP: new fields.StringField({ initial: "" }),
-      sizeGrantStealth: new fields.StringField({ initial: "" }),
-      sizeGrantCombat: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...sizeGrantFields(fields),
+      ...sharedFields(fields)
     };
   }
 }
@@ -715,17 +699,13 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
     return {
-      familiarity: new fields.NumberField({ initial: 0, nullable: true }),
-      usedInScene: new fields.BooleanField({ initial: false }),
+      ...familiarityFields(fields),
       bonus: new fields.NumberField({ initial: 0, nullable: true }),
       cost: new fields.NumberField({ initial: 0, nullable: true }),
       resource: new fields.StringField({ initial: "stamina" }),
       isApex: new fields.BooleanField({ initial: false }),
       isReaction: new fields.BooleanField({ initial: false }),
-      uses: new fields.SchemaField({
-        value: new fields.NumberField({ initial: 0 }),
-        max: new fields.NumberField({ initial: 0 })
-      }),
+      ...usesFields(fields),
       isAttack: new fields.BooleanField({ initial: false }),
       useWeaponDamage: new fields.BooleanField({ initial: false }),
       damage: new fields.NumberField({ initial: 0, nullable: true }),
@@ -741,12 +721,9 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       inflictsStatusId: new fields.StringField({ initial: "" }),
       hasSave: new fields.BooleanField({ initial: false }),
       saveAgainst: new fields.StringField({ initial: "dexterity" }),
-      tags: new fields.StringField({ initial: "" }),
       castTime: new fields.StringField({ initial: "immediate" }),
-      description: new fields.HTMLField({ initial: "" }),
-      sizeGrantHP: new fields.StringField({ initial: "" }),
-      sizeGrantStealth: new fields.StringField({ initial: "" }),
-      sizeGrantCombat: new fields.StringField({ initial: "" }),
+      ...sizeGrantFields(fields),
+      ...sharedFields(fields),
       ifStatement: new fields.StringField({ initial: "" }),
       ifCost: new fields.NumberField({ initial: 0, integer: true, nullable: true }),
       calculator: new fields.SchemaField({
@@ -794,10 +771,6 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       passiveRollType: new fields.StringField({ initial: "all" })
     };
   }
-  /**
-   * The calculated damage of the ability, derived from actor stats if applicable.
-   * @type {number}
-   */
   get calculatedDamage() {
     var _a, _b;
     if (!this.isAttack) return 0;
@@ -809,10 +782,6 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     const damageStatValue = ((_b = actor.system.stats[this.damageStat]) == null ? void 0 : _b.total) || 0;
     return Math.floor(damageStatValue * this.damageMult) + this.damageBonus + (this.damage || 0);
   }
-  /**
-   * The calculated resource cost of the ability, derived from calculator fields.
-   * @type {number}
-   */
   get calculatedCost() {
     const c = this.calculator;
     let cost = 0;
@@ -897,7 +866,7 @@ class TAMSStatusEffectData extends foundry.abstract.TypeDataModel {
       statusId: new fields.StringField({ initial: "" }),
       mechanicalSummary: new fields.StringField({ initial: "" }),
       durationRounds: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
-      description: new fields.HTMLField({ initial: "" })
+      ...sharedFields(fields)
     };
   }
 }
@@ -916,9 +885,7 @@ class TAMSRaceData extends foundry.abstract.TypeDataModel {
         type: new fields.StringField({ initial: "add" })
       })),
       size: new fields.StringField({ initial: "normal" }),
-      sizeGrantHP: new fields.StringField({ initial: "" }),
-      sizeGrantStealth: new fields.StringField({ initial: "" }),
-      sizeGrantCombat: new fields.StringField({ initial: "" }),
+      ...sizeGrantFields(fields),
       injuryCheckBonus: new fields.NumberField({ initial: 0, integer: true }),
       resistances: new fields.ArrayField(new fields.SchemaField({
         damageType: new fields.StringField({ initial: "" }),
@@ -926,8 +893,7 @@ class TAMSRaceData extends foundry.abstract.TypeDataModel {
         value: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
         limbs: new fields.ArrayField(new fields.StringField({ initial: "" }), { initial: [] })
       })),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...sharedFields(fields)
     };
   }
 }
@@ -942,8 +908,7 @@ class TAMSTraitData extends foundry.abstract.TypeDataModel {
         value: new fields.NumberField({ initial: 0 }),
         type: new fields.StringField({ initial: "add" })
       })),
-      tags: new fields.StringField({ initial: "" }),
-      description: new fields.HTMLField({ initial: "" })
+      ...sharedFields(fields)
     };
   }
 }
@@ -1656,25 +1621,6 @@ async function tamsOnTurnStart(actor) {
   if (Object.keys(reactionUses).length > 0) {
     await actor.setFlag("tams", "reactionUses", {});
   }
-  const statusTracking = actor.getFlag("tams", "statusTracking") ?? {};
-  if (Object.keys(statusTracking).length > 0 && game.combat) {
-    const updatedTracking = { ...statusTracking };
-    let trackingChanged = false;
-    for (const [statusId, roundApplied] of Object.entries(statusTracking)) {
-      const statusItem = actor.items.find((i) => i.type === "statusEffect" && i.system.statusId === statusId);
-      if (statusItem && statusItem.system.durationRounds > 0 && game.combat.round >= roundApplied + statusItem.system.durationRounds) {
-        await actor.toggleStatusEffect(statusId, { active: false });
-        delete updatedTracking[statusId];
-        trackingChanged = true;
-        await ChatMessage.create({
-          speaker: ChatMessage.getSpeaker({ actor }),
-          content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.StatusEffect.Expired", { name: actor.name, status: statusItem.name })}</div></div>`,
-          whisper: getWhisperIds(actor)
-        });
-      }
-    }
-    if (trackingChanged) await actor.setFlag("tams", "statusTracking", updatedTracking);
-  }
   const statuses = actor.statuses ?? /* @__PURE__ */ new Set();
   const allPendingChecks = [];
   const activeDotTiers = [];
@@ -1742,15 +1688,6 @@ async function tamsOnTurnStart(actor) {
         reasons: [game.i18n.localize("TAMS.TurnStart.KnockedOutReason")]
       });
     }
-  }
-  if (statuses.has("stunned")) {
-    const whisper = getWhisperIds(actor);
-    await ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({ actor }),
-      content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;">${game.i18n.format("TAMS.TurnStart.StunnedReminder", { name: actor.name })}</div></div>`,
-      whisper
-    });
-    await actor.toggleStatusEffect("stunned", { active: false });
   }
   if (statuses.has("frozen")) {
     const def = (_a = CONFIG.statusEffects) == null ? void 0 : _a.find((e2) => e2.id === "frozen");
@@ -2322,7 +2259,7 @@ async function tamsRenderChatMessage(message, html, data) {
           label: game.i18n.localize("TAMS.Checks.ApplyAllHits"),
           default: true,
           callback: async (event, button, dialog) => {
-            var _a2, _b2;
+            var _a2;
             const form = dialog.element;
             const multiplier = isAoEHit && isSquadOrHorde ? parseInt((_a2 = form.querySelector("#aoe-targets-hit")) == null ? void 0 : _a2.value) || 1 : 1;
             const dmgInputs = form.querySelectorAll(".hit-dmg");
@@ -2345,11 +2282,6 @@ async function tamsRenderChatMessage(message, html, data) {
             const inflictsStatusId = message.getFlag("tams", "inflictsStatusId");
             if (inflictsStatusId && hits.length > 0) {
               await target.toggleStatusEffect(inflictsStatusId, { active: true });
-              const currentTracking = await target.getFlag("tams", "statusTracking") ?? {};
-              await target.setFlag("tams", "statusTracking", {
-                ...currentTracking,
-                [inflictsStatusId]: ((_b2 = game.combat) == null ? void 0 : _b2.round) ?? 0
-              });
             }
           }
         }
@@ -7971,32 +7903,37 @@ Hooks.once("init", async function() {
   });
   const tamsStatusEffects = [
     // Existing
-    { id: "encumbered", name: "TAMS.Encumbered", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg", tams: true },
-    { id: "bleeding", name: "TAMS.Status.Bleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
-    { id: "severe-bleeding", name: "TAMS.Status.SevereBleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
+    { id: "encumbered", name: "TAMS.Encumbered", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg", tams: true, statuses: ["encumbered"] },
+    { id: "bleeding", name: "TAMS.Status.Bleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true, statuses: ["bleeding"] },
+    { id: "severe-bleeding", name: "TAMS.Status.SevereBleeding", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true, statuses: ["severe-bleeding"] },
     // Category 1 — Combat Conditions
-    { id: "stunned", name: "TAMS.Status.Stunned", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg", tams: true },
-    { id: "prone", name: "TAMS.Status.Prone", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg", tams: true },
-    { id: "suppressed", name: "TAMS.Status.Suppressed", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg", tams: true },
-    { id: "blinded", name: "TAMS.Status.Blinded", img: "icons/svg/blind.svg", icon: "icons/svg/blind.svg", tams: true },
-    { id: "deafened", name: "TAMS.Status.Deafened", img: "icons/svg/deaf.svg", icon: "icons/svg/deaf.svg", tams: true },
+    // stunned: duration.turns = 1 causes Foundry v14 to auto-expire the AE at next turn start.
+    { id: "stunned", name: "TAMS.Status.Stunned", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg", tams: true, statuses: ["stunned"], duration: { turns: 1 } },
+    { id: "prone", name: "TAMS.Status.Prone", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg", tams: true, statuses: ["prone"] },
+    { id: "suppressed", name: "TAMS.Status.Suppressed", img: "icons/svg/anchor.svg", icon: "icons/svg/anchor.svg", tams: true, statuses: ["suppressed"] },
+    // blinded: disable token sight. TODO: verify "sight.enabled" path in live Foundry v14.
+    { id: "blinded", name: "TAMS.Status.Blinded", img: "icons/svg/blind.svg", icon: "icons/svg/blind.svg", tams: true, statuses: ["blinded"], tokenOverrides: { "sight.enabled": false } },
+    { id: "deafened", name: "TAMS.Status.Deafened", img: "icons/svg/deaf.svg", icon: "icons/svg/deaf.svg", tams: true, statuses: ["deafened"] },
     // Category 2 — Ongoing Damage (severity tiers)
-    { id: "on-fire", name: "TAMS.Status.OnFire", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg", tams: true },
-    { id: "engulfed", name: "TAMS.Status.Engulfed", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg", tams: true },
-    { id: "poisoned", name: "TAMS.Status.Poisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg", tams: true },
-    { id: "severely-poisoned", name: "TAMS.Status.SeverelyPoisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg", tams: true },
-    { id: "irradiated", name: "TAMS.Status.Irradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg", tams: true },
-    { id: "severely-irradiated", name: "TAMS.Status.SeverelyIrradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg", tams: true },
-    { id: "acid-burn", name: "TAMS.Status.AcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
-    { id: "severe-acid-burn", name: "TAMS.Status.SevereAcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
+    // on-fire / engulfed: token emits light. TODO: verify light field paths in live Foundry v14.
+    { id: "on-fire", name: "TAMS.Status.OnFire", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg", tams: true, statuses: ["on-fire"], tokenOverrides: { "light.bright": 1, "light.dim": 3, "light.color": "#ff4400" } },
+    { id: "engulfed", name: "TAMS.Status.Engulfed", img: "icons/svg/fire.svg", icon: "icons/svg/fire.svg", tams: true, statuses: ["engulfed"], tokenOverrides: { "light.bright": 3, "light.dim": 6, "light.color": "#ff6600" } },
+    { id: "poisoned", name: "TAMS.Status.Poisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg", tams: true, statuses: ["poisoned"] },
+    { id: "severely-poisoned", name: "TAMS.Status.SeverelyPoisoned", img: "icons/svg/poison.svg", icon: "icons/svg/poison.svg", tams: true, statuses: ["severely-poisoned"] },
+    { id: "irradiated", name: "TAMS.Status.Irradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg", tams: true, statuses: ["irradiated"] },
+    { id: "severely-irradiated", name: "TAMS.Status.SeverelyIrradiated", img: "icons/svg/skull.svg", icon: "icons/svg/skull.svg", tams: true, statuses: ["severely-irradiated"] },
+    { id: "acid-burn", name: "TAMS.Status.AcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true, statuses: ["acid-burn"] },
+    { id: "severe-acid-burn", name: "TAMS.Status.SevereAcidBurn", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true, statuses: ["severe-acid-burn"] },
     // Category 3 — Morale / Mental
-    { id: "fleeing", name: "TAMS.Status.Fleeing", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg", tams: true },
-    { id: "frozen", name: "TAMS.Status.Frozen", img: "icons/svg/frozen.svg", icon: "icons/svg/frozen.svg", tams: true },
-    { id: "charmed", name: "TAMS.Status.Charmed", img: "icons/svg/sleep.svg", icon: "icons/svg/sleep.svg", tams: true },
-    { id: "confused", name: "TAMS.Status.Confused", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg", tams: true },
+    { id: "fleeing", name: "TAMS.Status.Fleeing", img: "icons/svg/falling.svg", icon: "icons/svg/falling.svg", tams: true, statuses: ["fleeing"] },
+    { id: "frozen", name: "TAMS.Status.Frozen", img: "icons/svg/frozen.svg", icon: "icons/svg/frozen.svg", tams: true, statuses: ["frozen"] },
+    // charmed: token disposition → friendly (1 = CONST.TOKEN_DISPOSITIONS.FRIENDLY).
+    // TODO: verify "disposition" path in live Foundry v14.
+    { id: "charmed", name: "TAMS.Status.Charmed", img: "icons/svg/sleep.svg", icon: "icons/svg/sleep.svg", tams: true, statuses: ["charmed"], tokenOverrides: { "disposition": 1 } },
+    { id: "confused", name: "TAMS.Status.Confused", img: "icons/svg/daze.svg", icon: "icons/svg/daze.svg", tams: true, statuses: ["confused"] },
     // Category 4 — Limb-Specific
-    { id: "broken-arm", name: "TAMS.Status.BrokenArm", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true },
-    { id: "broken-leg", name: "TAMS.Status.BrokenLeg", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true }
+    { id: "broken-arm", name: "TAMS.Status.BrokenArm", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true, statuses: ["broken-arm"] },
+    { id: "broken-leg", name: "TAMS.Status.BrokenLeg", img: "icons/svg/blood.svg", icon: "icons/svg/blood.svg", tams: true, statuses: ["broken-leg"] }
   ];
   for (const effect of tamsStatusEffects) {
     if (Array.isArray(CONFIG.statusEffects) && !CONFIG.statusEffects.some((e2) => e2.id === effect.id)) {
