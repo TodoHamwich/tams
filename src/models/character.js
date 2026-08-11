@@ -136,7 +136,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         effectiveHPSize: new fields.StringField({initial: ""}),
         effectiveStealthSize: new fields.StringField({initial: ""}),
         effectiveCombatSize: new fields.StringField({initial: ""}),
-        enabledCurrencies: new fields.ObjectField({initial: {}})
+        enabledCurrencies: new fields.ObjectField({initial: {}}),
+        isSmart: new fields.BooleanField({initial: false})
       }),
       upgradePoints: new fields.SchemaField({
         stats: new fields.NumberField({initial: 0}),

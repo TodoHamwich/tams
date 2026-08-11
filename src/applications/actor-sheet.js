@@ -128,6 +128,109 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       });
     });
 
+    this.element.querySelectorAll(".tams-rest-stamina").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const actor = this.document;
+        const end = actor.system.stats.endurance.total;
+        const recovery = Math.floor(end / 10);
+        if (recovery <= 0) return;
+        const current = actor.system.stamina.value;
+        const max = actor.system.stamina.max;
+        const newVal = Math.min(max, current + recovery);
+        await actor.update({ "system.stamina.value": newVal });
+        ChatMessage.create({
+          speaker: ChatMessage.getSpeaker({ actor }),
+          content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.StaminaRestMessage", { name: actor.name, amount: recovery })}</div></div>`
+        });
+      });
+    });
+
+    this.element.querySelectorAll(".tams-medical-aid").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const healer = this.document;
+        const medicineSkill = healer.items.find(i => i.type === 'skill' && i.name.toLowerCase().includes('medicine'));
+        if (!medicineSkill) return;
+        const familiarity = parseInt(medicineSkill.system.familiarity) || 0;
+        const healPool = Math.ceil(familiarity / 2);
+        if (healPool <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoPool"));
+
+        // Check once-per-day flag (keyed on world time day)
+        const lastAidTime = healer.getFlag('tams', 'medicalAidGiven') ?? 0;
+        const currentTime = game.time?.worldTime ?? 0;
+        const daySeconds = 86400;
+        if (currentTime - lastAidTime < daySeconds) {
+          return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidAlreadyGiven"));
+        }
+
+        const targets = [...game.user.targets];
+        const targetActor = targets.length > 0 ? targets[0].actor : null;
+        if (!targetActor) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoTarget"));
+
+        const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+        const limbRows = limbKeys.map(key => {
+          const limb = targetActor.system.limbs[key];
+          if (!limb) return '';
+          const deficit = limb.max - limb.value;
+          return `<div class="form-group" style="display:flex;align-items:center;gap:8px;margin:4px 0;">
+            <label style="flex:1;">${limb.label} (${limb.value}/${limb.max})</label>
+            <input type="number" id="heal-${key}" value="0" min="0" max="${deficit}" style="width:50px;"/>
+          </div>`;
+        }).join('');
+
+        const content = `<div>
+          <p>${game.i18n.format("TAMS.MedicalAidPool", { pool: healPool })}</p>
+          ${limbRows}
+          <p id="heal-remaining" style="font-size:0.85em;color:#666;">${game.i18n.format("TAMS.MedicalAidRemaining", { remaining: healPool })}</p>
+        </div>`;
+
+        const result = await foundry.applications.api.DialogV2.wait({
+          window: { title: game.i18n.format("TAMS.MedicalAidTitle", { name: healer.name }) },
+          content,
+          rejectClose: false,
+          buttons: [
+            { action: "apply", label: game.i18n.localize("TAMS.MedicalAidApply"), default: true },
+            { action: "cancel", label: game.i18n.localize("TAMS.Cancel") }
+          ],
+          render: (event, dialog) => {
+            const inputs = dialog.element.querySelectorAll('input[type=number]');
+            const updateRemaining = () => {
+              let spent = 0;
+              inputs.forEach(inp => spent += parseInt(inp.value) || 0);
+              const remaining = healPool - spent;
+              dialog.element.querySelector('#heal-remaining').textContent = game.i18n.format("TAMS.MedicalAidRemaining", { remaining });
+              inputs.forEach(inp => {
+                const v = parseInt(inp.value) || 0;
+                if (spent > healPool && v > 0) inp.value = Math.max(0, v - (spent - healPool));
+              });
+            };
+            inputs.forEach(inp => inp.addEventListener('input', updateRemaining));
+          }
+        });
+
+        if (result !== 'apply') return;
+
+        const updates = {};
+        let totalHealed = 0;
+        for (const key of limbKeys) {
+          const inp = document.querySelector(`#heal-${key}`);
+          const amount = inp ? Math.max(0, parseInt(inp.value) || 0) : 0;
+          if (amount <= 0) continue;
+          const limb = targetActor.system.limbs[key];
+          updates[`system.limbs.${key}.value`] = Math.min(limb.max, limb.value + amount);
+          totalHealed += amount;
+        }
+        if (totalHealed > healPool) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidOverPool"));
+        if (totalHealed > 0) {
+          await targetActor.update(updates);
+          await healer.setFlag('tams', 'medicalAidGiven', currentTime);
+          ChatMessage.create({
+            speaker: ChatMessage.getSpeaker({ actor: healer }),
+            content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.MedicalAidMessage", { healer: healer.name, target: targetActor.name, amount: totalHealed })}</div></div>`
+          });
+        }
+      });
+    });
+
     // Drag-over highlight for reorderable rows (skills, weapons, abilities)
     this.element.querySelectorAll('.item[data-item-id]').forEach(el => {
       el.addEventListener('dragover', ev => { ev.preventDefault(); el.classList.add('drag-over'); });
@@ -160,6 +263,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     this._prepareCurrencyData(context);
     this._prepareLimbArmorOptions(context);
     this._prepareHonorData(context);
+
+    // Medicine skill for medical aid button
+    const medicineSkill = this.document.items.find(i => i.type === 'skill' && i.name.toLowerCase().includes('medicine'));
+    context.medicineSkillFamiliarity = medicineSkill ? (parseInt(medicineSkill.system.familiarity) || 0) : 0;
 
     // Active status effects panel
     const skipDisplay = new Set(["encumbered"]);
@@ -1787,6 +1894,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             }
             if (tags.includes("unreliable") && rawResult <= 4) {
                 isJammed = true;
+                await this.document.setFlag('tams', 'pendingAutoCrit', true);
             }
         }
     }
@@ -1830,13 +1938,35 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
         const isRangedAttack = item.type === 'weapon' ? !!item.system.isRanged : (item.system.calculator?.range > 10);
         if (isSquadOrHorde) {
-            maxSquadTargets = squadSize;
-            maxSquadTargets = Math.max(1, maxSquadTargets);
+            if (settings.npcType === 'squad') {
+                maxSquadTargets = isRangedAttack
+                    ? Math.max(1, Math.ceil(squadSize / 2))
+                    : Math.max(1, squadSize);
+                const actualTargets = [...game.user.targets].slice(0, maxSquadTargets);
+                const numTargetsCount = actualTargets.length > 0 ? actualTargets.length : (tToken ? 1 : 0);
+                if (numTargetsCount > 0 && numTargetsCount < maxSquadTargets) {
+                    squadBonus = (maxSquadTargets - numTargetsCount) * 5;
+                }
+            } else if (settings.npcType === 'horde') {
+                if (isRangedAttack) {
+                    maxSquadTargets = Math.max(2, Math.floor(squadSize / 5));
+                    const actualTargets = [...game.user.targets].slice(0, maxSquadTargets);
+                    const numTargetsCount = actualTargets.length > 0 ? actualTargets.length : (tToken ? 1 : 0);
+                    if (numTargetsCount > 0 && numTargetsCount < maxSquadTargets) {
+                        squadBonus = (maxSquadTargets - numTargetsCount) * 5;
+                    }
+                } else {
+                    const smartMult = settings.isSmart ? 2 : 1;
+                    squadBonus = squadSize * smartMult;
+                }
+            }
+        }
 
-            const actualTargets = [...game.user.targets].slice(0, maxSquadTargets);
-            const numTargetsCount = actualTargets.length > 0 ? actualTargets.length : (tToken ? 1 : 0);
-            if (numTargetsCount > 0 && numTargetsCount < maxSquadTargets) {
-                squadBonus = (maxSquadTargets - numTargetsCount) * 5;
+        // Ranged bonus to hit a horde target (attacker gets +½ horde current size)
+        if (!isSquadOrHorde && isRangedAttack) {
+            const targetActor = tToken?.actor;
+            if (targetActor?.system.settings.npcType === 'horde') {
+                squadBonus += Math.floor((targetActor.system.settings.squadSize || 0) / 2);
             }
         }
     }

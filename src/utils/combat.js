@@ -52,13 +52,7 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
         <p><b>${e(target.name)}</b> ${game.i18n.localize("TAMS.Checks.MustMakeChecks")}:</p>`;
 
     pendingChecks.forEach((check, i) => {
-        if (check.type === 'injured') {
-            content += `
-                <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
-                    <label><b>${game.i18n.format("TAMS.Checks.InjuryCheck", {loc: e(check.loc)})}</b> (DC ${check.dc})</label>
-                    <button class="roll-check" data-index="${i}" style="width: 120px; font-size: 11px;">${game.i18n.localize("TAMS.Checks.RollVsInjury")}</button>
-                </div>`;
-        } else if (check.type === 'crit') {
+        if (check.type === 'crit') {
             content += `
                 <div class="check-row" style="border-bottom: 1px solid #ccc; padding: 5px 0; display: flex; justify-content: space-between; align-items: center;">
                     <label><b>${game.i18n.format("TAMS.Checks.CritCheck", {loc: e(check.loc)})}</b> (DC ${check.dc})</label>
@@ -103,7 +97,7 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                     : target.system.stats.endurance.total;
 
                 let bonus = 0;
-                if (check.type === 'injured' || check.type === 'crit') {
+                if (check.type === 'crit') {
                     bonus += target.system.injuryCheckBonus || 0;
                 }
                 let resourceSpent = null;
@@ -115,21 +109,7 @@ export async function showCombinedInjuryDialog(target, pendingChecks) {
                 const success = total >= check.dc;
 
                 let report = "";
-                if (check.type === 'injured') {
-                    report = `
-                        <div class="tams-roll">
-                            <h3 class="roll-label" style="color: #f39c12;">${game.i18n.format("TAMS.Checks.EnduranceCheckInjury", {loc: e(check.loc)})}</h3>
-                            <div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.Dice")}</span><span>${raw}</span></div>
-                            <div class="roll-row"><span>${game.i18n.format("TAMS.Checks.Capped", {end: statCap})}</span><span>${capped}</span></div>
-                            ${bonus ? `<div class="roll-row"><span>${game.i18n.localize("TAMS.Checks.RacialBonus")}</span><span>+${bonus}</span></div>` : ''}
-                            <div class="roll-total">${game.i18n.format("TAMS.Checks.TotalVsDC", {total, dc: check.dc})}</div>
-                            ${success ? `<div class="tams-success">${game.i18n.localize("TAMS.Checks.SuccessNotInjured")}</div>` : `<div class="tams-crit failure">${game.i18n.localize("TAMS.Checks.FailedInjured")}</div>`}
-                        </div>
-                    `;
-                    if (!success) {
-                        await target.update({[`system.limbs.${check.limbKey}.injured`]: true});
-                    }
-                } else if (check.type === 'crit') {
+                if (check.type === 'crit') {
                     report = `
                         <div class="tams-roll">
                             <h3 class="roll-label">${game.i18n.format("TAMS.Checks.EnduranceCheck", {loc: e(check.loc)})}</h3>
@@ -643,6 +623,47 @@ export async function tamsOnTurnStart(actor) {
             statusName: def ? game.i18n.localize(def.name) : "Fleeing",
             dc: 20,
         });
+    }
+
+    // --- Injured / crit-wound bleed ---
+    {
+        const combatRound = game.combat?.round ?? 0;
+        const bleedDamage = {};
+        const bleedMessages = [];
+
+        for (const [key, limb] of Object.entries(actor.system.limbs)) {
+            if (limb.criticallyInjured) {
+                bleedDamage[key] = (bleedDamage[key] ?? 0) + 1;
+                bleedMessages.push(game.i18n.format("TAMS.TurnStart.CritWoundBleed", { name: e(actor.name), limb: limb.label }));
+            } else if (limb.injured && combatRound > 0 && combatRound % 6 === 0) {
+                bleedDamage[key] = (bleedDamage[key] ?? 0) + 1;
+                bleedMessages.push(game.i18n.format("TAMS.TurnStart.InjuredBleed", { name: e(actor.name), limb: limb.label }));
+            }
+        }
+
+        if (Object.keys(bleedDamage).length > 0) {
+            const bleedUpdates = Object.fromEntries(
+                Object.entries(bleedDamage).map(([k, dmg]) => [`system.limbs.${k}.value`, (actor.system.limbs[k]?.value ?? 0) - dmg])
+            );
+            await actor.update(bleedUpdates);
+
+            for (const msg of bleedMessages) {
+                await ChatMessage.create({
+                    speaker: ChatMessage.getSpeaker({ actor }),
+                    content: `<div class="tams-roll"><div class="tams-crit failure">${msg}</div></div>`,
+                    whisper: getWhisperIds(actor)
+                });
+            }
+
+            const bleedTotalHp = LIMB_KEYS.reduce((sum, k) => sum + (bleedUpdates[`system.limbs.${k}.value`] ?? actor.system.limbs[k]?.value ?? 0), 0);
+            if (bleedTotalHp <= 0) {
+                await actor.toggleStatusEffect("unconscious", { active: true });
+                allPendingChecks.push({
+                    type: "survival", dc: Math.max(1, Math.abs(bleedTotalHp)),
+                    reasons: [game.i18n.localize("TAMS.TurnStart.BleedKnockedOut")]
+                });
+            }
+        }
     }
 
     // --- Injury & status reminder (whispered to owners + GM) ---
@@ -1193,6 +1214,9 @@ export async function tamsRenderChatMessage(message, html, data) {
 
       if (!target) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetDamage"));
 
+      const pendingAutoCritDirect = target.getFlag('tams', 'pendingAutoCrit');
+      if (pendingAutoCritDirect) await target.setFlag('tams', 'pendingAutoCrit', null);
+
       const locationMap = {
         "Head": "head", "Thorax": "thorax", "Stomach": "stomach",
         "Left Arm": "leftArm", "Right Arm": "rightArm",
@@ -1200,7 +1224,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       };
 
       const isAoEHit = btn.dataset.isAoe === '1';
-      const forceCrit = btn.dataset.forceCrit === '1';
+      const forceCrit = btn.dataset.forceCrit === '1' || !!pendingAutoCritDirect;
       const isSquadOrHorde = target.system.settings?.isNPC && (target.system.settings.npcType === "squad" || target.system.settings.npcType === "horde");
       let initialMultiplier = 1;
       let squadHtml = "";
@@ -1541,6 +1565,9 @@ export async function tamsRenderChatMessage(message, html, data) {
       let cap = dex.total;
       if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
       if (isUnaware) cap = Math.floor(cap * 0.5);
+      if (actor.system.settings.npcType === 'horde') {
+          cap = Math.max(1, cap - (actor.system.settings.squadSize || 0));
+      }
 
       const roll = await new Roll('1d100').evaluate();
       const raw = roll.total;
@@ -1554,6 +1581,9 @@ export async function tamsRenderChatMessage(message, html, data) {
           critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", {name: e(actor.name)})}</div>`;
       }
 
+      const pendingAutoCrit = actor.getFlag('tams', 'pendingAutoCrit');
+      if (pendingAutoCrit) await actor.setFlag('tams', 'pendingAutoCrit', null);
+
       let hitsScored = 0;
       let damageInfo = "";
       if (attackerTotal > total) {
@@ -1563,11 +1593,15 @@ export async function tamsRenderChatMessage(message, html, data) {
           for (let i = 0; i < hitsScored; i++) {
               locations.push(attackerLocations[i] || (targetLimb && targetLimb !== 'none' ? limbOptions[targetLimb] : await getHitLocation()));
           }
+          const autoCritNote = pendingAutoCrit
+              ? `<div class="roll-row"><small style="color:#c0392b;font-weight:bold;">${game.i18n.localize("TAMS.Combat.UnreliableAutoCrit")}</small></div>`
+              : "";
           damageInfo = `
             <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.HitsTaken")} ${hitsScored} / ${attackerMulti}</b></div>
             <div class="roll-row"><small>${game.i18n.localize("TAMS.Location")}: ${locations.join(", ")}</small></div>
+            ${autoCritNote}
             <div class="roll-row" style="margin-top: 5px;">
-                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-damage-type="${attackerDamageType}" data-locations='${JSON.stringify(locations)}' data-is-aoe="${isAoEFromData ? '1' : '0'}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
+                <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-damage-type="${attackerDamageType}" data-locations='${JSON.stringify(locations)}' data-is-aoe="${isAoEFromData ? '1' : '0'}" data-force-crit="${pendingAutoCrit ? '1' : '0'}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
             </div>
           `;
           if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", {total: attackerTotal})}</div>`;
@@ -1821,6 +1855,12 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
       if (isUnaware) cap = Math.floor(cap * 0.5);
 
+      let retSquadBonus = 0;
+      if (actor.system.settings.npcType === 'horde' && weapon.type === 'weapon' && !weapon.system.isRanged) {
+          const smartMult = actor.system.settings.isSmart ? 2 : 1;
+          retSquadBonus = (actor.system.settings.squadSize || 1) * smartMult;
+      }
+
       const fam = Math.floor(weapon.system.familiarity || 0) + balancedBonus;
       const roll = await new Roll('1d100').evaluate();
       let raw = roll.total;
@@ -1869,7 +1909,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       }
 
       const capped = Math.min(raw, cap);
-      const total = capped + fam + profBonus;
+      const total = capped + fam + profBonus + retSquadBonus;
       const threshold = isRanged ? 20 : 10;
       const isMutual = Math.abs(attackerTotal - total) <= threshold;
 

@@ -225,6 +225,20 @@
     "Default": "Default",
     "Confirm": "Confirm",
     "Cancel": "Cancel",
+    "Rest": "Rest",
+    "StaminaRest": "Take a short rest to recover Stamina (Endurance tens digit)",
+    "StaminaRestMessage": "{name} rested and recovered {amount} Stamina.",
+    "HordeSmart": "Smart/Sentient (×2 melee)",
+    "MedicalAid": "Provide Medical Aid",
+    "MedicalAidTitle": "Medical Aid — {name}",
+    "MedicalAidPool": "Heal Pool: {pool} HP (half Medicine familiarity). Distribute across limbs.",
+    "MedicalAidRemaining": "Remaining: {remaining} HP",
+    "MedicalAidApply": "Apply Healing",
+    "MedicalAidNoPool": "No healing pool available (Medicine familiarity too low).",
+    "MedicalAidAlreadyGiven": "This character has already provided medical aid today.",
+    "MedicalAidNoTarget": "Target a token to apply medical aid.",
+    "MedicalAidOverPool": "Total healing exceeds your Medicine skill pool.",
+    "MedicalAidMessage": "{healer} provided medical aid to {target}, healing {amount} HP total.",
     "Give": "Give",
     "Recipient": "Recipient",
     "RecipientToken": "{name} (Token)",
@@ -598,7 +612,10 @@
       "KnockedOutReason": "Knocked out by damage over time",
       "InjuryReminder": "Injured: {limbs}",
       "CritReminder": "Critically injured: {limbs}",
-      "StatusReminder": "Conditions: {statuses}"
+      "StatusReminder": "Conditions: {statuses}",
+      "InjuredBleed": "{name}'s injured {limb} bleeds (1 HP).",
+      "CritWoundBleed": "{name}'s critically wounded {limb} bleeds (1 HP).",
+      "BleedKnockedOut": "Knocked out by wound bleeding"
     },
     "CombatEnd": {
       "Title": "Combat Summary",
@@ -813,7 +830,8 @@
       "Resisted": "Resisted {value} {type} damage",
       "Vulnerable": "Vulnerable to {type} (+{value} damage)",
       "HealedFrom": "Healed {value} from {type}",
-      "TempDRAbsorbed": "Barrier absorbed {absorbed} damage ({remaining} remaining)"
+      "TempDRAbsorbed": "Barrier absorbed {absorbed} damage ({remaining} remaining)",
+      "UnreliableAutoCrit": "⚠ Auto-crit! (Unreliable weapon jammed last turn)"
     },
     "DamageType": {
       "None": "None",

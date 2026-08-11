@@ -389,7 +389,11 @@
 
         {{!-- Abilities & Resources Tab --}}
         <div class="tab abilities {{#if (eq activeTab 'abilities')}}active{{/if}}" data-group="primary" data-tab="abilities" data-scrollable data-scroll-id="tab-abilities">
-            <h3>{{localize 'TAMS.Resources'}}</h3>
+            <h3>{{localize 'TAMS.Resources'}}
+                {{#if medicineSkillFamiliarity}}
+                <a class="tams-medical-aid" title="{{localize 'TAMS.MedicalAid'}}" style="float:right;font-size:12px;font-weight:normal;"><i class="fas fa-medkit"></i> {{localize 'TAMS.MedicalAid'}}</a>
+                {{/if}}
+            </h3>
             <ol class="resources-list">
                 {{!-- Main Stamina Resource --}}
                 <li class="resource-item stamina flexcol">
@@ -402,6 +406,7 @@
                             </div>
                             <span class="max-label"> / {{system.stamina.max}} </span>
                         </div>
+                        <button type="button" class="tams-rest-stamina" title="{{localize 'TAMS.StaminaRest'}}" style="padding: 2px 6px; font-size: 11px; margin-left: 4px; min-width: unset;">{{localize 'TAMS.Rest'}}</button>
                     </div>
                 </li>
 

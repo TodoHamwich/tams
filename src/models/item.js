@@ -102,7 +102,7 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     let mult = 0.5;
     if (this.isHeavy) mult += 0.25;
     if (this.isTwoHanded) mult += 0.25;
-    return Math.floor(statValue * mult);
+    return Math.ceil(statValue * mult);
   }
 }
 

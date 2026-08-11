@@ -25,6 +25,11 @@
                 {{#if (or (eq system.settings.npcType 'squad') (eq system.settings.npcType 'horde'))}}
                 <input type="number" name="system.settings.squadSize" value="{{system.settings.squadSize}}" class="small-input" title="{{localize 'TAMS.Size'}}" style="width: 42px;"/>
                 {{/if}}
+                {{#if (eq system.settings.npcType 'horde')}}
+                <label style="font-size: 11px; white-space: nowrap;">
+                    <input type="checkbox" name="system.settings.isSmart" {{checked system.settings.isSmart}} style="margin-right: 3px;"/>{{localize 'TAMS.HordeSmart'}}
+                </label>
+                {{/if}}
             </div>
             <div class="header-row" style="display: flex; gap: 6px; align-items: center;">
                 <label style="font-size: 11px; color: #555;">{{localize 'TAMS.Theme'}}</label>

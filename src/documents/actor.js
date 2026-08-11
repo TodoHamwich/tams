@@ -162,7 +162,8 @@ export class TAMSActor extends Actor {
             const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
             const pending = updates[key];
             const currentVal = pending !== undefined ? pending : (isAltArmor ? limb.armorMax : limb.armor);
-            updates[key] = Math.max(0, (currentVal || 0) - 1);
+            const ahpLoss = adjustedIncoming >= armorValue * 2 ? 2 : 1;
+            updates[key] = Math.max(0, (currentVal || 0) - ahpLoss);
             lossLabel = isAltArmor ? game.i18n.localize("TAMS.Checks.ArmorHPLost") : game.i18n.localize("TAMS.Checks.ArmorPointLost");
         }
 
@@ -174,7 +175,7 @@ export class TAMSActor extends Actor {
         if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
 
         const limbMax = originalLimbStatus[limbKey].max;
-        if (newHp <= -limbMax && !originalLimbStatus[limbKey].injured && !updates[`system.limbs.${limbKey}.injured`]) {
+        if (newHp <= 0 && !originalLimbStatus[limbKey].injured && !updates[`system.limbs.${limbKey}.injured`]) {
             report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", {limb: e(limb.label)})} !!!</b><br>`;
             updates[`system.limbs.${limbKey}.injured`] = true;
         }
@@ -263,9 +264,6 @@ export class TAMSActor extends Actor {
         } else if (hits.some(h => locationMap[h.location] === limbKey && h.forceCrit === "1") && !original.criticallyInjured) {
             // Brutal tag forces a crit check regardless of HP
             pendingChecks.push({ type: 'crit', loc: limb.label, dc: Math.max(10, damage + (original.value < 0 ? Math.abs(original.value) : 0)), limbKey });
-        } else if (limbHpAfterHit <= 0 && !original.injured && damage > 0) {
-            // Limb dropped to 0 or below (but above -max): queue injury roll
-            pendingChecks.push({ type: 'injured', loc: limb.label, dc: damage, limbKey });
         }
     }
 

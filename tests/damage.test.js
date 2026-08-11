@@ -188,12 +188,17 @@ describe('TAMSActor applyDamage', () => {
         expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: "survival" }));
     });
 
-    it('triggers an injury check if a limb is damaged and not already injured', async () => {
+    it('auto-sets injured when a limb drops to 0 or below (no roll queued)', async () => {
         actor.system.limbs.leftArm.label = "Left Arm";
         const hits = [{ damage: 8, location: "Left Arm", armourPen: 0 }];
         const result = await actor.applyTAMSDamage(hits);
-        
-        expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: "injured", limbKey: "leftArm" }));
+
+        // Injury is now automatic — no 'injured' check queued
+        expect(result.pendingChecks).not.toContainEqual(expect.objectContaining({ type: "injured", limbKey: "leftArm" }));
+        // Injured flag set directly
+        expect(actor.system.limbs.leftArm.injured).toBe(true);
+        // Crit check queued because the limb just became injured
+        expect(result.pendingChecks).toContainEqual(expect.objectContaining({ type: "crit", limbKey: "leftArm" }));
     });
 
     it('triggers a critical injury check if a limb is damaged and already injured', async () => {
