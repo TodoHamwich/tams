@@ -20,6 +20,7 @@ package-lock.json
 
 # Claude Code
 .claude/
+claude-config/
 CLAUDE.md
 
 # Compiled LevelDB packs are committed so Forge/GitHub installs work out of the box
@@ -39,22 +40,25 @@ PROJECT_QUICK_REFERENCE.md
 SYSTEM_FEATURES.txt
 
 # Proprietary documents
-TAMS Rulebook.md
+rulebooks/
 TAMS Items V3.txt
 link-to-foundry.sh
 
 # Campaign vault
 Legacy Of The Gods v2/
+music/
 session-02-npcs/
 alchemy-mishap-table.md
 divine-mishap-table.md
 psychic-mishap-table.md
 Dungeons of Drakkenheim/
+Dungeons of Drakkenheim TAMS Version/
 conversions/
+CharacterCreation/
+races/
 
 # Local notes
 TODO.md
-TAMS Rulebook(2).md
 
 # Campaign documents & exports
 *.odt

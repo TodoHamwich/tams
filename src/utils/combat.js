@@ -1258,12 +1258,20 @@ export async function tamsRenderChatMessage(message, html, data) {
         </div>
       `;
 
+      const equippedShields = target.items?.filter(i => i.type === "shield" && i.system.equipped) ?? [];
+      const shieldAV = equippedShields.reduce((sum, s) => sum + (s.system.armorValue || 0), 0);
+      const hasShield = shieldAV > 0;
+
       let dialogContent = `<p>${game.i18n.format("TAMS.Combat.ApplyingHitsTo", {count: locations.length, name: target.name})}</p>${squadHtml}${coverHtml}`;
       locations.forEach((loc, i) => {
           const limbKey = locationMap[loc];
           const limb = target.system.limbs[limbKey];
           const armor = Math.floor(limb?.armor || 0);
           const armorMax = Math.floor(limb?.armorMax || 0);
+          const shieldCheckbox = hasShield ? `
+                    <label style="flex: 0 0 auto; margin-left: 10px;">
+                        <input type="checkbox" class="hit-use-shield" data-index="${i}"> ${game.i18n.format("TAMS.Combat.UseShield", {av: shieldAV})}
+                    </label>` : "";
           dialogContent += `
             <div class="form-group" style="margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
                 <label>${game.i18n.format("TAMS.Combat.HitLabel", {index: i+1, location: loc})}</label>
@@ -1272,7 +1280,7 @@ export async function tamsRenderChatMessage(message, html, data) {
                     <span>${game.i18n.localize("TAMS.Combat.ArmorShort")} ${armor}/${armorMax}</span>
                     <label style="flex: 0 0 auto; margin-left: 10px;">
                         <input type="checkbox" class="hit-in-cover" data-index="${i}"> ${game.i18n.localize("TAMS.Combat.InCover")}
-                    </label>
+                    </label>${shieldCheckbox}
                 </div>
             </div>`;
       });
@@ -1299,8 +1307,10 @@ export async function tamsRenderChatMessage(message, html, data) {
                 form.querySelectorAll(".hit-dmg").forEach(el => {
                     const idx = el.dataset.index;
                     const isCovered = form.querySelector(`.hit-in-cover[data-index="${idx}"]`)?.checked;
+                    const isShielded = hasShield && form.querySelector(`.hit-use-shield[data-index="${idx}"]`)?.checked;
                     let effectiveBaseDmg = damageBase;
                     if (isCovered) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
+                    if (isShielded) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - shieldAV);
                     el.value = effectiveBaseDmg * multiplier;
                 });
             };
@@ -1308,6 +1318,7 @@ export async function tamsRenderChatMessage(message, html, data) {
             form.querySelector("#cover-select")?.addEventListener("change", updateDamage);
             form.querySelector("#cover-custom")?.addEventListener("input", updateDamage);
             form.querySelectorAll(".hit-in-cover").forEach(el => el.addEventListener("change", updateDamage));
+            form.querySelectorAll(".hit-use-shield").forEach(el => el.addEventListener("change", updateDamage));
         },
         buttons: [
           { action: "apply", label: game.i18n.localize("TAMS.Checks.ApplyAllHits"), default: true, callback: async (event, button, dialog) => {

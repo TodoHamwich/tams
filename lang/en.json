@@ -821,6 +821,7 @@
       "CoverHeavy": "Heavy (30)",
       "CoverCustom": "Custom",
       "InCover": "In Cover?",
+      "UseShield": "Shield (AV {av})?",
       "ShieldBlock": "Shield Block",
       "ChooseLimbToBlock": "Choose a location to block with <b>{name}</b> (+{armor} Armor):",
       "ShieldBlockWith": "Shield Block — {name} with {shield}",

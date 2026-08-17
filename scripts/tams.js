@@ -2162,7 +2162,7 @@ async function tamsRenderChatMessage(message, html, data) {
     });
   });
   root.querySelectorAll(".tams-take-damage").forEach((el) => el.addEventListener("click", async (ev) => {
-    var _a, _b;
+    var _a, _b, _c;
     ev.preventDefault();
     const btn = ev.currentTarget;
     const damageBase = parseInt(btn.dataset.damage);
@@ -2225,12 +2225,19 @@ async function tamsRenderChatMessage(message, html, data) {
             </div>
         </div>
       `;
+    const equippedShields = ((_c = target.items) == null ? void 0 : _c.filter((i) => i.type === "shield" && i.system.equipped)) ?? [];
+    const shieldAV = equippedShields.reduce((sum, s) => sum + (s.system.armorValue || 0), 0);
+    const hasShield = shieldAV > 0;
     let dialogContent = `<p>${game.i18n.format("TAMS.Combat.ApplyingHitsTo", { count: locations.length, name: target.name })}</p>${squadHtml}${coverHtml}`;
     locations.forEach((loc, i) => {
       const limbKey = locationMap[loc];
       const limb = target.system.limbs[limbKey];
       const armor = Math.floor((limb == null ? void 0 : limb.armor) || 0);
       const armorMax = Math.floor((limb == null ? void 0 : limb.armorMax) || 0);
+      const shieldCheckbox = hasShield ? `
+                    <label style="flex: 0 0 auto; margin-left: 10px;">
+                        <input type="checkbox" class="hit-use-shield" data-index="${i}"> ${game.i18n.format("TAMS.Combat.UseShield", { av: shieldAV })}
+                    </label>` : "";
       dialogContent += `
             <div class="form-group" style="margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
                 <label>${game.i18n.format("TAMS.Combat.HitLabel", { index: i + 1, location: loc })}</label>
@@ -2239,7 +2246,7 @@ async function tamsRenderChatMessage(message, html, data) {
                     <span>${game.i18n.localize("TAMS.Combat.ArmorShort")} ${armor}/${armorMax}</span>
                     <label style="flex: 0 0 auto; margin-left: 10px;">
                         <input type="checkbox" class="hit-in-cover" data-index="${i}"> ${game.i18n.localize("TAMS.Combat.InCover")}
-                    </label>
+                    </label>${shieldCheckbox}
                 </div>
             </div>`;
     });
@@ -2248,35 +2255,38 @@ async function tamsRenderChatMessage(message, html, data) {
       content: dialogContent,
       rejectClose: false,
       render: (event, dialog) => {
-        var _a2, _b2, _c;
+        var _a2, _b2, _c2;
         const form = dialog.element;
         const updateDamage = () => {
-          var _a3, _b3, _c2;
+          var _a3, _b3, _c3;
           const multiplier = isAoEHit && isSquadOrHorde ? parseInt((_a3 = form.querySelector("#aoe-targets-hit")) == null ? void 0 : _a3.value) || 1 : 1;
           const coverSelect = (_b3 = form.querySelector("#cover-select")) == null ? void 0 : _b3.value;
           let coverVal = 0;
           if (coverSelect === "custom") {
             const customEl = form.querySelector("#cover-custom");
             if (customEl) customEl.style.display = "";
-            coverVal = parseInt((_c2 = form.querySelector("#cover-custom")) == null ? void 0 : _c2.value) || 0;
+            coverVal = parseInt((_c3 = form.querySelector("#cover-custom")) == null ? void 0 : _c3.value) || 0;
           } else {
             const customEl = form.querySelector("#cover-custom");
             if (customEl) customEl.style.display = "none";
             coverVal = parseInt(coverSelect) || 0;
           }
           form.querySelectorAll(".hit-dmg").forEach((el2) => {
-            var _a4;
+            var _a4, _b4;
             const idx = el2.dataset.index;
             const isCovered = (_a4 = form.querySelector(`.hit-in-cover[data-index="${idx}"]`)) == null ? void 0 : _a4.checked;
+            const isShielded = hasShield && ((_b4 = form.querySelector(`.hit-use-shield[data-index="${idx}"]`)) == null ? void 0 : _b4.checked);
             let effectiveBaseDmg = damageBase;
             if (isCovered) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
+            if (isShielded) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - shieldAV);
             el2.value = effectiveBaseDmg * multiplier;
           });
         };
         (_a2 = form.querySelector("#aoe-targets-hit")) == null ? void 0 : _a2.addEventListener("input", updateDamage);
         (_b2 = form.querySelector("#cover-select")) == null ? void 0 : _b2.addEventListener("change", updateDamage);
-        (_c = form.querySelector("#cover-custom")) == null ? void 0 : _c.addEventListener("input", updateDamage);
+        (_c2 = form.querySelector("#cover-custom")) == null ? void 0 : _c2.addEventListener("input", updateDamage);
         form.querySelectorAll(".hit-in-cover").forEach((el2) => el2.addEventListener("change", updateDamage));
+        form.querySelectorAll(".hit-use-shield").forEach((el2) => el2.addEventListener("change", updateDamage));
       },
       buttons: [
         {
