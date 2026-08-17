@@ -1,0 +1,17 @@
+{
+  "name": "Vial (Glass)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Container",
+    "description": "Small stoppered glass vial. Holds about 30ml \u2014 sufficient for a single dose of potion, poison, or reagent."
+  },
+  "flags": {},
+  "_id": "tamsVialGlass",
+  "effects": [],
+  "_key": "!items!tamsVialGlass"
+}

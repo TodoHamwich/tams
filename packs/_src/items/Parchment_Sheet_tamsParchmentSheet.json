@@ -1,0 +1,21 @@
+{
+  "name": "Parchment (Sheet)",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Writing",
+    "description": "Single sheet of prepared animal-skin parchment. Durable; used for official documents, scrolls, and maps.",
+    "uses": {
+      "value": 1,
+      "max": 1
+    }
+  },
+  "flags": {},
+  "_id": "tamsParchmentSheet",
+  "effects": [],
+  "_key": "!items!tamsParchmentSheet"
+}

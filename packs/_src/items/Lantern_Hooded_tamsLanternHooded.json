@@ -1,0 +1,17 @@
+{
+  "name": "Lantern (Hooded)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Light Source",
+    "description": "Bright light in a 9m radius; hood can reduce to a narrow beam or douse entirely. Burns oil (1 pint per 6 hours)."
+  },
+  "flags": {},
+  "_id": "tamsLanternHooded",
+  "effects": [],
+  "_key": "!items!tamsLanternHooded"
+}

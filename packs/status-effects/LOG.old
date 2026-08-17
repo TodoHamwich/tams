@@ -1,14 +1,17 @@
-2026/08/07-23:49:07.052672 7f61c37fe6c0 Recovering log #143
-2026/08/07-23:49:07.068276 7f61c37fe6c0 Delete type=3 #141
-2026/08/07-23:49:07.068304 7f61c37fe6c0 Delete type=0 #143
-2026/08/07-23:49:07.069927 7f61c2ffd6c0 Level-0 table #149: started
-2026/08/07-23:49:07.074536 7f61c2ffd6c0 Level-0 table #149: 2390 bytes OK
-2026/08/07-23:49:07.084252 7f61c2ffd6c0 Delete type=0 #147
-2026/08/07-23:49:07.084314 7f61c2ffd6c0 Manual compaction at level-0 from '!items!tamsStatusAcidBurn' @ 72057594037927935 : 1 .. '!items!tamsStatusSuppressed' @ 0 : 0; will stop at '!items!tamsStatusSuppressed' @ 532 : 1
-2026/08/07-23:49:07.084317 7f61c2ffd6c0 Compacting 1@0 + 1@1 files
-2026/08/07-23:49:07.089682 7f61c2ffd6c0 Generated table #150@0: 44 keys, 2710 bytes
-2026/08/07-23:49:07.089688 7f61c2ffd6c0 Compacted 1@0 + 1@1 files => 2710 bytes
-2026/08/07-23:49:07.099689 7f61c2ffd6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
-2026/08/07-23:49:07.099706 7f61c2ffd6c0 Delete type=2 #145
-2026/08/07-23:49:07.099743 7f61c2ffd6c0 Delete type=2 #149
-2026/08/07-23:49:07.099766 7f61c2ffd6c0 Manual compaction at level-0 from '!items!tamsStatusSuppressed' @ 532 : 1 .. '!items!tamsStatusSuppressed' @ 0 : 0; will stop at (end)
+2026/08/17-13:15:34.779465 7fa017fff6c0 Recovering log #162
+2026/08/17-13:15:34.779577 7fa017fff6c0 Level-0 table #164: started
+2026/08/17-13:15:34.784229 7fa017fff6c0 Level-0 table #164: 2987 bytes OK
+2026/08/17-13:15:34.799469 7fa017fff6c0 Delete type=0 #162
+2026/08/17-13:15:34.799500 7fa017fff6c0 Delete type=3 #161
+2026/08/17-13:15:34.801087 7fa0177fe6c0 Level-0 table #167: started
+2026/08/17-13:15:34.805939 7fa0177fe6c0 Level-0 table #167: 2401 bytes OK
+2026/08/17-13:15:34.815833 7fa0177fe6c0 Delete type=0 #165
+2026/08/17-13:15:34.815918 7fa0177fe6c0 Manual compaction at level-0 from '!items!tamsStatusAcidBurn' @ 72057594037927935 : 1 .. '!items!tamsStatusSuppressed' @ 0 : 0; will stop at '!items!null' @ 577 : 1
+2026/08/17-13:15:34.815921 7fa0177fe6c0 Compacting 2@0 + 1@1 files
+2026/08/17-13:15:34.821490 7fa0177fe6c0 Generated table #168@0: 44 keys, 2708 bytes
+2026/08/17-13:15:34.821501 7fa0177fe6c0 Compacted 2@0 + 1@1 files => 2708 bytes
+2026/08/17-13:15:34.831248 7fa0177fe6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/08/17-13:15:34.831285 7fa0177fe6c0 Delete type=2 #160
+2026/08/17-13:15:34.831337 7fa0177fe6c0 Delete type=2 #164
+2026/08/17-13:15:34.831361 7fa0177fe6c0 Delete type=2 #167
+2026/08/17-13:15:34.831390 7fa0177fe6c0 Manual compaction at level-0 from '!items!null' @ 577 : 1 .. '!items!tamsStatusSuppressed' @ 0 : 0; will stop at (end)

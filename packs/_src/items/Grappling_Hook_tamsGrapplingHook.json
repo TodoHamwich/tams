@@ -1,0 +1,17 @@
+{
+  "name": "Grappling Hook",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Climbing",
+    "description": "Iron hook with three or four prongs. Thrown to catch a ledge or rope; use with rope to climb."
+  },
+  "flags": {},
+  "_id": "tamsGrapplingHook",
+  "effects": [],
+  "_key": "!items!tamsGrapplingHook"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Flask",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Container",
+    "description": "Flat metal flask with a screw cap. Holds about 250ml of liquid. Commonly used for spirits."
+  },
+  "flags": {},
+  "_id": "tamsFlask",
+  "effects": [],
+  "_key": "!items!tamsFlask"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Tanglefoot Bag",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Throwable, Restraint",
+    "description": "Alchemical bag that bursts into thick adhesive goo on impact. On hit, the target is stuck (movement halved or stopped) until it breaks free (Strength check) or the glue dissolves.",
+    "uses": {
+      "value": 1,
+      "max": 1
+    }
+  },
+  "flags": {},
+  "_id": "tamsTanglefootBag",
+  "effects": [],
+  "_key": "!items!tamsTanglefootBag"
+}

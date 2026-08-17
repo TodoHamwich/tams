@@ -1,0 +1,17 @@
+{
+  "name": "Pole (10-foot)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "large",
+    "location": "stowed",
+    "slots": 5,
+    "tags": "Utility",
+    "description": "Wooden pole 3 metres long. Used to prod suspicious floors, trigger pressure plates, and measure gaps without risking a hand."
+  },
+  "flags": {},
+  "_id": "tamsPole10ft",
+  "effects": [],
+  "_key": "!items!tamsPole10ft"
+}

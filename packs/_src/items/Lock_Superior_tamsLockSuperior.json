@@ -1,0 +1,17 @@
+{
+  "name": "Lock (Superior)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Security",
+    "description": "Masterwork lock. Very difficult to pick; requires master-level tools and skill."
+  },
+  "flags": {},
+  "_id": "tamsLockSuperior",
+  "effects": [],
+  "_key": "!items!tamsLockSuperior"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Block and Tackle",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Utility",
+    "description": "Pulley system of ropes and blocks. Provides mechanical advantage; reduces the effective weight of loads by up to 75%."
+  },
+  "flags": {},
+  "_id": "tamsBlockAndTackle",
+  "effects": [],
+  "_key": "!items!tamsBlockAndTackle"
+}

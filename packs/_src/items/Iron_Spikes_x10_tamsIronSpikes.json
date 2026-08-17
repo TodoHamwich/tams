@@ -1,0 +1,17 @@
+{
+  "name": "Iron Spikes (x10)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Utility",
+    "description": "Heavy iron spikes. Hammered into wood or stone to secure ropes, prop doors open or shut, or create handholds."
+  },
+  "flags": {},
+  "_id": "tamsIronSpikes",
+  "effects": [],
+  "_key": "!items!tamsIronSpikes"
+}

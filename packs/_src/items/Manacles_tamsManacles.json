@@ -1,0 +1,17 @@
+{
+  "name": "Manacles",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Restraint",
+    "description": "Iron wrist shackles with a lock. Restrains a humanoid's hands. Requires a Strength check (DC 50) or lockpicks to escape."
+  },
+  "flags": {},
+  "_id": "tamsManacles",
+  "effects": [],
+  "_key": "!items!tamsManacles"
+}

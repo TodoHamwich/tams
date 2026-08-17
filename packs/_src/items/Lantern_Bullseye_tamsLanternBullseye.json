@@ -1,0 +1,17 @@
+{
+  "name": "Lantern (Bullseye)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Light Source",
+    "description": "Casts a cone of bright light 18m long, 6m wide. Sides are dark. Burns oil (1 pint per 6 hours)."
+  },
+  "flags": {},
+  "_id": "tamsLanternBullseye",
+  "effects": [],
+  "_key": "!items!tamsLanternBullseye"
+}

@@ -96,15 +96,21 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     context.locationOptions = locationOptions;
     
     context.damageTypeOptions = {
-      "": "TAMS.DamageType.None",
-      "blunt": "TAMS.DamageType.blunt",
-      "piercing": "TAMS.DamageType.piercing",
-      "slashing": "TAMS.DamageType.slashing",
-      "fire": "TAMS.DamageType.fire",
-      "magic": "TAMS.DamageType.magic",
-      "psychic": "TAMS.DamageType.psychic",
-      "acid": "TAMS.DamageType.acid",
-      "divine": "TAMS.DamageType.divine"
+      "":          "TAMS.DamageType.None",
+      "blunt":     "TAMS.DamageType.blunt",
+      "piercing":  "TAMS.DamageType.piercing",
+      "slashing":  "TAMS.DamageType.slashing",
+      "fire":      "TAMS.DamageType.fire",
+      "lightning": "TAMS.DamageType.lightning",
+      "cold":      "TAMS.DamageType.cold",
+      "poison":    "TAMS.DamageType.poison",
+      "sonic":     "TAMS.DamageType.sonic",
+      "acid":      "TAMS.DamageType.acid",
+      "magic":     "TAMS.DamageType.magic",
+      "psychic":   "TAMS.DamageType.psychic",
+      "divine":    "TAMS.DamageType.divine",
+      "positive":  "TAMS.DamageType.positive",
+      "negative":  "TAMS.DamageType.negative"
     };
 
     context.passiveRollTypeOptions = {

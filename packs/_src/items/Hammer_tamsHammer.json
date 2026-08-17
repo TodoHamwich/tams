@@ -1,0 +1,17 @@
+{
+  "name": "Hammer",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Utility",
+    "description": "Carpenter's or smith's hammer. Used for driving pitons, nails, and general construction tasks."
+  },
+  "flags": {},
+  "_id": "tamsHammer",
+  "effects": [],
+  "_key": "!items!tamsHammer"
+}

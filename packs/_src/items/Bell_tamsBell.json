@@ -1,0 +1,17 @@
+{
+  "name": "Bell",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Alarm, Signaling",
+    "description": "Small iron bell. Strung on a wire across a passage or at a campsite entrance as a simple intrusion alarm."
+  },
+  "flags": {},
+  "_id": "tamsBell",
+  "effects": [],
+  "_key": "!items!tamsBell"
+}

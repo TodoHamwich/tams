@@ -1,0 +1,17 @@
+{
+  "name": "Bedroll",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Camp",
+    "description": "Rolled blanket and sleeping mat. Required for a comfortable rest on the road; without it, rest penalties may apply."
+  },
+  "flags": {},
+  "_id": "tamsBedroll",
+  "effects": [],
+  "_key": "!items!tamsBedroll"
+}

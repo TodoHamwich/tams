@@ -1,0 +1,17 @@
+{
+  "name": "Tinderbox",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Fire-starting",
+    "description": "Flint, steel, and dry tinder. Lights a torch or small fire in about a minute (less with skill). Essential for lighting lanterns and campfires."
+  },
+  "flags": {},
+  "_id": "tamsTinderbox",
+  "effects": [],
+  "_key": "!items!tamsTinderbox"
+}

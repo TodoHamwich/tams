@@ -1,0 +1,21 @@
+{
+  "name": "Ink (Vial)",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Writing",
+    "description": "One vial of writing ink. Sufficient for roughly 50 pages of normal handwriting.",
+    "uses": {
+      "value": 1,
+      "max": 1
+    }
+  },
+  "flags": {},
+  "_id": "tamsInkVial",
+  "effects": [],
+  "_key": "!items!tamsInkVial"
+}

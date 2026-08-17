@@ -1,0 +1,17 @@
+{
+  "name": "Fishing Tackle",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Survival, Utility",
+    "description": "Hook, line, and sinker. Allows fishing in rivers, lakes, and coastal waters."
+  },
+  "flags": {},
+  "_id": "tamsFishingTackle",
+  "effects": [],
+  "_key": "!items!tamsFishingTackle"
+}

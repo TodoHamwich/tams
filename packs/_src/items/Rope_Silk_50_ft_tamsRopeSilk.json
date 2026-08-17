@@ -1,0 +1,17 @@
+{
+  "name": "Rope (Silk, 50 ft)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Climbing, Utility, Quality",
+    "description": "50 ft of lightweight silk rope. Lighter than hemp and easier to handle. Supports up to 200 kg."
+  },
+  "flags": {},
+  "_id": "tamsRopeSilk",
+  "effects": [],
+  "_key": "!items!tamsRopeSilk"
+}

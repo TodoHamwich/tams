@@ -1,0 +1,17 @@
+{
+  "name": "Mirror (Small Steel)",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Utility, Signaling",
+    "description": "Polished steel hand mirror. Used to signal over distance, peek around corners, or detect invisible creatures by reflection."
+  },
+  "flags": {},
+  "_id": "tamsMirrorSmall",
+  "effects": [],
+  "_key": "!items!tamsMirrorSmall"
+}

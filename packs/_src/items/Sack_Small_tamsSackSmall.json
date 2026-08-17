@@ -1,0 +1,17 @@
+{
+  "name": "Sack (Small)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Container",
+    "description": "Cloth or burlap sack. Holds roughly 5kg of loose goods."
+  },
+  "flags": {},
+  "_id": "tamsSackSmall",
+  "effects": [],
+  "_key": "!items!tamsSackSmall"
+}

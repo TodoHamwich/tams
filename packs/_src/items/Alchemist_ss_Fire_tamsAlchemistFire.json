@@ -1,0 +1,21 @@
+{
+  "name": "Alchemist's Fire",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Throwable, Fire",
+    "description": "Glass flask of sticky alchemical fire. Thrown as a ranged attack. On hit, deals Fire damage and continues burning for 1d3 rounds. Dousing requires an action.",
+    "uses": {
+      "value": 1,
+      "max": 1
+    }
+  },
+  "flags": {},
+  "_id": "tamsAlchemistFire",
+  "effects": [],
+  "_key": "!items!tamsAlchemistFire"
+}

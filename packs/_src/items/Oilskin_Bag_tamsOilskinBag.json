@@ -1,0 +1,17 @@
+{
+  "name": "Oilskin Bag",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Container, Waterproof",
+    "description": "Waterproofed cloth bag. Protects contents from rain, river crossings, and damp conditions."
+  },
+  "flags": {},
+  "_id": "tamsOilskinBag",
+  "effects": [],
+  "_key": "!items!tamsOilskinBag"
+}

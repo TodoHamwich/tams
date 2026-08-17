@@ -1,0 +1,21 @@
+{
+  "name": "Oil (per pint)",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Fuel",
+    "description": "Lamp oil. Fuels a hooded or bullseye lantern for 6 hours. Can also be used to coat a surface and set alight.",
+    "uses": {
+      "value": 1,
+      "max": 1
+    }
+  },
+  "flags": {},
+  "_id": "tamsOilPint",
+  "effects": [],
+  "_key": "!items!tamsOilPint"
+}

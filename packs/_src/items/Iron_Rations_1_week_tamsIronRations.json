@@ -1,0 +1,21 @@
+{
+  "name": "Iron Rations (1 week)",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Food",
+    "description": "One week of preserved field rations \u2014 salted pork, ship's biscuit, and dried legumes. Dense and unappetising but long-lasting.",
+    "uses": {
+      "value": 7,
+      "max": 7
+    }
+  },
+  "flags": {},
+  "_id": "tamsIronRations",
+  "effects": [],
+  "_key": "!items!tamsIronRations"
+}

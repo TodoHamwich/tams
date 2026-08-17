@@ -1,0 +1,17 @@
+{
+  "name": "Holy Symbol (Wooden)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Religious, Divine",
+    "description": "Simple carved wooden holy symbol of a deity. Required focus for divine abilities and prayers."
+  },
+  "flags": {},
+  "_id": "tamsHolySymbolWood",
+  "effects": [],
+  "_key": "!items!tamsHolySymbolWood"
+}

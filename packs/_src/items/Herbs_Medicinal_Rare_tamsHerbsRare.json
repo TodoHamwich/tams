@@ -1,0 +1,21 @@
+{
+  "name": "Herbs (Medicinal, Rare)",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Healing, Rare",
+    "description": "Rare curative herbs. Provides +5 to treatment rolls when incorporated into first aid.",
+    "uses": {
+      "value": 3,
+      "max": 3
+    }
+  },
+  "flags": {},
+  "_id": "tamsHerbsRare",
+  "effects": [],
+  "_key": "!items!tamsHerbsRare"
+}

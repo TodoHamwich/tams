@@ -4605,10 +4605,16 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       "piercing": "TAMS.DamageType.piercing",
       "slashing": "TAMS.DamageType.slashing",
       "fire": "TAMS.DamageType.fire",
+      "lightning": "TAMS.DamageType.lightning",
+      "cold": "TAMS.DamageType.cold",
+      "poison": "TAMS.DamageType.poison",
+      "sonic": "TAMS.DamageType.sonic",
+      "acid": "TAMS.DamageType.acid",
       "magic": "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
-      "acid": "TAMS.DamageType.acid",
-      "divine": "TAMS.DamageType.divine"
+      "divine": "TAMS.DamageType.divine",
+      "positive": "TAMS.DamageType.positive",
+      "negative": "TAMS.DamageType.negative"
     };
     const locationOptions = { "hand": "TAMS.LocationOptions.Hand", "stowed": "TAMS.LocationOptions.Stowed", "backpack": "TAMS.LocationOptions.Backpack" };
     for (const bp of context.inventoryBackpacks || []) {
@@ -6771,10 +6777,16 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       "piercing": "TAMS.DamageType.piercing",
       "slashing": "TAMS.DamageType.slashing",
       "fire": "TAMS.DamageType.fire",
+      "lightning": "TAMS.DamageType.lightning",
+      "cold": "TAMS.DamageType.cold",
+      "poison": "TAMS.DamageType.poison",
+      "sonic": "TAMS.DamageType.sonic",
+      "acid": "TAMS.DamageType.acid",
       "magic": "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
-      "acid": "TAMS.DamageType.acid",
-      "divine": "TAMS.DamageType.divine"
+      "divine": "TAMS.DamageType.divine",
+      "positive": "TAMS.DamageType.positive",
+      "negative": "TAMS.DamageType.negative"
     };
     context.passiveRollTypeOptions = {
       "all": "TAMS.PassiveRollType.All",
@@ -7639,10 +7651,16 @@ const _TAMSItemMaker = class _TAMSItemMaker extends foundry.applications.api.Han
       "piercing": "TAMS.DamageType.piercing",
       "slashing": "TAMS.DamageType.slashing",
       "fire": "TAMS.DamageType.fire",
+      "lightning": "TAMS.DamageType.lightning",
+      "cold": "TAMS.DamageType.cold",
+      "poison": "TAMS.DamageType.poison",
+      "sonic": "TAMS.DamageType.sonic",
+      "acid": "TAMS.DamageType.acid",
       "magic": "TAMS.DamageType.magic",
       "psychic": "TAMS.DamageType.psychic",
-      "acid": "TAMS.DamageType.acid",
-      "divine": "TAMS.DamageType.divine"
+      "divine": "TAMS.DamageType.divine",
+      "positive": "TAMS.DamageType.positive",
+      "negative": "TAMS.DamageType.negative"
     };
     context.sizeOptions = {
       "small": "TAMS.SizeOptions.Small",

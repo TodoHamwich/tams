@@ -1,0 +1,17 @@
+{
+  "name": "Shovel",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Utility",
+    "description": "Standard digging shovel. Required for entrenching, burying, or excavating."
+  },
+  "flags": {},
+  "_id": "tamsShovel",
+  "effects": [],
+  "_key": "!items!tamsShovel"
+}

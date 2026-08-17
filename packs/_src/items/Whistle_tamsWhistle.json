@@ -1,0 +1,17 @@
+{
+  "name": "Whistle",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Signaling",
+    "description": "Small bone or metal whistle. Audible up to 300m in still air. Used for signals, alarms, and coordination."
+  },
+  "flags": {},
+  "_id": "tamsWhistle",
+  "effects": [],
+  "_key": "!items!tamsWhistle"
+}

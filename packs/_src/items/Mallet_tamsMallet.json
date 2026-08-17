@@ -1,0 +1,17 @@
+{
+  "name": "Mallet",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Utility",
+    "description": "Wooden mallet. Used for driving pitons and wooden stakes, or light carpentry. Less noisy than an iron hammer on soft surfaces."
+  },
+  "flags": {},
+  "_id": "tamsMallet",
+  "effects": [],
+  "_key": "!items!tamsMallet"
+}

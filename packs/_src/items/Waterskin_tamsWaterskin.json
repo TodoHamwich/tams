@@ -1,0 +1,17 @@
+{
+  "name": "Waterskin",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Container",
+    "description": "Leather water bladder holding about 1 litre. Essential for travel; refill at rivers, wells, or towns."
+  },
+  "flags": {},
+  "_id": "tamsWaterskin",
+  "effects": [],
+  "_key": "!items!tamsWaterskin"
+}

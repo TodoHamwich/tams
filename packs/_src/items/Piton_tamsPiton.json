@@ -1,0 +1,17 @@
+{
+  "name": "Piton",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Climbing",
+    "description": "Iron spike hammered into rock or wood to anchor a rope. Requires a hammer or mallet."
+  },
+  "flags": {},
+  "_id": "tamsPiton",
+  "effects": [],
+  "_key": "!items!tamsPiton"
+}

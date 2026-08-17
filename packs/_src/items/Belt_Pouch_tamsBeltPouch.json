@@ -1,0 +1,17 @@
+{
+  "name": "Belt Pouch",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Container",
+    "description": "Small leather pouch worn on the belt. Holds coins, small vials, gems, or other tiny items."
+  },
+  "flags": {},
+  "_id": "tamsBeltPouch",
+  "effects": [],
+  "_key": "!items!tamsBeltPouch"
+}

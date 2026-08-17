@@ -1,0 +1,17 @@
+{
+  "name": "Bear Trap",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Trapping, Hunting",
+    "description": "Spring-loaded iron trap. Set on the ground to restrain or injure a creature that steps on it. Requires a Strength check to set or escape."
+  },
+  "flags": {},
+  "_id": "tamsBearTrap",
+  "effects": [],
+  "_key": "!items!tamsBearTrap"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Mess Kit",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Camp",
+    "description": "Tin plate, cup, and utensils in a compact kit. Required for cooking and eating hot meals in the field."
+  },
+  "flags": {},
+  "_id": "tamsMessKit",
+  "effects": [],
+  "_key": "!items!tamsMessKit"
+}

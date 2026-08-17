@@ -1,0 +1,17 @@
+{
+  "name": "Crowbar",
+  "type": "tool",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Utility",
+    "description": "Iron pry bar. Grants advantage on Strength checks to force open doors, pry lids, or shift heavy objects."
+  },
+  "flags": {},
+  "_id": "tamsCrowbar",
+  "effects": [],
+  "_key": "!items!tamsCrowbar"
+}

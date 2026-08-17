@@ -479,8 +479,6 @@
             </div>
             <hr>
 
-            {{#unless system.isApex}}
-
             {{!-- Section 3: Usage --}}
             <div class="flexrow rollable" data-action="toggleSection" data-section="uses" style="cursor: pointer; margin-bottom: 4px;">
                 <i class="fas fa-chevron-{{#if sectionOpen.uses}}down{{else}}right{{/if}}"></i>
@@ -502,6 +500,7 @@
             {{/if}}
             <hr>
 
+            {{#unless system.isApex}}
             {{!-- Section 4: Cost & Resource --}}
             <h3>{{localize 'TAMS.Cost'}}</h3>
             <div class="ability-section grid grid-2col">
@@ -762,6 +761,7 @@
             </div>
             {{/if}}
             <hr>
+            {{/unless}}
 
             {{!-- Section 6: Attack --}}
             <h3>{{localize 'TAMS.WeaponSheet.Combat'}}</h3>
@@ -880,8 +880,6 @@
                 </div>
                 {{/if}}
             </div>
-
-            {{/unless}}
 
             <hr>
             <div class="flexrow rollable" data-action="toggleSection" data-section="sizeGrants" style="cursor: pointer; margin-bottom: 4px;">

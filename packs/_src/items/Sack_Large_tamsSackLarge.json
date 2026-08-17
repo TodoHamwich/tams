@@ -1,0 +1,17 @@
+{
+  "name": "Sack (Large)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Container",
+    "description": "Large cloth or burlap sack. Holds roughly 25kg of loose goods."
+  },
+  "flags": {},
+  "_id": "tamsSackLarge",
+  "effects": [],
+  "_key": "!items!tamsSackLarge"
+}

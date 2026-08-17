@@ -1,0 +1,17 @@
+{
+  "name": "Tent (Small)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Camp, Shelter",
+    "description": "Two-person shelter. Provides protection from rain, wind, and light cold. Takes about 10 minutes to pitch."
+  },
+  "flags": {},
+  "_id": "tamsTentSmall",
+  "effects": [],
+  "_key": "!items!tamsTentSmall"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Herbs (Medicinal, Common)",
+  "type": "consumable",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Healing",
+    "description": "Bundle of common medicinal herbs. Provides +0 to treatment rolls when incorporated into first aid.",
+    "uses": {
+      "value": 5,
+      "max": 5
+    }
+  },
+  "flags": {},
+  "_id": "tamsHerbsCommon",
+  "effects": [],
+  "_key": "!items!tamsHerbsCommon"
+}

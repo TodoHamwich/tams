@@ -1,0 +1,17 @@
+{
+  "name": "Holy Symbol (Silver)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Religious, Divine, Quality",
+    "description": "Silver holy symbol, engraved with a deity's mark. A quality divine focus; held in high regard by clergy."
+  },
+  "flags": {},
+  "_id": "tamsHolySymbolSilver",
+  "effects": [],
+  "_key": "!items!tamsHolySymbolSilver"
+}

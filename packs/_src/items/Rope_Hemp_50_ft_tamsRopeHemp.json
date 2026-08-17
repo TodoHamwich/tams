@@ -1,0 +1,17 @@
+{
+  "name": "Rope (Hemp, 50 ft)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Climbing, Utility",
+    "description": "50 ft of sturdy hemp rope. Supports up to 250 kg. Can be cut with a blade."
+  },
+  "flags": {},
+  "_id": "tamsRopeHemp",
+  "effects": [],
+  "_key": "!items!tamsRopeHemp"
+}

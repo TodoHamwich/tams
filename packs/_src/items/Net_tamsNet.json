@@ -1,0 +1,17 @@
+{
+  "name": "Net",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "medium",
+    "location": "stowed",
+    "slots": 2,
+    "tags": "Utility, Hunting",
+    "description": "Weighted throwing net. Entangles targets on a hit; restrained until they cut free or burst out (Strength check). Effective against unarmoured or small creatures."
+  },
+  "flags": {},
+  "_id": "tamsNet",
+  "effects": [],
+  "_key": "!items!tamsNet"
+}

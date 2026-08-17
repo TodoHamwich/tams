@@ -1,0 +1,17 @@
+{
+  "name": "Twine (50 ft)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Utility",
+    "description": "50 ft of thin but strong linen twine. Used for traps, tripwires, bundling, and rigging. Not weight-bearing."
+  },
+  "flags": {},
+  "_id": "tamsTwine",
+  "effects": [],
+  "_key": "!items!tamsTwine"
+}

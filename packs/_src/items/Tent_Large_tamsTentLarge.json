@@ -1,0 +1,17 @@
+{
+  "name": "Tent (Large)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "large",
+    "location": "stowed",
+    "slots": 5,
+    "tags": "Camp, Shelter",
+    "description": "Six-person canvas tent with a central pole. Offers solid shelter and some privacy. Takes about 30 minutes to pitch."
+  },
+  "flags": {},
+  "_id": "tamsTentLarge",
+  "effects": [],
+  "_key": "!items!tamsTentLarge"
+}

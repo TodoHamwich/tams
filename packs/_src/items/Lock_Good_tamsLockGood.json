@@ -1,0 +1,17 @@
+{
+  "name": "Lock (Good)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Security",
+    "description": "Well-made lock with a complex mechanism. Resists casual picking; requires quality tools."
+  },
+  "flags": {},
+  "_id": "tamsLockGood",
+  "effects": [],
+  "_key": "!items!tamsLockGood"
+}

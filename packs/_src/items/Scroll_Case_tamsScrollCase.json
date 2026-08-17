@@ -1,0 +1,17 @@
+{
+  "name": "Scroll Case",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Container",
+    "description": "Cylindrical leather or bone case with a cap. Holds up to 10 sheets of rolled parchment or paper, keeping them dry and undamaged."
+  },
+  "flags": {},
+  "_id": "tamsScrollCase",
+  "effects": [],
+  "_key": "!items!tamsScrollCase"
+}

@@ -1,15 +1,24 @@
-2026/08/07-23:49:07.100656 7f61f93ff6c0 Recovering log #67
-2026/08/07-23:49:07.115300 7f61f93ff6c0 Delete type=3 #65
-2026/08/07-23:49:07.115321 7f61f93ff6c0 Delete type=0 #67
-2026/08/07-23:49:07.119002 7f61c2ffd6c0 Level-0 table #73: started
-2026/08/07-23:49:07.124606 7f61c2ffd6c0 Level-0 table #73: 30785 bytes OK
-2026/08/07-23:49:07.134308 7f61c2ffd6c0 Delete type=0 #71
-2026/08/07-23:49:07.134368 7f61c2ffd6c0 Manual compaction at level-0 from '!folders!QzMibLFJxkOO2Z7i' @ 72057594037927935 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at (end)
-2026/08/07-23:49:07.134379 7f61c2ffd6c0 Manual compaction at level-1 from '!folders!QzMibLFJxkOO2Z7i' @ 72057594037927935 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at '!items!tamsWeaponWheellockPistol' @ 2411 : 1
-2026/08/07-23:49:07.134381 7f61c2ffd6c0 Compacting 1@1 + 1@2 files
-2026/08/07-23:49:07.139232 7f61c2ffd6c0 Generated table #74@1: 197 keys, 30785 bytes
-2026/08/07-23:49:07.139241 7f61c2ffd6c0 Compacted 1@1 + 1@2 files => 30785 bytes
-2026/08/07-23:49:07.149413 7f61c2ffd6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
-2026/08/07-23:49:07.149436 7f61c2ffd6c0 Delete type=2 #69
-2026/08/07-23:49:07.149484 7f61c2ffd6c0 Delete type=2 #73
-2026/08/07-23:49:07.149515 7f61c2ffd6c0 Manual compaction at level-1 from '!items!tamsWeaponWheellockPistol' @ 2411 : 1 .. '!items!tamsWeaponWheellockPistol' @ 0 : 0; will stop at (end)
+2026/08/17-13:15:34.832854 7fa049bff6c0 Recovering log #86
+2026/08/17-13:15:34.833256 7fa049bff6c0 Level-0 table #88: started
+2026/08/17-13:15:34.838432 7fa049bff6c0 Level-0 table #88: 36939 bytes OK
+2026/08/17-13:15:34.853727 7fa049bff6c0 Delete type=0 #86
+2026/08/17-13:15:34.853758 7fa049bff6c0 Delete type=3 #85
+2026/08/17-13:15:34.858410 7fa0177fe6c0 Level-0 table #91: started
+2026/08/17-13:15:34.863583 7fa0177fe6c0 Level-0 table #91: 39818 bytes OK
+2026/08/17-13:15:34.873526 7fa0177fe6c0 Delete type=0 #89
+2026/08/17-13:15:34.873612 7fa0177fe6c0 Manual compaction at level-0 from '!folders!QzMibLFJxkOO2Z7i' @ 72057594037927935 : 1 .. '!items!tamsWhistle' @ 0 : 0; will stop at '!items!null' @ 2822 : 1
+2026/08/17-13:15:34.873615 7fa0177fe6c0 Compacting 2@0 + 0@1 files
+2026/08/17-13:15:34.879581 7fa0177fe6c0 Generated table #92@0: 254 keys, 39818 bytes
+2026/08/17-13:15:34.879587 7fa0177fe6c0 Compacted 2@0 + 0@1 files => 39818 bytes
+2026/08/17-13:15:34.889466 7fa0177fe6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/08/17-13:15:34.889506 7fa0177fe6c0 Delete type=2 #88
+2026/08/17-13:15:34.889595 7fa0177fe6c0 Delete type=2 #91
+2026/08/17-13:15:34.889662 7fa0177fe6c0 Manual compaction at level-0 from '!items!null' @ 2822 : 1 .. '!items!tamsWhistle' @ 0 : 0; will stop at (end)
+2026/08/17-13:15:34.889699 7fa0177fe6c0 Manual compaction at level-1 from '!folders!QzMibLFJxkOO2Z7i' @ 72057594037927935 : 1 .. '!items!tamsWhistle' @ 0 : 0; will stop at '!items!tamsWhistle' @ 3238 : 1
+2026/08/17-13:15:34.889701 7fa0177fe6c0 Compacting 1@1 + 1@2 files
+2026/08/17-13:15:34.894897 7fa0177fe6c0 Generated table #93@1: 253 keys, 39803 bytes
+2026/08/17-13:15:34.894905 7fa0177fe6c0 Compacted 1@1 + 1@2 files => 39803 bytes
+2026/08/17-13:15:34.905206 7fa0177fe6c0 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/08/17-13:15:34.905240 7fa0177fe6c0 Delete type=2 #84
+2026/08/17-13:15:34.905297 7fa0177fe6c0 Delete type=2 #92
+2026/08/17-13:15:34.905334 7fa0177fe6c0 Manual compaction at level-1 from '!items!tamsWhistle' @ 3238 : 1 .. '!items!tamsWhistle' @ 0 : 0; will stop at (end)

@@ -1,0 +1,17 @@
+{
+  "name": "Caltrops (bag)",
+  "type": "equipment",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "tags": "Tactical",
+    "description": "Bag of iron spikes arranged so one always points up. Scattered on the ground, they slow movement and injure unshod feet. Covers a 1.5m square."
+  },
+  "flags": {},
+  "_id": "tamsCaltrops",
+  "effects": [],
+  "_key": "!items!tamsCaltrops"
+}

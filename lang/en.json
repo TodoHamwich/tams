@@ -840,10 +840,16 @@
       "piercing": "Piercing",
       "slashing": "Slashing",
       "fire": "Fire",
+      "lightning": "Lightning",
+      "cold": "Cold",
+      "poison": "Poison",
+      "sonic": "Sonic",
+      "acid": "Acid",
       "magic": "Magic",
       "psychic": "Psychic",
-      "acid": "Acid",
-      "divine": "Divine"
+      "divine": "Divine",
+      "positive": "Positive",
+      "negative": "Negative"
     },
     "Resistance": "Resistance",
     "Immunity": "Immunity",
