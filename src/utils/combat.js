@@ -780,6 +780,167 @@ export async function tamsOnCombatEnd(combat) {
 // ======================================================================
 
 /**
+ * Open the TAMS damage application dialog for a set of hits.
+ * @param {Actor} target
+ * @param {object} opts
+ * @param {number}   opts.damage
+ * @param {number}   opts.armourPen
+ * @param {string}   opts.damageType
+ * @param {string[]} opts.locations
+ * @param {boolean}  [opts.isAoE]
+ * @param {boolean}  [opts.forceCrit]
+ * @param {ChatMessage|null} [opts.message]
+ * @param {number[]} [opts.preShieldedIndices]  hit indices whose shield checkbox is pre-checked
+ */
+async function openTAMSDamageDialog(target, {
+    damage: damageBase,
+    armourPen,
+    damageType = "",
+    locations,
+    isAoE: isAoEHit = false,
+    forceCrit = false,
+    message = null,
+    preShieldedIndices = [],
+} = {}) {
+    const locationMap = {
+        "Head": "head", "Thorax": "thorax", "Stomach": "stomach",
+        "Left Arm": "leftArm", "Right Arm": "rightArm",
+        "Left Leg": "leftLeg", "Right Leg": "rightLeg"
+    };
+
+    const isSquadOrHorde = target.system.settings?.isNPC && (target.system.settings.npcType === "squad" || target.system.settings.npcType === "horde");
+    let initialMultiplier = 1;
+    let squadHtml = "";
+    if (isAoEHit && isSquadOrHorde) {
+        const typeLabel = target.system.settings.npcType.toUpperCase();
+        const currentSize = target.system.settings.squadSize || 1;
+        initialMultiplier = target.system.settings.npcType === "squad" ? Math.min(2, currentSize) : Math.min(4, currentSize);
+        squadHtml = `
+          <div class="form-group" style="margin-bottom: 10px;">
+              <label>${game.i18n.format("TAMS.Combat.TargetsHitInSquad", {type: typeLabel, max: currentSize})}</label>
+              <input type="number" id="aoe-targets-hit" value="${initialMultiplier}" min="1" max="${currentSize}"/>
+              <p style="color: #d35400; font-size: 0.85em;"><i>${game.i18n.localize("TAMS.Combat.EachHitMultipliedHint")}</i></p>
+          </div>
+        `;
+    }
+    const defaultDmg = damageBase * initialMultiplier;
+
+    const coverHtml = `
+      <div class="form-group" style="margin-bottom: 10px; border-bottom: 1px solid #666; padding-bottom: 10px;">
+          <label>${game.i18n.localize("TAMS.Combat.Cover")}</label>
+          <div class="flexrow">
+              <select id="cover-select">
+                  <option value="0">${game.i18n.localize("TAMS.None")}</option>
+                  <option value="10">${game.i18n.localize("TAMS.Combat.CoverLight")}</option>
+                  <option value="20">${game.i18n.localize("TAMS.Combat.CoverMedium")}</option>
+                  <option value="30">${game.i18n.localize("TAMS.Combat.CoverHeavy")}</option>
+                  <option value="custom">${game.i18n.localize("TAMS.Combat.CoverCustom")}</option>
+              </select>
+              <input type="number" id="cover-custom" value="0" style="display:none; width: 60px; margin-left: 5px;"/>
+          </div>
+      </div>
+    `;
+
+    const equippedShields = target.items?.filter(i => i.type === "shield" && i.system.equipped) ?? [];
+    const shieldAV = equippedShields.reduce((sum, s) => sum + (s.system.armorValue || 0), 0);
+    const hasShield = shieldAV > 0;
+
+    let dialogContent = `<p>${game.i18n.format("TAMS.Combat.ApplyingHitsTo", {count: locations.length, name: e(target.name)})}</p>${squadHtml}${coverHtml}`;
+    locations.forEach((loc, i) => {
+        const limbKey = locationMap[loc];
+        const limb = target.system.limbs[limbKey];
+        const armor = Math.floor(limb?.armor || 0);
+        const armorMax = Math.floor(limb?.armorMax || 0);
+        const preChecked = preShieldedIndices.includes(i);
+        const shieldCheckbox = hasShield ? `
+                  <label style="flex: 0 0 auto; margin-left: 10px;">
+                      <input type="checkbox" class="hit-use-shield" data-index="${i}"${preChecked ? " checked" : ""}> ${game.i18n.format("TAMS.Combat.UseShield", {av: shieldAV})}
+                  </label>` : "";
+        dialogContent += `
+          <div class="form-group" style="margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
+              <label>${game.i18n.format("TAMS.Combat.HitLabel", {index: i+1, location: loc})}</label>
+              <div class="flexrow">
+                  <span>${game.i18n.localize("TAMS.Combat.DmgShort")} </span><input type="number" class="hit-dmg" data-index="${i}" value="${preChecked ? Math.max(0, defaultDmg - shieldAV) : defaultDmg}" style="width: 50px;"/>
+                  <span>${game.i18n.localize("TAMS.Combat.ArmorShort")} ${armor}/${armorMax}</span>
+                  <label style="flex: 0 0 auto; margin-left: 10px;">
+                      <input type="checkbox" class="hit-in-cover" data-index="${i}"> ${game.i18n.localize("TAMS.Combat.InCover")}
+                  </label>${shieldCheckbox}
+              </div>
+          </div>`;
+    });
+
+    foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.format("TAMS.Checks.ApplyDamageTo", {name: e(target.name)}) },
+      content: dialogContent,
+      rejectClose: false,
+      render: (event, dialog) => {
+          const form = dialog.element;
+          const updateDamage = () => {
+              const multiplier = (isAoEHit && isSquadOrHorde) ? (parseInt(form.querySelector("#aoe-targets-hit")?.value) || 1) : 1;
+              const coverSelect = form.querySelector("#cover-select")?.value;
+              let coverVal = 0;
+              if (coverSelect === "custom") {
+                  const customEl = form.querySelector("#cover-custom");
+                  if (customEl) customEl.style.display = "";
+                  coverVal = parseInt(form.querySelector("#cover-custom")?.value) || 0;
+              } else {
+                  const customEl = form.querySelector("#cover-custom");
+                  if (customEl) customEl.style.display = "none";
+                  coverVal = parseInt(coverSelect) || 0;
+              }
+              form.querySelectorAll(".hit-dmg").forEach(el => {
+                  const idx = el.dataset.index;
+                  const isCovered = form.querySelector(`.hit-in-cover[data-index="${idx}"]`)?.checked;
+                  const isShielded = hasShield && form.querySelector(`.hit-use-shield[data-index="${idx}"]`)?.checked;
+                  let effectiveBaseDmg = damageBase;
+                  if (isCovered) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
+                  if (isShielded) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - shieldAV);
+                  el.value = effectiveBaseDmg * multiplier;
+              });
+          };
+          form.querySelector("#aoe-targets-hit")?.addEventListener("input", updateDamage);
+          form.querySelector("#cover-select")?.addEventListener("change", updateDamage);
+          form.querySelector("#cover-custom")?.addEventListener("input", updateDamage);
+          form.querySelectorAll(".hit-in-cover").forEach(el => el.addEventListener("change", updateDamage));
+          form.querySelectorAll(".hit-use-shield").forEach(el => el.addEventListener("change", updateDamage));
+      },
+      buttons: [
+        { action: "apply", label: game.i18n.localize("TAMS.Checks.ApplyAllHits"), default: true, callback: async (event, button, dialog) => {
+            const form = dialog.element;
+            const multiplier = (isAoEHit && isSquadOrHorde) ? (parseInt(form.querySelector("#aoe-targets-hit")?.value) || 1) : 1;
+            const dmgInputs = form.querySelectorAll(".hit-dmg");
+            const hits = [];
+
+            for (let i = 0; i < locations.length; i++) {
+                const totalIncoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
+                const subHits = (isAoEHit && isSquadOrHorde) ? multiplier : 1;
+                let remainingDmg = totalIncoming;
+
+                for (let m = 0; m < subHits; m++) {
+                    const incoming = Math.floor(remainingDmg / (subHits - m));
+                    remainingDmg -= incoming;
+                    if (incoming <= 0 && m > 0) continue;
+
+                    const loc = (isAoEHit && isSquadOrHorde && (m > 0 || i > 0)) ? await getHitLocation() : locations[i];
+                    hits.push({ location: loc, damage: incoming, armourPen, damageType, forceCrit: forceCrit ? "1" : "0" });
+                }
+            }
+
+            const { pendingChecks, report } = await target.applyTAMSDamage(hits, { isAoE: isAoEHit, multiplier });
+            ChatMessage.create({ content: report });
+            if (pendingChecks.length > 0) showCombinedInjuryDialog(target, pendingChecks);
+
+            const inflictsStatusId = message?.getFlag('tams', 'inflictsStatusId');
+            if (inflictsStatusId && hits.length > 0) {
+                await target.toggleStatusEffect(inflictsStatusId, { active: true });
+            }
+          }
+        }
+      ]
+    });
+}
+
+/**
  * Handle rendering chat messages to attach listeners to TAMS-specific buttons.
  * @param {ChatMessage} message
  * @param {HTMLElement|jQuery} html
@@ -1193,17 +1354,15 @@ export async function tamsRenderChatMessage(message, html, data) {
     root.querySelectorAll(".tams-take-damage").forEach(el => el.addEventListener("click", async ev => {
       ev.preventDefault();
       const btn = ev.currentTarget;
-      const damageBase = parseInt(btn.dataset.damage);
-      const armourPen = parseInt(btn.dataset.armourPen) || 0;
-      
+
       const multiLocations = btn.dataset.locations ? JSON.parse(btn.dataset.locations) : null;
       const locations = multiLocations || (btn.dataset.location ? [btn.dataset.location] : []);
-      
+
       let target = null;
       const targetTokenId = btn.dataset.targetTokenId;
       const targetActorId = btn.dataset.targetActorId;
       const targetActorUuid = btn.dataset.targetActorUuid;
-      
+
       if (targetActorUuid) target = fromUuidSync(targetActorUuid);
       if (!target && targetTokenId) {
           const token = canvas.tokens.get(targetTokenId);
@@ -1217,142 +1376,14 @@ export async function tamsRenderChatMessage(message, html, data) {
       const pendingAutoCritDirect = target.getFlag('tams', 'pendingAutoCrit');
       if (pendingAutoCritDirect) await target.setFlag('tams', 'pendingAutoCrit', null);
 
-      const locationMap = {
-        "Head": "head", "Thorax": "thorax", "Stomach": "stomach",
-        "Left Arm": "leftArm", "Right Arm": "rightArm",
-        "Left Leg": "leftLeg", "Right Leg": "rightLeg"
-      };
-
-      const isAoEHit = btn.dataset.isAoe === '1';
-      const forceCrit = btn.dataset.forceCrit === '1' || !!pendingAutoCritDirect;
-      const isSquadOrHorde = target.system.settings?.isNPC && (target.system.settings.npcType === "squad" || target.system.settings.npcType === "horde");
-      let initialMultiplier = 1;
-      let squadHtml = "";
-      if (isAoEHit && isSquadOrHorde) {
-          const typeLabel = target.system.settings.npcType.toUpperCase();
-          const currentSize = target.system.settings.squadSize || 1;
-          initialMultiplier = target.system.settings.npcType === "squad" ? Math.min(2, currentSize) : Math.min(4, currentSize);
-          squadHtml = `
-            <div class="form-group" style="margin-bottom: 10px;">
-                <label>${game.i18n.format("TAMS.Combat.TargetsHitInSquad", {type: typeLabel, max: currentSize})}</label>
-                <input type="number" id="aoe-targets-hit" value="${initialMultiplier}" min="1" max="${currentSize}"/>
-                <p style="color: #d35400; font-size: 0.85em;"><i>${game.i18n.localize("TAMS.Combat.EachHitMultipliedHint")}</i></p>
-            </div>
-          `;
-      }
-      const defaultDmg = damageBase * initialMultiplier;
-
-      const coverHtml = `
-        <div class="form-group" style="margin-bottom: 10px; border-bottom: 1px solid #666; padding-bottom: 10px;">
-            <label>${game.i18n.localize("TAMS.Combat.Cover")}</label>
-            <div class="flexrow">
-                <select id="cover-select">
-                    <option value="0">${game.i18n.localize("TAMS.None")}</option>
-                    <option value="10">${game.i18n.localize("TAMS.Combat.CoverLight")}</option>
-                    <option value="20">${game.i18n.localize("TAMS.Combat.CoverMedium")}</option>
-                    <option value="30">${game.i18n.localize("TAMS.Combat.CoverHeavy")}</option>
-                    <option value="custom">${game.i18n.localize("TAMS.Combat.CoverCustom")}</option>
-                </select>
-                <input type="number" id="cover-custom" value="0" style="display:none; width: 60px; margin-left: 5px;"/>
-            </div>
-        </div>
-      `;
-
-      const equippedShields = target.items?.filter(i => i.type === "shield" && i.system.equipped) ?? [];
-      const shieldAV = equippedShields.reduce((sum, s) => sum + (s.system.armorValue || 0), 0);
-      const hasShield = shieldAV > 0;
-
-      let dialogContent = `<p>${game.i18n.format("TAMS.Combat.ApplyingHitsTo", {count: locations.length, name: target.name})}</p>${squadHtml}${coverHtml}`;
-      locations.forEach((loc, i) => {
-          const limbKey = locationMap[loc];
-          const limb = target.system.limbs[limbKey];
-          const armor = Math.floor(limb?.armor || 0);
-          const armorMax = Math.floor(limb?.armorMax || 0);
-          const shieldCheckbox = hasShield ? `
-                    <label style="flex: 0 0 auto; margin-left: 10px;">
-                        <input type="checkbox" class="hit-use-shield" data-index="${i}"> ${game.i18n.format("TAMS.Combat.UseShield", {av: shieldAV})}
-                    </label>` : "";
-          dialogContent += `
-            <div class="form-group" style="margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
-                <label>${game.i18n.format("TAMS.Combat.HitLabel", {index: i+1, location: loc})}</label>
-                <div class="flexrow">
-                    <span>${game.i18n.localize("TAMS.Combat.DmgShort")} </span><input type="number" class="hit-dmg" data-index="${i}" value="${defaultDmg}" style="width: 50px;"/>
-                    <span>${game.i18n.localize("TAMS.Combat.ArmorShort")} ${armor}/${armorMax}</span>
-                    <label style="flex: 0 0 auto; margin-left: 10px;">
-                        <input type="checkbox" class="hit-in-cover" data-index="${i}"> ${game.i18n.localize("TAMS.Combat.InCover")}
-                    </label>${shieldCheckbox}
-                </div>
-            </div>`;
-      });
-
-      foundry.applications.api.DialogV2.wait({
-        window: { title: game.i18n.format("TAMS.Checks.ApplyDamageTo", {name: target.name}) },
-        content: dialogContent,
-        rejectClose: false,
-        render: (event, dialog) => {
-            const form = dialog.element;
-            const updateDamage = () => {
-                const multiplier = (isAoEHit && isSquadOrHorde) ? (parseInt(form.querySelector("#aoe-targets-hit")?.value) || 1) : 1;
-                const coverSelect = form.querySelector("#cover-select")?.value;
-                let coverVal = 0;
-                if (coverSelect === "custom") {
-                    const customEl = form.querySelector("#cover-custom");
-                    if (customEl) customEl.style.display = "";
-                    coverVal = parseInt(form.querySelector("#cover-custom")?.value) || 0;
-                } else {
-                    const customEl = form.querySelector("#cover-custom");
-                    if (customEl) customEl.style.display = "none";
-                    coverVal = parseInt(coverSelect) || 0;
-                }
-                form.querySelectorAll(".hit-dmg").forEach(el => {
-                    const idx = el.dataset.index;
-                    const isCovered = form.querySelector(`.hit-in-cover[data-index="${idx}"]`)?.checked;
-                    const isShielded = hasShield && form.querySelector(`.hit-use-shield[data-index="${idx}"]`)?.checked;
-                    let effectiveBaseDmg = damageBase;
-                    if (isCovered) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
-                    if (isShielded) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - shieldAV);
-                    el.value = effectiveBaseDmg * multiplier;
-                });
-            };
-            form.querySelector("#aoe-targets-hit")?.addEventListener("input", updateDamage);
-            form.querySelector("#cover-select")?.addEventListener("change", updateDamage);
-            form.querySelector("#cover-custom")?.addEventListener("input", updateDamage);
-            form.querySelectorAll(".hit-in-cover").forEach(el => el.addEventListener("change", updateDamage));
-            form.querySelectorAll(".hit-use-shield").forEach(el => el.addEventListener("change", updateDamage));
-        },
-        buttons: [
-          { action: "apply", label: game.i18n.localize("TAMS.Checks.ApplyAllHits"), default: true, callback: async (event, button, dialog) => {
-              const form = dialog.element;
-              const multiplier = (isAoEHit && isSquadOrHorde) ? (parseInt(form.querySelector("#aoe-targets-hit")?.value) || 1) : 1;
-              const dmgInputs = form.querySelectorAll(".hit-dmg");
-              const hits = [];
-
-              for (let i = 0; i < locations.length; i++) {
-                  const totalIncoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
-                  const subHits = (isAoEHit && isSquadOrHorde) ? multiplier : 1;
-                  let remainingDmg = totalIncoming;
-
-                  for (let m = 0; m < subHits; m++) {
-                      const incoming = Math.floor(remainingDmg / (subHits - m));
-                      remainingDmg -= incoming;
-                      if (incoming <= 0 && m > 0) continue;
-
-                      const loc = (isAoEHit && isSquadOrHorde && (m > 0 || i > 0)) ? await getHitLocation() : locations[i];
-                      hits.push({ location: loc, damage: incoming, armourPen, damageType: btn.dataset.damageType || "", forceCrit: forceCrit ? "1" : "0" });
-                  }
-              }
-
-              const { pendingChecks, report } = await target.applyTAMSDamage(hits, { isAoE: isAoEHit, multiplier });
-              ChatMessage.create({ content: report });
-              if (pendingChecks.length > 0) showCombinedInjuryDialog(target, pendingChecks);
-
-              const inflictsStatusId = message.getFlag('tams', 'inflictsStatusId');
-              if (inflictsStatusId && hits.length > 0) {
-                await target.toggleStatusEffect(inflictsStatusId, { active: true });
-              }
-            }
-          }
-        ]
+      openTAMSDamageDialog(target, {
+          damage: parseInt(btn.dataset.damage),
+          armourPen: parseInt(btn.dataset.armourPen) || 0,
+          damageType: btn.dataset.damageType || "",
+          locations,
+          isAoE: btn.dataset.isAoe === '1',
+          forceCrit: btn.dataset.forceCrit === '1' || !!pendingAutoCritDirect,
+          message,
       });
     }));
 
@@ -2234,28 +2265,13 @@ export async function tamsRenderChatMessage(message, html, data) {
               { action: "block", label: game.i18n.localize("TAMS.Combat.BlockHit"), default: true, callback: async (event, button, dialog) => {
                         const idx = parseInt(dialog.element.querySelector('#block-loc').value);
                         const locationToBlock = locations[idx];
-                        
-                        const damage = parseInt(btn.dataset.damage);
-                        const armourPen = parseInt(btn.dataset.armourPen) || 0;
-                        const damageType = btn.dataset.damageType || "";
-                        const shieldArmor = shield.system.armorValue;
-                        
-                        // Show a message about the block
-                        const report = `
-                            <div class="tams-roll">
-                                <h3 class="roll-label">${game.i18n.format("TAMS.Combat.ShieldBlockWith", {name: actor.name, shield: shield.name})}</h3>
-                                <div class="tams-success">${game.i18n.format("TAMS.Combat.BlockReport", {location: locationToBlock, armor: shieldArmor})}</div>
-                                <div class="roll-row" style="margin-top: 5px;">
-                                    <button class="tams-take-damage"
-                                            data-damage="${damage}"
-                                            data-armour-pen="${armourPen - shieldArmor}"
-                                            data-damage-type="${damageType}"
-                                            data-locations='${JSON.stringify([locationToBlock])}'
-                                            data-target-actor-uuid="${actor.uuid}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
-                                </div>
-                            </div>`;
-                        
-                        ChatMessage.create({ speaker: ChatMessage.getSpeaker({actor}), content: report });
+                        openTAMSDamageDialog(actor, {
+                            damage: parseInt(btn.dataset.damage),
+                            armourPen: parseInt(btn.dataset.armourPen) || 0,
+                            damageType: btn.dataset.damageType || "",
+                            locations: [locationToBlock],
+                            preShieldedIndices: [0],
+                        });
                     }
               },
               { action: "cancel", label: game.i18n.localize("TAMS.Cancel") }
