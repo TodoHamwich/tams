@@ -51,9 +51,9 @@
                         <i class="fas fa-dice-d20"></i> {{localize stat.label}}
                     </label>
                     <div class="stat-inputs flexrow">
-                        <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number" title="{{localize 'TAMS.Name'}}" class="small-input"/>
+                        <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number" title="{{localize 'TAMS.StatBase'}}" class="small-input"/>
                         <span class="mod-sep">+</span>
-                        <input type="number" name="system.stats.{{id}}.mod" value="{{stat.mod}}" data-dtype="Number" title="{{localize 'TAMS.Multiplier'}}" class="small-input"/>
+                        <input type="number" name="system.stats.{{id}}.mod" value="{{stat.mod}}" data-dtype="Number" title="{{localize 'TAMS.StatMod'}}" class="small-input"/>
                     </div>
                 </div>
                 {{/each}}
@@ -223,11 +223,11 @@
                 <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">{{item.name}}</h4>
                 <div class="item-stat">{{item.system.calculatedDamage}}</div>
                 <div class="item-stat">
-                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}"/>
+                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
                 </div>
                 <div class="item-stat">
                     {{#if item.system.isRanged}}
-                    <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.fireRate">
+                    <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.fireRate" title="{{localize 'TAMS.FireRate'}}">
                         <option value="1" {{#if (eq item.system.fireRate "1")}}selected{{/if}}>S</option>
                         <option value="3" {{#if (eq item.system.fireRate "3")}}selected{{/if}}>3</option>
                         <option value="auto" {{#if (eq item.system.fireRate "auto")}}selected{{/if}}>A</option>
@@ -237,12 +237,12 @@
                 </div>
                 <div class="item-stat">
                     {{#if item.system.isRanged}}
-                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.current" value="{{item.system.ammo.current}}"/>
+                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.current" value="{{item.system.ammo.current}}" title="{{localize 'TAMS.AmmoCurrent'}}"/>
                     {{else}}-{{/if}}
                 </div>
                 <div class="item-stat">
                     {{#if item.system.isRanged}}
-                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.total" value="{{item.system.ammo.total}}"/>
+                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.total" value="{{item.system.ammo.total}}" title="{{localize 'TAMS.AmmoTotal'}}"/>
                     {{else}}-{{/if}}
                 </div>
                 <div class="item-controls">
@@ -268,10 +268,10 @@
             <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                 <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">{{item.name}}</h4>
                 <div class="item-stat">
-                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}"/>
+                    <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
                 </div>
                 <div class="item-stat">
-                    <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.stat">
+                    <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.stat" title="{{localize 'TAMS.SkillStat'}}">
                         {{selectOptions ../statOptions selected=item.system.stat localize=true}}
                     </select>
                 </div>

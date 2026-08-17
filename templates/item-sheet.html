@@ -285,7 +285,7 @@
                     <input type="text" name="system.tags" value="{{system.tags}}" placeholder="reliable, accurate, etc."/>
                     <div class="tag-buttons" style="margin-top: 5px; display: flex; flex-wrap: wrap; gap: 4px;">
                         {{#each weaponTags as |tag|}}
-                        <a class="tag-button {{#if tag.active}}active{{/if}}" data-action="tagToggle" data-tag="{{tag.id}}">
+                        <a class="tag-button {{#if tag.active}}active{{/if}}" data-action="tagToggle" data-tag="{{tag.id}}" title="{{#if tag.hint}}{{tag.hint}}{{else}}{{tag.label}}{{/if}}">
                             {{tag.label}}
                         </a>
                         {{/each}}
@@ -972,7 +972,7 @@
                         {{selectOptions ../modifierTargetOptions selected=mod.target localize=true}}
                     </select>
                     <input type="number" name="system.modifiers.{{index}}.value" value="{{mod.value}}" style="flex: 0 0 50px; text-align: center;"/>
-                    <a class="modifier-control" data-action="modifierDelete" style="flex: 0 0 20px; text-align: right;"><i class="fas fa-trash"></i></a>
+                    <a class="modifier-control" data-action="modifierDelete" title="{{localize 'TAMS.RemoveModifier'}}" style="flex: 0 0 20px; text-align: right;"><i class="fas fa-trash"></i></a>
                 </div>
                 {{/each}}
             </div>

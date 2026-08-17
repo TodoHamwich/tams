@@ -145,11 +145,15 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     if (this.document.type === 'weapon') {
         const tags = ["accurate", "reliable", "unreliable", "vicious", "brutal", "balanced", "compact", "reach", "silent"];
         const activeTags = (this.document.system.tags || "").split(",").map(t => t.trim().toLowerCase());
-        context.weaponTags = tags.map(t => ({
-            id: t,
-            label: game.i18n.localize(`TAMS.WeaponTags.${t.charAt(0).toUpperCase() + t.slice(1)}`),
-            active: activeTags.includes(t)
-        }));
+        context.weaponTags = tags.map(t => {
+            const cap = t.charAt(0).toUpperCase() + t.slice(1);
+            return {
+                id: t,
+                label: game.i18n.localize(`TAMS.WeaponTags.${cap}`),
+                hint: game.i18n.localize(`TAMS.WeaponTags.${cap}Hint`),
+                active: activeTags.includes(t)
+            };
+        });
         const EARLY_TYPES = new Set(["matchlock", "flintlock", "wheellock", "blunderbuss"]);
         context.isEarlyFirearm = EARLY_TYPES.has(this.document.system.firearmType);
         context.isModernFirearm = !!this.document.system.firearmType && !context.isEarlyFirearm;

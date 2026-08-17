@@ -62,9 +62,9 @@
                             <i class="fas fa-dice-d20"></i> {{localize stat.label}}
                         </label>
                         <div class="stat-inputs flexrow">
-                            <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number" title="{{localize 'TAMS.Name'}}" class="small-input" tabindex="{{add @index 1}}"/>
+                            <input type="number" name="system.stats.{{id}}.value" value="{{stat.value}}" data-dtype="Number" title="{{localize 'TAMS.StatBase'}}" class="small-input" tabindex="{{add @index 1}}"/>
                             <span class="mod-sep">+</span>
-                            <input type="number" name="system.stats.{{id}}.mod" value="{{stat.mod}}" data-dtype="Number" title="{{localize 'TAMS.Multiplier'}}" class="small-input" tabindex="{{add @index 7}}"/>
+                            <input type="number" name="system.stats.{{id}}.mod" value="{{stat.mod}}" data-dtype="Number" title="{{localize 'TAMS.StatMod'}}" class="small-input" tabindex="{{add @index 7}}"/>
                         </div>
                     </div>
                     {{/each}}
@@ -212,7 +212,7 @@
 
         {{!-- Items Tab --}}
         <div class="tab items {{#if (eq activeTab 'items')}}active{{/if}}" data-group="primary" data-tab="items" data-scrollable data-scroll-id="tab-items">
-            <h3>{{localize 'TAMS.Weapons'}}<span class="section-line"></span><a data-action="itemCreate" data-type="weapon"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+            <h3>{{localize 'TAMS.Weapons'}}<span class="section-line"></span><a data-action="itemCreate" data-type="weapon" title="{{localize 'TAMS.AddWeaponTooltip'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
                 <div class="item-name">{{localize 'TAMS.Name'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Dmg'}}</div>
@@ -233,11 +233,11 @@
                     </h4>
                     <div class="item-stat">{{item.system.calculatedDamage}}</div>
                     <div class="item-stat">
-                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}"/>
+                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
                     </div>
                     <div class="item-stat">
                         {{#if item.system.isRanged}}
-                        <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.fireRate">
+                        <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.fireRate" title="{{localize 'TAMS.FireRate'}}">
                             <option value="1" {{#if (eq item.system.fireRate "1")}}selected{{/if}}>S</option>
                             <option value="3" {{#if (eq item.system.fireRate "3")}}selected{{/if}}>3</option>
                             <option value="auto" {{#if (eq item.system.fireRate "auto")}}selected{{/if}}>A</option>
@@ -249,7 +249,7 @@
                     </div>
                     <div class="item-stat ammo-select-cell">
                         {{#if item.system.isRanged}}
-                        <select class="ammo-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammoItemId">
+                        <select class="ammo-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammoItemId" title="{{localize 'TAMS.AmmoSelect'}}">
                             <option value="">— {{localize 'TAMS.AmmoNone'}} —</option>
                             <option value="custom" {{#if (eq item.system.ammoItemId "custom")}}selected{{/if}}>{{localize 'TAMS.AmmoCustom'}}</option>
                             {{#each item.ammoOptions as |ammo|}}
@@ -263,7 +263,7 @@
                     <div class="item-stat ammo-total-cell">
                         {{#if item.system.isRanged}}
                             {{#if (eq item.system.ammoItemId "custom")}}
-                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.current" value="{{item.system.ammo.current}}"/>/{{#if (gt item.system.magazineCapacity 0)}}{{item.system.magazineCapacity}}{{else}}<input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.total" value="{{item.system.ammo.total}}"/>{{/if}}
+                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.current" value="{{item.system.ammo.current}}" title="{{localize 'TAMS.AmmoCurrent'}}"/>/{{#if (gt item.system.magazineCapacity 0)}}{{item.system.magazineCapacity}}{{else}}<input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.total" value="{{item.system.ammo.total}}" title="{{localize 'TAMS.AmmoTotal'}}"/>{{/if}}
                             {{else if item.linkedAmmo}}
                             {{item.linkedAmmo.current}}/{{#if (gt item.system.magazineCapacity 0)}}{{item.system.magazineCapacity}}{{else}}{{item.linkedAmmo.max}}{{/if}}
                             {{else}}
@@ -274,7 +274,7 @@
                         {{/if}}
                     </div>
                     <div class="item-stat">
-                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}}/>
+                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}} title="{{localize 'TAMS.WeaponEquip'}}"/>
                     </div>
                     <div class="item-controls">
                         <a class="item-control" data-action="itemGive" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
@@ -298,11 +298,11 @@
                     </h4>
                     <div class="item-stat">{{item.system.calculatedDamage}}</div>
                     <div class="item-stat">
-                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}"/>
+                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
                     </div>
                     <div class="item-stat">
                         {{#if item.system.isRanged}}
-                        <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.fireRate">
+                        <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.fireRate" title="{{localize 'TAMS.FireRate'}}">
                             <option value="1" {{#if (eq item.system.fireRate "1")}}selected{{/if}}>S</option>
                             <option value="3" {{#if (eq item.system.fireRate "3")}}selected{{/if}}>3</option>
                             <option value="auto" {{#if (eq item.system.fireRate "auto")}}selected{{/if}}>A</option>
@@ -314,7 +314,7 @@
                     </div>
                     <div class="item-stat ammo-select-cell">
                         {{#if item.system.isRanged}}
-                        <select class="ammo-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammoItemId">
+                        <select class="ammo-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammoItemId" title="{{localize 'TAMS.AmmoSelect'}}">
                             <option value="">— {{localize 'TAMS.AmmoNone'}} —</option>
                             <option value="custom" {{#if (eq item.system.ammoItemId "custom")}}selected{{/if}}>{{localize 'TAMS.AmmoCustom'}}</option>
                             {{#each item.ammoOptions as |ammo|}}
@@ -328,7 +328,7 @@
                     <div class="item-stat ammo-total-cell">
                         {{#if item.system.isRanged}}
                             {{#if (eq item.system.ammoItemId "custom")}}
-                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.current" value="{{item.system.ammo.current}}"/>/{{#if (gt item.system.magazineCapacity 0)}}{{item.system.magazineCapacity}}{{else}}<input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.total" value="{{item.system.ammo.total}}"/>{{/if}}
+                            <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.current" value="{{item.system.ammo.current}}" title="{{localize 'TAMS.AmmoCurrent'}}"/>/{{#if (gt item.system.magazineCapacity 0)}}{{item.system.magazineCapacity}}{{else}}<input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.ammo.total" value="{{item.system.ammo.total}}" title="{{localize 'TAMS.AmmoTotal'}}"/>{{/if}}
                             {{else if item.linkedAmmo}}
                             {{item.linkedAmmo.current}}/{{#if (gt item.system.magazineCapacity 0)}}{{item.system.magazineCapacity}}{{else}}{{item.linkedAmmo.max}}{{/if}}
                             {{else}}
@@ -339,7 +339,7 @@
                         {{/if}}
                     </div>
                     <div class="item-stat">
-                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}}/>
+                        <input type="checkbox" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.equipped" {{checked item.system.equipped}} title="{{localize 'TAMS.WeaponEquip'}}"/>
                     </div>
                     <div class="item-controls">
                         <a class="item-control" data-action="itemGive" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
@@ -353,7 +353,7 @@
                 {{/if}}
             </ol>
 
-            <h3>{{localize 'TAMS.Skills'}}<span class="section-line"></span><a data-action="itemCreate" data-type="skill"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+            <h3>{{localize 'TAMS.Skills'}}<span class="section-line"></span><a data-action="itemCreate" data-type="skill" title="{{localize 'TAMS.AddSkill'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
                 <div class="item-name">{{localize 'TAMS.Name'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Fam'}}</div>
@@ -368,10 +368,10 @@
                         {{item.name}}
                     </h4>
                     <div class="item-stat">
-                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}"/>
+                        <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
                     </div>
                     <div class="item-stat">
-                        <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.stat">
+                        <select class="fire-rate-select" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.stat" title="{{localize 'TAMS.SkillStat'}}">
                             {{selectOptions ../statOptions selected=item.system.stat localize=true}}
                         </select>
                     </div>
@@ -429,7 +429,7 @@
 
             <hr>
 
-            <h3>{{localize 'TAMS.Abilities'}}<span class="section-line"></span><a data-action="itemCreate" data-type="ability"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
+            <h3>{{localize 'TAMS.Abilities'}}<span class="section-line"></span><a data-action="itemCreate" data-type="ability" title="{{localize 'TAMS.AddAbility'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <ol class="items-list">
                 {{#each abilities as |item id|}}
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
@@ -547,7 +547,7 @@
                             </div>
                             <div class="item-qty-stepper flexrow">
                                 <a class="qty-btn" data-action="itemQtyDelta" data-item-id="{{item.id}}" data-delta="-1" title="-1">&minus;</a>
-                                <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}"/>
+                                <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.quantity" value="{{item.system.quantity}}" title="{{localize 'TAMS.InventoryQty'}}"/>
                                 <a class="qty-btn" data-action="itemQtyDelta" data-item-id="{{item.id}}" data-delta="1" title="+1">+</a>
                             </div>
                             <div class="item-controls">
@@ -570,7 +570,7 @@
                         <li class="item-details {{#if (eq section.type 'container')}}nested-item{{/if}}" data-item-id="{{item.id}}">
                             <div class="item-details-row flexrow">
                                 <label>{{localize 'TAMS.LocationOptions.Location'}}</label>
-                                <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location">
+                                <select data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.location" title="{{localize 'TAMS.InventoryLoc'}}">
                                     {{selectOptions ../../../locationOptions selected=item.system.location localize=true}}
                                 </select>
                                 <a class="item-control" data-action="itemExport" data-item-id="{{item.id}}" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
@@ -731,7 +731,7 @@
                 <ol class="items-list scene-list scene-list-grid">
                     {{#each sceneItems as |item|}}
                     <li class="item flexrow scene-item {{#if item.system.usedInScene}}scene-used{{/if}}" data-item-id="{{item.id}}">
-                        <div class="scene-used-indicator">
+                        <div class="scene-used-indicator" title="{{#if item.system.usedInScene}}{{localize 'TAMS.SceneItemUsed'}}{{else}}{{localize 'TAMS.SceneItemUnused'}}{{/if}}">
                             {{#if item.system.usedInScene}}
                             <i class="fas fa-check-circle" style="color: #2e7d32;"></i>
                             {{else}}
@@ -786,7 +786,7 @@
                     </div>
                 </div>
                 <hr>
-                <div class="flexrow rollable" data-action="toggleLimbMultipliers" style="cursor: pointer;">
+                <div class="flexrow rollable" data-action="toggleLimbMultipliers" style="cursor: pointer;" title="{{localize 'TAMS.ToggleLimbMult'}}">
                     <i class="fas fa-chevron-{{#if limbMultipliersCollapsed}}right{{else}}down{{/if}}"></i>
                     <h3 style="flex: 1; margin: 0; border: none;">{{localize 'TAMS.LimbMultipliers'}}</h3>
                 </div>
@@ -803,7 +803,7 @@
                 <hr>
                 <div class="flexrow" style="margin-bottom: 5px;">
                     <h3 style="flex: 1; margin: 0; border: none;">{{localize 'TAMS.ResourceModifiers'}}</h3>
-                    <a data-action="resourceAdd"><i class="fas fa-plus"></i> {{localize 'TAMS.AddResource'}}</a>
+                    <a data-action="resourceAdd" title="{{localize 'TAMS.AddResource'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.AddResource'}}</a>
                 </div>
                 <div class="resource-modifiers-list">
                     <div class="resource-header">
