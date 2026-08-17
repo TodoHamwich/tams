@@ -25,6 +25,8 @@
                 <select name="system.location">
                     {{selectOptions locationOptions selected=system.location localize=true}}
                 </select>
+                <label title="{{localize 'TAMS.NaturalHint'}}">{{localize 'TAMS.Natural'}}</label>
+                <input type="checkbox" name="system.isNatural" {{#if system.isNatural}}checked{{/if}}/>
             </div>
             <hr>
             {{/if}}

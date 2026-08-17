@@ -113,6 +113,9 @@ export function computeEncumbrance(items, {
     const system = item.system || {};
     const location = system.location;
 
+    // Natural items (claws, innate armor, etc.) are part of the body — no weight.
+    if (system.isNatural) continue;
+
     // Only items that are actually carried count toward capacity.
     const carried = location === "stowed" || location === "hand" ||
       location === "backpack" || allBackpackIds.has(location);

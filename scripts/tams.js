@@ -59,6 +59,7 @@ function computeEncumbrance(items, {
   for (const item of items) {
     const system = item.system || {};
     const location = system.location;
+    if (system.isNatural) continue;
     const carried = location === "stowed" || location === "hand" || location === "backpack" || allBackpackIds.has(location);
     if (!carried) continue;
     const quantity = Math.max(0, Number(system.quantity) || 0);
@@ -505,7 +506,8 @@ function inventoryFields(fields, { size = "small", location = "stowed", slots = 
     quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
     size: new fields.StringField({ initial: size }),
     location: new fields.StringField({ initial: location }),
-    slots: new fields.NumberField({ initial: slots, integer: true, min: 1 })
+    slots: new fields.NumberField({ initial: slots, integer: true, min: 1 }),
+    isNatural: new fields.BooleanField({ initial: false })
   };
 }
 function usesFields(fields) {

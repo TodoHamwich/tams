@@ -13,6 +13,7 @@ function inventoryFields(fields, { size = "small", location = "stowed", slots = 
     size: new fields.StringField({ initial: size }),
     location: new fields.StringField({ initial: location }),
     slots: new fields.NumberField({ initial: slots, integer: true, min: 1 }),
+    isNatural: new fields.BooleanField({ initial: false }),
   };
 }
 

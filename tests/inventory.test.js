@@ -125,6 +125,26 @@ describe('computeEncumbrance - slots mode', () => {
   });
 });
 
+describe('computeEncumbrance - natural items', () => {
+  it('natural items do not count toward encumbrance in weight mode', () => {
+    const items = makeItems([
+      { id: 'i1', system: { location: 'stowed', size: 'large', quantity: 1, isNatural: false } },
+      { id: 'i2', system: { location: 'stowed', size: 'large', quantity: 1, isNatural: true } },
+    ]);
+    const res = computeEncumbrance(items, { itemsById: items, endurance: 10, mode: 'weight' });
+    expect(res.used).toBe(50); // only the non-natural large item counts
+  });
+
+  it('natural items do not count toward encumbrance in slots mode', () => {
+    const items = makeItems([
+      { id: 'i1', system: { location: 'stowed', size: 'medium', quantity: 2, isNatural: false } },
+      { id: 'i2', system: { location: 'stowed', size: 'medium', quantity: 3, isNatural: true } },
+    ]);
+    const res = computeEncumbrance(items, { itemsById: items, endurance: 10, mode: 'slots' });
+    expect(res.used).toBe(2); // only the non-natural medium items (2 slots)
+  });
+});
+
 describe('computeArmorRepair', () => {
   it('fully repairs with no max loss on success', () => {
     const r = computeArmorRepair({ value: 4, max: 10, rollTotal: 30, alternate: false });

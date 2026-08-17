@@ -1,6 +1,8 @@
 {
   "TAMS": {
     "None": "— None —",
+    "Natural": "Natural",
+    "NaturalHint": "Natural items (innate claws, natural armor, etc.) are part of the body and do not count toward encumbrance.",
     "Ranged": "Ranged",
     "IsAttack": "Is Attack?",
     "IsProfession": "Is Profession?",
