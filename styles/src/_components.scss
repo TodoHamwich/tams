@@ -205,14 +205,6 @@
     font-weight: bold;
 }
 
-.tams .fatigue-badge {
-    font-size: 10px;
-    font-weight: bold;
-    color: #e67e22;
-    white-space: nowrap;
-    margin-left: 4px;
-}
-
 // Tabs
 .tams .sheet-tabs {
     flex: 0 0 36px;
@@ -347,16 +339,9 @@
 
 .tams .item-controls {
     flex: 0 0 100px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 3px;
-    flex-wrap: nowrap;
+    text-align: right;
 
-    a {
-        cursor: pointer;
-        font-size: 11px;
-    }
+    a { cursor: pointer; }
 }
 
 // Upgrade points
