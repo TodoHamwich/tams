@@ -638,15 +638,11 @@
 
             </div>{{!-- /.inventory-list-view --}}
 
-            {{!-- Grid view: disabled for now — its partial (inventory-grid.html) and the
-                 loadTemplates()/JS registration it needs aren't committed yet. Re-enable once
-                 that work lands together, or this throws on render (missing partial) and blanks
-                 the whole sheet body.
+            {{!-- Grid view --}}
             <div class="inventory-grid-view {{#if (eq inventoryMode 'grid')}}visible{{else}}hidden{{/if}}"
                  data-scroll-id="tab-inventory-grid-scroll">
                 {{> "systems/tams/templates/inventory-grid.html"}}
-            </div>
-            --}}
+            </div>{{!-- /.inventory-grid-view --}}
         </div>
 
 
