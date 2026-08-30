@@ -115,6 +115,26 @@ function computeArmorRepair({ value, max, rollTotal, alternate = false }) {
     success: shortfall === 0
   };
 }
+function computeRawStaminaMax(enduranceTotal, mult = 1, traitStaminaExtra = 0) {
+  const base = Math.max(1, enduranceTotal);
+  return Math.floor(base * (mult || 1)) + (traitStaminaExtra || 0);
+}
+function computeRawResourceMax(statValue, mult = 1, bonus = 0) {
+  return Math.floor((statValue || 0) * (mult || 1)) + (bonus || 0);
+}
+function computeFatiguedMax(rawMax, fatigue = 0) {
+  return Math.max(0, Math.floor(rawMax) - Math.max(0, fatigue || 0));
+}
+function computeShortRestFatigueGain(spentSinceRest = 0) {
+  if (!spentSinceRest || spentSinceRest <= 0) return 0;
+  return Math.max(1, Math.floor(spentSinceRest / 10));
+}
+function computeLongRestTickHeal(governingStatValue) {
+  return Math.floor((governingStatValue || 0) / 10);
+}
+function computeLongRestFatigueHeal(governingStatValue) {
+  return computeLongRestTickHeal(governingStatValue) * 2;
+}
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1, large: 1.5, huge: 2, giant: 2.5 };
 const SIZE_ORDER = ["tiny", "small", "normal", "large", "huge", "giant"];
 function getCapacityMode() {
@@ -185,7 +205,9 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         hasBackpack: new fields.BooleanField({ initial: false }),
         isEncumbered: new fields.BooleanField({ initial: false }),
         equippedBackpackId: new fields.StringField({ initial: "" }),
-        color: new fields.StringField({ initial: "#f1c40f" })
+        color: new fields.StringField({ initial: "#f1c40f" }),
+        gridCols: new fields.NumberField({ initial: 10, integer: true, min: 1 }),
+        gridRows: new fields.NumberField({ initial: 8, integer: true, min: 1 })
       }),
       hp: new fields.SchemaField({
         value: new fields.NumberField({ initial: 0 }),
@@ -197,7 +219,9 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         value: new fields.NumberField({ initial: 10, min: 0 }),
         max: new fields.NumberField({ initial: 10, min: 0 }),
         mult: new fields.NumberField({ initial: 1 }),
-        color: new fields.StringField({ initial: "#66bb6a" })
+        color: new fields.StringField({ initial: "#66bb6a" }),
+        fatigue: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+        spentSinceRest: new fields.NumberField({ initial: 0, integer: true, min: 0 })
       }),
       customResources: new fields.ArrayField(new fields.SchemaField({
         name: new fields.StringField({ initial: "New Resource" }),
@@ -210,8 +234,11 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         customValue: new fields.NumberField({ initial: 10, min: 0 }),
         color: new fields.StringField({ initial: "#3498db" }),
         isOpposed: new fields.BooleanField({ initial: false }),
-        colorSecondary: new fields.StringField({ initial: "#e74c3c" })
+        colorSecondary: new fields.StringField({ initial: "#e74c3c" }),
+        fatigue: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+        spentSinceRest: new fields.NumberField({ initial: 0, integer: true, min: 0 })
       })),
+      restSafe: new fields.BooleanField({ initial: false }),
       theme: new fields.StringField({ initial: "default" }),
       physicalNotes: new fields.StringField({ initial: "" }),
       traits: new fields.StringField({ initial: "" }),
@@ -426,8 +453,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    */
   _prepareStamina() {
     const end = this.stats.endurance.total;
-    const baseStamina = Math.max(1, end);
-    this.stamina.max = Math.floor(baseStamina * (this.stamina.mult || 1)) + (this.traitStaminaExtra || 0);
+    const rawMax = computeRawStaminaMax(end, this.stamina.mult, this.traitStaminaExtra);
+    this.stamina.max = computeFatiguedMax(rawMax, this.stamina.fatigue);
   }
   /**
    * Update maximum values for custom resources.
@@ -437,7 +464,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     var _a;
     for (const res of this.customResources) {
       const statVal = res.stat === "custom" ? res.customValue ?? 10 : ((_a = this.stats[res.stat]) == null ? void 0 : _a.total) || 0;
-      res.max = Math.floor(statVal * (res.mult || 1)) + (res.bonus || 0);
+      const rawMax = computeRawResourceMax(statVal, res.mult, res.bonus);
+      res.max = computeFatiguedMax(rawMax, res.fatigue);
     }
   }
   /**
@@ -502,12 +530,19 @@ function sharedFields(fields) {
   };
 }
 function inventoryFields(fields, { size = "small", location = "stowed", slots = 2 } = {}) {
+  const defaultGridSize = size === "large" ? "2x3" : size === "medium" ? "1x2" : "1x1";
   return {
     quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
     size: new fields.StringField({ initial: size }),
+    gridSize: new fields.StringField({ initial: defaultGridSize }),
     location: new fields.StringField({ initial: location }),
     slots: new fields.NumberField({ initial: slots, integer: true, min: 1 }),
-    isNatural: new fields.BooleanField({ initial: false })
+    isNatural: new fields.BooleanField({ initial: false }),
+    gridX: new fields.NumberField({ initial: null, nullable: true, integer: true, min: 0 }),
+    gridY: new fields.NumberField({ initial: null, nullable: true, integer: true, min: 0 }),
+    gridRotated: new fields.BooleanField({ initial: false }),
+    gridFlipped: new fields.BooleanField({ initial: false }),
+    stackMax: new fields.NumberField({ initial: 99, integer: true, min: 1 })
   };
 }
 function usesFields(fields) {
@@ -685,6 +720,8 @@ class TAMSBackpackData extends foundry.abstract.TypeDataModel {
       equipped: new fields.BooleanField({ initial: false }),
       capacity: new fields.NumberField({ initial: 10, integer: true, min: 0 }),
       modifier: new fields.NumberField({ initial: 0.5, step: 0.1, min: 0 }),
+      gridCols: new fields.NumberField({ initial: 8, integer: true, min: 1 }),
+      gridRows: new fields.NumberField({ initial: 6, integer: true, min: 1 }),
       penalties: new fields.SchemaField({
         active: new fields.BooleanField({ initial: false }),
         strength: new fields.NumberField({ initial: 0, integer: true }),
@@ -796,10 +833,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     cost += (c.movementFlat || 0) * 2;
     cost += Math.floor((c.rollBonus || 0) / 5) * 1;
     cost += Math.floor((c.statIncrease || 0) / 5) * 1;
-    if (c.ignoreArmor > 0) {
-      cost += 1;
-      if (c.ignoreArmor > 1) cost += (c.ignoreArmor - 1) * 2;
-    }
+    cost += c.ignoreArmor || 0;
     if (c.bodyPart !== "none") cost += 2;
     if (c.targetLimb !== "none") cost += 4;
     if (c.fireRate === "burst") cost += 2;
@@ -808,8 +842,9 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     const dsf = parseFloat(c.damageStatFraction) || 0;
     if (dsf > 0) cost += dsf / 0.25 * 1;
     if (c.stun === "crit") cost += 1;
-    else if (c.stun === "guaranteed") cost += 2;
-    cost += (c.healing || 0) * 1;
+    else if (c.stun === "win") cost += 3;
+    else if (c.stun === "guaranteed") cost += 5;
+    cost += Math.floor((c.healing || 0) / 5);
     if (c.drType !== "none") cost += (c.drValue || 0) * 1;
     if (c.bypassDodge) cost *= 2;
     if (c.bypassRetaliation) cost *= 2;
@@ -3792,6 +3827,128 @@ class TAMSActor extends Actor {
       });
     }
   }
+  /**
+   * Build/extend a partial update object that spends `amount` from a resource
+   * (Stamina, or a customResources entry), tracking spentSinceRest for Fatigue.
+   * Synchronous — does not call update() itself, so multiple calls can be merged
+   * into one actor.update() (e.g. a split spend across a custom resource and Stamina).
+   * @param {"stamina"|number|string} resourceKey "stamina", or a customResources index.
+   * @param {number} amount Amount to spend (should be > 0).
+   * @param {object} [updates={}] Partial update object to extend and return.
+   * @returns {object} The extended updates object.
+   */
+  applyResourceSpend(resourceKey, amount, updates = {}) {
+    if (!amount || amount <= 0) return updates;
+    if (resourceKey === "stamina") {
+      const current = updates["system.stamina.value"] ?? this.system.stamina.value;
+      const spent = updates["system.stamina.spentSinceRest"] ?? (this.system.stamina.spentSinceRest ?? 0);
+      updates["system.stamina.value"] = Math.max(0, current - amount);
+      updates["system.stamina.spentSinceRest"] = spent + amount;
+      return updates;
+    }
+    const idx = parseInt(resourceKey);
+    const customResources = updates["system.customResources"] ?? foundry.utils.duplicate(this.system.customResources ?? []);
+    if (!customResources[idx]) return updates;
+    customResources[idx].value = Math.max(0, (customResources[idx].value ?? 0) - amount);
+    customResources[idx].spentSinceRest = (customResources[idx].spentSinceRest ?? 0) + amount;
+    updates["system.customResources"] = customResources;
+    return updates;
+  }
+  /**
+   * Take a Short Rest: refill every resource's current value to its (Fatigue-reduced)
+   * max, and gain Fatigue on any resource that had spending since the last Short Rest.
+   * @returns {Promise<{resources: {name: string, fatigueGained: number, refillAmount: number, newMax: number}[]}>}
+   */
+  async takeShortRest() {
+    const sys = this.system;
+    const updates = {};
+    const resources = [];
+    const staminaSpent = sys.stamina.spentSinceRest ?? 0;
+    const staminaGain = computeShortRestFatigueGain(staminaSpent);
+    const staminaNewFatigue = (sys.stamina.fatigue ?? 0) + staminaGain;
+    const staminaRawMax = computeRawStaminaMax(sys.stats.endurance.total, sys.stamina.mult, sys.traitStaminaExtra);
+    const staminaNewMax = computeFatiguedMax(staminaRawMax, staminaNewFatigue);
+    updates["system.stamina.fatigue"] = staminaNewFatigue;
+    updates["system.stamina.spentSinceRest"] = 0;
+    updates["system.stamina.value"] = staminaNewMax;
+    resources.push({
+      name: game.i18n.localize("TAMS.Stamina"),
+      fatigueGained: staminaGain,
+      refillAmount: Math.max(0, staminaNewMax - sys.stamina.value),
+      newMax: staminaNewMax
+    });
+    const customResources = foundry.utils.duplicate(sys.customResources ?? []);
+    customResources.forEach((res, idx) => {
+      var _a;
+      const spent = res.spentSinceRest ?? 0;
+      const gain = computeShortRestFatigueGain(spent);
+      const newFatigue = (res.fatigue ?? 0) + gain;
+      const statVal = res.stat === "custom" ? res.customValue ?? 10 : ((_a = sys.stats[res.stat]) == null ? void 0 : _a.total) || 0;
+      const rawMax = computeRawResourceMax(statVal, res.mult, res.bonus);
+      const newMax = computeFatiguedMax(rawMax, newFatigue);
+      customResources[idx].fatigue = newFatigue;
+      customResources[idx].spentSinceRest = 0;
+      customResources[idx].value = newMax;
+      resources.push({
+        name: res.name,
+        fatigueGained: gain,
+        refillAmount: Math.max(0, newMax - res.value),
+        newMax
+      });
+    });
+    updates["system.customResources"] = customResources;
+    await this.update(updates);
+    return { resources };
+  }
+  /**
+   * Take a Long Rest: heal Fatigue on every resource via a bundled dinner+sleep tick.
+   * Gated to a rolling-24h use cap (Unsafe = 1, Safe = 3), tracked via a worldTime
+   * timestamp array flag (generalizes the once-per-day medicalAidGiven pattern).
+   * @returns {Promise<{blocked: boolean, cap?: number, resources?: {name: string, fatigueHealed: number, newFatigue: number}[]}>}
+   */
+  async takeLongRest() {
+    var _a;
+    const sys = this.system;
+    const cap = sys.restSafe ? 3 : 1;
+    const daySeconds = 86400;
+    const now = ((_a = game.time) == null ? void 0 : _a.worldTime) ?? 0;
+    const uses = (this.getFlag("tams", "longRestUses") ?? []).filter((t) => now - t < daySeconds);
+    if (uses.length >= cap) {
+      return { blocked: true, cap };
+    }
+    const updates = {};
+    const resources = [];
+    const staminaHeal = computeLongRestFatigueHeal(sys.stats.endurance.total);
+    if (staminaHeal > 0 && (sys.stamina.fatigue ?? 0) > 0) {
+      const newFatigue = Math.max(0, sys.stamina.fatigue - staminaHeal);
+      updates["system.stamina.fatigue"] = newFatigue;
+      resources.push({
+        name: game.i18n.localize("TAMS.Stamina"),
+        fatigueHealed: sys.stamina.fatigue - newFatigue,
+        newFatigue
+      });
+    }
+    const customResources = foundry.utils.duplicate(sys.customResources ?? []);
+    let crChanged = false;
+    customResources.forEach((res, idx) => {
+      var _a2;
+      if ((res.fatigue ?? 0) <= 0) return;
+      const governingStat = res.stat === "custom" ? res.customValue ?? 0 : ((_a2 = sys.stats[res.stat]) == null ? void 0 : _a2.total) ?? 0;
+      const heal = computeLongRestFatigueHeal(governingStat);
+      if (heal <= 0) return;
+      const newFatigue = Math.max(0, res.fatigue - heal);
+      customResources[idx].fatigue = newFatigue;
+      crChanged = true;
+      resources.push({ name: res.name, fatigueHealed: res.fatigue - newFatigue, newFatigue });
+    });
+    if (crChanged) updates["system.customResources"] = customResources;
+    if (resources.length === 0) {
+      return { blocked: false, resources: [] };
+    }
+    await this.update(updates);
+    await this.setFlag("tams", "longRestUses", [...uses, now]);
+    return { blocked: false, resources };
+  }
   /** @override */
   async _onCreateEmbeddedDocuments(embeddedName, documents, result, options, userId) {
     var _a, _b;
@@ -4092,6 +4249,354 @@ function getPartyHonor() {
 function setPartyHonor(data) {
   return game.settings.set("tams", "partyHonor", JSON.stringify(data));
 }
+const SHAPE_CELLS = {
+  "1x1": [[0, 0]],
+  "1x2": [[0, 0], [0, 1]],
+  "1x3": [[0, 0], [0, 1], [0, 2]],
+  "1x4": [[0, 0], [0, 1], [0, 2], [0, 3]],
+  "2x2": [[0, 0], [1, 0], [0, 1], [1, 1]],
+  "2x3": [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2]],
+  "2x4": [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2], [0, 3], [1, 3]],
+  "3x3": [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]],
+  // L-shape: left column 3 tall, bottom-right cell
+  //  X .
+  //  X .
+  //  X X
+  "L": [[0, 0], [0, 1], [0, 2], [1, 2]],
+  // T-shape: top row 3 wide, middle stem
+  //  X X X
+  //  . X .
+  "T": [[0, 0], [1, 0], [2, 0], [1, 1]]
+};
+const GRID_FOOTPRINT = { small: [1, 1], medium: [1, 2], large: [2, 3] };
+const INVENTORY_TYPES = [
+  "weapon",
+  "equipment",
+  "armor",
+  "ammo",
+  "consumable",
+  "tool",
+  "shield",
+  "questItem",
+  "backpack"
+];
+const GRID_CELL = 37;
+function transformCells(cells, rotated, flipped) {
+  let c = cells.map(([x, y]) => [x, y]);
+  if (rotated) {
+    const maxY = Math.max(...c.map(([, y]) => y));
+    c = c.map(([x, y]) => [maxY - y, x]);
+  }
+  if (flipped) {
+    const maxX = Math.max(...c.map(([x]) => x));
+    c = c.map(([x, y]) => [maxX - x, y]);
+  }
+  const minX = Math.min(...c.map(([x]) => x));
+  const minY = Math.min(...c.map(([, y]) => y));
+  return c.map(([x, y]) => [x - minX, y - minY]);
+}
+function getItemCells(item) {
+  var _a, _b, _c, _d, _e, _f;
+  const base = SHAPE_CELLS[(_a = item.system) == null ? void 0 : _a.gridSize];
+  if (!base) {
+    const [w, h] = GRID_FOOTPRINT[(_b = item.system) == null ? void 0 : _b.size] ?? [1, 1];
+    const rect = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) rect.push([x, y]);
+    return transformCells(rect, ((_c = item.system) == null ? void 0 : _c.gridRotated) ?? false, ((_d = item.system) == null ? void 0 : _d.gridFlipped) ?? false);
+  }
+  return transformCells(base, ((_e = item.system) == null ? void 0 : _e.gridRotated) ?? false, ((_f = item.system) == null ? void 0 : _f.gridFlipped) ?? false);
+}
+function gridPlacementValid(actor, draggedItem, cx, cy, cells, containerId) {
+  const occupied = new Set(cells.map(([dx, dy]) => `${cx + dx},${cy + dy}`));
+  for (const it of actor.items) {
+    if (it.id === draggedItem.id) continue;
+    if (!INVENTORY_TYPES.includes(it.type)) continue;
+    if (it.system.gridX === null || it.system.gridX === void 0) continue;
+    const loc = it.system.location;
+    const inSameSpace = containerId ? loc === containerId : loc === "stowed" || loc === "backpack";
+    if (!inSameSpace) continue;
+    for (const [dx, dy] of getItemCells(it)) {
+      if (occupied.has(`${it.system.gridX + dx},${it.system.gridY + dy}`)) return false;
+    }
+  }
+  return true;
+}
+class TAMSContainerGridApp extends foundry.applications.api.HandlebarsApplicationMixin(
+  foundry.applications.api.ApplicationV2
+) {
+  constructor(options = {}) {
+    super(options);
+    this._actor = options.actor;
+    this._containerId = options.containerId;
+    this._currentDragItemId = null;
+    this._dragRotated = null;
+    this._dragFlipped = null;
+    this._lastGridDrop = null;
+    this._lastDragOverEv = null;
+    this._hookIds = [];
+  }
+  get title() {
+    const bp = this._actor.items.get(this._containerId);
+    return (bp == null ? void 0 : bp.name) ?? game.i18n.localize("TAMS.Container");
+  }
+  /** @override */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    const bp = this._actor.items.get(this._containerId);
+    if (!bp) {
+      this.close();
+      return context;
+    }
+    const gridCols = bp.system.gridCols ?? 8;
+    const gridRows = bp.system.gridRows ?? 6;
+    const gridItems = [];
+    const unplacedItems = [];
+    for (const item of this._actor.items) {
+      if (!INVENTORY_TYPES.includes(item.type)) continue;
+      if (item.system.location !== this._containerId) continue;
+      const cells = getItemCells(item);
+      const bw = Math.max(...cells.map(([x]) => x)) + 1;
+      const bh = Math.max(...cells.map(([, y]) => y)) + 1;
+      if (item.system.gridX !== null && item.system.gridX !== void 0) {
+        gridItems.push({ item, cells: cells.map(([dx, dy]) => ({ dx, dy })), bw, bh });
+      } else {
+        unplacedItems.push({ item, gridW: bw, gridH: bh });
+      }
+    }
+    context.gridCols = gridCols;
+    context.gridRows = gridRows;
+    context.gridItems = gridItems;
+    context.unplacedItems = unplacedItems;
+    context.containerId = this._containerId;
+    return context;
+  }
+  /** @override */
+  _onRender(context, options) {
+    super._onRender(context, options);
+    this._setupDragDrop();
+    this._registerHooks();
+  }
+  /** @override */
+  async _onClose(options) {
+    for (const [type, id] of this._hookIds) Hooks.off(type, id);
+    this._hookIds = [];
+    return super._onClose(options);
+  }
+  _registerHooks() {
+    for (const [type, id] of this._hookIds) Hooks.off(type, id);
+    this._hookIds = [];
+    const rerender = (item) => {
+      var _a;
+      if (((_a = item.parent) == null ? void 0 : _a.id) === this._actor.id) this.render();
+    };
+    this._hookIds.push(
+      ["updateItem", Hooks.on("updateItem", rerender)],
+      ["createItem", Hooks.on("createItem", rerender)],
+      ["deleteItem", Hooks.on("deleteItem", rerender)]
+    );
+  }
+  _setupDragDrop() {
+    const el = this.element;
+    if (!el) return;
+    el.querySelectorAll(".grid-item-cell[data-item-id]").forEach((node) => {
+      const itemId = node.dataset.itemId;
+      node.addEventListener("mouseenter", () => {
+        el.querySelectorAll(`.grid-item-cell[data-item-id="${itemId}"]`).forEach((c) => c.classList.add("hovered"));
+      });
+      node.addEventListener("mouseleave", (e2) => {
+        var _a;
+        if ((_a = e2.relatedTarget) == null ? void 0 : _a.closest(`.grid-item-cell[data-item-id="${itemId}"]`)) return;
+        el.querySelectorAll(`.grid-item-cell[data-item-id="${itemId}"]`).forEach((c) => c.classList.remove("hovered"));
+      });
+      node.addEventListener("dragstart", (ev) => this._onItemDragStart(ev, node));
+    });
+    el.querySelectorAll(".shelf-item[data-item-id]").forEach((node) => {
+      node.addEventListener("dragstart", (ev) => this._onItemDragStart(ev, node));
+    });
+    const gridEl = el.querySelector(".tams-inventory-grid");
+    if (gridEl) {
+      gridEl.addEventListener("dragover", (ev) => this._onGridDragOver(ev, gridEl));
+      gridEl.addEventListener("dragleave", (ev) => this._onGridDragLeave(ev, gridEl));
+      gridEl.addEventListener("drop", (ev) => this._onGridDrop(ev, gridEl));
+    }
+    const shelf = el.querySelector(".unplaced-shelf");
+    if (shelf) {
+      shelf.addEventListener("dragover", (ev) => {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "move";
+      });
+      shelf.addEventListener("drop", (ev) => this._onShelfDrop(ev));
+    }
+  }
+  _onItemDragStart(ev, node) {
+    const itemId = node.dataset.itemId;
+    const item = this._actor.items.get(itemId);
+    if (!item) return;
+    this._currentDragItemId = itemId;
+    this._dragRotated = item.system.gridRotated ?? false;
+    this._dragFlipped = item.system.gridFlipped ?? false;
+    const keyHandler = (kev) => {
+      var _a;
+      const gEl = (_a = this.element) == null ? void 0 : _a.querySelector(".tams-inventory-grid");
+      if (kev.key === "r" || kev.key === "R") {
+        kev.preventDefault();
+        this._dragRotated = !this._dragRotated;
+        if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+      } else if (kev.key === "f" || kev.key === "F") {
+        kev.preventDefault();
+        this._dragFlipped = !this._dragFlipped;
+        if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+      }
+    };
+    document.addEventListener("keydown", keyHandler);
+    node.addEventListener("dragend", () => {
+      this._currentDragItemId = null;
+      this._dragRotated = null;
+      this._dragFlipped = null;
+      this._lastDragOverEv = null;
+      document.removeEventListener("keydown", keyHandler);
+    }, { once: true });
+    const dragData = item.toDragData();
+    if (dragData) {
+      const json = JSON.stringify(dragData);
+      ev.dataTransfer.setData("text/plain", json);
+      ev.dataTransfer.setData("application/json", json);
+    }
+  }
+  _onGridDragOver(ev, gridEl) {
+    var _a;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = "move";
+    this._lastDragOverEv = ev;
+    const rect = gridEl.getBoundingClientRect();
+    const cx = Math.floor((ev.clientX - rect.left) / GRID_CELL);
+    const cy = Math.floor((ev.clientY - rect.top) / GRID_CELL);
+    const cols = parseInt(gridEl.dataset.cols);
+    const rows = parseInt(gridEl.dataset.rows);
+    const localItem = this._currentDragItemId ? this._actor.items.get(this._currentDragItemId) : null;
+    const rotated = this._dragRotated ?? (localItem == null ? void 0 : localItem.system.gridRotated) ?? false;
+    const flipped = this._dragFlipped ?? (localItem == null ? void 0 : localItem.system.gridFlipped) ?? false;
+    const baseCells = (localItem && SHAPE_CELLS[(_a = localItem.system) == null ? void 0 : _a.gridSize]) ?? [[0, 0]];
+    const cells = transformCells(baseCells, rotated, flipped);
+    gridEl.querySelectorAll(".grid-preview").forEach((el) => el.remove());
+    const outOfBounds = cells.some(([dx, dy]) => {
+      const px = cx + dx, py = cy + dy;
+      return px < 0 || py < 0 || px >= cols || py >= rows;
+    });
+    const valid = !outOfBounds && (!localItem || gridPlacementValid(this._actor, localItem, cx, cy, cells, this._containerId));
+    for (const [dx, dy] of cells) {
+      const px = cx + dx, py = cy + dy;
+      const cellOob = px < 0 || py < 0 || px >= cols || py >= rows;
+      const preview = document.createElement("div");
+      preview.className = `grid-preview ${valid && !cellOob ? "valid" : "invalid"}`;
+      preview.style.setProperty("--gx", px);
+      preview.style.setProperty("--gy", py);
+      preview.style.setProperty("--gw", 1);
+      preview.style.setProperty("--gh", 1);
+      gridEl.appendChild(preview);
+    }
+    this._lastGridDrop = outOfBounds ? null : { cx, cy };
+  }
+  _onGridDragLeave(ev, gridEl) {
+    if (!gridEl.contains(ev.relatedTarget)) {
+      gridEl.querySelectorAll(".grid-preview").forEach((el) => el.remove());
+      this._lastGridDrop = null;
+    }
+  }
+  async _onGridDrop(ev, gridEl) {
+    var _a, _b;
+    ev.preventDefault();
+    gridEl.querySelectorAll(".grid-preview").forEach((el) => el.remove());
+    const targetCell = this._lastGridDrop;
+    this._lastGridDrop = null;
+    if (!targetCell) return;
+    const data = TextEditor.getDragEventData(ev);
+    if (data.type !== "Item") return;
+    let item;
+    try {
+      item = await Item.fromDropData(data);
+    } catch {
+      return;
+    }
+    if (!item) return;
+    const { cx, cy } = targetCell;
+    const rotated = this._dragRotated ?? item.system.gridRotated ?? false;
+    const flipped = this._dragFlipped ?? item.system.gridFlipped ?? false;
+    const baseCells = SHAPE_CELLS[(_a = item.system) == null ? void 0 : _a.gridSize] ?? [[0, 0]];
+    const cells = transformCells(baseCells, rotated, flipped);
+    const cols = parseInt(gridEl.dataset.cols);
+    const rows = parseInt(gridEl.dataset.rows);
+    const outOfBounds = cells.some(([dx, dy]) => {
+      const px = cx + dx, py = cy + dy;
+      return px < 0 || py < 0 || px >= cols || py >= rows;
+    });
+    if (outOfBounds) {
+      ui.notifications.warn(game.i18n.localize("TAMS.InvalidPlacement"));
+      return;
+    }
+    if (!gridPlacementValid(this._actor, item, cx, cy, cells, this._containerId)) {
+      ui.notifications.warn(game.i18n.localize("TAMS.InvalidPlacement"));
+      return;
+    }
+    if (((_b = item.parent) == null ? void 0 : _b.uuid) === this._actor.uuid) {
+      await item.update({
+        "system.location": this._containerId,
+        "system.gridX": cx,
+        "system.gridY": cy,
+        "system.gridRotated": rotated,
+        "system.gridFlipped": flipped
+      });
+    } else if (this._actor.isOwner) {
+      const itemData = item.toObject();
+      itemData.system.location = this._containerId;
+      itemData.system.gridX = cx;
+      itemData.system.gridY = cy;
+      itemData.system.gridRotated = rotated;
+      itemData.system.gridFlipped = flipped;
+      delete itemData._id;
+      await this._actor.createEmbeddedDocuments("Item", [itemData]);
+    }
+  }
+  async _onShelfDrop(ev) {
+    var _a;
+    ev.preventDefault();
+    const data = TextEditor.getDragEventData(ev);
+    if (data.type !== "Item") return;
+    let item;
+    try {
+      item = await Item.fromDropData(data);
+    } catch {
+      return;
+    }
+    if (!item) return;
+    if (((_a = item.parent) == null ? void 0 : _a.uuid) === this._actor.uuid) {
+      await item.update({
+        "system.location": this._containerId,
+        "system.gridX": null,
+        "system.gridY": null
+      });
+    } else if (this._actor.isOwner) {
+      const itemData = item.toObject();
+      itemData.system.location = this._containerId;
+      itemData.system.gridX = null;
+      itemData.system.gridY = null;
+      delete itemData._id;
+      await this._actor.createEmbeddedDocuments("Item", [itemData]);
+    }
+  }
+}
+/** @override */
+__publicField(TAMSContainerGridApp, "DEFAULT_OPTIONS", {
+  tag: "div",
+  classes: ["tams", "container-grid-app"],
+  position: { width: 360, height: 380 },
+  window: { resizable: true }
+});
+__publicField(TAMSContainerGridApp, "PARTS", {
+  form: {
+    template: "systems/tams/templates/inventory-container.html"
+  }
+});
 const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
 const e$1 = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2) {
@@ -4136,7 +4641,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: _TAMSActorSheet.prototype._onItemSendDescription,
         honorEdit: _TAMSActorSheet.prototype._onHonorEdit,
-        raceRemove: _TAMSActorSheet.prototype._onRaceRemove
+        raceRemove: _TAMSActorSheet.prototype._onRaceRemove,
+        toggleInventoryMode: _TAMSActorSheet.prototype._onToggleInventoryMode,
+        openContainer: _TAMSActorSheet.prototype._onOpenContainer,
+        itemRotate: _TAMSActorSheet.prototype._onItemRotate,
+        itemFlip: _TAMSActorSheet.prototype._onItemFlip
       }
     }, { inplace: false });
   }
@@ -4196,19 +4705,32 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         await this.document.toggleStatusEffect(statusId, { active: false });
       });
     });
-    this.element.querySelectorAll(".tams-rest-stamina").forEach((btn) => {
+    this.element.querySelectorAll(".tams-short-rest").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const actor = this.document;
-        const end = actor.system.stats.endurance.total;
-        const recovery = Math.floor(end / 10);
-        if (recovery <= 0) return;
-        const current = actor.system.stamina.value;
-        const max = actor.system.stamina.max;
-        const newVal = Math.min(max, current + recovery);
-        await actor.update({ "system.stamina.value": newVal });
+        const result = await actor.takeShortRest();
+        const lines = result.resources.filter((r) => r.fatigueGained > 0 || r.refillAmount > 0).map((r) => game.i18n.format("TAMS.Rest.ShortRestLine", { name: r.name, refill: r.refillAmount, fatigue: r.fatigueGained }));
+        if (lines.length === 0) return;
         ChatMessage.create({
           speaker: ChatMessage.getSpeaker({ actor }),
-          content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.StaminaRestMessage", { name: actor.name, amount: recovery })}</div></div>`
+          content: `<div class="tams-roll">${lines.map((l) => `<div class="roll-row">${l}</div>`).join("")}</div>`
+        });
+      });
+    });
+    this.element.querySelectorAll(".tams-long-rest").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const actor = this.document;
+        const result = await actor.takeLongRest();
+        if (result.blocked) {
+          return ui.notifications.warn(game.i18n.format("TAMS.Rest.LongRestBlocked", { cap: result.cap }));
+        }
+        const lines = result.resources.filter((r) => r.fatigueHealed > 0).map((r) => game.i18n.format("TAMS.Rest.LongRestLine", { name: r.name, healed: r.fatigueHealed }));
+        if (lines.length === 0) {
+          return ui.notifications.info(game.i18n.localize("TAMS.Rest.NoFatigue"));
+        }
+        ChatMessage.create({
+          speaker: ChatMessage.getSpeaker({ actor }),
+          content: `<div class="tams-roll">${lines.map((l) => `<div class="roll-row">${l}</div>`).join("")}</div>`
         });
       });
     });
@@ -4298,6 +4820,136 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
       el.addEventListener("drop", () => el.classList.remove("drag-over"));
     });
+    const gridEl = this.element.querySelector(".tams-inventory-grid");
+    if (gridEl) {
+      gridEl.addEventListener("dragover", (ev) => this._onGridDragOver(ev, gridEl));
+      gridEl.addEventListener("dragleave", (ev) => this._onGridDragLeave(ev, gridEl));
+      gridEl.addEventListener("drop", () => {
+        var _a;
+        return (_a = gridEl.querySelector(".grid-preview")) == null ? void 0 : _a.remove();
+      });
+    }
+    const equippedSection = this.element.querySelector(".equipped-slots-section");
+    if (equippedSection) {
+      equippedSection.addEventListener("dragover", (ev) => {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "move";
+        equippedSection.classList.add("drag-over");
+      });
+      equippedSection.addEventListener("dragleave", (ev) => {
+        if (!equippedSection.contains(ev.relatedTarget)) equippedSection.classList.remove("drag-over");
+      });
+      equippedSection.addEventListener("drop", () => equippedSection.classList.remove("drag-over"));
+    }
+    const shelfEl = this.element.querySelector(".unplaced-shelf");
+    if (shelfEl) {
+      shelfEl.addEventListener("dragover", (ev) => {
+        ev.preventDefault();
+        shelfEl.classList.add("drag-over");
+      });
+      shelfEl.addEventListener("dragleave", (ev) => {
+        if (!shelfEl.contains(ev.relatedTarget)) shelfEl.classList.remove("drag-over");
+      });
+      shelfEl.addEventListener("drop", () => shelfEl.classList.remove("drag-over"));
+    }
+    this.element.querySelectorAll(".grid-item-cell[data-item-id]").forEach((el) => {
+      const itemId = el.dataset.itemId;
+      el.addEventListener("mouseenter", () => {
+        this.element.querySelectorAll(`.grid-item-cell[data-item-id="${itemId}"]`).forEach((c) => c.classList.add("hovered"));
+      });
+      el.addEventListener("mouseleave", (e2) => {
+        var _a;
+        if ((_a = e2.relatedTarget) == null ? void 0 : _a.closest(`.grid-item-cell[data-item-id="${itemId}"]`)) return;
+        this.element.querySelectorAll(`.grid-item-cell[data-item-id="${itemId}"]`).forEach((c) => c.classList.remove("hovered"));
+      });
+      el.addEventListener("dragstart", (ev) => {
+        const item = this.document.items.get(itemId);
+        if (!item) return;
+        this._currentDragItemId = itemId;
+        this._dragRotated = item.system.gridRotated ?? false;
+        this._dragFlipped = item.system.gridFlipped ?? false;
+        const keyHandler = (kev) => {
+          var _a;
+          const gEl = (_a = this.element) == null ? void 0 : _a.querySelector(".tams-inventory-grid");
+          if (kev.key === "r" || kev.key === "R") {
+            kev.preventDefault();
+            this._dragRotated = !this._dragRotated;
+            if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+          } else if (kev.key === "f" || kev.key === "F") {
+            kev.preventDefault();
+            this._dragFlipped = !this._dragFlipped;
+            if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+          }
+        };
+        document.addEventListener("keydown", keyHandler);
+        el.addEventListener("dragend", () => {
+          this._currentDragItemId = null;
+          this._dragRotated = null;
+          this._dragFlipped = null;
+          this._lastDragOverEv = null;
+          document.removeEventListener("keydown", keyHandler);
+        }, { once: true });
+        const dragData = item.toDragData();
+        if (dragData) {
+          const json = JSON.stringify(dragData);
+          ev.dataTransfer.setData("text/plain", json);
+          ev.dataTransfer.setData("application/json", json);
+        }
+      });
+      el.addEventListener("click", (ev) => {
+        if (ev.target.closest("a, button, input")) return;
+        const item = this.document.items.get(itemId);
+        if (!item) return;
+        this.element.querySelectorAll(".grid-item-cell.selected, .shelf-item.selected, .equipped-slot.selected").forEach((s) => s.classList.remove("selected"));
+        this.element.querySelectorAll(`.grid-item-cell[data-item-id="${itemId}"]`).forEach((c) => c.classList.add("selected"));
+        this._updateGridInfoBar(item);
+      });
+    });
+    this.element.querySelectorAll(".shelf-item[data-item-id], .equipped-slot[data-item-id]").forEach((el) => {
+      el.addEventListener("dragstart", (ev) => {
+        const itemId = el.dataset.itemId;
+        const item = this.document.items.get(itemId);
+        if (!item) return;
+        this._currentDragItemId = itemId;
+        this._dragRotated = item.system.gridRotated ?? false;
+        this._dragFlipped = item.system.gridFlipped ?? false;
+        const keyHandler = (kev) => {
+          var _a;
+          const gEl = (_a = this.element) == null ? void 0 : _a.querySelector(".tams-inventory-grid");
+          if (kev.key === "r" || kev.key === "R") {
+            kev.preventDefault();
+            this._dragRotated = !this._dragRotated;
+            if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+          } else if (kev.key === "f" || kev.key === "F") {
+            kev.preventDefault();
+            this._dragFlipped = !this._dragFlipped;
+            if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+          }
+        };
+        document.addEventListener("keydown", keyHandler);
+        el.addEventListener("dragend", () => {
+          this._currentDragItemId = null;
+          this._dragRotated = null;
+          this._dragFlipped = null;
+          this._lastDragOverEv = null;
+          document.removeEventListener("keydown", keyHandler);
+        }, { once: true });
+        const dragData = item.toDragData();
+        if (dragData) {
+          const json = JSON.stringify(dragData);
+          ev.dataTransfer.setData("text/plain", json);
+          ev.dataTransfer.setData("application/json", json);
+        }
+      });
+      el.addEventListener("click", (ev) => {
+        if (ev.target.closest("a, button, input")) return;
+        const item = this.document.items.get(el.dataset.itemId);
+        if (!item) return;
+        this.element.querySelectorAll(".grid-item-cell.selected, .shelf-item.selected, .equipped-slot.selected").forEach((s) => s.classList.remove("selected"));
+        el.classList.add("selected");
+        this._updateGridInfoBar(item);
+      });
+    });
   }
   /** @override */
   async _prepareContext(options) {
@@ -4317,6 +4969,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     this._prepareCurrencyData(context);
     this._prepareLimbArmorOptions(context);
     this._prepareHonorData(context);
+    this._inventoryMode ?? (this._inventoryMode = "list");
+    context.inventoryMode = this._inventoryMode;
+    context.gridCols = this.document.system.inventory.gridCols ?? 10;
+    context.gridRows = this.document.system.inventory.gridRows ?? 8;
     const medicineSkill = this.document.items.find((i) => i.type === "skill" && i.name.toLowerCase().includes("medicine"));
     context.medicineSkillFamiliarity = medicineSkill ? parseInt(medicineSkill.system.familiarity) || 0 : 0;
     const skipDisplay = /* @__PURE__ */ new Set(["encumbered"]);
@@ -4570,6 +5226,37 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       ...abilities.map((i) => ({ ...i, sceneType: game.i18n.localize("TAMS.Ability") }))
     ].sort((a, b) => (b.system.usedInScene ? 1 : 0) - (a.system.usedInScene ? 1 : 0) || a.name.localeCompare(b.name));
     context.sceneItems = sceneItems;
+    const gridItemsArr = [];
+    const unplacedArr = [];
+    const equippedArr = [];
+    const containerArr = [];
+    for (const i of allItems) {
+      if (!INVENTORY_TYPES.includes(i.type)) continue;
+      const cells = getItemCells(i);
+      const bw = Math.max(...cells.map(([x]) => x)) + 1;
+      const bh = Math.max(...cells.map(([, y]) => y)) + 1;
+      if (i.system.location === "hand") {
+        equippedArr.push({ item: i, gridW: bw, gridH: bh });
+      } else if (i.type === "backpack") {
+        containerArr.push(i);
+      } else {
+        const gx = i.system.gridX;
+        if (gx !== null && gx !== void 0) {
+          gridItemsArr.push({
+            item: i,
+            cells: cells.map(([dx, dy]) => ({ dx, dy })),
+            bw,
+            bh
+          });
+        } else {
+          unplacedArr.push({ item: i, gridW: bw, gridH: bh });
+        }
+      }
+    }
+    context.gridItems = gridItemsArr;
+    context.unplacedItems = unplacedArr;
+    context.equippedItems = equippedArr;
+    context.containerItems = containerArr;
   }
   /**
    * Prepare options for select fields.
@@ -5033,7 +5720,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughStaminaRecharge", { item: item.name, cost: totalCost, current: actor.system.stamina.value }));
             return;
           }
-          await actor.update({ "system.stamina.value": actor.system.stamina.value - totalCost });
+          await actor.update(actor.applyResourceSpend("stamina", totalCost));
         } else {
           const resIndex = parseInt(resourceId);
           if (!isNaN(resIndex) && actor.system.customResources[resIndex]) {
@@ -5042,7 +5729,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
               ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResourceRecharge", { resource: res.name, item: item.name, cost: totalCost, current: res.value }));
               return;
             }
-            await actor.update({ [`system.customResources.${resIndex}.value`]: res.value - totalCost });
+            await actor.update(actor.applyResourceSpend(resIndex, totalCost));
           }
         }
       }
@@ -5327,7 +6014,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   }
   /** @override */
   async _onDrop(event) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     const data = TextEditor.getDragEventData(event);
     if (data.type !== "Item") return super._onDrop(event);
     let item;
@@ -5356,9 +6043,39 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         return;
       }
     }
+    if (this._inventoryMode === "grid") {
+      const gridEl = event.target.closest(".tams-inventory-grid");
+      if (gridEl) {
+        return this._onGridItemDrop(event, gridEl, item);
+      }
+      const shelf = event.target.closest(".unplaced-shelf");
+      if (shelf) {
+        const isSameActor2 = ((_a = item.parent) == null ? void 0 : _a.uuid) === this.document.uuid;
+        if (isSameActor2) {
+          await item.update({ "system.gridX": null, "system.gridY": null, "system.location": "stowed" });
+          return;
+        }
+      }
+      const equippedSection = event.target.closest(".equipped-slots-section");
+      if (equippedSection) {
+        const isSameActor2 = ((_b = item.parent) == null ? void 0 : _b.uuid) === this.document.uuid;
+        if (isSameActor2) {
+          await item.update({ "system.location": "hand", "system.equipped": true, "system.gridX": null, "system.gridY": null });
+        } else if (this.document.isOwner) {
+          const itemData = item.toObject();
+          itemData.system.location = "hand";
+          itemData.system.equipped = true;
+          itemData.system.gridX = null;
+          itemData.system.gridY = null;
+          delete itemData._id;
+          await this.document.createEmbeddedDocuments("Item", [itemData]);
+        }
+        return;
+      }
+    }
     if (item.type === "race") {
       if (!this.document.isOwner) return;
-      if (((_a = item.parent) == null ? void 0 : _a.uuid) === this.document.uuid) return;
+      if (((_c = item.parent) == null ? void 0 : _c.uuid) === this.document.uuid) return;
       const existing = this.document.items.filter((i) => i.type === "race");
       const previouslyGranted = this.document.items.filter((i) => i.getFlag("tams", "raceGranted"));
       const toDelete = [...existing.map((i) => i.id), ...previouslyGranted.map((i) => i.id)];
@@ -5396,7 +6113,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
       }
     }
-    const isSameActor = ((_b = item.parent) == null ? void 0 : _b.uuid) === this.document.uuid;
+    const isSameActor = ((_d = item.parent) == null ? void 0 : _d.uuid) === this.document.uuid;
     if (isSameActor && ["skill", "ability", "weapon"].includes(item.type) && (targetEl == null ? void 0 : targetEl.dataset.itemId)) {
       const targetItemId = targetEl.dataset.itemId;
       if (targetItemId !== item.id) {
@@ -5423,7 +6140,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         type: "transferItem",
         userId: game.user.id,
         itemData: item.toObject(),
-        sourceActorUuid: (_c = item.parent) == null ? void 0 : _c.uuid,
+        sourceActorUuid: (_e = item.parent) == null ? void 0 : _e.uuid,
         targetActorUuid: this.document.uuid,
         newLocation
       });
@@ -5433,7 +6150,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     try {
       return await tamsHandleItemTransfer({
         itemData: item.toObject(),
-        sourceActorUuid: (_d = item.parent) == null ? void 0 : _d.uuid,
+        sourceActorUuid: (_f = item.parent) == null ? void 0 : _f.uuid,
         targetActorUuid: this.document.uuid,
         newLocation
       });
@@ -5449,6 +6166,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const itemId = li.dataset.itemId;
     const item = this.document.items.get(itemId);
     if (item) {
+      this._currentDragItemId = itemId;
+      li.addEventListener("dragend", () => {
+        this._currentDragItemId = null;
+      }, { once: true });
       const dragData = item.toDragData();
       if (dragData) {
         const jsonData = JSON.stringify(dragData);
@@ -5718,12 +6439,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                 const res = resources.find((r) => r.id === resId);
                 if (res.value < totalCost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughToBoost"));
                 if (resId === "stamina") {
-                  await actor.update({ "system.stamina.value": res.value - totalCost });
+                  await actor.update(actor.applyResourceSpend("stamina", totalCost));
                 } else {
-                  const idx = parseInt(resId);
-                  const customResources = foundry.utils.duplicate(actor.system.customResources);
-                  customResources[idx].value -= totalCost;
-                  await actor.update({ "system.customResources": customResources });
+                  await actor.update(actor.applyResourceSpend(parseInt(resId), totalCost));
                 }
                 await item.update({ "system.uses.value": usesVal + amount });
                 ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.RefilledUses", { amount, item: item.name }));
@@ -5749,7 +6467,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         if (resourceKey === "stamina") {
           const current = this.document.system.stamina.value;
           if (current < effectiveCost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
-          await this.document.update({ "system.stamina.value": current - effectiveCost });
+          await this.document.update(this.document.applyResourceSpend("stamina", effectiveCost));
         } else {
           const idx = parseInt(resourceKey);
           const res = this.document.system.customResources[idx];
@@ -5766,16 +6484,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                 rejectClose: false
               });
               if (!useBoth) return;
-              const resources = foundry.utils.duplicate(this.document.system.customResources);
-              resources[idx].value = 0;
-              await this.document.update({
-                "system.customResources": resources,
-                "system.stamina.value": stamina - remaining
-              });
+              const spendUpdates = this.document.applyResourceSpend(idx, res.value);
+              this.document.applyResourceSpend("stamina", remaining, spendUpdates);
+              await this.document.update(spendUpdates);
             } else {
-              const resources = foundry.utils.duplicate(this.document.system.customResources);
-              resources[idx].value -= effectiveCost;
-              await this.document.update({ "system.customResources": resources });
+              await this.document.update(this.document.applyResourceSpend(idx, effectiveCost));
             }
           }
         }
@@ -6482,6 +7195,241 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       ]
     });
   }
+  // ── Grid inventory ──────────────────────────────────────────────────────────
+  /**
+   * Toggle between list and grid inventory views without a full re-render.
+   */
+  _onToggleInventoryMode() {
+    this._inventoryMode = this._inventoryMode === "grid" ? "list" : "grid";
+    const el = this.element;
+    if (!el) return;
+    const listView = el.querySelector(".inventory-list-view");
+    const gridView = el.querySelector(".inventory-grid-view");
+    if (listView && gridView) {
+      if (this._inventoryMode === "grid") {
+        listView.classList.replace("visible", "hidden");
+        gridView.classList.replace("hidden", "visible");
+      } else {
+        gridView.classList.replace("visible", "hidden");
+        listView.classList.replace("hidden", "visible");
+      }
+    }
+    const btn = el.querySelector('[data-action="toggleInventoryMode"]');
+    if (btn) {
+      btn.title = game.i18n.localize(this._inventoryMode === "grid" ? "TAMS.ListView" : "TAMS.GridView");
+      btn.innerHTML = this._inventoryMode === "grid" ? '<i class="fas fa-list"></i>' : '<i class="fas fa-th"></i>';
+      btn.classList.toggle("active", this._inventoryMode === "grid");
+    }
+  }
+  /**
+   * Open (or focus) the container grid window for a backpack item.
+   */
+  _onOpenContainer(event, target) {
+    var _a;
+    const containerId = target.dataset.containerId;
+    const bp = this.document.items.get(containerId);
+    if (!bp) return;
+    if (!this._openContainers) this._openContainers = /* @__PURE__ */ new Map();
+    const existing = this._openContainers.get(containerId);
+    if (existing && existing.rendered) {
+      (_a = existing.bringToTop) == null ? void 0 : _a.call(existing);
+      return;
+    }
+    const app = new TAMSContainerGridApp({ actor: this.document, containerId });
+    this._openContainers.set(containerId, app);
+    app.render(true);
+  }
+  /**
+   * Handle drop onto the main stowed inventory grid.
+   */
+  async _onGridItemDrop(event, gridEl, item) {
+    var _a, _b, _c, _d;
+    const rect = gridEl.getBoundingClientRect();
+    const cx = Math.floor((event.clientX - rect.left) / GRID_CELL);
+    const cy = Math.floor((event.clientY - rect.top) / GRID_CELL);
+    const rotated = this._dragRotated ?? item.system.gridRotated ?? false;
+    const flipped = this._dragFlipped ?? item.system.gridFlipped ?? false;
+    const baseCells = SHAPE_CELLS[(_a = item.system) == null ? void 0 : _a.gridSize] ?? [[0, 0]];
+    const cells = transformCells(baseCells, rotated, flipped);
+    const cols = parseInt(gridEl.dataset.cols);
+    const rows = parseInt(gridEl.dataset.rows);
+    const outOfBounds = cells.some(([dx, dy]) => {
+      const px = cx + dx, py = cy + dy;
+      return px < 0 || py < 0 || px >= cols || py >= rows;
+    });
+    if (outOfBounds) {
+      ui.notifications.warn(game.i18n.localize("TAMS.InvalidPlacement"));
+      return;
+    }
+    if (!gridPlacementValid(this.document, item, cx, cy, cells, null)) {
+      ui.notifications.warn(game.i18n.localize("TAMS.InvalidPlacement"));
+      return;
+    }
+    const isSameActor = ((_b = item.parent) == null ? void 0 : _b.uuid) === this.document.uuid;
+    if (isSameActor) {
+      await item.update({ "system.gridX": cx, "system.gridY": cy, "system.location": "stowed", "system.gridRotated": rotated, "system.gridFlipped": flipped });
+      return;
+    }
+    if (!this.document.isOwner) {
+      game.socket.emit("system.tams", {
+        type: "transferItem",
+        userId: game.user.id,
+        itemData: { ...item.toObject(), system: { ...item.system, gridX: cx, gridY: cy, location: "stowed", gridRotated: rotated, gridFlipped: flipped } },
+        sourceActorUuid: (_c = item.parent) == null ? void 0 : _c.uuid,
+        targetActorUuid: this.document.uuid,
+        newLocation: "stowed"
+      });
+      return;
+    }
+    const itemData = item.toObject();
+    itemData.system.gridX = cx;
+    itemData.system.gridY = cy;
+    itemData.system.location = "stowed";
+    itemData.system.gridRotated = rotated;
+    itemData.system.gridFlipped = flipped;
+    try {
+      await tamsHandleItemTransfer({
+        itemData,
+        sourceActorUuid: (_d = item.parent) == null ? void 0 : _d.uuid,
+        targetActorUuid: this.document.uuid,
+        newLocation: "stowed"
+      });
+    } catch (err) {
+      console.error("TAMS | grid drop transfer failed", err);
+    }
+  }
+  /**
+   * Grid dragover: show per-cell footprint preview (valid green / invalid red).
+   */
+  _onGridDragOver(ev, gridEl) {
+    var _a;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = "move";
+    const itemId = this._currentDragItemId;
+    if (!itemId) return;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+    this._lastDragOverEv = ev;
+    const rect = gridEl.getBoundingClientRect();
+    const cx = Math.floor((ev.clientX - rect.left) / GRID_CELL);
+    const cy = Math.floor((ev.clientY - rect.top) / GRID_CELL);
+    const rotated = this._dragRotated ?? item.system.gridRotated ?? false;
+    const flipped = this._dragFlipped ?? item.system.gridFlipped ?? false;
+    const baseCells = SHAPE_CELLS[(_a = item.system) == null ? void 0 : _a.gridSize] ?? [[0, 0]];
+    const cells = transformCells(baseCells, rotated, flipped);
+    const cols = parseInt(gridEl.dataset.cols);
+    const rows = parseInt(gridEl.dataset.rows);
+    gridEl.querySelectorAll(".grid-preview").forEach((el) => el.remove());
+    const outOfBounds = cells.some(([dx, dy]) => {
+      const px = cx + dx, py = cy + dy;
+      return px < 0 || py < 0 || px >= cols || py >= rows;
+    });
+    const valid = !outOfBounds && gridPlacementValid(this.document, item, cx, cy, cells, null);
+    for (const [dx, dy] of cells) {
+      const px = cx + dx, py = cy + dy;
+      const cellOob = px < 0 || py < 0 || px >= cols || py >= rows;
+      const preview = document.createElement("div");
+      preview.className = `grid-preview ${valid && !cellOob ? "valid" : "invalid"}`;
+      preview.style.setProperty("--gx", px);
+      preview.style.setProperty("--gy", py);
+      preview.style.setProperty("--gw", 1);
+      preview.style.setProperty("--gh", 1);
+      gridEl.appendChild(preview);
+    }
+  }
+  /**
+   * Grid dragleave: remove per-cell footprint previews.
+   */
+  _onGridDragLeave(ev, gridEl) {
+    if (!gridEl.contains(ev.relatedTarget)) {
+      gridEl.querySelectorAll(".grid-preview").forEach((el) => el.remove());
+    }
+  }
+  /**
+   * Rotate an item (90° CW). Falls back to shelf if it no longer fits at its current position.
+   */
+  async _onItemRotate(event, target) {
+    var _a, _b, _c, _d;
+    const itemId = target.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+    const rotated = !(item.system.gridRotated ?? false);
+    const flipped = item.system.gridFlipped ?? false;
+    const baseCells = SHAPE_CELLS[(_a = item.system) == null ? void 0 : _a.gridSize] ?? [[0, 0]];
+    const newCells = transformCells(baseCells, rotated, flipped);
+    let gridX = item.system.gridX;
+    let gridY = item.system.gridY;
+    if (gridX !== null && gridX !== void 0) {
+      const gridEl = (_b = this.element) == null ? void 0 : _b.querySelector(".tams-inventory-grid");
+      const cols = gridEl ? parseInt(gridEl.dataset.cols) : ((_c = this.document.system.inventory) == null ? void 0 : _c.gridCols) ?? 10;
+      const rows = gridEl ? parseInt(gridEl.dataset.rows) : ((_d = this.document.system.inventory) == null ? void 0 : _d.gridRows) ?? 8;
+      const fakeItem = { id: item.id, system: { ...item.system } };
+      const fits = newCells.every(([dx, dy]) => {
+        const px = gridX + dx, py = gridY + dy;
+        return px >= 0 && py >= 0 && px < cols && py < rows;
+      }) && gridPlacementValid(this.document, fakeItem, gridX, gridY, newCells, null);
+      if (!fits) {
+        gridX = null;
+        gridY = null;
+      }
+    }
+    await item.update({ "system.gridRotated": rotated, "system.gridX": gridX, "system.gridY": gridY });
+    const updatedItem = this.document.items.get(itemId);
+    if (updatedItem) this._updateGridInfoBar(updatedItem);
+  }
+  /**
+   * Flip an item (mirror horizontally). Falls back to shelf if it no longer fits.
+   */
+  async _onItemFlip(event, target) {
+    var _a, _b, _c, _d;
+    const itemId = target.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+    const rotated = item.system.gridRotated ?? false;
+    const flipped = !(item.system.gridFlipped ?? false);
+    const baseCells = SHAPE_CELLS[(_a = item.system) == null ? void 0 : _a.gridSize] ?? [[0, 0]];
+    const newCells = transformCells(baseCells, rotated, flipped);
+    let gridX = item.system.gridX;
+    let gridY = item.system.gridY;
+    if (gridX !== null && gridX !== void 0) {
+      const gridEl = (_b = this.element) == null ? void 0 : _b.querySelector(".tams-inventory-grid");
+      const cols = gridEl ? parseInt(gridEl.dataset.cols) : ((_c = this.document.system.inventory) == null ? void 0 : _c.gridCols) ?? 10;
+      const rows = gridEl ? parseInt(gridEl.dataset.rows) : ((_d = this.document.system.inventory) == null ? void 0 : _d.gridRows) ?? 8;
+      const fakeItem = { id: item.id, system: { ...item.system } };
+      const fits = newCells.every(([dx, dy]) => {
+        const px = gridX + dx, py = gridY + dy;
+        return px >= 0 && py >= 0 && px < cols && py < rows;
+      }) && gridPlacementValid(this.document, fakeItem, gridX, gridY, newCells, null);
+      if (!fits) {
+        gridX = null;
+        gridY = null;
+      }
+    }
+    await item.update({ "system.gridFlipped": flipped, "system.gridX": gridX, "system.gridY": gridY });
+    const updatedItem = this.document.items.get(itemId);
+    if (updatedItem) this._updateGridInfoBar(updatedItem);
+  }
+  /**
+   * Update the info bar at the top of the grid view to show the selected item.
+   */
+  _updateGridInfoBar(item) {
+    var _a;
+    const bar = (_a = this.element) == null ? void 0 : _a.querySelector(".grid-info-bar");
+    if (!bar) return;
+    bar.classList.add("has-item");
+    const img = bar.querySelector(".info-bar-img");
+    if (img) {
+      img.src = item.img;
+      img.alt = item.name;
+    }
+    const nameEl = bar.querySelector(".info-bar-name");
+    if (nameEl) nameEl.textContent = item.name;
+    const typeEl = bar.querySelector(".info-bar-type");
+    if (typeEl) typeEl.textContent = game.i18n.localize(`TYPES.Item.${item.type}`) || item.type;
+    bar.querySelectorAll(".info-action[data-action]").forEach((btn) => {
+      btn.dataset.itemId = item.id;
+    });
+  }
 };
 __publicField(_TAMSActorSheet, "PARTS", {
   form: {
@@ -6761,6 +7709,18 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       "medium": "TAMS.SizeOptions.Medium",
       "large": "TAMS.SizeOptions.Large"
     };
+    context.gridSizeOptions = {
+      "1x1": "TAMS.GridSizeOptions.1x1",
+      "1x2": "TAMS.GridSizeOptions.1x2",
+      "1x3": "TAMS.GridSizeOptions.1x3",
+      "1x4": "TAMS.GridSizeOptions.1x4",
+      "2x2": "TAMS.GridSizeOptions.2x2",
+      "2x3": "TAMS.GridSizeOptions.2x3",
+      "2x4": "TAMS.GridSizeOptions.2x4",
+      "3x3": "TAMS.GridSizeOptions.3x3",
+      "L": "TAMS.GridSizeOptions.L",
+      "T": "TAMS.GridSizeOptions.T"
+    };
     const locationOptions = {
       "stowed": "TAMS.LocationOptions.Stowed",
       "backpack": "TAMS.LocationOptions.Backpack",
@@ -6905,6 +7865,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         stunOptions: {
           "none": "TAMS.CalculatorOptions.None",
           "crit": "TAMS.CalculatorOptions.OnCrit",
+          "win": "TAMS.CalculatorOptions.OnWin",
           "guaranteed": "TAMS.CalculatorOptions.Guaranteed"
         },
         drTypes: {
@@ -7917,6 +8878,10 @@ let TAMSPartyHonorApp = _TAMSPartyHonorApp;
 Hooks.once("init", async function() {
   var _a, _b, _c, _d;
   console.log("TAMS | Initializing Todo's Advanced Modular System");
+  await loadTemplates([
+    "systems/tams/templates/inventory-grid.html",
+    "systems/tams/templates/inventory-container.html"
+  ]);
   game.socket.on("system.tams", (data) => {
     var _a2;
     if (data.type === "updateMessage" && game.user.isGM) {
@@ -8074,6 +9039,7 @@ Hooks.once("init", async function() {
     if (!str) return "";
     return str.toUpperCase();
   });
+  Handlebars.registerHelper("range", (n) => Array.from({ length: Number(n) || 0 }, (_, i) => i));
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
   Hooks.on("createChatMessage", async (msg) => {
     if (!game.user.isGM) return;

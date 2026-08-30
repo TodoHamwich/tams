@@ -394,6 +394,14 @@
                 <a class="tams-medical-aid" title="{{localize 'TAMS.MedicalAid'}}" style="float:right;font-size:12px;font-weight:normal;"><i class="fas fa-medkit"></i> {{localize 'TAMS.MedicalAid'}}</a>
                 {{/if}}
             </h3>
+            <div class="rest-toolbar flexrow" style="align-items:center; gap:8px; margin-bottom:6px;">
+                <button type="button" class="tams-short-rest" title="{{localize 'TAMS.Rest.ShortRestHint'}}">{{localize 'TAMS.Rest.ShortRest'}}</button>
+                <button type="button" class="tams-long-rest" title="{{localize 'TAMS.Rest.LongRestHint'}}">{{localize 'TAMS.Rest.LongRest'}}</button>
+                <label class="flexrow" style="align-items:center; gap:4px; margin-left:auto;">
+                    <input type="checkbox" name="system.restSafe" {{checked system.restSafe}}/>
+                    <span>{{#if system.restSafe}}{{localize 'TAMS.Rest.Safe'}}{{else}}{{localize 'TAMS.Rest.Unsafe'}}{{/if}}</span>
+                </label>
+            </div>
             <ol class="resources-list">
                 {{!-- Main Stamina Resource --}}
                 <li class="resource-item stamina flexcol">
@@ -405,8 +413,8 @@
                                 <div class="fill" style="width: {{staminaPercentage}}%; background: {{system.stamina.color}} !important;"></div>
                             </div>
                             <span class="max-label"> / {{system.stamina.max}} </span>
+                            {{#if system.stamina.fatigue}}<span class="fatigue-badge" title="{{localize 'TAMS.Rest.FatigueTooltip'}}">-{{system.stamina.fatigue}} {{localize 'TAMS.Rest.FatigueShort'}}</span>{{/if}}
                         </div>
-                        <button type="button" class="tams-rest-stamina" title="{{localize 'TAMS.StaminaRest'}}" style="padding: 2px 6px; font-size: 11px; margin-left: 4px; min-width: unset;">{{localize 'TAMS.Rest'}}</button>
                     </div>
                 </li>
 
@@ -421,6 +429,7 @@
                                 <div class="fill" style="width: {{res.percentage}}%; background: {{#if res.isOpposed}}{{res.colorSecondary}}{{else}}{{res.color}}{{/if}} !important; {{#if res.isOpposed}}right: 0; position: absolute;{{/if}}"></div>
                             </div>
                             <span class="max-label"> / {{res.max}} </span>
+                            {{#if res.fatigue}}<span class="fatigue-badge" title="{{localize 'TAMS.Rest.FatigueTooltip'}}">-{{res.fatigue}} {{localize 'TAMS.Rest.FatigueShort'}}</span>{{/if}}
                         </div>
                     </div>
                 </li>
@@ -506,9 +515,17 @@
                     <select class="inventory-sort" title="{{localize 'TAMS.Inventory.SortBy'}}">
                         {{selectOptions inventorySortOptions selected=inventorySort localize=true}}
                     </select>
+                    <button class="inventory-toggle-btn {{#if (eq inventoryMode 'grid')}}active{{/if}}"
+                            type="button"
+                            data-action="toggleInventoryMode"
+                            title="{{#if (eq inventoryMode 'grid')}}{{localize 'TAMS.ListView'}}{{else}}{{localize 'TAMS.GridView'}}{{/if}}">
+                        {{#if (eq inventoryMode 'grid')}}<i class="fas fa-list"></i>{{else}}<i class="fas fa-th"></i>{{/if}}
+                    </button>
                 </div>
             </div>
 
+            {{!-- List view (default) --}}
+            <div class="inventory-list-view {{#if (eq inventoryMode 'grid')}}hidden{{else}}visible{{/if}}">
             <div class="inventory-scroll" data-scrollable data-scroll-id="tab-inventory-scroll">
                 {{#each inventorySections as |section|}}
                 <div class="inventory-section" data-section-id="{{section.id}}">
@@ -602,21 +619,30 @@
                     </ol>
                 </div>
                 {{/each}}
-            </div>
 
-            <div class="currency-footer">
-                <h4 class="inventory-section-header">{{localize 'TAMS.Currencies'}}</h4>
-                <div class="flexrow currency-list" style="flex-wrap: wrap; gap: 5px; margin-bottom: 8px;">
-                    {{#each currencies as |cur|}}
-                    {{#if cur.enabled}}
-                    <div class="currency-item flexrow" style="align-items: center; background: rgba(0,0,0,0.05); padding: 2px 5px; border-radius: 3px; flex: 0 0 120px;">
-                        <label style="font-size: 0.9em; flex: 1;">{{cur.name}}</label>
-                        <input type="number" name="system.currencies.{{cur.name}}" value="{{cur.value}}" style="width: 50px; height: 20px; text-align: right;"/>
+                {{!-- Currencies at bottom of list scroll --}}
+                <div class="currency-footer">
+                    <h4 class="inventory-section-header">{{localize 'TAMS.Currencies'}}</h4>
+                    <div class="flexrow currency-list" style="flex-wrap: wrap; gap: 5px; margin-bottom: 8px;">
+                        {{#each currencies as |cur|}}
+                        {{#if cur.enabled}}
+                        <div class="currency-item flexrow" style="align-items: center; background: rgba(0,0,0,0.05); padding: 2px 5px; border-radius: 3px; flex: 0 0 120px;">
+                            <label style="font-size: 0.9em; flex: 1;">{{cur.name}}</label>
+                            <input type="number" name="system.currencies.{{cur.name}}" value="{{cur.value}}" style="width: 50px; height: 20px; text-align: right;"/>
+                        </div>
+                        {{/if}}
+                        {{/each}}
                     </div>
-                    {{/if}}
-                    {{/each}}
                 </div>
             </div>
+
+            </div>{{!-- /.inventory-list-view --}}
+
+            {{!-- Grid view --}}
+            <div class="inventory-grid-view {{#if (eq inventoryMode 'grid')}}visible{{else}}hidden{{/if}}"
+                 data-scroll-id="tab-inventory-grid-scroll">
+                {{> "systems/tams/templates/inventory-grid.html"}}
+            </div>{{!-- /.inventory-grid-view --}}
         </div>
 
 
