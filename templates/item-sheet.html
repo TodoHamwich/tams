@@ -21,6 +21,10 @@
                 <select name="system.size">
                     {{selectOptions sizeOptions selected=system.size localize=true}}
                 </select>
+                <label>{{localize 'TAMS.GridSize'}}</label>
+                <select name="system.gridSize">
+                    {{selectOptions gridSizeOptions selected=system.gridSize localize=true}}
+                </select>
                 <label>{{localize 'TAMS.Location'}}</label>
                 <select name="system.location">
                     {{selectOptions locationOptions selected=system.location localize=true}}
@@ -351,6 +355,14 @@
             <div class="flexrow">
                 <label title="Multiplier applied to items placed inside this backpack. 0.5 halves their effective size.">{{localize 'TAMS.CarryingModifier'}}</label>
                 <input type="number" name="system.modifier" value="{{system.modifier}}" step="0.1"/>
+            </div>
+            <div class="flexrow">
+                <label title="{{localize 'TAMS.GridColsHint'}}">{{localize 'TAMS.GridCols'}}</label>
+                <input type="number" name="system.gridCols" value="{{system.gridCols}}" min="1" max="20"/>
+            </div>
+            <div class="flexrow">
+                <label title="{{localize 'TAMS.GridRowsHint'}}">{{localize 'TAMS.GridRows'}}</label>
+                <input type="number" name="system.gridRows" value="{{system.gridRows}}" min="1" max="20"/>
             </div>
             <p class="notes" style="font-size: 0.85em; color: #666; font-style: italic; margin-top: 5px; border-left: 3px solid #7a7971; padding-left: 5px;">
                 <b>{{localize 'TAMS.CarryingModifier'}}:</b> {{localize 'TAMS.CarryingModifierNotes'}}

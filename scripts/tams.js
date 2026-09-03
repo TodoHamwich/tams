@@ -502,12 +502,19 @@ function sharedFields(fields) {
   };
 }
 function inventoryFields(fields, { size = "small", location = "stowed", slots = 2 } = {}) {
+  const defaultGridSize = size === "large" ? "2x3" : size === "medium" ? "1x2" : "1x1";
   return {
     quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
     size: new fields.StringField({ initial: size }),
+    gridSize: new fields.StringField({ initial: defaultGridSize }),
     location: new fields.StringField({ initial: location }),
     slots: new fields.NumberField({ initial: slots, integer: true, min: 1 }),
-    isNatural: new fields.BooleanField({ initial: false })
+    isNatural: new fields.BooleanField({ initial: false }),
+    gridX: new fields.NumberField({ initial: null, nullable: true, integer: true, min: 0 }),
+    gridY: new fields.NumberField({ initial: null, nullable: true, integer: true, min: 0 }),
+    gridRotated: new fields.BooleanField({ initial: false }),
+    gridFlipped: new fields.BooleanField({ initial: false }),
+    stackMax: new fields.NumberField({ initial: 99, integer: true, min: 1 })
   };
 }
 function usesFields(fields) {
@@ -685,6 +692,8 @@ class TAMSBackpackData extends foundry.abstract.TypeDataModel {
       equipped: new fields.BooleanField({ initial: false }),
       capacity: new fields.NumberField({ initial: 10, integer: true, min: 0 }),
       modifier: new fields.NumberField({ initial: 0.5, step: 0.1, min: 0 }),
+      gridCols: new fields.NumberField({ initial: 8, integer: true, min: 1 }),
+      gridRows: new fields.NumberField({ initial: 6, integer: true, min: 1 }),
       penalties: new fields.SchemaField({
         active: new fields.BooleanField({ initial: false }),
         strength: new fields.NumberField({ initial: 0, integer: true }),
@@ -4092,6 +4101,363 @@ function getPartyHonor() {
 function setPartyHonor(data) {
   return game.settings.set("tams", "partyHonor", JSON.stringify(data));
 }
+const SHAPE_CELLS = {
+  "1x1": [[0, 0]],
+  "1x2": [[0, 0], [0, 1]],
+  "1x3": [[0, 0], [0, 1], [0, 2]],
+  "1x4": [[0, 0], [0, 1], [0, 2], [0, 3]],
+  "2x2": [[0, 0], [1, 0], [0, 1], [1, 1]],
+  "2x3": [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2]],
+  "2x4": [[0, 0], [1, 0], [0, 1], [1, 1], [0, 2], [1, 2], [0, 3], [1, 3]],
+  "3x3": [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]],
+  // L-shape: left column 3 tall, bottom-right cell
+  //  X .
+  //  X .
+  //  X X
+  "L": [[0, 0], [0, 1], [0, 2], [1, 2]],
+  // T-shape: top row 3 wide, middle stem
+  //  X X X
+  //  . X .
+  "T": [[0, 0], [1, 0], [2, 0], [1, 1]]
+};
+const GRID_FOOTPRINT = { small: [1, 1], medium: [1, 2], large: [2, 3] };
+const INVENTORY_TYPES = [
+  "weapon",
+  "equipment",
+  "armor",
+  "ammo",
+  "consumable",
+  "tool",
+  "shield",
+  "questItem",
+  "backpack"
+];
+const GRID_CELL = 37;
+const MAIN_GRID_COLS = 10;
+const MAIN_GRID_ROWS = 8;
+function transformCells(cells, rotated, flipped) {
+  let c = cells.map(([x, y]) => [x, y]);
+  if (rotated) {
+    const maxY = Math.max(...c.map(([, y]) => y));
+    c = c.map(([x, y]) => [maxY - y, x]);
+  }
+  if (flipped) {
+    const maxX = Math.max(...c.map(([x]) => x));
+    c = c.map(([x, y]) => [maxX - x, y]);
+  }
+  const minX = Math.min(...c.map(([x]) => x));
+  const minY = Math.min(...c.map(([, y]) => y));
+  return c.map(([x, y]) => [x - minX, y - minY]);
+}
+function getItemCells(item) {
+  var _a, _b, _c, _d, _e, _f;
+  const base = SHAPE_CELLS[(_a = item.system) == null ? void 0 : _a.gridSize];
+  if (!base) {
+    const [w, h] = GRID_FOOTPRINT[(_b = item.system) == null ? void 0 : _b.size] ?? [1, 1];
+    const rect = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) rect.push([x, y]);
+    return transformCells(rect, ((_c = item.system) == null ? void 0 : _c.gridRotated) ?? false, ((_d = item.system) == null ? void 0 : _d.gridFlipped) ?? false);
+  }
+  return transformCells(base, ((_e = item.system) == null ? void 0 : _e.gridRotated) ?? false, ((_f = item.system) == null ? void 0 : _f.gridFlipped) ?? false);
+}
+function getFootprint(item) {
+  const cells = getItemCells(item);
+  return [
+    Math.max(...cells.map(([x]) => x)) + 1,
+    Math.max(...cells.map(([, y]) => y)) + 1
+  ];
+}
+function gridPlacementValid(actor, draggedItem, cx, cy, cells, containerId) {
+  const occupied = new Set(cells.map(([dx, dy]) => `${cx + dx},${cy + dy}`));
+  for (const it of actor.items) {
+    if (it.id === draggedItem.id) continue;
+    if (!INVENTORY_TYPES.includes(it.type)) continue;
+    if (it.system.gridX === null || it.system.gridX === void 0) continue;
+    const loc = it.system.location;
+    const inSameSpace = containerId ? loc === containerId : loc === "stowed" || loc === "backpack";
+    if (!inSameSpace) continue;
+    for (const [dx, dy] of getItemCells(it)) {
+      if (occupied.has(`${it.system.gridX + dx},${it.system.gridY + dy}`)) return false;
+    }
+  }
+  return true;
+}
+class TAMSContainerGridApp extends foundry.applications.api.HandlebarsApplicationMixin(
+  foundry.applications.api.ApplicationV2
+) {
+  constructor(options = {}) {
+    super(options);
+    this._actor = options.actor;
+    this._containerId = options.containerId;
+    this._currentDragItemId = null;
+    this._dragRotated = null;
+    this._dragFlipped = null;
+    this._lastGridDrop = null;
+    this._lastDragOverEv = null;
+    this._hookIds = [];
+  }
+  get title() {
+    const bp = this._actor.items.get(this._containerId);
+    return (bp == null ? void 0 : bp.name) ?? game.i18n.localize("TAMS.Container");
+  }
+  /** @override */
+  async _prepareContext(options) {
+    const context = await super._prepareContext(options);
+    const bp = this._actor.items.get(this._containerId);
+    if (!bp) {
+      this.close();
+      return context;
+    }
+    const gridCols = bp.system.gridCols ?? 8;
+    const gridRows = bp.system.gridRows ?? 6;
+    const gridItems = [];
+    const unplacedItems = [];
+    for (const item of this._actor.items) {
+      if (!INVENTORY_TYPES.includes(item.type)) continue;
+      if (item.system.location !== this._containerId) continue;
+      const cells = getItemCells(item);
+      const bw = Math.max(...cells.map(([x]) => x)) + 1;
+      const bh = Math.max(...cells.map(([, y]) => y)) + 1;
+      if (item.system.gridX !== null && item.system.gridX !== void 0) {
+        gridItems.push({ item, cells: cells.map(([dx, dy]) => ({ dx, dy })), bw, bh });
+      } else {
+        unplacedItems.push({ item, gridW: bw, gridH: bh });
+      }
+    }
+    context.gridCols = gridCols;
+    context.gridRows = gridRows;
+    context.gridItems = gridItems;
+    context.unplacedItems = unplacedItems;
+    context.containerId = this._containerId;
+    return context;
+  }
+  /** @override */
+  _onRender(context, options) {
+    super._onRender(context, options);
+    this._setupDragDrop();
+    this._registerHooks();
+  }
+  /** @override */
+  async _onClose(options) {
+    for (const [type, id] of this._hookIds) Hooks.off(type, id);
+    this._hookIds = [];
+    return super._onClose(options);
+  }
+  _registerHooks() {
+    for (const [type, id] of this._hookIds) Hooks.off(type, id);
+    this._hookIds = [];
+    const rerender = (item) => {
+      var _a;
+      if (((_a = item.parent) == null ? void 0 : _a.id) === this._actor.id) this.render();
+    };
+    this._hookIds.push(
+      ["updateItem", Hooks.on("updateItem", rerender)],
+      ["createItem", Hooks.on("createItem", rerender)],
+      ["deleteItem", Hooks.on("deleteItem", rerender)]
+    );
+  }
+  _setupDragDrop() {
+    const el = this.element;
+    if (!el) return;
+    el.querySelectorAll(".grid-item-cell[data-item-id]").forEach((node) => {
+      const itemId = node.dataset.itemId;
+      node.addEventListener("mouseenter", () => {
+        el.querySelectorAll(`.grid-item-cell[data-item-id="${itemId}"]`).forEach((c) => c.classList.add("hovered"));
+      });
+      node.addEventListener("mouseleave", (e2) => {
+        var _a;
+        if ((_a = e2.relatedTarget) == null ? void 0 : _a.closest(`.grid-item-cell[data-item-id="${itemId}"]`)) return;
+        el.querySelectorAll(`.grid-item-cell[data-item-id="${itemId}"]`).forEach((c) => c.classList.remove("hovered"));
+      });
+      node.addEventListener("dragstart", (ev) => this._onItemDragStart(ev, node));
+    });
+    el.querySelectorAll(".shelf-item[data-item-id]").forEach((node) => {
+      node.addEventListener("dragstart", (ev) => this._onItemDragStart(ev, node));
+    });
+    const gridEl = el.querySelector(".tams-inventory-grid");
+    if (gridEl) {
+      gridEl.addEventListener("dragover", (ev) => this._onGridDragOver(ev, gridEl));
+      gridEl.addEventListener("dragleave", (ev) => this._onGridDragLeave(ev, gridEl));
+      gridEl.addEventListener("drop", (ev) => this._onGridDrop(ev, gridEl));
+    }
+    const shelf = el.querySelector(".unplaced-shelf");
+    if (shelf) {
+      shelf.addEventListener("dragover", (ev) => {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "move";
+      });
+      shelf.addEventListener("drop", (ev) => this._onShelfDrop(ev));
+    }
+  }
+  _onItemDragStart(ev, node) {
+    const itemId = node.dataset.itemId;
+    const item = this._actor.items.get(itemId);
+    if (!item) return;
+    this._currentDragItemId = itemId;
+    this._dragRotated = item.system.gridRotated ?? false;
+    this._dragFlipped = item.system.gridFlipped ?? false;
+    const keyHandler = (kev) => {
+      var _a;
+      const gEl = (_a = this.element) == null ? void 0 : _a.querySelector(".tams-inventory-grid");
+      if (kev.key === "r" || kev.key === "R") {
+        kev.preventDefault();
+        this._dragRotated = !this._dragRotated;
+        if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+      } else if (kev.key === "f" || kev.key === "F") {
+        kev.preventDefault();
+        this._dragFlipped = !this._dragFlipped;
+        if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+      }
+    };
+    document.addEventListener("keydown", keyHandler);
+    node.addEventListener("dragend", () => {
+      this._currentDragItemId = null;
+      this._dragRotated = null;
+      this._dragFlipped = null;
+      this._lastDragOverEv = null;
+      document.removeEventListener("keydown", keyHandler);
+    }, { once: true });
+    const dragData = item.toDragData();
+    if (dragData) {
+      const json = JSON.stringify(dragData);
+      ev.dataTransfer.setData("text/plain", json);
+      ev.dataTransfer.setData("application/json", json);
+    }
+  }
+  _onGridDragOver(ev, gridEl) {
+    var _a;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = "move";
+    this._lastDragOverEv = ev;
+    const rect = gridEl.getBoundingClientRect();
+    const cx = Math.floor((ev.clientX - rect.left) / GRID_CELL);
+    const cy = Math.floor((ev.clientY - rect.top) / GRID_CELL);
+    const cols = parseInt(gridEl.dataset.cols);
+    const rows = parseInt(gridEl.dataset.rows);
+    const localItem = this._currentDragItemId ? this._actor.items.get(this._currentDragItemId) : null;
+    const rotated = this._dragRotated ?? (localItem == null ? void 0 : localItem.system.gridRotated) ?? false;
+    const flipped = this._dragFlipped ?? (localItem == null ? void 0 : localItem.system.gridFlipped) ?? false;
+    const baseCells = (localItem && SHAPE_CELLS[(_a = localItem.system) == null ? void 0 : _a.gridSize]) ?? [[0, 0]];
+    const cells = transformCells(baseCells, rotated, flipped);
+    gridEl.querySelectorAll(".grid-preview").forEach((el) => el.remove());
+    const outOfBounds = cells.some(([dx, dy]) => {
+      const px = cx + dx, py = cy + dy;
+      return px < 0 || py < 0 || px >= cols || py >= rows;
+    });
+    const valid = !outOfBounds && (!localItem || gridPlacementValid(this._actor, localItem, cx, cy, cells, this._containerId));
+    for (const [dx, dy] of cells) {
+      const px = cx + dx, py = cy + dy;
+      const cellOob = px < 0 || py < 0 || px >= cols || py >= rows;
+      const preview = document.createElement("div");
+      preview.className = `grid-preview ${valid && !cellOob ? "valid" : "invalid"}`;
+      preview.style.setProperty("--gx", px);
+      preview.style.setProperty("--gy", py);
+      preview.style.setProperty("--gw", 1);
+      preview.style.setProperty("--gh", 1);
+      gridEl.appendChild(preview);
+    }
+    this._lastGridDrop = outOfBounds ? null : { cx, cy };
+  }
+  _onGridDragLeave(ev, gridEl) {
+    if (!gridEl.contains(ev.relatedTarget)) {
+      gridEl.querySelectorAll(".grid-preview").forEach((el) => el.remove());
+      this._lastGridDrop = null;
+    }
+  }
+  async _onGridDrop(ev, gridEl) {
+    var _a, _b;
+    ev.preventDefault();
+    gridEl.querySelectorAll(".grid-preview").forEach((el) => el.remove());
+    const targetCell = this._lastGridDrop;
+    this._lastGridDrop = null;
+    if (!targetCell) return;
+    const data = TextEditor.getDragEventData(ev);
+    if (data.type !== "Item") return;
+    let item;
+    try {
+      item = await Item.fromDropData(data);
+    } catch {
+      return;
+    }
+    if (!item) return;
+    const { cx, cy } = targetCell;
+    const rotated = this._dragRotated ?? item.system.gridRotated ?? false;
+    const flipped = this._dragFlipped ?? item.system.gridFlipped ?? false;
+    const baseCells = SHAPE_CELLS[(_a = item.system) == null ? void 0 : _a.gridSize] ?? [[0, 0]];
+    const cells = transformCells(baseCells, rotated, flipped);
+    const cols = parseInt(gridEl.dataset.cols);
+    const rows = parseInt(gridEl.dataset.rows);
+    const outOfBounds = cells.some(([dx, dy]) => {
+      const px = cx + dx, py = cy + dy;
+      return px < 0 || py < 0 || px >= cols || py >= rows;
+    });
+    if (outOfBounds) {
+      ui.notifications.warn(game.i18n.localize("TAMS.InvalidPlacement"));
+      return;
+    }
+    if (!gridPlacementValid(this._actor, item, cx, cy, cells, this._containerId)) {
+      ui.notifications.warn(game.i18n.localize("TAMS.InvalidPlacement"));
+      return;
+    }
+    if (((_b = item.parent) == null ? void 0 : _b.uuid) === this._actor.uuid) {
+      await item.update({
+        "system.location": this._containerId,
+        "system.gridX": cx,
+        "system.gridY": cy,
+        "system.gridRotated": rotated,
+        "system.gridFlipped": flipped
+      });
+    } else if (this._actor.isOwner) {
+      const itemData = item.toObject();
+      itemData.system.location = this._containerId;
+      itemData.system.gridX = cx;
+      itemData.system.gridY = cy;
+      itemData.system.gridRotated = rotated;
+      itemData.system.gridFlipped = flipped;
+      delete itemData._id;
+      await this._actor.createEmbeddedDocuments("Item", [itemData]);
+    }
+  }
+  async _onShelfDrop(ev) {
+    var _a;
+    ev.preventDefault();
+    const data = TextEditor.getDragEventData(ev);
+    if (data.type !== "Item") return;
+    let item;
+    try {
+      item = await Item.fromDropData(data);
+    } catch {
+      return;
+    }
+    if (!item) return;
+    if (((_a = item.parent) == null ? void 0 : _a.uuid) === this._actor.uuid) {
+      await item.update({
+        "system.location": this._containerId,
+        "system.gridX": null,
+        "system.gridY": null
+      });
+    } else if (this._actor.isOwner) {
+      const itemData = item.toObject();
+      itemData.system.location = this._containerId;
+      itemData.system.gridX = null;
+      itemData.system.gridY = null;
+      delete itemData._id;
+      await this._actor.createEmbeddedDocuments("Item", [itemData]);
+    }
+  }
+}
+/** @override */
+__publicField(TAMSContainerGridApp, "DEFAULT_OPTIONS", {
+  tag: "div",
+  classes: ["tams", "container-grid-app"],
+  position: { width: 360, height: 380 },
+  window: { resizable: true }
+});
+__publicField(TAMSContainerGridApp, "PARTS", {
+  form: {
+    template: "systems/tams/templates/inventory-container.html"
+  }
+});
 const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
 const e$1 = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2) {
@@ -4136,7 +4502,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         callGroupCheck: _TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: _TAMSActorSheet.prototype._onItemSendDescription,
         honorEdit: _TAMSActorSheet.prototype._onHonorEdit,
-        raceRemove: _TAMSActorSheet.prototype._onRaceRemove
+        raceRemove: _TAMSActorSheet.prototype._onRaceRemove,
+        setInventoryView: _TAMSActorSheet.prototype._onSetInventoryView,
+        itemRotate: _TAMSActorSheet.prototype._onItemRotate,
+        itemFlip: _TAMSActorSheet.prototype._onItemFlip,
+        openContainer: _TAMSActorSheet.prototype._onOpenContainer
       }
     }, { inplace: false });
   }
@@ -4298,6 +4668,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
       el.addEventListener("drop", () => el.classList.remove("drag-over"));
     });
+    this._setupGridDragDrop();
+    this._updateGridInfoBar();
   }
   /** @override */
   async _prepareContext(options) {
@@ -4564,6 +4936,27 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     context.traits = traits;
     const raceDoc = this.document.items.find((i) => i.type === "race") ?? null;
     context.raceItem = raceDoc ? { id: raceDoc.id, name: raceDoc.name, img: raceDoc.img, system: raceDoc.system } : null;
+    context.inventoryView = this._inventoryView || "list";
+    context.gridCols = MAIN_GRID_COLS;
+    context.gridRows = MAIN_GRID_ROWS;
+    context.containerItems = inventoryBackpacks;
+    context.equippedItems = allItems.filter((i) => INVENTORY_TYPES.includes(i.type) && i.isEquipped).map((i) => {
+      const [bw, bh] = getFootprint(i);
+      return { item: i, gridW: bw, gridH: bh };
+    });
+    const gridItems = [];
+    const unplacedItems = [];
+    for (const i of allItems) {
+      if (!INVENTORY_TYPES.includes(i.type) || i.isEquipped || i.system.location !== "stowed") continue;
+      const [bw, bh] = getFootprint(i);
+      if (i.system.gridX !== null && i.system.gridX !== void 0) {
+        gridItems.push({ item: i, cells: getItemCells(i).map(([dx, dy]) => ({ dx, dy })), bw, bh });
+      } else {
+        unplacedItems.push({ item: i, gridW: bw, gridH: bh });
+      }
+    }
+    context.gridItems = gridItems;
+    context.unplacedItems = unplacedItems;
     const sceneItems = [
       ...weapons.map((i) => ({ ...i, sceneType: game.i18n.localize("TAMS.Weapon") })),
       ...skills.map((i) => ({ ...i, sceneType: game.i18n.localize("TAMS.Skill") })),
@@ -5101,7 +5494,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    */
   _resolveItemId(target) {
     var _a;
-    return target.dataset.itemId || ((_a = target.closest(".item")) == null ? void 0 : _a.dataset.itemId);
+    return target.dataset.itemId || ((_a = target.closest(".item")) == null ? void 0 : _a.dataset.itemId) || this._selectedGridItemId;
   }
   /**
    * Check whether the configured equip (hand) limit has been reached.
@@ -5327,7 +5720,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   }
   /** @override */
   async _onDrop(event) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     const data = TextEditor.getDragEventData(event);
     if (data.type !== "Item") return super._onDrop(event);
     let item;
@@ -5378,6 +5771,43 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
       return;
     }
+    const gridDropEl = event.target.closest(".tams-inventory-grid");
+    const shelfDropEl = event.target.closest(".unplaced-shelf");
+    const equipZoneEl = event.target.closest(".equipped-slots-section");
+    const isGridSameActor = ((_b = item.parent) == null ? void 0 : _b.uuid) === this.document.uuid;
+    if (equipZoneEl && isGridSameActor) {
+      if (item.type === "weapon") {
+        if (this._equipLimitReached("hand")) return;
+        return item.update({ "system.location": "hand" });
+      }
+      if (["armor", "shield", "backpack"].includes(item.type)) {
+        if (item.type === "shield" && this._equipLimitReached("hand")) return;
+        return item.update({ "system.equipped": true });
+      }
+      return;
+    }
+    if (gridDropEl && isGridSameActor) {
+      const cell = this._lastGridDrop;
+      this._lastGridDrop = null;
+      gridDropEl.querySelectorAll(".grid-preview").forEach((n) => n.remove());
+      if (!cell) return;
+      const { cx, cy, rotated, flipped } = cell;
+      const cells = transformCells(SHAPE_CELLS[(_c = item.system) == null ? void 0 : _c.gridSize] ?? [[0, 0]], rotated, flipped);
+      if (!gridPlacementValid(this.document, item, cx, cy, cells, null)) {
+        ui.notifications.warn(game.i18n.localize("TAMS.InvalidPlacement"));
+        return;
+      }
+      return item.update({
+        "system.location": "stowed",
+        "system.gridX": cx,
+        "system.gridY": cy,
+        "system.gridRotated": rotated,
+        "system.gridFlipped": flipped
+      });
+    }
+    if (shelfDropEl && isGridSameActor) {
+      return item.update({ "system.location": "stowed", "system.gridX": null, "system.gridY": null });
+    }
     const targetEl = event.target.closest(".item[data-item-id], .inventory-section[data-section-id]");
     let newLocation = "";
     if (targetEl) {
@@ -5395,8 +5825,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           newLocation = targetItem.system.location || "stowed";
         }
       }
+    } else if (gridDropEl || shelfDropEl || equipZoneEl) {
+      newLocation = "stowed";
     }
-    const isSameActor = ((_b = item.parent) == null ? void 0 : _b.uuid) === this.document.uuid;
+    const isSameActor = ((_d = item.parent) == null ? void 0 : _d.uuid) === this.document.uuid;
     if (isSameActor && ["skill", "ability", "weapon"].includes(item.type) && (targetEl == null ? void 0 : targetEl.dataset.itemId)) {
       const targetItemId = targetEl.dataset.itemId;
       if (targetItemId !== item.id) {
@@ -5423,7 +5855,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         type: "transferItem",
         userId: game.user.id,
         itemData: item.toObject(),
-        sourceActorUuid: (_c = item.parent) == null ? void 0 : _c.uuid,
+        sourceActorUuid: (_e = item.parent) == null ? void 0 : _e.uuid,
         targetActorUuid: this.document.uuid,
         newLocation
       });
@@ -5433,7 +5865,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     try {
       return await tamsHandleItemTransfer({
         itemData: item.toObject(),
-        sourceActorUuid: (_d = item.parent) == null ? void 0 : _d.uuid,
+        sourceActorUuid: (_f = item.parent) == null ? void 0 : _f.uuid,
         targetActorUuid: this.document.uuid,
         newLocation
       });
@@ -5458,6 +5890,200 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
     }
     return super._onDragStart(event);
+  }
+  /**
+   * Toggle between the list and grid inventory views.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element carrying `data-view`.
+   * @protected
+   */
+  _onSetInventoryView(event, target) {
+    const view = target.dataset.view === "grid" ? "grid" : "list";
+    this._inventoryView = view;
+    const listEl = this.element.querySelector(".inventory-list-view");
+    const gridEl = this.element.querySelector(".inventory-grid-view");
+    listEl == null ? void 0 : listEl.classList.toggle("visible", view === "list");
+    listEl == null ? void 0 : listEl.classList.toggle("hidden", view !== "list");
+    gridEl == null ? void 0 : gridEl.classList.toggle("visible", view === "grid");
+    gridEl == null ? void 0 : gridEl.classList.toggle("hidden", view !== "grid");
+    this.element.querySelectorAll(".inventory-toggle-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.view === view);
+    });
+  }
+  /**
+   * Toggle 90° rotation on the currently selected grid item.
+   * @protected
+   */
+  async _onItemRotate(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+    return item.update({ "system.gridRotated": !item.system.gridRotated });
+  }
+  /**
+   * Toggle horizontal flip on the currently selected grid item.
+   * @protected
+   */
+  async _onItemFlip(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+    return item.update({ "system.gridFlipped": !item.system.gridFlipped });
+  }
+  /**
+   * Open (or focus) the floating sub-grid window for a backpack.
+   * @protected
+   */
+  _onOpenContainer(event, target) {
+    const containerId = target.dataset.containerId || this._resolveItemId(target);
+    if (!containerId) return;
+    this._containerApps ?? (this._containerApps = /* @__PURE__ */ new Map());
+    let app = this._containerApps.get(containerId);
+    if (!app || !app.rendered) {
+      app = new TAMSContainerGridApp({ actor: this.document, containerId });
+      this._containerApps.set(containerId, app);
+    }
+    app.render(true);
+  }
+  /**
+   * Wire up drag/drop for the main stowed grid, unplaced shelf, and equip zone,
+   * plus click-to-select coordination for the info bar. Mirrors the equivalent
+   * logic in `TAMSContainerGridApp` (`inventory-container-app.js`) for a backpack's
+   * own sub-grid.
+   * @protected
+   */
+  _setupGridDragDrop() {
+    const el = this.element;
+    if (!el) return;
+    el.querySelectorAll(".grid-item-cell[data-item-id], .shelf-item[data-item-id], .equipped-slot[data-item-id]").forEach((node) => {
+      node.addEventListener("dragstart", (ev) => this._onGridItemDragStart(ev, node));
+      node.addEventListener("click", (ev) => {
+        if (ev.target.closest("a[data-action]")) return;
+        this._selectedGridItemId = node.dataset.itemId;
+        this._updateGridInfoBar();
+      });
+    });
+    const gridEl = el.querySelector(".tams-inventory-grid");
+    if (gridEl) {
+      gridEl.addEventListener("dragover", (ev) => this._onGridDragOver(ev, gridEl));
+      gridEl.addEventListener("dragleave", (ev) => this._onGridDragLeave(ev, gridEl));
+    }
+    const shelf = el.querySelector(".unplaced-shelf");
+    if (shelf) {
+      shelf.addEventListener("dragover", (ev) => {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "move";
+      });
+    }
+    const equipZone = el.querySelector(".equipped-slots-section");
+    if (equipZone) {
+      equipZone.addEventListener("dragover", (ev) => {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "move";
+      });
+    }
+  }
+  _onGridItemDragStart(ev, node) {
+    const itemId = node.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+    this._currentDragItemId = itemId;
+    this._dragRotated = item.system.gridRotated ?? false;
+    this._dragFlipped = item.system.gridFlipped ?? false;
+    const keyHandler = (kev) => {
+      var _a;
+      const gEl = (_a = this.element) == null ? void 0 : _a.querySelector(".tams-inventory-grid");
+      if (kev.key === "r" || kev.key === "R") {
+        kev.preventDefault();
+        this._dragRotated = !this._dragRotated;
+        if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+      } else if (kev.key === "f" || kev.key === "F") {
+        kev.preventDefault();
+        this._dragFlipped = !this._dragFlipped;
+        if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+      }
+    };
+    document.addEventListener("keydown", keyHandler);
+    node.addEventListener("dragend", () => {
+      this._currentDragItemId = null;
+      this._dragRotated = null;
+      this._dragFlipped = null;
+      this._lastDragOverEv = null;
+      this._lastGridDrop = null;
+      document.removeEventListener("keydown", keyHandler);
+    }, { once: true });
+    const dragData = item.toDragData();
+    if (dragData) {
+      const json = JSON.stringify(dragData);
+      ev.dataTransfer.setData("text/plain", json);
+      ev.dataTransfer.setData("application/json", json);
+    }
+  }
+  _onGridDragOver(ev, gridEl) {
+    var _a;
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = "move";
+    this._lastDragOverEv = ev;
+    const rect = gridEl.getBoundingClientRect();
+    const cx = Math.floor((ev.clientX - rect.left) / GRID_CELL);
+    const cy = Math.floor((ev.clientY - rect.top) / GRID_CELL);
+    const cols = MAIN_GRID_COLS, rows = MAIN_GRID_ROWS;
+    const localItem = this._currentDragItemId ? this.document.items.get(this._currentDragItemId) : null;
+    const rotated = this._dragRotated ?? (localItem == null ? void 0 : localItem.system.gridRotated) ?? false;
+    const flipped = this._dragFlipped ?? (localItem == null ? void 0 : localItem.system.gridFlipped) ?? false;
+    const baseCells = (localItem && SHAPE_CELLS[(_a = localItem.system) == null ? void 0 : _a.gridSize]) ?? [[0, 0]];
+    const cells = transformCells(baseCells, rotated, flipped);
+    gridEl.querySelectorAll(".grid-preview").forEach((n) => n.remove());
+    const outOfBounds = cells.some(([dx, dy]) => {
+      const px = cx + dx, py = cy + dy;
+      return px < 0 || py < 0 || px >= cols || py >= rows;
+    });
+    const valid = !outOfBounds && (!localItem || gridPlacementValid(this.document, localItem, cx, cy, cells, null));
+    for (const [dx, dy] of cells) {
+      const px = cx + dx, py = cy + dy;
+      const cellOob = px < 0 || py < 0 || px >= cols || py >= rows;
+      const preview = document.createElement("div");
+      preview.className = `grid-preview ${valid && !cellOob ? "valid" : "invalid"}`;
+      preview.style.setProperty("--gx", px);
+      preview.style.setProperty("--gy", py);
+      gridEl.appendChild(preview);
+    }
+    this._lastGridDrop = outOfBounds ? null : { cx, cy, rotated, flipped };
+  }
+  _onGridDragLeave(ev, gridEl) {
+    if (!gridEl.contains(ev.relatedTarget)) {
+      gridEl.querySelectorAll(".grid-preview").forEach((n) => n.remove());
+      this._lastGridDrop = null;
+    }
+  }
+  /**
+   * Sync the `.selected` class across grid cells/shelf/equipped slots and refresh
+   * the info bar contents to match `this._selectedGridItemId`, without a full render.
+   * @protected
+   */
+  _updateGridInfoBar() {
+    const el = this.element;
+    if (!el) return;
+    const bar = el.querySelector(".grid-info-bar");
+    if (!bar) return;
+    el.querySelectorAll(".grid-item-cell.selected, .shelf-item.selected, .equipped-slot.selected").forEach((n) => n.classList.remove("selected"));
+    const itemId = this._selectedGridItemId;
+    const item = itemId ? this.document.items.get(itemId) : null;
+    if (!item) {
+      this._selectedGridItemId = null;
+      bar.classList.remove("has-item");
+      bar.querySelector(".info-bar-img").src = "icons/svg/item-bag.svg";
+      bar.querySelector(".info-bar-name").textContent = game.i18n.localize("TAMS.Inventory.NoneSelected");
+      bar.querySelector(".info-bar-type").textContent = "";
+      bar.querySelectorAll(".info-bar-actions a[data-action]").forEach((a) => delete a.dataset.itemId);
+      return;
+    }
+    el.querySelectorAll(`[data-item-id="${itemId}"]`).forEach((n) => {
+      if (n.matches(".grid-item-cell, .shelf-item, .equipped-slot")) n.classList.add("selected");
+    });
+    bar.classList.add("has-item");
+    bar.querySelector(".info-bar-img").src = item.img;
+    bar.querySelector(".info-bar-name").textContent = item.name;
+    bar.querySelector(".info-bar-type").textContent = item.type;
+    bar.querySelectorAll(".info-bar-actions a[data-action]").forEach((a) => a.dataset.itemId = itemId);
   }
   /**
    * Handle rolling a stat or skill check.
@@ -6761,6 +7387,18 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       "medium": "TAMS.SizeOptions.Medium",
       "large": "TAMS.SizeOptions.Large"
     };
+    context.gridSizeOptions = {
+      "1x1": "TAMS.GridSizeOptions.1x1",
+      "1x2": "TAMS.GridSizeOptions.1x2",
+      "1x3": "TAMS.GridSizeOptions.1x3",
+      "1x4": "TAMS.GridSizeOptions.1x4",
+      "2x2": "TAMS.GridSizeOptions.2x2",
+      "2x3": "TAMS.GridSizeOptions.2x3",
+      "2x4": "TAMS.GridSizeOptions.2x4",
+      "3x3": "TAMS.GridSizeOptions.3x3",
+      "L": "TAMS.GridSizeOptions.L",
+      "T": "TAMS.GridSizeOptions.T"
+    };
     const locationOptions = {
       "stowed": "TAMS.LocationOptions.Stowed",
       "backpack": "TAMS.LocationOptions.Backpack",
@@ -7917,6 +8555,10 @@ let TAMSPartyHonorApp = _TAMSPartyHonorApp;
 Hooks.once("init", async function() {
   var _a, _b, _c, _d;
   console.log("TAMS | Initializing Todo's Advanced Modular System");
+  await loadTemplates([
+    "systems/tams/templates/inventory-grid.html",
+    "systems/tams/templates/inventory-container.html"
+  ]);
   game.socket.on("system.tams", (data) => {
     var _a2;
     if (data.type === "updateMessage" && game.user.isGM) {
@@ -8074,6 +8716,7 @@ Hooks.once("init", async function() {
     if (!str) return "";
     return str.toUpperCase();
   });
+  Handlebars.registerHelper("range", (n) => Array.from({ length: Number(n) || 0 }, (_, i) => i));
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
   Hooks.on("createChatMessage", async (msg) => {
     if (!game.user.isGM) return;

@@ -2775,4 +2775,401 @@ details.limb-filter[open] summary .limb-arrow-down {
   color: #5c3b1e;
 }
 
+.tams .inventory-list-view,
+.tams .inventory-grid-view {
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.22s ease;
+}
+.tams .inventory-list-view.visible,
+.tams .inventory-grid-view.visible {
+  flex: 1;
+  min-height: 0;
+  opacity: 1;
+  pointer-events: auto;
+  overflow: hidden;
+}
+.tams .inventory-list-view.hidden,
+.tams .inventory-grid-view.hidden {
+  flex: 0 0 0;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.tams .inventory-grid-view.visible {
+  overflow-y: auto;
+  gap: 6px;
+  padding: 4px 4px 6px;
+}
+.tams .inventory-toggle-btn {
+  background: none;
+  border: 1px solid rgba(139, 0, 0, 0.4);
+  border-radius: 3px;
+  color: #ccc;
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 0.85em;
+  line-height: 1.4;
+  transition: background 0.15s, color 0.15s;
+}
+.tams .inventory-toggle-btn:hover {
+  background: rgba(139, 0, 0, 0.25);
+  color: #fff;
+}
+.tams .inventory-toggle-btn.active {
+  background: rgba(139, 0, 0, 0.5);
+  color: #fff;
+}
+.tams .grid-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(20, 0, 0, 0.6);
+  border: 1px solid rgba(139, 0, 0, 0.5);
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-height: 34px;
+  flex-shrink: 0;
+}
+.tams .grid-info-bar .info-bar-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border: none;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+.tams .grid-info-bar .info-bar-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tams .grid-info-bar .info-bar-name {
+  font-size: 0.88em;
+  font-weight: bold;
+  color: #ddd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tams .grid-info-bar .info-bar-type {
+  font-size: 0.72em;
+  color: #888;
+  text-transform: capitalize;
+}
+.tams .grid-info-bar .info-bar-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.tams .grid-info-bar.has-item .info-bar-img {
+  opacity: 1;
+}
+.tams .grid-info-bar.has-item .info-bar-name {
+  color: #ffcc88;
+}
+.tams .equipped-slots-section {
+  border: 1px dashed rgba(139, 0, 0, 0.4);
+  border-radius: 4px;
+  padding: 4px 6px;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+.tams .equipped-slots-section.drag-over {
+  border-color: #ff6400;
+  background: rgba(80, 30, 0, 0.3);
+}
+.tams .equipped-slots-label {
+  font-size: 0.72em;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.tams .equipped-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 28px;
+  align-items: flex-start;
+  align-content: flex-start;
+}
+.tams .equipped-slots-empty {
+  font-size: 0.78em;
+  color: #555;
+  font-style: italic;
+  align-self: center;
+}
+.tams .equipped-slot {
+  width: calc(var(--gw, 1) * 37px);
+  height: calc(var(--gh, 1) * 37px);
+  border: 1px solid rgba(139, 0, 0, 0.6);
+  border-radius: 3px;
+  background: rgba(50, 15, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  position: relative;
+  transition: border-color 0.12s, background 0.12s;
+}
+.tams .equipped-slot:hover {
+  border-color: #ff6400;
+  background: rgba(80, 30, 0, 0.8);
+}
+.tams .equipped-slot:hover .equipped-slot-controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+.tams .equipped-slot.selected {
+  border-color: #ffaa44;
+  background: rgba(70, 25, 0, 0.85);
+}
+.tams .equipped-slot img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  border-radius: 2px;
+  pointer-events: none;
+  max-width: 28px;
+  max-height: 28px;
+}
+.tams .equipped-slot .equipped-slot-name {
+  font-size: 7px;
+  color: #aaa;
+  text-align: center;
+  width: calc(100% - 4px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+.tams .equipped-slot .equipped-slot-controls {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
+}
+.tams .equipped-slot .equipped-ctrl {
+  width: 14px;
+  height: 14px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbb;
+  font-size: 7px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.tams .equipped-slot .equipped-ctrl:hover {
+  color: #ff6400;
+}
+.tams .grid-shelf-container {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+.tams .tams-inventory-grid {
+  position: relative;
+  width: calc(var(--grid-cols) * 37px + 3px);
+  height: calc(var(--grid-rows) * 37px + 3px);
+  background-color: rgba(10, 0, 0, 0.55);
+  background-image: linear-gradient(to right, rgba(139, 0, 0, 0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(139, 0, 0, 0.25) 1px, transparent 1px);
+  background-size: 37px 37px;
+  border: 2px solid rgba(100, 0, 0, 0.6);
+  border-radius: 3px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.tams .grid-ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 2px;
+  color: #bbb;
+  font-size: 9px;
+  cursor: pointer;
+  text-decoration: none;
+  padding: 2px 3px;
+}
+.tams .grid-ctrl:hover {
+  color: #ff6400;
+}
+.tams .grid-item-cell {
+  position: absolute;
+  box-sizing: border-box;
+  left: calc(var(--gx) * 37px);
+  top: calc(var(--gy) * 37px);
+  width: 37px;
+  height: 37px;
+  background-color: rgba(50, 15, 0, 0.88);
+  background-size: calc(var(--bw, 1) * 37px) calc(var(--bh, 1) * 37px);
+  background-position: calc(var(--dx, 0) * -37px) calc(var(--dy, 0) * -37px);
+  background-repeat: no-repeat;
+  border: 1px solid rgba(139, 0, 0, 0.7);
+  border-radius: 2px;
+  cursor: grab;
+  z-index: 1;
+  transition: border-color 0.1s, background-color 0.1s;
+}
+.tams .grid-item-cell.hovered, .tams .grid-item-cell.selected {
+  border-color: #ff6400;
+  background-color: rgba(70, 25, 0, 0.9);
+  z-index: 2;
+}
+.tams .grid-item-cell .item-qty {
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: 10px;
+  color: #ffd700;
+  font-weight: bold;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+  line-height: 1;
+  pointer-events: none;
+}
+.tams .grid-preview {
+  position: absolute;
+  box-sizing: border-box;
+  left: calc(var(--gx) * 37px);
+  top: calc(var(--gy) * 37px);
+  width: 37px;
+  height: 37px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 10;
+}
+.tams .grid-preview.valid {
+  background: rgba(0, 180, 0, 0.3);
+  border: 2px solid rgba(0, 220, 0, 0.7);
+}
+.tams .grid-preview.invalid {
+  background: rgba(200, 0, 0, 0.3);
+  border: 2px solid rgba(255, 0, 0, 0.6);
+}
+.tams .unplaced-shelf {
+  flex: 1;
+  min-width: 80px;
+  min-height: 100%;
+  border: 1px dashed rgba(139, 0, 0, 0.4);
+  border-radius: 3px;
+  padding: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: flex-start;
+  align-content: flex-start;
+  transition: border-color 0.12s, background 0.12s;
+}
+.tams .unplaced-shelf.drag-over {
+  border-color: rgba(139, 0, 0, 0.8);
+  background: rgba(40, 10, 0, 0.3);
+}
+.tams .unplaced-shelf-label {
+  font-size: 0.72em;
+  color: #666;
+  width: 100%;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tams .shelf-item {
+  width: calc(var(--gw, 1) * 37px);
+  height: calc(var(--gh, 1) * 37px);
+  background: rgba(50, 15, 0, 0.75);
+  border: 1px solid rgba(139, 0, 0, 0.5);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  position: relative;
+  transition: border-color 0.1s, background 0.1s;
+  flex-shrink: 0;
+}
+.tams .shelf-item:hover, .tams .shelf-item.selected {
+  border-color: #ff6400;
+  background: rgba(70, 25, 0, 0.85);
+}
+.tams .shelf-item img {
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  object-fit: contain;
+  border: none;
+  pointer-events: none;
+}
+.tams .shelf-item .item-qty {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-size: 9px;
+  color: #ffd700;
+  font-weight: bold;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+  line-height: 1;
+}
+.tams .grid-containers-section {
+  border-top: 1px solid rgba(139, 0, 0, 0.25);
+  padding-top: 4px;
+  flex-shrink: 0;
+}
+.tams .grid-containers-label {
+  font-size: 0.72em;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.tams .grid-containers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tams .container-open-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(40, 10, 0, 0.55);
+  border: 1px solid rgba(139, 0, 0, 0.5);
+  border-radius: 3px;
+  padding: 2px 6px;
+  color: #bbb;
+  cursor: pointer;
+  font-size: 0.82em;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.tams .container-open-btn:hover {
+  background: rgba(70, 20, 0, 0.7);
+  border-color: #ff6400;
+  color: #fff;
+}
+.tams .container-open-btn img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border: none;
+}
+.tams.container-grid-app .window-content {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(20, 0, 0, 0.85);
+  overflow-y: auto;
+}
+
 /*# sourceMappingURL=tams.css.map */

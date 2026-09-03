@@ -188,6 +188,13 @@
     "AddBackpack": "Add Backpack",
     "Container": "Container",
     "MedUnits": "Med Units",
+    "EquippedSlots": "Equipped",
+    "UnplacedItems": "Unplaced",
+    "GridContainers": "Containers",
+    "OpenContainer": "Open Container",
+    "RotateItem": "Rotate",
+    "FlipItem": "Flip",
+    "InvalidPlacement": "That item doesn't fit there.",
     "EditContainer": "Edit Container",
     "DeleteContainer": "Delete Container",
     "Empty": "Empty",
@@ -207,7 +214,11 @@
       "FilterAll": "All Types",
       "Stow": "Stow (to loose)",
       "SectionEquipped": "Equipped / In Hand",
-      "SectionStowed": "Loose / Stowed"
+      "SectionStowed": "Loose / Stowed",
+      "ViewList": "List View",
+      "ViewGrid": "Grid View",
+      "DropToEquip": "Drop here to equip",
+      "NoneSelected": "No item selected"
     },
     "Repair": {
       "Title": "Repair: {name}",
@@ -669,6 +680,23 @@
       "Medium": "Medium",
       "Large": "Large"
     },
+    "GridSize": "Grid Shape",
+    "GridSizeOptions": {
+      "1x1": "1x1",
+      "1x2": "1x2 (Tall)",
+      "1x3": "1x3 (Tall)",
+      "1x4": "1x4 (Tall)",
+      "2x2": "2x2 (Square)",
+      "2x3": "2x3",
+      "2x4": "2x4",
+      "3x3": "3x3 (Large Square)",
+      "L": "L-Shape",
+      "T": "T-Shape"
+    },
+    "GridCols": "Grid Columns",
+    "GridColsHint": "Number of grid columns in this backpack's sub-inventory.",
+    "GridRows": "Grid Rows",
+    "GridRowsHint": "Number of grid rows in this backpack's sub-inventory.",
     "ContestedCheck": {
       "Title": "Contested Check: {label}",
       "Contest": "Contest this Roll",

@@ -1,0 +1,51 @@
+{{!-- Container sub-grid window --}}
+{{!-- Context: gridCols, gridRows, gridItems, unplacedItems, containerId --}}
+
+<div class="inventory-grid-view visible" style="padding: 0;">
+    {{!-- Grid + Shelf row --}}
+    <div class="grid-shelf-container">
+
+        {{!-- Container grid --}}
+        <div class="tams-inventory-grid"
+             data-cols="{{gridCols}}"
+             data-rows="{{gridRows}}"
+             data-container-id="{{containerId}}"
+             style="--grid-cols:{{gridCols}};--grid-rows:{{gridRows}}">
+            {{#each gridItems}}
+            {{#each cells}}
+            <div class="grid-item-cell {{#if (and (eq dx 0) (eq dy 0))}}grid-item-root{{/if}}"
+                 draggable="true"
+                 data-item-id="{{../item.id}}"
+                 data-document-id="{{../item.id}}"
+                 data-type="Item"
+                 data-uuid="{{../item.uuid}}"
+                 title="{{../item.name}}"
+                 style="--gx:{{add ../item.system.gridX dx}};--gy:{{add ../item.system.gridY dy}};--dx:{{dx}};--dy:{{dy}};--bw:{{../bw}};--bh:{{../bh}};background-image:url('{{../item.img}}')">
+                {{#if (and (eq dx 0) (eq dy 0))}}
+                {{#if (gt ../item.system.quantity 1)}}<span class="item-qty">{{../item.system.quantity}}</span>{{/if}}
+                {{/if}}
+            </div>
+            {{/each}}
+            {{/each}}
+        </div>
+
+        {{!-- Unplaced shelf --}}
+        <div class="unplaced-shelf" data-drop-zone="unplaced">
+            <div class="unplaced-shelf-label">{{localize 'TAMS.UnplacedItems'}}</div>
+            {{#each unplacedItems}}
+            <div class="shelf-item"
+                 draggable="true"
+                 data-item-id="{{item.id}}"
+                 data-document-id="{{item.id}}"
+                 data-type="Item"
+                 data-uuid="{{item.uuid}}"
+                 title="{{item.name}}"
+                 style="--gw:{{gridW}};--gh:{{gridH}}">
+                <img src="{{item.img}}" alt="{{item.name}}">
+                {{#if (gt item.system.quantity 1)}}<span class="item-qty">{{item.system.quantity}}</span>{{/if}}
+            </div>
+            {{/each}}
+        </div>
+
+    </div>{{!-- /.grid-shelf-container --}}
+</div>

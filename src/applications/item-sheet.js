@@ -81,6 +81,18 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         "medium": "TAMS.SizeOptions.Medium",
         "large": "TAMS.SizeOptions.Large"
     };
+    context.gridSizeOptions = {
+        "1x1": "TAMS.GridSizeOptions.1x1",
+        "1x2": "TAMS.GridSizeOptions.1x2",
+        "1x3": "TAMS.GridSizeOptions.1x3",
+        "1x4": "TAMS.GridSizeOptions.1x4",
+        "2x2": "TAMS.GridSizeOptions.2x2",
+        "2x3": "TAMS.GridSizeOptions.2x3",
+        "2x4": "TAMS.GridSizeOptions.2x4",
+        "3x3": "TAMS.GridSizeOptions.3x3",
+        "L": "TAMS.GridSizeOptions.L",
+        "T": "TAMS.GridSizeOptions.T",
+    };
     
     const locationOptions = {
         "stowed": "TAMS.LocationOptions.Stowed",

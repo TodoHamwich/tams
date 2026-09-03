@@ -8,12 +8,19 @@ function sharedFields(fields) {
 }
 
 function inventoryFields(fields, { size = "small", location = "stowed", slots = 2 } = {}) {
+  const defaultGridSize = size === 'large' ? '2x3' : size === 'medium' ? '1x2' : '1x1';
   return {
     quantity: new fields.NumberField({ initial: 1, integer: true, min: 0 }),
     size: new fields.StringField({ initial: size }),
+    gridSize: new fields.StringField({ initial: defaultGridSize }),
     location: new fields.StringField({ initial: location }),
     slots: new fields.NumberField({ initial: slots, integer: true, min: 1 }),
     isNatural: new fields.BooleanField({ initial: false }),
+    gridX: new fields.NumberField({ initial: null, nullable: true, integer: true, min: 0 }),
+    gridY: new fields.NumberField({ initial: null, nullable: true, integer: true, min: 0 }),
+    gridRotated: new fields.BooleanField({ initial: false }),
+    gridFlipped: new fields.BooleanField({ initial: false }),
+    stackMax: new fields.NumberField({ initial: 99, integer: true, min: 1 }),
   };
 }
 
@@ -240,6 +247,8 @@ export class TAMSBackpackData extends foundry.abstract.TypeDataModel {
       equipped: new fields.BooleanField({initial: false}),
       capacity: new fields.NumberField({initial: 10, integer: true, min: 0}),
       modifier: new fields.NumberField({initial: 0.5, step: 0.1, min: 0}),
+      gridCols: new fields.NumberField({initial: 8, integer: true, min: 1}),
+      gridRows: new fields.NumberField({initial: 6, integer: true, min: 1}),
       penalties: new fields.SchemaField({
         active: new fields.BooleanField({initial: false}),
         strength: new fields.NumberField({initial: 0, integer: true}),

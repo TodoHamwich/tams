@@ -1,0 +1,481 @@
+// ── Grid Inventory ────────────────────────────────────────────────────────────
+
+$cell: 37px; // 36px cell + 1px gap
+
+.tams {
+  // ── View transition wrappers ────────────────────────────────────────────────
+  // Both views live in the tab's flex column simultaneously.
+  // .visible → flex: 1 fills remaining height and scrolls.
+  // .hidden  → flex: 0 / height: 0 collapses with no overflow.
+
+  .inventory-list-view,
+  .inventory-grid-view {
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.22s ease;
+  }
+
+  .inventory-list-view.visible,
+  .inventory-grid-view.visible {
+    flex: 1;
+    min-height: 0;   // allow flex child to shrink below content size
+    opacity: 1;
+    pointer-events: auto;
+    overflow: hidden; // clip — inner scroll handles the rest
+  }
+
+  .inventory-list-view.hidden,
+  .inventory-grid-view.hidden {
+    flex: 0 0 0;
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  // Grid view: flex column that scrolls as a whole
+  .inventory-grid-view.visible {
+    overflow-y: auto;
+    gap: 6px;
+    padding: 4px 4px 6px;
+  }
+
+  // ── Grid toggle button ──────────────────────────────────────────────────────
+
+  .inventory-toggle-btn {
+    background: none;
+    border: 1px solid rgba(139, 0, 0, 0.4);
+    border-radius: 3px;
+    color: #ccc;
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 0.85em;
+    line-height: 1.4;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+      background: rgba(139, 0, 0, 0.25);
+      color: #fff;
+    }
+
+    &.active {
+      background: rgba(139, 0, 0, 0.5);
+      color: #fff;
+    }
+  }
+
+  // ── Selected item info bar ──────────────────────────────────────────────────
+
+  .grid-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(20, 0, 0, 0.6);
+    border: 1px solid rgba(139, 0, 0, 0.5);
+    border-radius: 4px;
+    padding: 4px 8px;
+    min-height: 34px;
+    flex-shrink: 0;
+
+    .info-bar-img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+      border: none;
+      flex-shrink: 0;
+      opacity: 0.5;
+    }
+
+    .info-bar-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .info-bar-name {
+      font-size: 0.88em;
+      font-weight: bold;
+      color: #ddd;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .info-bar-type {
+      font-size: 0.72em;
+      color: #888;
+      text-transform: capitalize;
+    }
+
+    .info-bar-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    &.has-item {
+      .info-bar-img { opacity: 1; }
+      .info-bar-name { color: #ffcc88; }
+    }
+  }
+
+  // ── Equipped slots row ──────────────────────────────────────────────────────
+
+  .equipped-slots-section {
+    border: 1px dashed rgba(139, 0, 0, 0.4);
+    border-radius: 4px;
+    padding: 4px 6px;
+    flex-shrink: 0;
+    transition: border-color 0.15s, background 0.15s;
+
+    &.drag-over {
+      border-color: #ff6400;
+      background: rgba(80, 30, 0, 0.3);
+    }
+  }
+
+  .equipped-slots-label {
+    font-size: 0.72em;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .equipped-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 28px;
+    align-items: flex-start;
+    align-content: flex-start;
+  }
+
+  .equipped-slots-empty {
+    font-size: 0.78em;
+    color: #555;
+    font-style: italic;
+    align-self: center;
+  }
+
+  .equipped-slot {
+    width: calc(var(--gw, 1) * #{$cell});
+    height: calc(var(--gh, 1) * #{$cell});
+    border: 1px solid rgba(139, 0, 0, 0.6);
+    border-radius: 3px;
+    background: rgba(50, 15, 0, 0.65);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    position: relative;
+    transition: border-color 0.12s, background 0.12s;
+
+    &:hover {
+      border-color: #ff6400;
+      background: rgba(80, 30, 0, 0.8);
+      .equipped-slot-controls { opacity: 1; pointer-events: auto; }
+    }
+
+    &.selected {
+      border-color: #ffaa44;
+      background: rgba(70, 25, 0, 0.85);
+    }
+
+    img {
+      width: 70%;
+      height: 70%;
+      object-fit: contain;
+      border-radius: 2px;
+      pointer-events: none;
+      max-width: 28px;
+      max-height: 28px;
+    }
+
+    .equipped-slot-name {
+      font-size: 7px;
+      color: #aaa;
+      text-align: center;
+      width: calc(100% - 4px);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+      margin-top: 2px;
+    }
+
+    .equipped-slot-controls {
+      position: absolute;
+      top: 1px;
+      right: 1px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.1s;
+    }
+
+    .equipped-ctrl {
+      width: 14px;
+      height: 14px;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #bbb;
+      font-size: 7px;
+      cursor: pointer;
+      text-decoration: none;
+
+      &:hover { color: #ff6400; }
+    }
+  }
+
+  // ── Grid + Shelf side by side ───────────────────────────────────────────────
+
+  .grid-shelf-container {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    align-items: flex-start;
+    flex-shrink: 0;
+  }
+
+  // ── Main stowed grid ────────────────────────────────────────────────────────
+
+  .tams-inventory-grid {
+    position: relative;
+    // Add 1px on right + bottom so items at the last row/col don't clip their border
+    width: calc(var(--grid-cols) * #{$cell} + 3px);
+    height: calc(var(--grid-rows) * #{$cell} + 3px);
+    background-color: rgba(10, 0, 0, 0.55);
+    // Grid lines via background-image
+    background-image:
+      linear-gradient(to right, rgba(139, 0, 0, 0.25) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(139, 0, 0, 0.25) 1px, transparent 1px);
+    background-size: #{$cell} #{$cell};
+    border: 2px solid rgba(100, 0, 0, 0.6);
+    border-radius: 3px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  // ── Shared hover control style ───────────────────────────────────────────────
+
+  .grid-ctrl {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 2px;
+    color: #bbb;
+    font-size: 9px;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 2px 3px;
+
+    &:hover { color: #ff6400; }
+  }
+
+  // ── Grid item cells (one div per occupied cell) ─────────────────────────────
+  // Each cell shows a slice of the item's image via background-size/position.
+  // Hover and selected states are coordinated across all cells of the same item via JS.
+
+  .grid-item-cell {
+    position: absolute;
+    box-sizing: border-box;
+    left: calc(var(--gx) * #{$cell});
+    top: calc(var(--gy) * #{$cell});
+    width: #{$cell};
+    height: #{$cell};
+    background-color: rgba(50, 15, 0, 0.88);
+    background-size: calc(var(--bw, 1) * #{$cell}) calc(var(--bh, 1) * #{$cell});
+    background-position: calc(var(--dx, 0) * -#{$cell}) calc(var(--dy, 0) * -#{$cell});
+    background-repeat: no-repeat;
+    border: 1px solid rgba(139, 0, 0, 0.7);
+    border-radius: 2px;
+    cursor: grab;
+    z-index: 1;
+    transition: border-color 0.1s, background-color 0.1s;
+
+    &.hovered,
+    &.selected {
+      border-color: #ff6400;
+      background-color: rgba(70, 25, 0, 0.9);
+      z-index: 2;
+    }
+
+    .item-qty {
+      position: absolute;
+      bottom: 2px;
+      right: 3px;
+      font-size: 10px;
+      color: #ffd700;
+      font-weight: bold;
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+      line-height: 1;
+      pointer-events: none;
+    }
+  }
+
+  // ── Drag preview overlay (one div per cell of the dragged item's footprint) ──
+
+  .grid-preview {
+    position: absolute;
+    box-sizing: border-box;
+    left: calc(var(--gx) * #{$cell});
+    top: calc(var(--gy) * #{$cell});
+    width: #{$cell};
+    height: #{$cell};
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 10;
+
+    &.valid {
+      background: rgba(0, 180, 0, 0.3);
+      border: 2px solid rgba(0, 220, 0, 0.7);
+    }
+
+    &.invalid {
+      background: rgba(200, 0, 0, 0.3);
+      border: 2px solid rgba(255, 0, 0, 0.6);
+    }
+  }
+
+  // ── Unplaced shelf ──────────────────────────────────────────────────────────
+
+  .unplaced-shelf {
+    flex: 1;
+    min-width: 80px;
+    min-height: 100%;
+    border: 1px dashed rgba(139, 0, 0, 0.4);
+    border-radius: 3px;
+    padding: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    align-items: flex-start;
+    align-content: flex-start;
+    transition: border-color 0.12s, background 0.12s;
+
+    &.drag-over {
+      border-color: rgba(139, 0, 0, 0.8);
+      background: rgba(40, 10, 0, 0.3);
+    }
+  }
+
+  .unplaced-shelf-label {
+    font-size: 0.72em;
+    color: #666;
+    width: 100%;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .shelf-item {
+    width: calc(var(--gw, 1) * #{$cell});
+    height: calc(var(--gh, 1) * #{$cell});
+    background: rgba(50, 15, 0, 0.75);
+    border: 1px solid rgba(139, 0, 0, 0.5);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    position: relative;
+    transition: border-color 0.1s, background 0.1s;
+    flex-shrink: 0;
+
+    &:hover,
+    &.selected {
+      border-color: #ff6400;
+      background: rgba(70, 25, 0, 0.85);
+    }
+
+    img {
+      width: calc(100% - 6px);
+      height: calc(100% - 6px);
+      object-fit: contain;
+      border: none;
+      pointer-events: none;
+    }
+
+    .item-qty {
+      position: absolute;
+      bottom: 1px;
+      right: 2px;
+      font-size: 9px;
+      color: #ffd700;
+      font-weight: bold;
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+      line-height: 1;
+    }
+  }
+
+  // ── Container section ───────────────────────────────────────────────────────
+
+  .grid-containers-section {
+    border-top: 1px solid rgba(139, 0, 0, 0.25);
+    padding-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .grid-containers-label {
+    font-size: 0.72em;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .grid-containers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .container-open-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(40, 10, 0, 0.55);
+    border: 1px solid rgba(139, 0, 0, 0.5);
+    border-radius: 3px;
+    padding: 2px 6px;
+    color: #bbb;
+    cursor: pointer;
+    font-size: 0.82em;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+
+    &:hover {
+      background: rgba(70, 20, 0, 0.7);
+      border-color: #ff6400;
+      color: #fff;
+    }
+
+    img {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+      border: none;
+    }
+  }
+
+  // ── Container grid app window ───────────────────────────────────────────────
+
+  &.container-grid-app {
+    .window-content {
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: rgba(20, 0, 0, 0.85);
+      overflow-y: auto;
+    }
+  }
+}

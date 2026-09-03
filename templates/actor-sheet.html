@@ -506,9 +506,12 @@
                     <select class="inventory-sort" title="{{localize 'TAMS.Inventory.SortBy'}}">
                         {{selectOptions inventorySortOptions selected=inventorySort localize=true}}
                     </select>
+                    <a class="inventory-toggle-btn {{#if (eq inventoryView 'list')}}active{{/if}}" data-action="setInventoryView" data-view="list" title="{{localize 'TAMS.Inventory.ViewList'}}"><i class="fas fa-list"></i></a>
+                    <a class="inventory-toggle-btn {{#if (eq inventoryView 'grid')}}active{{/if}}" data-action="setInventoryView" data-view="grid" title="{{localize 'TAMS.Inventory.ViewGrid'}}"><i class="fas fa-th"></i></a>
                 </div>
             </div>
 
+            <div class="inventory-list-view {{#if (eq inventoryView 'grid')}}hidden{{else}}visible{{/if}}">
             <div class="inventory-scroll" data-scrollable data-scroll-id="tab-inventory-scroll">
                 {{#each inventorySections as |section|}}
                 <div class="inventory-section" data-section-id="{{section.id}}">
@@ -616,6 +619,11 @@
                     {{/if}}
                     {{/each}}
                 </div>
+            </div>
+            </div>{{!-- /.inventory-list-view --}}
+
+            <div class="inventory-grid-view {{#if (eq inventoryView 'grid')}}visible{{else}}hidden{{/if}}" data-scrollable data-scroll-id="tab-inventory-grid-scroll">
+                {{> "systems/tams/templates/inventory-grid.html"}}
             </div>
         </div>
 

@@ -1,0 +1,126 @@
+{{!-- Diablo-style grid inventory partial --}}
+{{!-- Context: gridCols, gridRows, gridItems, unplacedItems, equippedItems, containerItems --}}
+
+{{!-- Equipped slots (top, always shown as a drop zone) --}}
+<div class="equipped-slots-section" data-drop-zone="equipped">
+    <div class="equipped-slots-label">{{localize 'TAMS.EquippedSlots'}}</div>
+    <div class="equipped-slots">
+        {{#each equippedItems}}
+        <div class="equipped-slot"
+             draggable="true"
+             data-item-id="{{item.id}}"
+             data-document-id="{{item.id}}"
+             data-type="Item"
+             data-uuid="{{item.uuid}}"
+             title="{{item.name}}"
+             style="--gw:{{gridW}};--gh:{{gridH}}">
+            <img src="{{item.img}}" alt="{{item.name}}">
+            <span class="equipped-slot-name">{{item.name}}</span>
+            <div class="equipped-slot-controls">
+                <a class="equipped-ctrl" data-action="itemStow" data-item-id="{{item.id}}" title="{{localize 'TAMS.Inventory.Stow'}}"><i class="fas fa-box-archive"></i></a>
+                <a class="equipped-ctrl" data-action="itemEdit" data-item-id="{{item.id}}" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
+            </div>
+        </div>
+        {{/each}}
+        {{#unless equippedItems.length}}
+        <span class="equipped-slots-empty">{{localize 'TAMS.Inventory.DropToEquip'}}</span>
+        {{/unless}}
+    </div>
+</div>
+
+{{!-- Selected item info bar (right above the grid) --}}
+<div class="grid-info-bar">
+    <img class="info-bar-img" src="icons/svg/item-bag.svg" alt="">
+    <div class="info-bar-details">
+        <span class="info-bar-name">{{localize 'TAMS.Inventory.NoneSelected'}}</span>
+        <span class="info-bar-type"></span>
+    </div>
+    <div class="info-bar-actions">
+        <a class="grid-ctrl info-action" data-action="itemRotate" title="{{localize 'TAMS.RotateItem'}}"><i class="fas fa-rotate-right"></i></a>
+        <a class="grid-ctrl info-action" data-action="itemFlip" title="{{localize 'TAMS.FlipItem'}}"><i class="fas fa-arrows-left-right"></i></a>
+        <a class="grid-ctrl info-action" data-action="itemGive" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
+        <a class="grid-ctrl info-action" data-action="itemSendDescription" title="{{localize 'TAMS.SendDescription'}}"><i class="fas fa-comment-dots"></i></a>
+        <a class="grid-ctrl info-action" data-action="itemEdit" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
+        <a class="grid-ctrl info-action" data-action="itemDelete" title="{{localize 'TAMS.DeleteItem'}}"><i class="fas fa-trash"></i></a>
+    </div>
+</div>
+
+{{!-- Grid + Shelf side by side --}}
+<div class="grid-shelf-container">
+
+    {{!-- Main stowed grid --}}
+    <div class="tams-inventory-grid"
+         data-cols="{{gridCols}}"
+         data-rows="{{gridRows}}"
+         style="--grid-cols:{{gridCols}};--grid-rows:{{gridRows}}">
+        {{#each gridItems}}
+        {{#each cells}}
+        <div class="grid-item-cell {{#if (and (eq dx 0) (eq dy 0))}}grid-item-root{{/if}}"
+             draggable="true"
+             data-item-id="{{../item.id}}"
+             data-document-id="{{../item.id}}"
+             data-type="Item"
+             data-uuid="{{../item.uuid}}"
+             title="{{../item.name}}"
+             style="--gx:{{add ../item.system.gridX dx}};--gy:{{add ../item.system.gridY dy}};--dx:{{dx}};--dy:{{dy}};--bw:{{../bw}};--bh:{{../bh}};background-image:url('{{../item.img}}')">
+            {{#if (and (eq dx 0) (eq dy 0))}}
+            {{#if (gt ../item.system.quantity 1)}}<span class="item-qty">{{../item.system.quantity}}</span>{{/if}}
+            {{/if}}
+        </div>
+        {{/each}}
+        {{/each}}
+    </div>
+
+    {{!-- Unplaced shelf --}}
+    <div class="unplaced-shelf" data-drop-zone="unplaced">
+        <div class="unplaced-shelf-label">{{localize 'TAMS.UnplacedItems'}}</div>
+        {{#each unplacedItems}}
+        <div class="shelf-item"
+             draggable="true"
+             data-item-id="{{item.id}}"
+             data-document-id="{{item.id}}"
+             data-type="Item"
+             data-uuid="{{item.uuid}}"
+             title="{{item.name}}"
+             style="--gw:{{gridW}};--gh:{{gridH}}">
+            <img src="{{item.img}}" alt="{{item.name}}">
+            {{#if (gt item.system.quantity 1)}}<span class="item-qty">{{item.system.quantity}}</span>{{/if}}
+        </div>
+        {{/each}}
+    </div>
+
+</div>{{!-- /.grid-shelf-container --}}
+
+{{!-- Containers --}}
+{{#if containerItems.length}}
+<div class="grid-containers-section">
+    <div class="grid-containers-label">{{localize 'TAMS.GridContainers'}}</div>
+    <div class="grid-containers">
+        {{#each containerItems}}
+        <button class="container-open-btn"
+                type="button"
+                data-action="openContainer"
+                data-container-id="{{this.id}}"
+                title="{{localize 'TAMS.OpenContainer'}}">
+            <img src="{{this.img}}" alt="{{this.name}}">
+            {{this.name}}
+        </button>
+        {{/each}}
+    </div>
+</div>
+{{/if}}
+
+{{!-- Currencies at bottom of grid scroll --}}
+<div class="currency-footer">
+    <h4 class="inventory-section-header">{{localize 'TAMS.Currencies'}}</h4>
+    <div class="flexrow currency-list" style="flex-wrap: wrap; gap: 5px; margin-bottom: 8px;">
+        {{#each currencies as |cur|}}
+        {{#if cur.enabled}}
+        <div class="currency-item flexrow" style="align-items: center; background: rgba(0,0,0,0.05); padding: 2px 5px; border-radius: 3px; flex: 0 0 120px;">
+            <label style="font-size: 0.9em; flex: 1;">{{cur.name}}</label>
+            <input type="number" name="system.currencies.{{cur.name}}" value="{{cur.value}}" style="width: 50px; height: 20px; text-align: right;"/>
+        </div>
+        {{/if}}
+        {{/each}}
+    </div>
+</div>

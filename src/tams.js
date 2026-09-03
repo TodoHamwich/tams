@@ -16,6 +16,12 @@ import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending,
 Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
 
+  // Preload Handlebars partials (must be done before any sheet renders)
+  await loadTemplates([
+    "systems/tams/templates/inventory-grid.html",
+    "systems/tams/templates/inventory-container.html",
+  ]);
+
   // Register Socket
   game.socket.on("system.tams", data => {
     if (data.type === "updateMessage" && game.user.isGM) {
@@ -218,6 +224,9 @@ Hooks.once("init", async function() {
     if (!str) return "";
     return str.toUpperCase();
   });
+
+  /** Returns an array [0, 1, ..., n-1] for use in {{#each (range n)}} loops */
+  Handlebars.registerHelper('range', (n) => Array.from({ length: Number(n) || 0 }, (_, i) => i));
 
   Hooks.on("renderChatMessage", tamsRenderChatMessage);
 

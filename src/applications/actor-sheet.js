@@ -2,6 +2,11 @@ import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombined
 import { computeArmorRepair } from '../utils/inventory.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
 import { HONOR_PATHS, getHonorTier, isHonorEnabled } from '../utils/honor.js';
+import {
+  SHAPE_CELLS, INVENTORY_TYPES, GRID_CELL, MAIN_GRID_COLS, MAIN_GRID_ROWS,
+  gridPlacementValid, getItemCells, getFootprint, transformCells
+} from '../utils/inventory-grid.js';
+import { TAMSContainerGridApp } from './inventory-container-app.js';
 
 const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
@@ -52,7 +57,11 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         callGroupCheck: TAMSActorSheet.prototype._onCallGroupCheck,
         itemSendDescription: TAMSActorSheet.prototype._onItemSendDescription,
         honorEdit: TAMSActorSheet.prototype._onHonorEdit,
-        raceRemove: TAMSActorSheet.prototype._onRaceRemove
+        raceRemove: TAMSActorSheet.prototype._onRaceRemove,
+        setInventoryView: TAMSActorSheet.prototype._onSetInventoryView,
+        itemRotate: TAMSActorSheet.prototype._onItemRotate,
+        itemFlip: TAMSActorSheet.prototype._onItemFlip,
+        openContainer: TAMSActorSheet.prototype._onOpenContainer
       }
     }, { inplace: false });
   }
@@ -237,6 +246,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
       el.addEventListener('drop', () => el.classList.remove('drag-over'));
     });
+
+    this._setupGridDragDrop();
+    this._updateGridInfoBar();
   }
 
   /** @override */
@@ -538,6 +550,28 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     context.traits = traits;
     const raceDoc = this.document.items.find(i => i.type === 'race') ?? null;
     context.raceItem = raceDoc ? { id: raceDoc.id, name: raceDoc.name, img: raceDoc.img, system: raceDoc.system } : null;
+
+    // --- Grid inventory view ---
+    context.inventoryView = this._inventoryView || 'list';
+    context.gridCols = MAIN_GRID_COLS;
+    context.gridRows = MAIN_GRID_ROWS;
+    context.containerItems = inventoryBackpacks;
+    context.equippedItems = allItems
+      .filter(i => INVENTORY_TYPES.includes(i.type) && i.isEquipped)
+      .map(i => { const [bw, bh] = getFootprint(i); return { item: i, gridW: bw, gridH: bh }; });
+    const gridItems = [];
+    const unplacedItems = [];
+    for (const i of allItems) {
+      if (!INVENTORY_TYPES.includes(i.type) || i.isEquipped || i.system.location !== 'stowed') continue;
+      const [bw, bh] = getFootprint(i);
+      if (i.system.gridX !== null && i.system.gridX !== undefined) {
+        gridItems.push({ item: i, cells: getItemCells(i).map(([dx, dy]) => ({ dx, dy })), bw, bh });
+      } else {
+        unplacedItems.push({ item: i, gridW: bw, gridH: bh });
+      }
+    }
+    context.gridItems = gridItems;
+    context.unplacedItems = unplacedItems;
 
     // Scene tracker: weapons + skills + abilities, used items sorted to top
     const sceneItems = [
@@ -1079,7 +1113,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
    * @protected
    */
   _resolveItemId(target) {
-    return target.dataset.itemId || target.closest(".item")?.dataset.itemId;
+    return target.dataset.itemId || target.closest(".item")?.dataset.itemId || this._selectedGridItemId;
   }
 
   /**
@@ -1387,6 +1421,48 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       return;
     }
 
+    // Grid inventory view: grid cell / unplaced shelf / equip-zone drop targets.
+    // Same-actor drops here get handled directly (grid coords, or equip semantics).
+    // Cross-actor drops just fall through below with newLocation "stowed" — precise
+    // cell placement only matters when reorganizing your own inventory.
+    const gridDropEl = event.target.closest(".tams-inventory-grid");
+    const shelfDropEl = event.target.closest(".unplaced-shelf");
+    const equipZoneEl = event.target.closest(".equipped-slots-section");
+    const isGridSameActor = item.parent?.uuid === this.document.uuid;
+
+    if (equipZoneEl && isGridSameActor) {
+      if (item.type === "weapon") {
+        if (this._equipLimitReached("hand")) return;
+        return item.update({ "system.location": "hand" });
+      }
+      if (["armor", "shield", "backpack"].includes(item.type)) {
+        if (item.type === "shield" && this._equipLimitReached("hand")) return;
+        return item.update({ "system.equipped": true });
+      }
+      return;
+    }
+
+    if (gridDropEl && isGridSameActor) {
+      const cell = this._lastGridDrop;
+      this._lastGridDrop = null;
+      gridDropEl.querySelectorAll(".grid-preview").forEach(n => n.remove());
+      if (!cell) return;
+      const { cx, cy, rotated, flipped } = cell;
+      const cells = transformCells(SHAPE_CELLS[item.system?.gridSize] ?? [[0, 0]], rotated, flipped);
+      if (!gridPlacementValid(this.document, item, cx, cy, cells, null)) {
+        ui.notifications.warn(game.i18n.localize("TAMS.InvalidPlacement"));
+        return;
+      }
+      return item.update({
+        "system.location": "stowed", "system.gridX": cx, "system.gridY": cy,
+        "system.gridRotated": rotated, "system.gridFlipped": flipped
+      });
+    }
+
+    if (shelfDropEl && isGridSameActor) {
+      return item.update({ "system.location": "stowed", "system.gridX": null, "system.gridY": null });
+    }
+
     // 1. Handle dropping ON a specific item or section
     const targetEl = event.target.closest(".item[data-item-id], .inventory-section[data-section-id]");
     let newLocation = "";
@@ -1407,6 +1483,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 newLocation = targetItem.system.location || "stowed";
             }
         }
+    } else if (gridDropEl || shelfDropEl || equipZoneEl) {
+        newLocation = "stowed"; // cross-actor gift dropped on the grid view
     }
 
     // 2. Determine if it's the same actor
@@ -1483,6 +1561,218 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     }
 
     return super._onDragStart(event);
+  }
+
+  /**
+   * Toggle between the list and grid inventory views.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target The clickable element carrying `data-view`.
+   * @protected
+   */
+  _onSetInventoryView(event, target) {
+    const view = target.dataset.view === 'grid' ? 'grid' : 'list';
+    this._inventoryView = view;
+    const listEl = this.element.querySelector('.inventory-list-view');
+    const gridEl = this.element.querySelector('.inventory-grid-view');
+    listEl?.classList.toggle('visible', view === 'list');
+    listEl?.classList.toggle('hidden', view !== 'list');
+    gridEl?.classList.toggle('visible', view === 'grid');
+    gridEl?.classList.toggle('hidden', view !== 'grid');
+    this.element.querySelectorAll('.inventory-toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === view);
+    });
+  }
+
+  /**
+   * Toggle 90° rotation on the currently selected grid item.
+   * @protected
+   */
+  async _onItemRotate(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+    return item.update({ "system.gridRotated": !item.system.gridRotated });
+  }
+
+  /**
+   * Toggle horizontal flip on the currently selected grid item.
+   * @protected
+   */
+  async _onItemFlip(event, target) {
+    const item = this.document.items.get(this._resolveItemId(target));
+    if (!item) return;
+    return item.update({ "system.gridFlipped": !item.system.gridFlipped });
+  }
+
+  /**
+   * Open (or focus) the floating sub-grid window for a backpack.
+   * @protected
+   */
+  _onOpenContainer(event, target) {
+    const containerId = target.dataset.containerId || this._resolveItemId(target);
+    if (!containerId) return;
+    this._containerApps ??= new Map();
+    let app = this._containerApps.get(containerId);
+    if (!app || !app.rendered) {
+      app = new TAMSContainerGridApp({ actor: this.document, containerId });
+      this._containerApps.set(containerId, app);
+    }
+    app.render(true);
+  }
+
+  /**
+   * Wire up drag/drop for the main stowed grid, unplaced shelf, and equip zone,
+   * plus click-to-select coordination for the info bar. Mirrors the equivalent
+   * logic in `TAMSContainerGridApp` (`inventory-container-app.js`) for a backpack's
+   * own sub-grid.
+   * @protected
+   */
+  _setupGridDragDrop() {
+    const el = this.element;
+    if (!el) return;
+
+    el.querySelectorAll(".grid-item-cell[data-item-id], .shelf-item[data-item-id], .equipped-slot[data-item-id]").forEach((node) => {
+      node.addEventListener("dragstart", (ev) => this._onGridItemDragStart(ev, node));
+      node.addEventListener("click", (ev) => {
+        if (ev.target.closest("a[data-action]")) return;
+        this._selectedGridItemId = node.dataset.itemId;
+        this._updateGridInfoBar();
+      });
+    });
+
+    const gridEl = el.querySelector(".tams-inventory-grid");
+    if (gridEl) {
+      gridEl.addEventListener("dragover", (ev) => this._onGridDragOver(ev, gridEl));
+      gridEl.addEventListener("dragleave", (ev) => this._onGridDragLeave(ev, gridEl));
+    }
+
+    const shelf = el.querySelector(".unplaced-shelf");
+    if (shelf) {
+      shelf.addEventListener("dragover", (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; });
+    }
+
+    const equipZone = el.querySelector(".equipped-slots-section");
+    if (equipZone) {
+      equipZone.addEventListener("dragover", (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = "move"; });
+    }
+  }
+
+  _onGridItemDragStart(ev, node) {
+    const itemId = node.dataset.itemId;
+    const item = this.document.items.get(itemId);
+    if (!item) return;
+    this._currentDragItemId = itemId;
+    this._dragRotated = item.system.gridRotated ?? false;
+    this._dragFlipped = item.system.gridFlipped ?? false;
+
+    const keyHandler = (kev) => {
+      const gEl = this.element?.querySelector(".tams-inventory-grid");
+      if (kev.key === "r" || kev.key === "R") {
+        kev.preventDefault();
+        this._dragRotated = !this._dragRotated;
+        if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+      } else if (kev.key === "f" || kev.key === "F") {
+        kev.preventDefault();
+        this._dragFlipped = !this._dragFlipped;
+        if (gEl && this._lastDragOverEv) this._onGridDragOver(this._lastDragOverEv, gEl);
+      }
+    };
+    document.addEventListener("keydown", keyHandler);
+    node.addEventListener("dragend", () => {
+      this._currentDragItemId = null;
+      this._dragRotated = null;
+      this._dragFlipped = null;
+      this._lastDragOverEv = null;
+      this._lastGridDrop = null;
+      document.removeEventListener("keydown", keyHandler);
+    }, { once: true });
+
+    const dragData = item.toDragData();
+    if (dragData) {
+      const json = JSON.stringify(dragData);
+      ev.dataTransfer.setData("text/plain", json);
+      ev.dataTransfer.setData("application/json", json);
+    }
+  }
+
+  _onGridDragOver(ev, gridEl) {
+    ev.preventDefault();
+    ev.dataTransfer.dropEffect = "move";
+    this._lastDragOverEv = ev;
+
+    const rect = gridEl.getBoundingClientRect();
+    const cx = Math.floor((ev.clientX - rect.left) / GRID_CELL);
+    const cy = Math.floor((ev.clientY - rect.top) / GRID_CELL);
+    const cols = MAIN_GRID_COLS, rows = MAIN_GRID_ROWS;
+
+    const localItem = this._currentDragItemId ? this.document.items.get(this._currentDragItemId) : null;
+    const rotated = this._dragRotated ?? localItem?.system.gridRotated ?? false;
+    const flipped = this._dragFlipped ?? localItem?.system.gridFlipped ?? false;
+    const baseCells = (localItem && SHAPE_CELLS[localItem.system?.gridSize]) ?? [[0, 0]];
+    const cells = transformCells(baseCells, rotated, flipped);
+
+    gridEl.querySelectorAll(".grid-preview").forEach(n => n.remove());
+
+    const outOfBounds = cells.some(([dx, dy]) => {
+      const px = cx + dx, py = cy + dy;
+      return px < 0 || py < 0 || px >= cols || py >= rows;
+    });
+    const valid = !outOfBounds && (!localItem || gridPlacementValid(this.document, localItem, cx, cy, cells, null));
+
+    for (const [dx, dy] of cells) {
+      const px = cx + dx, py = cy + dy;
+      const cellOob = px < 0 || py < 0 || px >= cols || py >= rows;
+      const preview = document.createElement("div");
+      preview.className = `grid-preview ${(valid && !cellOob) ? "valid" : "invalid"}`;
+      preview.style.setProperty("--gx", px);
+      preview.style.setProperty("--gy", py);
+      gridEl.appendChild(preview);
+    }
+
+    this._lastGridDrop = outOfBounds ? null : { cx, cy, rotated, flipped };
+  }
+
+  _onGridDragLeave(ev, gridEl) {
+    if (!gridEl.contains(ev.relatedTarget)) {
+      gridEl.querySelectorAll(".grid-preview").forEach(n => n.remove());
+      this._lastGridDrop = null;
+    }
+  }
+
+  /**
+   * Sync the `.selected` class across grid cells/shelf/equipped slots and refresh
+   * the info bar contents to match `this._selectedGridItemId`, without a full render.
+   * @protected
+   */
+  _updateGridInfoBar() {
+    const el = this.element;
+    if (!el) return;
+    const bar = el.querySelector(".grid-info-bar");
+    if (!bar) return;
+
+    el.querySelectorAll(".grid-item-cell.selected, .shelf-item.selected, .equipped-slot.selected")
+      .forEach(n => n.classList.remove("selected"));
+
+    const itemId = this._selectedGridItemId;
+    const item = itemId ? this.document.items.get(itemId) : null;
+    if (!item) {
+      this._selectedGridItemId = null;
+      bar.classList.remove("has-item");
+      bar.querySelector(".info-bar-img").src = "icons/svg/item-bag.svg";
+      bar.querySelector(".info-bar-name").textContent = game.i18n.localize("TAMS.Inventory.NoneSelected");
+      bar.querySelector(".info-bar-type").textContent = "";
+      bar.querySelectorAll(".info-bar-actions a[data-action]").forEach(a => delete a.dataset.itemId);
+      return;
+    }
+
+    el.querySelectorAll(`[data-item-id="${itemId}"]`).forEach(n => {
+      if (n.matches(".grid-item-cell, .shelf-item, .equipped-slot")) n.classList.add("selected");
+    });
+
+    bar.classList.add("has-item");
+    bar.querySelector(".info-bar-img").src = item.img;
+    bar.querySelector(".info-bar-name").textContent = item.name;
+    bar.querySelector(".info-bar-type").textContent = item.type;
+    bar.querySelectorAll(".info-bar-actions a[data-action]").forEach(a => a.dataset.itemId = itemId);
   }
 
   /**
