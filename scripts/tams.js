@@ -3542,7 +3542,7 @@ class TAMSActor extends Actor {
   }
   /** @override */
   async _preUpdate(updateData, options, user) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
     const res = await super._preUpdate(updateData, options, user);
     if (res === false) return false;
     const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
@@ -3682,10 +3682,35 @@ class TAMSActor extends Actor {
         delete updateData[multPath];
         customResourcesChanged = true;
       }
+      if (foundry.utils.hasProperty(updateData, "system.stamina.fatigue")) {
+        const newFatigue = foundry.utils.getProperty(updateData, "system.stamina.fatigue");
+        const rawMax = computeRawStaminaMax(stats.endurance.total, this.system.stamina.mult, this.system.traitStaminaExtra);
+        const newMax = computeFatiguedMax(rawMax, newFatigue);
+        const pendingValue = foundry.utils.hasProperty(updateData, "system.stamina.value") ? foundry.utils.getProperty(updateData, "system.stamina.value") : this.system.stamina.value;
+        if (pendingValue > newMax) {
+          foundry.utils.setProperty(updateData, "system.stamina.value", newMax);
+        }
+      }
+      for (let idx = 0; idx < customResources.length; idx++) {
+        const fatiguePath = `system.customResources.${idx}.fatigue`;
+        if (!foundry.utils.hasProperty(updateData, fatiguePath)) continue;
+        const orig = this.system.customResources[idx];
+        const newFatigue = foundry.utils.getProperty(updateData, fatiguePath);
+        const statVal = orig.stat === "custom" ? orig.customValue ?? 10 : ((_j = stats[orig.stat]) == null ? void 0 : _j.total) || 0;
+        const rawMax = computeRawResourceMax(statVal, orig.mult, orig.bonus);
+        const newMax = computeFatiguedMax(rawMax, newFatigue);
+        const valuePath = `system.customResources.${idx}.value`;
+        const pendingValue = foundry.utils.hasProperty(updateData, valuePath) ? foundry.utils.getProperty(updateData, valuePath) : customResources[idx].value ?? 0;
+        customResources[idx].fatigue = newFatigue;
+        customResources[idx].value = pendingValue > newMax ? newMax : pendingValue;
+        delete updateData[fatiguePath];
+        delete updateData[valuePath];
+        customResourcesChanged = true;
+      }
       if (customResourcesChanged)
         foundry.utils.setProperty(updateData, "system.customResources", customResources);
       if (warnings.length) {
-        const gmIds = ((_j = game.users) == null ? void 0 : _j.filter((u) => u.isGM).map((u) => u.id)) ?? [];
+        const gmIds = ((_k = game.users) == null ? void 0 : _k.filter((u) => u.isGM).map((u) => u.id)) ?? [];
         ChatMessage.create({
           whisper: gmIds,
           content: `<div class="tams-roll">${warnings.map((w) => `<div class="tams-crit failure">⚠ ${w} (insufficient resources)</div>`).join("")}</div>`

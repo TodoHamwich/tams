@@ -496,6 +496,42 @@ export class TAMSActor extends Actor {
         customResourcesChanged = true;
       }
 
+      // Fatigue edited directly (e.g. via the sheet's Fatigue input): clamp the
+      // current value down if it now exceeds the newly-lowered max. The sheet's
+      // form resubmits every field on change, so `updateData` may already carry
+      // a (stale, unclamped) value alongside the new fatigue — use whichever
+      // value is actually pending, not just the previously-stored one.
+      if (foundry.utils.hasProperty(updateData, "system.stamina.fatigue")) {
+        const newFatigue = foundry.utils.getProperty(updateData, "system.stamina.fatigue");
+        const rawMax = computeRawStaminaMax(stats.endurance.total, this.system.stamina.mult, this.system.traitStaminaExtra);
+        const newMax = computeFatiguedMax(rawMax, newFatigue);
+        const pendingValue = foundry.utils.hasProperty(updateData, "system.stamina.value")
+          ? foundry.utils.getProperty(updateData, "system.stamina.value")
+          : this.system.stamina.value;
+        if (pendingValue > newMax) {
+          foundry.utils.setProperty(updateData, "system.stamina.value", newMax);
+        }
+      }
+
+      for (let idx = 0; idx < customResources.length; idx++) {
+        const fatiguePath = `system.customResources.${idx}.fatigue`;
+        if (!foundry.utils.hasProperty(updateData, fatiguePath)) continue;
+        const orig = this.system.customResources[idx];
+        const newFatigue = foundry.utils.getProperty(updateData, fatiguePath);
+        const statVal = orig.stat === "custom" ? (orig.customValue ?? 10) : (stats[orig.stat]?.total || 0);
+        const rawMax = computeRawResourceMax(statVal, orig.mult, orig.bonus);
+        const newMax = computeFatiguedMax(rawMax, newFatigue);
+        const valuePath = `system.customResources.${idx}.value`;
+        const pendingValue = foundry.utils.hasProperty(updateData, valuePath)
+          ? foundry.utils.getProperty(updateData, valuePath)
+          : (customResources[idx].value ?? 0);
+        customResources[idx].fatigue = newFatigue;
+        customResources[idx].value = pendingValue > newMax ? newMax : pendingValue;
+        delete updateData[fatiguePath];
+        delete updateData[valuePath];
+        customResourcesChanged = true;
+      }
+
       if (customResourcesChanged)
         foundry.utils.setProperty(updateData, "system.customResources", customResources);
 
