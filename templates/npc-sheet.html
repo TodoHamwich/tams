@@ -219,7 +219,6 @@
         <ol class="items-list">
             {{#each weapons as |item id|}}
             <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
-                <img src="{{item.img}}" title="{{item.name}}" width="24" height="24"/>
                 <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">{{item.name}}</h4>
                 <div class="item-stat">{{item.system.calculatedDamage}}</div>
                 <div class="item-stat">
