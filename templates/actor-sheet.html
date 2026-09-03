@@ -413,7 +413,11 @@
                                 <div class="fill" style="width: {{staminaPercentage}}%; background: {{system.stamina.color}} !important;"></div>
                             </div>
                             <span class="max-label"> / {{system.stamina.max}} </span>
-                            {{#if system.stamina.fatigue}}<span class="fatigue-badge" title="{{localize 'TAMS.Rest.FatigueTooltip'}}">-{{system.stamina.fatigue}} {{localize 'TAMS.Rest.FatigueShort'}}</span>{{/if}}
+                            <span class="fatigue-control {{#if system.stamina.fatigue}}active{{/if}}" title="{{localize 'TAMS.Rest.FatigueTooltip'}}">
+                                <span class="fatigue-sign">-</span>
+                                <input type="number" name="system.stamina.fatigue" value="{{system.stamina.fatigue}}" min="0" class="small-input fatigue-input"/>
+                                <span class="fatigue-label">{{localize 'TAMS.Rest.FatigueShort'}}</span>
+                            </span>
                         </div>
                     </div>
                 </li>
@@ -429,7 +433,11 @@
                                 <div class="fill" style="width: {{res.percentage}}%; background: {{#if res.isOpposed}}{{res.colorSecondary}}{{else}}{{res.color}}{{/if}} !important; {{#if res.isOpposed}}right: 0; position: absolute;{{/if}}"></div>
                             </div>
                             <span class="max-label"> / {{res.max}} </span>
-                            {{#if res.fatigue}}<span class="fatigue-badge" title="{{localize 'TAMS.Rest.FatigueTooltip'}}">-{{res.fatigue}} {{localize 'TAMS.Rest.FatigueShort'}}</span>{{/if}}
+                            <span class="fatigue-control {{#if res.fatigue}}active{{/if}}" title="{{localize 'TAMS.Rest.FatigueTooltip'}}">
+                                <span class="fatigue-sign">-</span>
+                                <input type="number" name="system.customResources.{{index}}.fatigue" value="{{res.fatigue}}" min="0" class="small-input fatigue-input"/>
+                                <span class="fatigue-label">{{localize 'TAMS.Rest.FatigueShort'}}</span>
+                            </span>
                         </div>
                     </div>
                 </li>
