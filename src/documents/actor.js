@@ -503,7 +503,10 @@ export class TAMSActor extends Actor {
       // value is actually pending, not just the previously-stored one.
       if (foundry.utils.hasProperty(updateData, "system.stamina.fatigue")) {
         const newFatigue = foundry.utils.getProperty(updateData, "system.stamina.fatigue");
-        const rawMax = computeRawStaminaMax(stats.endurance.total, this.system.stamina.mult, this.system.traitStaminaExtra);
+        const pendingMult = foundry.utils.hasProperty(updateData, "system.stamina.mult")
+          ? foundry.utils.getProperty(updateData, "system.stamina.mult")
+          : this.system.stamina.mult;
+        const rawMax = computeRawStaminaMax(stats.endurance.total, pendingMult, this.system.traitStaminaExtra);
         const newMax = computeFatiguedMax(rawMax, newFatigue);
         const pendingValue = foundry.utils.hasProperty(updateData, "system.stamina.value")
           ? foundry.utils.getProperty(updateData, "system.stamina.value")
@@ -516,7 +519,7 @@ export class TAMSActor extends Actor {
       for (let idx = 0; idx < customResources.length; idx++) {
         const fatiguePath = `system.customResources.${idx}.fatigue`;
         if (!foundry.utils.hasProperty(updateData, fatiguePath)) continue;
-        const orig = this.system.customResources[idx];
+        const orig = customResources[idx];
         const newFatigue = foundry.utils.getProperty(updateData, fatiguePath);
         const statVal = orig.stat === "custom" ? (orig.customValue ?? 10) : (stats[orig.stat]?.total || 0);
         const rawMax = computeRawResourceMax(statVal, orig.mult, orig.bonus);
