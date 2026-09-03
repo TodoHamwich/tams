@@ -71,6 +71,42 @@ describe('TAMSCharacterData', () => {
       charData._prepareStamina();
       expect(charData.stamina.max).toBe(18);
     });
+
+    it('reduces max stamina by fatigue', () => {
+      charData.stats.endurance.total = 12;
+      charData.stamina.mult = 1.5;
+      charData.stamina.fatigue = 5;
+      charData._prepareStamina();
+      expect(charData.stamina.max).toBe(13);
+    });
+
+    it('floors fatigued max at 0', () => {
+      charData.stats.endurance.total = 12;
+      charData.stamina.mult = 1.5;
+      charData.stamina.fatigue = 100;
+      charData._prepareStamina();
+      expect(charData.stamina.max).toBe(0);
+    });
+  });
+
+  describe('_prepareCustomResources', () => {
+    it('calculates max for a stat-linked resource, reduced by fatigue', () => {
+      charData.stats.intelligence = { total: 20 };
+      charData.customResources = [
+        { name: 'Mana', stat: 'intelligence', mult: 1.0, bonus: 0, fatigue: 3, value: 0, max: 0 }
+      ];
+      charData._prepareCustomResources();
+      expect(charData.customResources[0].max).toBe(17);
+    });
+
+    it('calculates max for a custom-stat resource using customValue', () => {
+      charData.customResources = [
+        { name: 'Grit', stat: 'custom', customValue: 10, mult: 2.0, bonus: 1, fatigue: 4, value: 0, max: 0 }
+      ];
+      charData._prepareCustomResources();
+      // (10 * 2.0) + 1 - 4 = 17
+      expect(charData.customResources[0].max).toBe(17);
+    });
   });
 
   describe('_prepareTraitModifiers', () => {

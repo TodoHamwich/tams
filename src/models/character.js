@@ -1,4 +1,5 @@
 import { computeEncumbrance } from '../utils/inventory.js';
+import { computeRawStaminaMax, computeRawResourceMax, computeFatiguedMax } from '../utils/fatigue.js';
 
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1.0, large: 1.5, huge: 2.0, giant: 2.5 };
 const SIZE_ORDER = ['tiny', 'small', 'normal', 'large', 'huge', 'giant'];
@@ -106,7 +107,9 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         value: new fields.NumberField({initial: 10, min: 0}),
         max: new fields.NumberField({initial: 10, min: 0}),
         mult: new fields.NumberField({initial: 1.0}),
-        color: new fields.StringField({initial: "#66bb6a"})
+        color: new fields.StringField({initial: "#66bb6a"}),
+        fatigue: new fields.NumberField({initial: 0, integer: true, min: 0}),
+        spentSinceRest: new fields.NumberField({initial: 0, integer: true, min: 0})
       }),
       customResources: new fields.ArrayField(new fields.SchemaField({
         name: new fields.StringField({initial: "New Resource"}),
@@ -119,8 +122,11 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         customValue: new fields.NumberField({initial: 10, min: 0}),
         color: new fields.StringField({initial: "#3498db"}),
         isOpposed: new fields.BooleanField({initial: false}),
-        colorSecondary: new fields.StringField({initial: "#e74c3c"})
+        colorSecondary: new fields.StringField({initial: "#e74c3c"}),
+        fatigue: new fields.NumberField({initial: 0, integer: true, min: 0}),
+        spentSinceRest: new fields.NumberField({initial: 0, integer: true, min: 0})
       })),
+      restSafe: new fields.BooleanField({initial: false}),
       theme: new fields.StringField({initial: "default"}),
       physicalNotes: new fields.StringField({initial: ""}),
       traits: new fields.StringField({initial: ""}),
@@ -353,8 +359,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    */
   _prepareStamina() {
     const end = this.stats.endurance.total;
-    const baseStamina = Math.max(1, end);
-    this.stamina.max = Math.floor(baseStamina * (this.stamina.mult || 1.0)) + (this.traitStaminaExtra || 0);
+    const rawMax = computeRawStaminaMax(end, this.stamina.mult, this.traitStaminaExtra);
+    this.stamina.max = computeFatiguedMax(rawMax, this.stamina.fatigue);
   }
 
   /**
@@ -364,7 +370,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   _prepareCustomResources() {
     for (const res of this.customResources) {
       const statVal = res.stat === "custom" ? (res.customValue ?? 10) : (this.stats[res.stat]?.total || 0);
-      res.max = Math.floor(statVal * (res.mult || 1.0)) + (res.bonus || 0);
+      const rawMax = computeRawResourceMax(statVal, res.mult, res.bonus);
+      res.max = computeFatiguedMax(rawMax, res.fatigue);
     }
   }
 

@@ -289,6 +289,14 @@
   font-weight: bold;
 }
 
+.tams .fatigue-badge {
+  font-size: 10px;
+  font-weight: bold;
+  color: #e67e22;
+  white-space: nowrap;
+  margin-left: 4px;
+}
+
 .tams .sheet-tabs {
   flex: 0 0 36px;
   border-top: 1px solid #AAA;

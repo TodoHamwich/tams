@@ -115,6 +115,26 @@ function computeArmorRepair({ value, max, rollTotal, alternate = false }) {
     success: shortfall === 0
   };
 }
+function computeRawStaminaMax(enduranceTotal, mult = 1, traitStaminaExtra = 0) {
+  const base = Math.max(1, enduranceTotal);
+  return Math.floor(base * (mult || 1)) + (traitStaminaExtra || 0);
+}
+function computeRawResourceMax(statValue, mult = 1, bonus = 0) {
+  return Math.floor((statValue || 0) * (mult || 1)) + (bonus || 0);
+}
+function computeFatiguedMax(rawMax, fatigue = 0) {
+  return Math.max(0, Math.floor(rawMax) - Math.max(0, fatigue || 0));
+}
+function computeShortRestFatigueGain(spentSinceRest = 0) {
+  if (!spentSinceRest || spentSinceRest <= 0) return 0;
+  return Math.max(1, Math.floor(spentSinceRest / 10));
+}
+function computeLongRestTickHeal(governingStatValue) {
+  return Math.floor((governingStatValue || 0) / 10);
+}
+function computeLongRestFatigueHeal(governingStatValue) {
+  return computeLongRestTickHeal(governingStatValue) * 2;
+}
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1, large: 1.5, huge: 2, giant: 2.5 };
 const SIZE_ORDER = ["tiny", "small", "normal", "large", "huge", "giant"];
 function getCapacityMode() {
@@ -197,7 +217,9 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         value: new fields.NumberField({ initial: 10, min: 0 }),
         max: new fields.NumberField({ initial: 10, min: 0 }),
         mult: new fields.NumberField({ initial: 1 }),
-        color: new fields.StringField({ initial: "#66bb6a" })
+        color: new fields.StringField({ initial: "#66bb6a" }),
+        fatigue: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+        spentSinceRest: new fields.NumberField({ initial: 0, integer: true, min: 0 })
       }),
       customResources: new fields.ArrayField(new fields.SchemaField({
         name: new fields.StringField({ initial: "New Resource" }),
@@ -210,8 +232,11 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         customValue: new fields.NumberField({ initial: 10, min: 0 }),
         color: new fields.StringField({ initial: "#3498db" }),
         isOpposed: new fields.BooleanField({ initial: false }),
-        colorSecondary: new fields.StringField({ initial: "#e74c3c" })
+        colorSecondary: new fields.StringField({ initial: "#e74c3c" }),
+        fatigue: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+        spentSinceRest: new fields.NumberField({ initial: 0, integer: true, min: 0 })
       })),
+      restSafe: new fields.BooleanField({ initial: false }),
       theme: new fields.StringField({ initial: "default" }),
       physicalNotes: new fields.StringField({ initial: "" }),
       traits: new fields.StringField({ initial: "" }),
@@ -426,8 +451,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    */
   _prepareStamina() {
     const end = this.stats.endurance.total;
-    const baseStamina = Math.max(1, end);
-    this.stamina.max = Math.floor(baseStamina * (this.stamina.mult || 1)) + (this.traitStaminaExtra || 0);
+    const rawMax = computeRawStaminaMax(end, this.stamina.mult, this.traitStaminaExtra);
+    this.stamina.max = computeFatiguedMax(rawMax, this.stamina.fatigue);
   }
   /**
    * Update maximum values for custom resources.
@@ -437,7 +462,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     var _a;
     for (const res of this.customResources) {
       const statVal = res.stat === "custom" ? res.customValue ?? 10 : ((_a = this.stats[res.stat]) == null ? void 0 : _a.total) || 0;
-      res.max = Math.floor(statVal * (res.mult || 1)) + (res.bonus || 0);
+      const rawMax = computeRawResourceMax(statVal, res.mult, res.bonus);
+      res.max = computeFatiguedMax(rawMax, res.fatigue);
     }
   }
   /**
@@ -3801,6 +3827,128 @@ class TAMSActor extends Actor {
       });
     }
   }
+  /**
+   * Build/extend a partial update object that spends `amount` from a resource
+   * (Stamina, or a customResources entry), tracking spentSinceRest for Fatigue.
+   * Synchronous — does not call update() itself, so multiple calls can be merged
+   * into one actor.update() (e.g. a split spend across a custom resource and Stamina).
+   * @param {"stamina"|number|string} resourceKey "stamina", or a customResources index.
+   * @param {number} amount Amount to spend (should be > 0).
+   * @param {object} [updates={}] Partial update object to extend and return.
+   * @returns {object} The extended updates object.
+   */
+  applyResourceSpend(resourceKey, amount, updates = {}) {
+    if (!amount || amount <= 0) return updates;
+    if (resourceKey === "stamina") {
+      const current = updates["system.stamina.value"] ?? this.system.stamina.value;
+      const spent = updates["system.stamina.spentSinceRest"] ?? (this.system.stamina.spentSinceRest ?? 0);
+      updates["system.stamina.value"] = Math.max(0, current - amount);
+      updates["system.stamina.spentSinceRest"] = spent + amount;
+      return updates;
+    }
+    const idx = parseInt(resourceKey);
+    const customResources = updates["system.customResources"] ?? foundry.utils.duplicate(this.system.customResources ?? []);
+    if (!customResources[idx]) return updates;
+    customResources[idx].value = Math.max(0, (customResources[idx].value ?? 0) - amount);
+    customResources[idx].spentSinceRest = (customResources[idx].spentSinceRest ?? 0) + amount;
+    updates["system.customResources"] = customResources;
+    return updates;
+  }
+  /**
+   * Take a Short Rest: refill every resource's current value to its (Fatigue-reduced)
+   * max, and gain Fatigue on any resource that had spending since the last Short Rest.
+   * @returns {Promise<{resources: {name: string, fatigueGained: number, refillAmount: number, newMax: number}[]}>}
+   */
+  async takeShortRest() {
+    const sys = this.system;
+    const updates = {};
+    const resources = [];
+    const staminaSpent = sys.stamina.spentSinceRest ?? 0;
+    const staminaGain = computeShortRestFatigueGain(staminaSpent);
+    const staminaNewFatigue = (sys.stamina.fatigue ?? 0) + staminaGain;
+    const staminaRawMax = computeRawStaminaMax(sys.stats.endurance.total, sys.stamina.mult, sys.traitStaminaExtra);
+    const staminaNewMax = computeFatiguedMax(staminaRawMax, staminaNewFatigue);
+    updates["system.stamina.fatigue"] = staminaNewFatigue;
+    updates["system.stamina.spentSinceRest"] = 0;
+    updates["system.stamina.value"] = staminaNewMax;
+    resources.push({
+      name: game.i18n.localize("TAMS.Stamina"),
+      fatigueGained: staminaGain,
+      refillAmount: Math.max(0, staminaNewMax - sys.stamina.value),
+      newMax: staminaNewMax
+    });
+    const customResources = foundry.utils.duplicate(sys.customResources ?? []);
+    customResources.forEach((res, idx) => {
+      var _a;
+      const spent = res.spentSinceRest ?? 0;
+      const gain = computeShortRestFatigueGain(spent);
+      const newFatigue = (res.fatigue ?? 0) + gain;
+      const statVal = res.stat === "custom" ? res.customValue ?? 10 : ((_a = sys.stats[res.stat]) == null ? void 0 : _a.total) || 0;
+      const rawMax = computeRawResourceMax(statVal, res.mult, res.bonus);
+      const newMax = computeFatiguedMax(rawMax, newFatigue);
+      customResources[idx].fatigue = newFatigue;
+      customResources[idx].spentSinceRest = 0;
+      customResources[idx].value = newMax;
+      resources.push({
+        name: res.name,
+        fatigueGained: gain,
+        refillAmount: Math.max(0, newMax - res.value),
+        newMax
+      });
+    });
+    updates["system.customResources"] = customResources;
+    await this.update(updates);
+    return { resources };
+  }
+  /**
+   * Take a Long Rest: heal Fatigue on every resource via a bundled dinner+sleep tick.
+   * Gated to a rolling-24h use cap (Unsafe = 1, Safe = 3), tracked via a worldTime
+   * timestamp array flag (generalizes the once-per-day medicalAidGiven pattern).
+   * @returns {Promise<{blocked: boolean, cap?: number, resources?: {name: string, fatigueHealed: number, newFatigue: number}[]}>}
+   */
+  async takeLongRest() {
+    var _a;
+    const sys = this.system;
+    const cap = sys.restSafe ? 3 : 1;
+    const daySeconds = 86400;
+    const now = ((_a = game.time) == null ? void 0 : _a.worldTime) ?? 0;
+    const uses = (this.getFlag("tams", "longRestUses") ?? []).filter((t) => now - t < daySeconds);
+    if (uses.length >= cap) {
+      return { blocked: true, cap };
+    }
+    const updates = {};
+    const resources = [];
+    const staminaHeal = computeLongRestFatigueHeal(sys.stats.endurance.total);
+    if (staminaHeal > 0 && (sys.stamina.fatigue ?? 0) > 0) {
+      const newFatigue = Math.max(0, sys.stamina.fatigue - staminaHeal);
+      updates["system.stamina.fatigue"] = newFatigue;
+      resources.push({
+        name: game.i18n.localize("TAMS.Stamina"),
+        fatigueHealed: sys.stamina.fatigue - newFatigue,
+        newFatigue
+      });
+    }
+    const customResources = foundry.utils.duplicate(sys.customResources ?? []);
+    let crChanged = false;
+    customResources.forEach((res, idx) => {
+      var _a2;
+      if ((res.fatigue ?? 0) <= 0) return;
+      const governingStat = res.stat === "custom" ? res.customValue ?? 0 : ((_a2 = sys.stats[res.stat]) == null ? void 0 : _a2.total) ?? 0;
+      const heal = computeLongRestFatigueHeal(governingStat);
+      if (heal <= 0) return;
+      const newFatigue = Math.max(0, res.fatigue - heal);
+      customResources[idx].fatigue = newFatigue;
+      crChanged = true;
+      resources.push({ name: res.name, fatigueHealed: res.fatigue - newFatigue, newFatigue });
+    });
+    if (crChanged) updates["system.customResources"] = customResources;
+    if (resources.length === 0) {
+      return { blocked: false, resources: [] };
+    }
+    await this.update(updates);
+    await this.setFlag("tams", "longRestUses", [...uses, now]);
+    return { blocked: false, resources };
+  }
   /** @override */
   async _onCreateEmbeddedDocuments(embeddedName, documents, result, options, userId) {
     var _a, _b;
@@ -4566,19 +4714,32 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         await this.document.toggleStatusEffect(statusId, { active: false });
       });
     });
-    this.element.querySelectorAll(".tams-rest-stamina").forEach((btn) => {
+    this.element.querySelectorAll(".tams-short-rest").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const actor = this.document;
-        const end = actor.system.stats.endurance.total;
-        const recovery = Math.floor(end / 10);
-        if (recovery <= 0) return;
-        const current = actor.system.stamina.value;
-        const max = actor.system.stamina.max;
-        const newVal = Math.min(max, current + recovery);
-        await actor.update({ "system.stamina.value": newVal });
+        const result = await actor.takeShortRest();
+        const lines = result.resources.filter((r) => r.fatigueGained > 0 || r.refillAmount > 0).map((r) => game.i18n.format("TAMS.Rest.ShortRestLine", { name: r.name, refill: r.refillAmount, fatigue: r.fatigueGained }));
+        if (lines.length === 0) return;
         ChatMessage.create({
           speaker: ChatMessage.getSpeaker({ actor }),
-          content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.StaminaRestMessage", { name: actor.name, amount: recovery })}</div></div>`
+          content: `<div class="tams-roll">${lines.map((l) => `<div class="roll-row">${l}</div>`).join("")}</div>`
+        });
+      });
+    });
+    this.element.querySelectorAll(".tams-long-rest").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const actor = this.document;
+        const result = await actor.takeLongRest();
+        if (result.blocked) {
+          return ui.notifications.warn(game.i18n.format("TAMS.Rest.LongRestBlocked", { cap: result.cap }));
+        }
+        const lines = result.resources.filter((r) => r.fatigueHealed > 0).map((r) => game.i18n.format("TAMS.Rest.LongRestLine", { name: r.name, healed: r.fatigueHealed }));
+        if (lines.length === 0) {
+          return ui.notifications.info(game.i18n.localize("TAMS.Rest.NoFatigue"));
+        }
+        ChatMessage.create({
+          speaker: ChatMessage.getSpeaker({ actor }),
+          content: `<div class="tams-roll">${lines.map((l) => `<div class="roll-row">${l}</div>`).join("")}</div>`
         });
       });
     });
@@ -5426,7 +5587,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughStaminaRecharge", { item: item.name, cost: totalCost, current: actor.system.stamina.value }));
             return;
           }
-          await actor.update({ "system.stamina.value": actor.system.stamina.value - totalCost });
+          await actor.update(actor.applyResourceSpend("stamina", totalCost));
         } else {
           const resIndex = parseInt(resourceId);
           if (!isNaN(resIndex) && actor.system.customResources[resIndex]) {
@@ -5435,7 +5596,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
               ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResourceRecharge", { resource: res.name, item: item.name, cost: totalCost, current: res.value }));
               return;
             }
-            await actor.update({ [`system.customResources.${resIndex}.value`]: res.value - totalCost });
+            await actor.update(actor.applyResourceSpend(resIndex, totalCost));
           }
         }
       }
@@ -6344,12 +6505,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                 const res = resources.find((r) => r.id === resId);
                 if (res.value < totalCost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughToBoost"));
                 if (resId === "stamina") {
-                  await actor.update({ "system.stamina.value": res.value - totalCost });
+                  await actor.update(actor.applyResourceSpend("stamina", totalCost));
                 } else {
-                  const idx = parseInt(resId);
-                  const customResources = foundry.utils.duplicate(actor.system.customResources);
-                  customResources[idx].value -= totalCost;
-                  await actor.update({ "system.customResources": customResources });
+                  await actor.update(actor.applyResourceSpend(parseInt(resId), totalCost));
                 }
                 await item.update({ "system.uses.value": usesVal + amount });
                 ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.RefilledUses", { amount, item: item.name }));
@@ -6375,7 +6533,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         if (resourceKey === "stamina") {
           const current = this.document.system.stamina.value;
           if (current < effectiveCost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
-          await this.document.update({ "system.stamina.value": current - effectiveCost });
+          await this.document.update(this.document.applyResourceSpend("stamina", effectiveCost));
         } else {
           const idx = parseInt(resourceKey);
           const res = this.document.system.customResources[idx];
@@ -6392,16 +6550,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                 rejectClose: false
               });
               if (!useBoth) return;
-              const resources = foundry.utils.duplicate(this.document.system.customResources);
-              resources[idx].value = 0;
-              await this.document.update({
-                "system.customResources": resources,
-                "system.stamina.value": stamina - remaining
-              });
+              const spendUpdates = this.document.applyResourceSpend(idx, res.value);
+              this.document.applyResourceSpend("stamina", remaining, spendUpdates);
+              await this.document.update(spendUpdates);
             } else {
-              const resources = foundry.utils.duplicate(this.document.system.customResources);
-              resources[idx].value -= effectiveCost;
-              await this.document.update({ "system.customResources": resources });
+              await this.document.update(this.document.applyResourceSpend(idx, effectiveCost));
             }
           }
         }

@@ -137,19 +137,37 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       });
     });
 
-    this.element.querySelectorAll(".tams-rest-stamina").forEach(btn => {
+    this.element.querySelectorAll(".tams-short-rest").forEach(btn => {
       btn.addEventListener("click", async () => {
         const actor = this.document;
-        const end = actor.system.stats.endurance.total;
-        const recovery = Math.floor(end / 10);
-        if (recovery <= 0) return;
-        const current = actor.system.stamina.value;
-        const max = actor.system.stamina.max;
-        const newVal = Math.min(max, current + recovery);
-        await actor.update({ "system.stamina.value": newVal });
+        const result = await actor.takeShortRest();
+        const lines = result.resources
+          .filter(r => r.fatigueGained > 0 || r.refillAmount > 0)
+          .map(r => game.i18n.format("TAMS.Rest.ShortRestLine", { name: r.name, refill: r.refillAmount, fatigue: r.fatigueGained }));
+        if (lines.length === 0) return;
         ChatMessage.create({
           speaker: ChatMessage.getSpeaker({ actor }),
-          content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.StaminaRestMessage", { name: actor.name, amount: recovery })}</div></div>`
+          content: `<div class="tams-roll">${lines.map(l => `<div class="roll-row">${l}</div>`).join("")}</div>`
+        });
+      });
+    });
+
+    this.element.querySelectorAll(".tams-long-rest").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const actor = this.document;
+        const result = await actor.takeLongRest();
+        if (result.blocked) {
+          return ui.notifications.warn(game.i18n.format("TAMS.Rest.LongRestBlocked", { cap: result.cap }));
+        }
+        const lines = result.resources
+          .filter(r => r.fatigueHealed > 0)
+          .map(r => game.i18n.format("TAMS.Rest.LongRestLine", { name: r.name, healed: r.fatigueHealed }));
+        if (lines.length === 0) {
+          return ui.notifications.info(game.i18n.localize("TAMS.Rest.NoFatigue"));
+        }
+        ChatMessage.create({
+          speaker: ChatMessage.getSpeaker({ actor }),
+          content: `<div class="tams-roll">${lines.map(l => `<div class="roll-row">${l}</div>`).join("")}</div>`
         });
       });
     });
@@ -1045,7 +1063,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughStaminaRecharge", {item: item.name, cost: totalCost, current: actor.system.stamina.value}));
             return;
           }
-          await actor.update({ "system.stamina.value": actor.system.stamina.value - totalCost });
+          await actor.update(actor.applyResourceSpend("stamina", totalCost));
         } else {
           const resIndex = parseInt(resourceId);
           if (!isNaN(resIndex) && actor.system.customResources[resIndex]) {
@@ -1054,7 +1072,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
               ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResourceRecharge", {resource: res.name, item: item.name, cost: totalCost, current: res.value}));
               return;
             }
-            await actor.update({ [`system.customResources.${resIndex}.value`]: res.value - totalCost });
+            await actor.update(actor.applyResourceSpend(resIndex, totalCost));
           }
         }
       }
@@ -2064,12 +2082,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         if (res.value < totalCost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughToBoost"));
 
                         if (resId === 'stamina') {
-                            await actor.update({"system.stamina.value": res.value - totalCost});
+                            await actor.update(actor.applyResourceSpend("stamina", totalCost));
                         } else {
-                            const idx = parseInt(resId);
-                            const customResources = foundry.utils.duplicate(actor.system.customResources);
-                            customResources[idx].value -= totalCost;
-                            await actor.update({"system.customResources": customResources});
+                            await actor.update(actor.applyResourceSpend(parseInt(resId), totalCost));
                         }
                         await item.update({"system.uses.value": usesVal + amount});
                         ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.RefilledUses", {amount, item: item.name}));
@@ -2098,7 +2113,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             if (resourceKey === 'stamina') {
                 const current = this.document.system.stamina.value;
                 if (current < effectiveCost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
-                await this.document.update({"system.stamina.value": current - effectiveCost});
+                await this.document.update(this.document.applyResourceSpend("stamina", effectiveCost));
             } else {
                 const idx = parseInt(resourceKey);
                 const res = this.document.system.customResources[idx];
@@ -2118,16 +2133,11 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
                         if (!useBoth) return;
 
-                        const resources = foundry.utils.duplicate(this.document.system.customResources);
-                        resources[idx].value = 0;
-                        await this.document.update({
-                            "system.customResources": resources,
-                            "system.stamina.value": stamina - remaining
-                        });
+                        const spendUpdates = this.document.applyResourceSpend(idx, res.value);
+                        this.document.applyResourceSpend("stamina", remaining, spendUpdates);
+                        await this.document.update(spendUpdates);
                     } else {
-                        const resources = foundry.utils.duplicate(this.document.system.customResources);
-                        resources[idx].value -= effectiveCost;
-                        await this.document.update({"system.customResources": resources});
+                        await this.document.update(this.document.applyResourceSpend(idx, effectiveCost));
                     }
                 }
             }
