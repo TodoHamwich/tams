@@ -351,6 +351,29 @@ export class TAMSActor extends Actor {
     }
     // ----------------------------
 
+    // Dying countdown: if the limb that triggered it gets healed back above
+    // the -max threshold, clear the stale countdown — otherwise tamsOnTurnStart
+    // keeps ticking it down and posting "is dying" messages after recovery.
+    {
+      const dyingCountdown = this.getFlag('tams', 'dyingCountdown');
+      if (dyingCountdown) {
+        const valuePath = `system.limbs.${dyingCountdown.limbKey}.value`;
+        if (foundry.utils.hasProperty(updateData, valuePath)) {
+          const maxPath = `system.limbs.${dyingCountdown.limbKey}.max`;
+          const pendingValue = foundry.utils.getProperty(updateData, valuePath);
+          const pendingMax = foundry.utils.hasProperty(updateData, maxPath)
+            ? foundry.utils.getProperty(updateData, maxPath)
+            : this.system.limbs[dyingCountdown.limbKey].max;
+          if (pendingValue >= -pendingMax) {
+            await this.setFlag('tams', 'dyingCountdown', null);
+            if (this.statuses?.has('unconscious')) {
+              await this.toggleStatusEffect('unconscious', { active: false });
+            }
+          }
+        }
+      }
+    }
+
     // Check for endurance or squad size changes to adjust HP accordingly
     const stats = this.system.stats;
     const settings = this.system.settings;

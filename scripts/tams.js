@@ -3542,7 +3542,7 @@ class TAMSActor extends Actor {
   }
   /** @override */
   async _preUpdate(updateData, options, user) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
     const res = await super._preUpdate(updateData, options, user);
     if (res === false) return false;
     const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
@@ -3561,6 +3561,23 @@ class TAMSActor extends Actor {
           } else {
             foundry.utils.setProperty(updateData, `system.limbs.${key}.armor`, 0);
             foundry.utils.setProperty(updateData, `system.limbs.${key}.armorMax`, 0);
+          }
+        }
+      }
+    }
+    {
+      const dyingCountdown = this.getFlag("tams", "dyingCountdown");
+      if (dyingCountdown) {
+        const valuePath = `system.limbs.${dyingCountdown.limbKey}.value`;
+        if (foundry.utils.hasProperty(updateData, valuePath)) {
+          const maxPath = `system.limbs.${dyingCountdown.limbKey}.max`;
+          const pendingValue = foundry.utils.getProperty(updateData, valuePath);
+          const pendingMax = foundry.utils.hasProperty(updateData, maxPath) ? foundry.utils.getProperty(updateData, maxPath) : this.system.limbs[dyingCountdown.limbKey].max;
+          if (pendingValue >= -pendingMax) {
+            await this.setFlag("tams", "dyingCountdown", null);
+            if ((_c = this.statuses) == null ? void 0 : _c.has("unconscious")) {
+              await this.toggleStatusEffect("unconscious", { active: false });
+            }
           }
         }
       }
@@ -3604,15 +3621,15 @@ class TAMSActor extends Actor {
         const hasVal = foundry.utils.hasProperty(updateData, `system.stats.${statKey}.value`);
         const hasMod = foundry.utils.hasProperty(updateData, `system.stats.${statKey}.mod`);
         if (!hasVal && !hasMod) continue;
-        const traitBonus = ((_c = stats[statKey]) == null ? void 0 : _c.traitBonus) || 0;
-        const oldTotal = ((_d = stats[statKey]) == null ? void 0 : _d.total) ?? 0;
-        const newTotal = (hasVal ? foundry.utils.getProperty(updateData, `system.stats.${statKey}.value`) : ((_e = stats[statKey]) == null ? void 0 : _e.value) ?? 0) + (hasMod ? foundry.utils.getProperty(updateData, `system.stats.${statKey}.mod`) : ((_f = stats[statKey]) == null ? void 0 : _f.mod) || 0) + traitBonus;
+        const traitBonus = ((_d = stats[statKey]) == null ? void 0 : _d.traitBonus) || 0;
+        const oldTotal = ((_e = stats[statKey]) == null ? void 0 : _e.total) ?? 0;
+        const newTotal = (hasVal ? foundry.utils.getProperty(updateData, `system.stats.${statKey}.value`) : ((_f = stats[statKey]) == null ? void 0 : _f.value) ?? 0) + (hasMod ? foundry.utils.getProperty(updateData, `system.stats.${statKey}.mod`) : ((_g = stats[statKey]) == null ? void 0 : _g.mod) || 0) + traitBonus;
         const statDelta = newTotal - oldTotal;
         if (statDelta === 0) continue;
         if (statKey === "endurance") {
           const staminaPath = "system.stamina.value";
           if (!foundry.utils.hasProperty(updateData, staminaPath)) {
-            const mult = ((_g = this.system.stamina) == null ? void 0 : _g.mult) ?? 1;
+            const mult = ((_h = this.system.stamina) == null ? void 0 : _h.mult) ?? 1;
             const staminaDelta = Math.floor(statDelta * mult);
             if (staminaDelta !== 0) {
               const newStamina = this.system.stamina.value + staminaDelta;
@@ -3659,7 +3676,7 @@ class TAMSActor extends Actor {
       }
       if (foundry.utils.hasProperty(updateData, "system.stamina.mult") && !foundry.utils.hasProperty(updateData, "system.stamina.value")) {
         const newMult = foundry.utils.getProperty(updateData, "system.stamina.mult");
-        const oldMult = ((_h = this.system.stamina) == null ? void 0 : _h.mult) ?? 1;
+        const oldMult = ((_i = this.system.stamina) == null ? void 0 : _i.mult) ?? 1;
         if (newMult !== oldMult) {
           const endTotal = this.system.stats.endurance.total;
           const delta = Math.floor(endTotal * newMult) - Math.floor(endTotal * oldMult);
@@ -3674,7 +3691,7 @@ class TAMSActor extends Actor {
         const newMult = foundry.utils.getProperty(updateData, multPath);
         const oldMult = origRes.mult ?? 1;
         if (newMult === oldMult || origRes.stat === "custom") continue;
-        const statVal = ((_i = this.system.stats[origRes.stat]) == null ? void 0 : _i.total) || 0;
+        const statVal = ((_j = this.system.stats[origRes.stat]) == null ? void 0 : _j.total) || 0;
         const delta = Math.floor(statVal * newMult) - Math.floor(statVal * oldMult);
         if (delta === 0) continue;
         customResources[idx].value = (customResources[idx].value ?? 0) + delta;
@@ -3697,7 +3714,7 @@ class TAMSActor extends Actor {
         if (!foundry.utils.hasProperty(updateData, fatiguePath)) continue;
         const orig = customResources[idx];
         const newFatigue = foundry.utils.getProperty(updateData, fatiguePath);
-        const statVal = orig.stat === "custom" ? orig.customValue ?? 10 : ((_j = stats[orig.stat]) == null ? void 0 : _j.total) || 0;
+        const statVal = orig.stat === "custom" ? orig.customValue ?? 10 : ((_k = stats[orig.stat]) == null ? void 0 : _k.total) || 0;
         const rawMax = computeRawResourceMax(statVal, orig.mult, orig.bonus);
         const newMax = computeFatiguedMax(rawMax, newFatigue);
         const valuePath = `system.customResources.${idx}.value`;
@@ -3711,7 +3728,7 @@ class TAMSActor extends Actor {
       if (customResourcesChanged)
         foundry.utils.setProperty(updateData, "system.customResources", customResources);
       if (warnings.length) {
-        const gmIds = ((_k = game.users) == null ? void 0 : _k.filter((u) => u.isGM).map((u) => u.id)) ?? [];
+        const gmIds = ((_l = game.users) == null ? void 0 : _l.filter((u) => u.isGM).map((u) => u.id)) ?? [];
         ChatMessage.create({
           whisper: gmIds,
           content: `<div class="tams-roll">${warnings.map((w) => `<div class="tams-crit failure">⚠ ${w} (insufficient resources)</div>`).join("")}</div>`
