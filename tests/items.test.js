@@ -91,6 +91,37 @@ describe('TAMSWeaponData', () => {
       mockActor.system.stats.strength.total = 1000;
       expect(weaponData.calculatedDamage).toBe(1000); // 1.0 multiplier
     });
+
+    it('sums damageComponents amounts when present, ignoring the stat formula', () => {
+      weaponData.isRanged = false;
+      weaponData.isHeavy = true;
+      weaponData.isTwoHanded = true; // would otherwise be 20 * 1.0 = 20
+      weaponData.damageComponents = [
+        { damageType: "slashing", amount: 6 },
+        { damageType: "necrotic", amount: 4.7 },
+      ];
+      expect(weaponData.calculatedDamage).toBe(10); // 6 + floor(4.7) = 10
+    });
+  });
+
+  describe('damageBreakdown', () => {
+    it('wraps the legacy single damageType/calculatedDamage into a one-element array', () => {
+      weaponData.isRanged = true;
+      weaponData.rangedDamage = 25;
+      weaponData.damageType = "piercing";
+      expect(weaponData.damageBreakdown).toEqual([{ damageType: "piercing", damage: 25 }]);
+    });
+
+    it('returns each damageComponents entry as its own breakdown item when present', () => {
+      weaponData.damageComponents = [
+        { damageType: "slashing", amount: 6 },
+        { damageType: "necrotic", amount: 4 },
+      ];
+      expect(weaponData.damageBreakdown).toEqual([
+        { damageType: "slashing", damage: 6 },
+        { damageType: "necrotic", damage: 4 },
+      ]);
+    });
   });
 });
 
@@ -166,6 +197,41 @@ describe('TAMSAbilityData', () => {
       abilityData.damageBonus = 5;
       abilityData.parent = { actor: {} };
       expect(abilityData.calculatedDamage).toBe(15);
+    });
+
+    it('sums damageComponents amounts when present, ignoring damage/damageStat/damageMult', () => {
+      abilityData.isAttack = true;
+      abilityData.damageStat = 'custom';
+      abilityData.damage = 999; // should be ignored
+      abilityData.damageComponents = [
+        { damageType: "slashing", amount: 6 },
+        { damageType: "necrotic", amount: 4 },
+      ];
+      abilityData.parent = { actor: {} };
+      expect(abilityData.calculatedDamage).toBe(10);
+    });
+  });
+
+  describe('damageBreakdown', () => {
+    it('wraps the legacy single damageType/calculatedDamage into a one-element array', () => {
+      abilityData.isAttack = true;
+      abilityData.damageStat = 'custom';
+      abilityData.damage = 10;
+      abilityData.damageBonus = 0;
+      abilityData.damageType = "necrotic";
+      abilityData.parent = { actor: {} };
+      expect(abilityData.damageBreakdown).toEqual([{ damageType: "necrotic", damage: 10 }]);
+    });
+
+    it('returns each damageComponents entry as its own breakdown item when present', () => {
+      abilityData.damageComponents = [
+        { damageType: "slashing", amount: 6 },
+        { damageType: "necrotic", amount: 4 },
+      ];
+      expect(abilityData.damageBreakdown).toEqual([
+        { damageType: "slashing", damage: 6 },
+        { damageType: "necrotic", damage: 4 },
+      ]);
     });
   });
 

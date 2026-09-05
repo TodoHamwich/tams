@@ -168,6 +168,67 @@ describe('TAMSActor applyDamage', () => {
     });
   });
 
+  describe('Multi-type damage components', () => {
+    beforeEach(() => {
+      actor.system.effectiveResistances = [
+        { damageType: "necrotic", category: "resistance", value: 3, limbs: [] },
+        { damageType: "poison", category: "immunity", value: 999, limbs: [] },
+      ];
+    });
+
+    it('applies resistance to only the matching component, not the combined total', async () => {
+      // 6 slashing (unresisted) + 4 necrotic (resisted by 3) = 6 + 1 = 7 effective.
+      // A naive fold-then-resist-the-total approach would wrongly give 10 - 3 = 7 here too by
+      // coincidence, so this case alone doesn't distinguish the bug — see the immunity test below
+      // for a case where folding and per-component resistance diverge.
+      const hits = [{
+        damage: 10, location: "Thorax", armourPen: 0,
+        damageComponents: [
+          { damageType: "slashing", damage: 6 },
+          { damageType: "necrotic", damage: 4 },
+        ],
+      }];
+      await actor.applyTAMSDamage(hits);
+      expect(actor.system.limbs.thorax.value).toBe(3); // 10 - 7
+    });
+
+    it('immunizes only the immune component, leaving the rest of the hit at full effect', async () => {
+      // 6 slashing (unresisted) + 4 poison (immune, zeroed) = 6 + 0 = 6 effective.
+      // Folding both into one "poison" hit and applying immunity would wrongly zero the whole 10.
+      const hits = [{
+        damage: 10, location: "Thorax", armourPen: 0,
+        damageComponents: [
+          { damageType: "slashing", damage: 6 },
+          { damageType: "poison", damage: 4 },
+        ],
+      }];
+      await actor.applyTAMSDamage(hits);
+      expect(actor.system.limbs.thorax.value).toBe(4); // 10 - 6
+    });
+
+    it('falls back to legacy single damageType hits unchanged when damageComponents is absent', async () => {
+      const hits = [{ damage: 10, location: "Thorax", armourPen: 0, damageType: "necrotic" }];
+      await actor.applyTAMSDamage(hits);
+      // 10 necrotic, resisted by 3 => 7 effective.
+      expect(actor.system.limbs.thorax.value).toBe(3); // 10 - 7
+    });
+
+    it('splits armor reduction across components proportionally before resisting', async () => {
+      actor.system.limbs.thorax.armor = 5;
+      // 10 total (6 slashing / 4 necrotic) - 5 armor = 5 effective post-armor, split 3/2 by ratio.
+      // Necrotic share (2) resisted by 3 => 0. Slashing share (3) unresisted => 3. Total effective 3.
+      const hits = [{
+        damage: 10, location: "Thorax", armourPen: 0,
+        damageComponents: [
+          { damageType: "slashing", damage: 6 },
+          { damageType: "necrotic", damage: 4 },
+        ],
+      }];
+      await actor.applyTAMSDamage(hits);
+      expect(actor.system.limbs.thorax.value).toBe(7); // 10 - 3
+    });
+  });
+
   describe('Survival and Injury Checks', () => {
     it('triggers an unconscious check if total HP is negative', async () => {
         // Mock total HP being negative after the update

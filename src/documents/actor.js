@@ -89,40 +89,74 @@ export class TAMSActor extends Actor {
         let overflow = 0;
 
         let resistanceLabel = "";
-        const damageType = hit.damageType || "";
-        if (damageType && this.system.effectiveResistances?.length) {
-            let match = this.system.effectiveResistances.find(
-                r => r.damageType === damageType
-                  && (r.limbs ?? []).length > 0
-                  && r.limbs.includes(limbKey)
-            );
-            if (!match) {
-                match = this.system.effectiveResistances.find(
-                    r => r.damageType === damageType && (r.limbs ?? []).length === 0
-                );
-            }
-            if (match) {
-                const typeName = game.i18n.localize(`TAMS.DamageType.${match.damageType}`);
-                if (match.category === "immunity") {
-                    effective = 0;
-                    resistanceLabel = game.i18n.format("TAMS.Combat.Immune", {type: typeName});
-                } else if (match.category === "resistance") {
-                    const reduced = Math.min(effective, match.value);
-                    effective = Math.max(0, effective - match.value);
-                    resistanceLabel = game.i18n.format("TAMS.Combat.Resisted", {value: reduced, type: typeName});
-                } else if (match.category === "vulnerability") {
-                    effective = effective + match.value;
-                    resistanceLabel = game.i18n.format("TAMS.Combat.Vulnerable", {value: match.value, type: typeName});
-                } else if (match.category === "healing") {
-                    const healAmount = effective + (match.value || 0);
-                    resistanceLabel = game.i18n.format("TAMS.Combat.HealedFrom", {value: healAmount, type: typeName});
-                    const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
-                    updates[`system.limbs.${limbKey}.value`] = Math.min(limb.max, currentHp + healAmount);
-                    report += `• ${game.i18n.format("TAMS.Checks.HealReport", {loc, amount: healAmount})}<br>`;
-                    report += `  ↳ ${resistanceLabel}<br>`;
-                    continue;
+        // Support a hit dealing damage split across multiple types (each independently subject
+        // to resistances/immunities/vulnerabilities). Old-shape hits (a single damageType string)
+        // are wrapped into a one-element array, so the loop below reproduces prior behavior
+        // exactly when there's nothing to split.
+        const damageComponents = hit.damageComponents?.length
+            ? hit.damageComponents
+            : [{damageType: hit.damageType || "", damage: hit.damage}];
+        const totalComponentDamage = damageComponents.reduce((sum, c) => sum + Math.max(0, Math.floor(c.damage || 0)), 0);
+
+        if (this.system.effectiveResistances?.length && totalComponentDamage > 0) {
+            const resistanceLabels = [];
+            let healedThisHit = false;
+            let adjustedEffective = 0;
+            let remainingShare = effective;
+
+            for (let ci = 0; ci < damageComponents.length; ci++) {
+                const compDamage = Math.max(0, Math.floor(damageComponents[ci].damage || 0));
+                const isLast = ci === damageComponents.length - 1;
+                // Proportional share of the post-armor `effective`; the last component absorbs
+                // any rounding remainder so shares always sum exactly to `effective`.
+                const share = isLast ? remainingShare : Math.round(effective * (compDamage / totalComponentDamage));
+                remainingShare -= share;
+
+                let compEffective = share;
+                const damageType = damageComponents[ci].damageType || "";
+                if (damageType) {
+                    let match = this.system.effectiveResistances.find(
+                        r => r.damageType === damageType
+                          && (r.limbs ?? []).length > 0
+                          && r.limbs.includes(limbKey)
+                    );
+                    if (!match) {
+                        match = this.system.effectiveResistances.find(
+                            r => r.damageType === damageType && (r.limbs ?? []).length === 0
+                        );
+                    }
+                    if (match) {
+                        const typeName = game.i18n.localize(`TAMS.DamageType.${match.damageType}`);
+                        if (match.category === "immunity") {
+                            compEffective = 0;
+                            resistanceLabels.push(game.i18n.format("TAMS.Combat.Immune", {type: typeName}));
+                        } else if (match.category === "resistance") {
+                            const reduced = Math.min(compEffective, match.value);
+                            compEffective = Math.max(0, compEffective - match.value);
+                            resistanceLabels.push(game.i18n.format("TAMS.Combat.Resisted", {value: reduced, type: typeName}));
+                        } else if (match.category === "vulnerability") {
+                            compEffective = compEffective + match.value;
+                            resistanceLabels.push(game.i18n.format("TAMS.Combat.Vulnerable", {value: match.value, type: typeName}));
+                        } else if (match.category === "healing") {
+                            const healAmount = compEffective + (match.value || 0);
+                            const healLabel = game.i18n.format("TAMS.Combat.HealedFrom", {value: healAmount, type: typeName});
+                            const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
+                            updates[`system.limbs.${limbKey}.value`] = Math.min(limb.max, currentHp + healAmount);
+                            report += `• ${game.i18n.format("TAMS.Checks.HealReport", {loc, amount: healAmount})}<br>`;
+                            report += `  ↳ ${healLabel}<br>`;
+                            healedThisHit = true;
+                            continue;
+                        }
+                    }
                 }
+                adjustedEffective += compEffective;
             }
+
+            // A healing component heals the limb and skips the rest of this hit's damage
+            // entirely, matching the original single-type behavior's early exit.
+            if (healedThisHit) continue;
+            effective = adjustedEffective;
+            resistanceLabel = resistanceLabels.join(", ");
         }
 
         if (isSquadOrHorde) {

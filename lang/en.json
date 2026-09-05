@@ -533,7 +533,8 @@
         "CheckLabel": "Save",
         "Success": "Save succeeded — effect resisted.",
         "Failure": "Save failed — effect applies.",
-        "NoActor": "Select a token or assign a character to make a save."
+        "NoActor": "Select a token or assign a character to make a save.",
+        "BoostTitle": "Boost Save Result"
     },
     "Firearm": {
         "MisfireLabel": "MISFIRE",
@@ -914,7 +915,11 @@
       "psychic": "Psychic",
       "divine": "Divine",
       "positive": "Positive",
-      "negative": "Negative"
+      "negative": "Negative",
+      "necrotic": "Necrotic",
+      "radiant": "Radiant",
+      "force": "Force",
+      "thunder": "Thunder"
     },
     "Resistance": "Resistance",
     "Immunity": "Immunity",
@@ -923,6 +928,9 @@
     "AddResistance": "Add Entry",
     "ResistanceValue": "Value",
     "DamageTypeLabel": "Damage Type",
+    "DamageComponents": "Split-Type Damage",
+    "DamageComponentsHint": "Optional: split this attack's damage across multiple types (e.g. Slashing + Necrotic), each independently subject to resistances. Leave empty to use the single Damage Type above.",
+    "AddDamageComponent": "Add Damage Type",
     "ResistanceCategoryLabel": "Category",
     "GroupCheck": {
       "CallForCheck": "Group Check",

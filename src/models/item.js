@@ -87,12 +87,23 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       special: new fields.StringField({initial: ""}),
       isAoE: new fields.BooleanField({initial: false}),
       damageType: new fields.StringField({initial: ""}),
+      // Optional split-type damage (e.g. a weapon dealing both Slashing and Necrotic damage in
+      // one hit). Each component's `amount` is an authored fixed number, not stat-derived — the
+      // isLight/isHeavy/isTwoHanded stat formula below only applies to single-type weapons.
+      // Leave empty to use the legacy single `damageType` + formula-derived damage below.
+      damageComponents: new fields.ArrayField(new fields.SchemaField({
+        damageType: new fields.StringField({initial: ""}),
+        amount: new fields.NumberField({initial: 0, nullable: true}),
+      }), {initial: []}),
       inflictsStatusId: new fields.StringField({initial: ""}),
       ...sharedFields(fields),
     };
   }
 
   get calculatedDamage() {
+    if (this.damageComponents?.length) {
+      return this.damageComponents.reduce((sum, c) => sum + Math.floor(c.amount || 0), 0);
+    }
     if (this.isRanged) return Math.floor(this.rangedDamage || 0);
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
@@ -111,6 +122,13 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     if (this.isHeavy) mult += 0.25;
     if (this.isTwoHanded) mult += 0.25;
     return Math.ceil(statValue * mult);
+  }
+
+  get damageBreakdown() {
+    if (this.damageComponents?.length) {
+      return this.damageComponents.map(c => ({damageType: c.damageType || "", damage: Math.floor(c.amount || 0)}));
+    }
+    return [{damageType: this.damageType || "", damage: this.calculatedDamage}];
   }
 }
 
@@ -289,6 +307,12 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       multiAttack: new fields.NumberField({initial: 1, nullable: true}),
       isAoE: new fields.BooleanField({initial: false}),
       damageType: new fields.StringField({initial: ""}),
+      // See TAMSWeaponData.damageComponents — same optional split-type override; leave empty to
+      // use the legacy single damageType + damage/damageStat/damageMult formula below.
+      damageComponents: new fields.ArrayField(new fields.SchemaField({
+        damageType: new fields.StringField({initial: ""}),
+        amount: new fields.NumberField({initial: 0, nullable: true}),
+      }), {initial: []}),
       inflictsStatusId: new fields.StringField({initial: ""}),
       hasSave: new fields.BooleanField({initial: false}),
       saveAgainst: new fields.StringField({initial: "dexterity"}),
@@ -345,6 +369,9 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
 
   get calculatedDamage() {
     if ( !this.isAttack ) return 0;
+    if (this.damageComponents?.length) {
+      return this.damageComponents.reduce((sum, c) => sum + Math.floor(c.amount || 0), 0);
+    }
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
 
@@ -354,6 +381,13 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
 
     const damageStatValue = actor.system.stats[this.damageStat]?.total || 0;
     return Math.floor(damageStatValue * this.damageMult) + this.damageBonus + (this.damage || 0);
+  }
+
+  get damageBreakdown() {
+    if (this.damageComponents?.length) {
+      return this.damageComponents.map(c => ({damageType: c.damageType || "", damage: Math.floor(c.amount || 0)}));
+    }
+    return [{damageType: this.damageType || "", damage: this.calculatedDamage}];
   }
 
   get calculatedCost() {

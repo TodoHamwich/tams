@@ -279,6 +279,27 @@
                     </select>
                 </div>
 
+                {{!-- Split-type damage (optional) --}}
+                <div class="flexrow" style="align-items: center; margin-top: 8px;">
+                    <label style="flex: 1; font-size: 0.85em; color: #888;" title="{{localize 'TAMS.DamageComponentsHint'}}">{{localize 'TAMS.DamageComponents'}}</label>
+                    <a data-action="damageComponentCreate" title="{{localize 'TAMS.AddDamageComponent'}}" style="flex: 0 0 20px; text-align: right;">
+                        <i class="fas fa-plus"></i>
+                    </a>
+                </div>
+                {{#if enrichedDamageComponents.length}}
+                <div class="flexcol" style="gap: 4px; margin-top: 4px;">
+                    {{#each enrichedDamageComponents as |comp|}}
+                    <div class="flexrow" style="align-items: center; gap: 5px;" data-index="{{comp.index}}">
+                        <select name="system.damageComponents.{{comp.index}}.damageType" style="flex: 1;">
+                            {{selectOptions ../damageTypeOptions selected=comp.damageType localize=true}}
+                        </select>
+                        <input type="number" name="system.damageComponents.{{comp.index}}.amount" value="{{comp.amount}}" style="flex: 0 0 50px; text-align: center;"/>
+                        <a data-action="damageComponentDelete" data-index="{{comp.index}}" style="flex: 0 0 20px; text-align: right;"><i class="fas fa-trash"></i></a>
+                    </div>
+                    {{/each}}
+                </div>
+                {{/if}}
+
                 <div class="flexcol" style="margin-top: 10px;">
                     <label><b>{{localize 'TAMS.Special'}}</b></label>
                     <input type="text" name="system.special" value="{{system.special}}"/>
@@ -836,6 +857,28 @@
                                 {{selectOptions damageTypeOptions selected=system.damageType localize=true}}
                             </select>
                         </div>
+
+                        {{!-- Split-type damage (optional) --}}
+                        <div class="flexrow" style="align-items: center;">
+                            <label style="flex: 1; font-size: 0.85em; color: #888;" title="{{localize 'TAMS.DamageComponentsHint'}}">{{localize 'TAMS.DamageComponents'}}</label>
+                            <a data-action="damageComponentCreate" title="{{localize 'TAMS.AddDamageComponent'}}" style="flex: 0 0 20px; text-align: right;">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                        </div>
+                        {{#if enrichedDamageComponents.length}}
+                        <div class="flexcol" style="gap: 4px;">
+                            {{#each enrichedDamageComponents as |comp|}}
+                            <div class="flexrow" style="align-items: center; gap: 5px;" data-index="{{comp.index}}">
+                                <select name="system.damageComponents.{{comp.index}}.damageType" style="flex: 1;">
+                                    {{selectOptions ../damageTypeOptions selected=comp.damageType localize=true}}
+                                </select>
+                                <input type="number" name="system.damageComponents.{{comp.index}}.amount" value="{{comp.amount}}" style="flex: 0 0 50px; text-align: center;"/>
+                                <a data-action="damageComponentDelete" data-index="{{comp.index}}" style="flex: 0 0 20px; text-align: right;"><i class="fas fa-trash"></i></a>
+                            </div>
+                            {{/each}}
+                        </div>
+                        {{/if}}
+
                         <div class="flexrow">
                             <label>{{localize 'TAMS.CalculatedDamage'}}</label>
                             <span class="ability-cost-badge">{{system.calculatedDamage}}</span>

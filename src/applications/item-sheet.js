@@ -21,6 +21,8 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         raceResistanceCreate: TAMSItemSheet.prototype._onRaceResistanceCreate,
         raceResistanceDelete: TAMSItemSheet.prototype._onRaceResistanceDelete,
         raceResistanceLimbToggle: TAMSItemSheet.prototype._onRaceResistanceLimbToggle,
+        damageComponentCreate: TAMSItemSheet.prototype._onDamageComponentCreate,
+        damageComponentDelete: TAMSItemSheet.prototype._onDamageComponentDelete,
         tagToggle: TAMSItemSheet.prototype._onTagToggle,
         toggleSection: TAMSItemSheet.prototype._onToggleSection
       }
@@ -122,7 +124,11 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
       "psychic":   "TAMS.DamageType.psychic",
       "divine":    "TAMS.DamageType.divine",
       "positive":  "TAMS.DamageType.positive",
-      "negative":  "TAMS.DamageType.negative"
+      "negative":  "TAMS.DamageType.negative",
+      "necrotic":  "TAMS.DamageType.necrotic",
+      "radiant":   "TAMS.DamageType.radiant",
+      "force":     "TAMS.DamageType.force",
+      "thunder":   "TAMS.DamageType.thunder"
     };
 
     context.passiveRollTypeOptions = {
@@ -169,6 +175,8 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         const EARLY_TYPES = new Set(["matchlock", "flintlock", "wheellock", "blunderbuss"]);
         context.isEarlyFirearm = EARLY_TYPES.has(this.document.system.firearmType);
         context.isModernFirearm = !!this.document.system.firearmType && !context.isEarlyFirearm;
+
+        context.enrichedDamageComponents = (this.document.system.damageComponents || []).map((c, index) => ({...c, index}));
     }
 
     if (this.document.type === 'race') {
@@ -218,6 +226,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         }
         context.resourceOptions = resources;
         context.selectedTargetingMode = selectedTargetingMode;
+        context.enrichedDamageComponents = (this.document.system.damageComponents || []).map((c, index) => ({...c, index}));
 
         context.calculatorOptions = {
             targetingModes: {
@@ -468,6 +477,19 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     else limbs.splice(pos, 1);
     resistances[index] = {...entry, limbs};
     await this.document.update({ "system.resistances": resistances });
+  }
+
+  async _onDamageComponentCreate(event, target) {
+    const components = foundry.utils.duplicate(this.document.system.damageComponents || []);
+    components.push({ damageType: "", amount: 0 });
+    await this.document.update({ "system.damageComponents": components });
+  }
+
+  async _onDamageComponentDelete(event, target) {
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const components = foundry.utils.duplicate(this.document.system.damageComponents || []);
+    components.splice(index, 1);
+    await this.document.update({ "system.damageComponents": components });
   }
 
   async _onPassiveTraitCreate(event, target) {
