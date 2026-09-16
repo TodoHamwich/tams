@@ -29,7 +29,7 @@
     "consumeAmmo": true,
     "special": "",
     "isAoE": false,
-    "damageType": "",
+    "damageType": "piercing",
     "tags": "Ranged, Crossbow",
     "description": ""
   },

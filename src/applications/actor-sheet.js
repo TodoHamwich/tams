@@ -111,6 +111,16 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       });
     });
 
+    // Currency inputs (dynamic keys into the system.currencies ObjectField —
+    // handled explicitly rather than via the generic submitOnChange form pipeline).
+    this.element.querySelectorAll('input[data-action="updateCurrency"]').forEach(el => {
+      el.addEventListener('change', async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await this._onUpdateCurrency(ev, ev.currentTarget);
+      });
+    });
+
     // Live inventory search box (debounced re-render, preserving focus).
     const searchInput = this.element.querySelector('input.inventory-search');
     if (searchInput) {
@@ -410,6 +420,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         isEquipped: (i.type === 'weapon' && i.system.location === 'hand') || (['armor', 'backpack', 'shield'].includes(i.type) && i.system.equipped),
         canEquip: ['weapon', 'armor', 'shield', 'backpack'].includes(i.type),
         isArmor: i.type === 'armor',
+        hasCharges: i.type === 'equipment' && (i.system.uses?.max ?? 0) > 0,
         armorZones: armorZones,
         expanded: this._expandedItems.has(i.id)
       };
@@ -417,6 +428,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       allItems.push(itemData);
 
       if (i.type === 'weapon') {
+        itemData.damageParts = i.system.damageBreakdown.map(c => ({
+          damage: c.damage,
+          typeLabel: c.damageType ? game.i18n.localize(`TAMS.DamageType.${c.damageType}`) : ""
+        }));
         weapons.push(itemData);
         if (i.system.equipped) equippedWeapons.push(itemData);
         else inventoryWeapons.push(itemData);
@@ -616,6 +631,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       "custom": "TAMS.StatCustom"
     };
     context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical" };
+    context.lifeStateOptions = { "living": "TAMS.LifeState.living", "dead": "TAMS.LifeState.dead", "undead": "TAMS.LifeState.undead" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
     context.creatureSizeOptions = { "tiny": "TAMS.CreatureSizeOptions.Tiny", "small": "TAMS.CreatureSizeOptions.Small", "normal": "TAMS.CreatureSizeOptions.Normal", "large": "TAMS.CreatureSizeOptions.Large", "huge": "TAMS.CreatureSizeOptions.Huge", "giant": "TAMS.CreatureSizeOptions.Giant" };
@@ -1122,6 +1138,21 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (target.type === "checkbox") value = target.checked;
     const item = this.document.items.get(itemId);
     if (item) await item.update({ [field]: value });
+  }
+
+  /**
+   * Persist an edit to a single named currency value.
+   * Bypasses the generic submitOnChange form pipeline since system.currencies
+   * is an ObjectField with dynamically-configured keys (see _prepareCurrencyData).
+   * @param {Event} event The originating change event.
+   * @param {HTMLElement} target The input element that changed.
+   * @protected
+   */
+  async _onUpdateCurrency(event, target) {
+    const name = target.dataset.currency;
+    if (!name) return;
+    const value = parseFloat(target.value) || 0;
+    await this.document.update({ [`system.currencies.${name}`]: value });
   }
 
   /**

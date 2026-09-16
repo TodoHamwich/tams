@@ -155,6 +155,7 @@ export class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       ...inventoryFields(fields),
+      ...usesFields(fields),
       ...sharedFields(fields),
     };
   }

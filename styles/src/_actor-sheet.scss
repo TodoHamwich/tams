@@ -447,6 +447,16 @@
     flex: 1.5;
 }
 
+.tams .item-stat.dmg-cell {
+    flex: 0 0 78px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.15;
+
+    .dmg-line { white-space: nowrap; }
+}
+
 .tams .item-stat.ammo-total-cell {
     flex: 0 0 76px;
     display: flex;

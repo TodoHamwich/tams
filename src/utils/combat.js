@@ -514,6 +514,7 @@ export async function tamsOnTurnStart(actor) {
         const turnsLeft = dyingCountdown.turnsLeft - 1;
         if (turnsLeft <= 0) {
             await actor.setFlag('tams', 'dyingCountdown', null);
+            await actor.update({ "system.lifeState": "dead" });
             await ChatMessage.create({
                 speaker: ChatMessage.getSpeaker({ actor }),
                 content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.2em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Death", { name: actor.name })}</div></div>`,
@@ -877,11 +878,23 @@ async function openTAMSDamageDialog(target, {
                   <label style="flex: 0 0 auto; margin-left: 10px;">
                       <input type="checkbox" class="hit-use-shield" data-index="${i}"${preChecked ? " checked" : ""}> ${game.i18n.format("TAMS.Combat.UseShield", {av: shieldAV})}
                   </label>` : "";
+        const initialDmg = preChecked ? Math.max(0, defaultDmg - shieldAV) : defaultDmg;
+        // A weapon with several damage-type components gets one independently-editable field
+        // per type here, instead of one aggregate field auto-split by the item's ratio, so the
+        // GM can hand-set exactly how much of each type actually lands.
+        const dmgFieldsHtml = damageComponents.length > 1
+            ? distributeDamageComponents(initialDmg, damageComponents).map((c, ci) => {
+                const typeLabel = c.damageType
+                    ? game.i18n.localize(`TAMS.DamageType.${c.damageType}`)
+                    : game.i18n.localize("TAMS.Combat.DmgShort");
+                return `<span>${typeLabel}: </span><input type="number" class="hit-dmg-type" data-index="${i}" data-type-idx="${ci}" value="${c.damage}" style="width: 50px;"/>`;
+              }).join(" ")
+            : `<span>${game.i18n.localize("TAMS.Combat.DmgShort")} </span><input type="number" class="hit-dmg" data-index="${i}" value="${initialDmg}" style="width: 50px;"/>`;
         dialogContent += `
           <div class="form-group" style="margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
               <label>${game.i18n.format("TAMS.Combat.HitLabel", {index: i+1, location: loc})}</label>
-              <div class="flexrow">
-                  <span>${game.i18n.localize("TAMS.Combat.DmgShort")} </span><input type="number" class="hit-dmg" data-index="${i}" value="${preChecked ? Math.max(0, defaultDmg - shieldAV) : defaultDmg}" style="width: 50px;"/>
+              <div class="flexrow" style="flex-wrap: wrap; align-items: center; gap: 4px;">
+                  ${dmgFieldsHtml}
                   <span>${game.i18n.localize("TAMS.Combat.ArmorShort")} ${armor}/${armorMax}</span>
                   <label style="flex: 0 0 auto; margin-left: 10px;">
                       <input type="checkbox" class="hit-in-cover" data-index="${i}"> ${game.i18n.localize("TAMS.Combat.InCover")}
@@ -909,14 +922,25 @@ async function openTAMSDamageDialog(target, {
                   if (customEl) customEl.style.display = "none";
                   coverVal = parseInt(coverSelect) || 0;
               }
-              form.querySelectorAll(".hit-dmg").forEach(el => {
-                  const idx = el.dataset.index;
+              const hitIndices = new Set();
+              form.querySelectorAll(".hit-dmg, .hit-dmg-type").forEach(el => hitIndices.add(el.dataset.index));
+              hitIndices.forEach(idx => {
                   const isCovered = form.querySelector(`.hit-in-cover[data-index="${idx}"]`)?.checked;
                   const isShielded = hasShield && form.querySelector(`.hit-use-shield[data-index="${idx}"]`)?.checked;
                   let effectiveBaseDmg = damageBase;
                   if (isCovered) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
                   if (isShielded) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - shieldAV);
-                  el.value = effectiveBaseDmg * multiplier;
+                  const total = effectiveBaseDmg * multiplier;
+
+                  const singleEl = form.querySelector(`.hit-dmg[data-index="${idx}"]`);
+                  if (singleEl) {
+                      singleEl.value = total;
+                      return;
+                  }
+                  const shares = distributeDamageComponents(total, damageComponents);
+                  form.querySelectorAll(`.hit-dmg-type[data-index="${idx}"]`).forEach(el => {
+                      el.value = shares[parseInt(el.dataset.typeIdx)]?.damage ?? 0;
+                  });
               });
           };
           form.querySelector("#aoe-targets-hit")?.addEventListener("input", updateDamage);
@@ -929,11 +953,19 @@ async function openTAMSDamageDialog(target, {
         { action: "apply", label: game.i18n.localize("TAMS.Checks.ApplyAllHits"), default: true, callback: async (event, button, dialog) => {
             const form = dialog.element;
             const multiplier = (isAoEHit && isSquadOrHorde) ? (parseInt(form.querySelector("#aoe-targets-hit")?.value) || 1) : 1;
-            const dmgInputs = form.querySelectorAll(".hit-dmg");
             const hits = [];
 
             for (let i = 0; i < locations.length; i++) {
-                const totalIncoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
+                const typeInputs = form.querySelectorAll(`.hit-dmg-type[data-index="${i}"]`);
+                // Per-type fields carry the GM's hand-set values directly; a single aggregate
+                // field falls back to the item's own (usually single-type) breakdown.
+                const perType = typeInputs.length
+                    ? Array.from(typeInputs).map(el => ({
+                        damageType: damageComponents[parseInt(el.dataset.typeIdx)]?.damageType || "",
+                        damage: Math.floor(parseFloat(el.value) || 0)
+                      }))
+                    : [{ damageType: damageComponents[0]?.damageType || "", damage: Math.floor(parseFloat(form.querySelector(`.hit-dmg[data-index="${i}"]`)?.value) || 0) }];
+                const totalIncoming = perType.reduce((sum, c) => sum + Math.max(0, c.damage), 0);
                 const subHits = (isAoEHit && isSquadOrHorde) ? multiplier : 1;
                 let remainingDmg = totalIncoming;
 
@@ -943,7 +975,10 @@ async function openTAMSDamageDialog(target, {
                     if (incoming <= 0 && m > 0) continue;
 
                     const loc = (isAoEHit && isSquadOrHorde && (m > 0 || i > 0)) ? await getHitLocation() : locations[i];
-                    hits.push({ location: loc, damage: incoming, armourPen, damageComponents: distributeDamageComponents(incoming, damageComponents), forceCrit: forceCrit ? "1" : "0" });
+                    // Sub-hits split the manually-set per-type values proportionally; a single
+                    // hit per location uses them as-is.
+                    const hitComponents = subHits === 1 ? perType : distributeDamageComponents(incoming, perType);
+                    hits.push({ location: loc, damage: incoming, armourPen, damageComponents: hitComponents, forceCrit: forceCrit ? "1" : "0" });
                 }
             }
 
@@ -1419,7 +1454,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       const newTotal = currentTotal + bonus;
       const success = newTotal >= dc;
 
-      if (pts > 0) await actor.update({"system.stamina.value": actor.system.stamina.value - pts});
+      if (pts > 0) await actor.update(actor.applyResourceSpend("stamina", pts));
 
       container.querySelector(".roll-boost-container").innerHTML =
           `<div class="roll-row"><small>${game.i18n.localize("TAMS.Combat.BoostLabel")}</small><span>+${bonus}</span></div>`;
@@ -1494,7 +1529,7 @@ export async function tamsRenderChatMessage(message, html, data) {
         if (resourceKey === 'stamina') {
             const current = actor.system.stamina.value;
             if (current < cost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
-            await actor.update({"system.stamina.value": current - cost});
+            await actor.update(actor.applyResourceSpend("stamina", cost));
         } else {
             const idx = parseInt(resourceKey);
             const res = actor.system.customResources[idx];
@@ -1503,7 +1538,7 @@ export async function tamsRenderChatMessage(message, html, data) {
                     const remaining = cost - res.value;
                     const stamina = actor.system.stamina.value;
                     if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", {resource: res.name}));
-                    
+
                     const useBoth = await foundry.applications.api.DialogV2.confirm({
                         window: { title: game.i18n.localize("TAMS.Combat.InsufficientResources") },
                         content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", {val: res.value, res: res.name, rem: remaining})}</p>`,
@@ -1514,16 +1549,11 @@ export async function tamsRenderChatMessage(message, html, data) {
 
                     if (!useBoth) return;
 
-                    const resources = foundry.utils.duplicate(actor.system.customResources);
-                    resources[idx].value = 0;
-                    await actor.update({
-                        "system.customResources": resources,
-                        "system.stamina.value": stamina - remaining
-                    });
+                    const updates = actor.applyResourceSpend(idx, res.value);
+                    actor.applyResourceSpend("stamina", remaining, updates);
+                    await actor.update(updates);
                 } else {
-                    const resources = foundry.utils.duplicate(actor.system.customResources);
-                    resources[idx].value -= cost;
-                    await actor.update({"system.customResources": resources});
+                    await actor.update(actor.applyResourceSpend(idx, cost));
                 }
             }
         }
@@ -1822,12 +1852,9 @@ export async function tamsRenderChatMessage(message, html, data) {
 
       if (points > 0) {
         if (resId === 'stamina') {
-            await actor.update({"system.stamina.value": actor.system.stamina.value - points});
+            await actor.update(actor.applyResourceSpend("stamina", points));
         } else {
-            const idx = parseInt(resId);
-            const customResources = foundry.utils.duplicate(actor.system.customResources);
-            customResources[idx].value -= points;
-            await actor.update({"system.customResources": customResources});
+            await actor.update(actor.applyResourceSpend(parseInt(resId), points));
         }
       }
 
@@ -1938,7 +1965,7 @@ export async function tamsRenderChatMessage(message, html, data) {
             const resourceKey = weapon.system.resource;
             if (resourceKey === 'stamina') {
                 if (actor.system.stamina.value < cost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
-                await actor.update({"system.stamina.value": actor.system.stamina.value - cost});
+                await actor.update(actor.applyResourceSpend("stamina", cost));
             } else {
                 const idx = parseInt(resourceKey);
                 const res = actor.system.customResources[idx];
@@ -1954,13 +1981,11 @@ export async function tamsRenderChatMessage(message, html, data) {
                             rejectClose: false
                         });
                         if (!useBoth) return;
-                        const resources = foundry.utils.duplicate(actor.system.customResources);
-                        resources[idx].value = 0;
-                        await actor.update({ "system.customResources": resources, "system.stamina.value": actor.system.stamina.value - remaining });
+                        const updates = actor.applyResourceSpend(idx, res.value);
+                        actor.applyResourceSpend("stamina", remaining, updates);
+                        await actor.update(updates);
                     } else {
-                        const resources = foundry.utils.duplicate(actor.system.customResources);
-                        resources[idx].value -= cost;
-                        await actor.update({"system.customResources": resources});
+                        await actor.update(actor.applyResourceSpend(idx, cost));
                     }
                 }
             }
@@ -2168,12 +2193,8 @@ export async function tamsRenderChatMessage(message, html, data) {
         const { resId, pts } = spending;
         const bonus = pts * 5, total = capped + bonus, success = total >= dc;
         if (pts > 0) {
-            if (resId === 'stamina') await actor.update({"system.stamina.value": actor.system.stamina.value - pts});
-            else {
-                const customResources = foundry.utils.duplicate(actor.system.customResources);
-                customResources[parseInt(resId)].value -= pts;
-                await actor.update({"system.customResources": customResources});
-            }
+            if (resId === 'stamina') await actor.update(actor.applyResourceSpend("stamina", pts));
+            else await actor.update(actor.applyResourceSpend(parseInt(resId), pts));
         }
 
         const resName = resources.find(r => r.id === resId).name;
@@ -2231,12 +2252,8 @@ export async function tamsRenderChatMessage(message, html, data) {
         const { resId, pts } = spending;
         const bonus = pts * 5, total = capped + bonus, success = total >= dc;
         if (pts > 0) {
-            if (resId === 'stamina') await actor.update({"system.stamina.value": actor.system.stamina.value - pts});
-            else {
-                const customResources = foundry.utils.duplicate(actor.system.customResources);
-                customResources[parseInt(resId)].value -= pts;
-                await actor.update({"system.customResources": customResources});
-            }
+            if (resId === 'stamina') await actor.update(actor.applyResourceSpend("stamina", pts));
+            else await actor.update(actor.applyResourceSpend(parseInt(resId), pts));
         }
 
         const resName = resources.find(r => r.id === resId).name;
@@ -2299,12 +2316,8 @@ export async function tamsRenderChatMessage(message, html, data) {
         const success = newTotal >= difficulty;
 
         if (pts > 0) {
-            if (resId === 'stamina') await actor.update({"system.stamina.value": actor.system.stamina.value - pts});
-            else {
-                const customResources = foundry.utils.duplicate(actor.system.customResources);
-                customResources[parseInt(resId)].value -= pts;
-                await actor.update({"system.customResources": customResources});
-            }
+            if (resId === 'stamina') await actor.update(actor.applyResourceSpend("stamina", pts));
+            else await actor.update(actor.applyResourceSpend(parseInt(resId), pts));
         }
 
         const resName = resources.find(r => r.id === resId).name;

@@ -102,6 +102,11 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({initial: 0}),
         color: new fields.StringField({initial: "#e74c3c"})
       }),
+      // "living" | "dead" | "undead" — a simple toggle, not a state machine.
+      // Set to "dead" when the dying countdown expires (see tamsOnTurnStart()
+      // in src/utils/combat.js); a resurrection ability sets it back to
+      // "living" manually.
+      lifeState: new fields.StringField({initial: "living"}),
       tempDR: new fields.NumberField({initial: 0, integer: true, min: 0}),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({initial: 10, min: 0}),

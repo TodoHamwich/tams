@@ -29,7 +29,7 @@
     "consumeAmmo": false,
     "special": "",
     "isAoE": false,
-    "damageType": "Blunt",
+    "damageType": "blunt",
     "tags": "Blunt",
     "description": ""
   },

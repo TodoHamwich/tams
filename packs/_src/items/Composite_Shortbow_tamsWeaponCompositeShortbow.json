@@ -29,7 +29,7 @@
     "consumeAmmo": true,
     "special": "STR Req: 20",
     "isAoE": false,
-    "damageType": "",
+    "damageType": "piercing",
     "tags": "Ranged, Composite",
     "description": ""
   },

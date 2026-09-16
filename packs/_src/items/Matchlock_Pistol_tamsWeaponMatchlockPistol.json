@@ -29,7 +29,7 @@
     "consumeAmmo": true,
     "special": "Reload 6. Apostles reduce reload by 1. Paper cartridges reduce reload by 2 but carry misfire risk with burning match cord.",
     "isAoE": false,
-    "damageType": "",
+    "damageType": "piercing",
     "tags": "Ranged, Firearm",
     "description": "",
     "misfireThreshold": 4,

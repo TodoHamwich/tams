@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TAMSActor } from '../src/documents/actor.js';
+import { tamsOnTurnStart } from '../src/utils/combat.js';
 
 global.game = {
   i18n: {
@@ -76,5 +77,43 @@ describe('TAMSActor dying countdown recovery', () => {
     await clean._preUpdate({ 'system.limbs.thorax.value': 5 }, {}, {});
     expect(clean.getFlag('tams', 'dyingCountdown')).toBeNull();
     expect(clean.toggleStatusEffect).not.toHaveBeenCalled();
+  });
+});
+
+describe('tamsOnTurnStart life state', () => {
+  it('sets lifeState to dead when the countdown expires', async () => {
+    const actor = makeActor();
+    actor.type = 'character';
+    actor.ownership = {};
+    actor._flags['tams.dyingCountdown'] = { turnsLeft: 1, limbKey: 'thorax' };
+
+    await tamsOnTurnStart(actor);
+
+    expect(actor.getFlag('tams', 'dyingCountdown')).toBeNull();
+    expect(actor.system.lifeState).toBe('dead');
+  });
+
+  it('does not touch lifeState while the countdown still has turns left', async () => {
+    const actor = makeActor();
+    actor.type = 'character';
+    actor.ownership = {};
+    actor.system.lifeState = 'living';
+    actor._flags['tams.dyingCountdown'] = { turnsLeft: 3, limbKey: 'thorax' };
+
+    await tamsOnTurnStart(actor);
+
+    expect(actor.getFlag('tams', 'dyingCountdown')).toEqual({ turnsLeft: 2, limbKey: 'thorax' });
+    expect(actor.system.lifeState).toBe('living');
+  });
+
+  it('leaves lifeState alone when there is no active countdown', async () => {
+    const actor = makeActor();
+    actor.type = 'character';
+    actor.ownership = {};
+    actor.system.lifeState = 'living';
+
+    await tamsOnTurnStart(actor);
+
+    expect(actor.system.lifeState).toBe('living');
   });
 });

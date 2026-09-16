@@ -212,6 +212,11 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({ initial: 0 }),
         color: new fields.StringField({ initial: "#e74c3c" })
       }),
+      // "living" | "dead" | "undead" — a simple toggle, not a state machine.
+      // Set to "dead" when the dying countdown expires (see tamsOnTurnStart()
+      // in src/utils/combat.js); a resurrection ability sets it back to
+      // "living" manually.
+      lifeState: new fields.StringField({ initial: "living" }),
       tempDR: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({ initial: 10, min: 0 }),
@@ -654,6 +659,7 @@ class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       ...inventoryFields(fields),
+      ...usesFields(fields),
       ...sharedFields(fields)
     };
   }
@@ -1655,6 +1661,7 @@ async function tamsOnTurnStart(actor) {
     const turnsLeft = dyingCountdown.turnsLeft - 1;
     if (turnsLeft <= 0) {
       await actor.setFlag("tams", "dyingCountdown", null);
+      await actor.update({ "system.lifeState": "dead" });
       await ChatMessage.create({
         speaker: ChatMessage.getSpeaker({ actor }),
         content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.2em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Death", { name: actor.name })}</div></div>`,
@@ -1970,11 +1977,16 @@ async function openTAMSDamageDialog(target, {
                   <label style="flex: 0 0 auto; margin-left: 10px;">
                       <input type="checkbox" class="hit-use-shield" data-index="${i}"${preChecked ? " checked" : ""}> ${game.i18n.format("TAMS.Combat.UseShield", { av: shieldAV })}
                   </label>` : "";
+    const initialDmg = preChecked ? Math.max(0, defaultDmg - shieldAV) : defaultDmg;
+    const dmgFieldsHtml = damageComponents.length > 1 ? distributeDamageComponents(initialDmg, damageComponents).map((c, ci) => {
+      const typeLabel = c.damageType ? game.i18n.localize(`TAMS.DamageType.${c.damageType}`) : game.i18n.localize("TAMS.Combat.DmgShort");
+      return `<span>${typeLabel}: </span><input type="number" class="hit-dmg-type" data-index="${i}" data-type-idx="${ci}" value="${c.damage}" style="width: 50px;"/>`;
+    }).join(" ") : `<span>${game.i18n.localize("TAMS.Combat.DmgShort")} </span><input type="number" class="hit-dmg" data-index="${i}" value="${initialDmg}" style="width: 50px;"/>`;
     dialogContent += `
           <div class="form-group" style="margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
               <label>${game.i18n.format("TAMS.Combat.HitLabel", { index: i + 1, location: loc })}</label>
-              <div class="flexrow">
-                  <span>${game.i18n.localize("TAMS.Combat.DmgShort")} </span><input type="number" class="hit-dmg" data-index="${i}" value="${preChecked ? Math.max(0, defaultDmg - shieldAV) : defaultDmg}" style="width: 50px;"/>
+              <div class="flexrow" style="flex-wrap: wrap; align-items: center; gap: 4px;">
+                  ${dmgFieldsHtml}
                   <span>${game.i18n.localize("TAMS.Combat.ArmorShort")} ${armor}/${armorMax}</span>
                   <label style="flex: 0 0 auto; margin-left: 10px;">
                       <input type="checkbox" class="hit-in-cover" data-index="${i}"> ${game.i18n.localize("TAMS.Combat.InCover")}
@@ -2003,15 +2015,26 @@ async function openTAMSDamageDialog(target, {
           if (customEl) customEl.style.display = "none";
           coverVal = parseInt(coverSelect) || 0;
         }
-        form.querySelectorAll(".hit-dmg").forEach((el) => {
+        const hitIndices = /* @__PURE__ */ new Set();
+        form.querySelectorAll(".hit-dmg, .hit-dmg-type").forEach((el) => hitIndices.add(el.dataset.index));
+        hitIndices.forEach((idx) => {
           var _a4, _b4;
-          const idx = el.dataset.index;
           const isCovered = (_a4 = form.querySelector(`.hit-in-cover[data-index="${idx}"]`)) == null ? void 0 : _a4.checked;
           const isShielded = hasShield && ((_b4 = form.querySelector(`.hit-use-shield[data-index="${idx}"]`)) == null ? void 0 : _b4.checked);
           let effectiveBaseDmg = damageBase;
           if (isCovered) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - coverVal);
           if (isShielded) effectiveBaseDmg = Math.max(0, effectiveBaseDmg - shieldAV);
-          el.value = effectiveBaseDmg * multiplier;
+          const total = effectiveBaseDmg * multiplier;
+          const singleEl = form.querySelector(`.hit-dmg[data-index="${idx}"]`);
+          if (singleEl) {
+            singleEl.value = total;
+            return;
+          }
+          const shares = distributeDamageComponents(total, damageComponents);
+          form.querySelectorAll(`.hit-dmg-type[data-index="${idx}"]`).forEach((el) => {
+            var _a5;
+            el.value = ((_a5 = shares[parseInt(el.dataset.typeIdx)]) == null ? void 0 : _a5.damage) ?? 0;
+          });
         });
       };
       (_a2 = form.querySelector("#aoe-targets-hit")) == null ? void 0 : _a2.addEventListener("input", updateDamage);
@@ -2026,13 +2049,20 @@ async function openTAMSDamageDialog(target, {
         label: game.i18n.localize("TAMS.Checks.ApplyAllHits"),
         default: true,
         callback: async (event, button, dialog) => {
-          var _a2;
+          var _a2, _b2, _c;
           const form = dialog.element;
           const multiplier = isAoEHit && isSquadOrHorde ? parseInt((_a2 = form.querySelector("#aoe-targets-hit")) == null ? void 0 : _a2.value) || 1 : 1;
-          const dmgInputs = form.querySelectorAll(".hit-dmg");
           const hits = [];
           for (let i = 0; i < locations.length; i++) {
-            const totalIncoming = Math.floor(parseFloat(dmgInputs[i].value) || 0);
+            const typeInputs = form.querySelectorAll(`.hit-dmg-type[data-index="${i}"]`);
+            const perType = typeInputs.length ? Array.from(typeInputs).map((el) => {
+              var _a3;
+              return {
+                damageType: ((_a3 = damageComponents[parseInt(el.dataset.typeIdx)]) == null ? void 0 : _a3.damageType) || "",
+                damage: Math.floor(parseFloat(el.value) || 0)
+              };
+            }) : [{ damageType: ((_b2 = damageComponents[0]) == null ? void 0 : _b2.damageType) || "", damage: Math.floor(parseFloat((_c = form.querySelector(`.hit-dmg[data-index="${i}"]`)) == null ? void 0 : _c.value) || 0) }];
+            const totalIncoming = perType.reduce((sum, c) => sum + Math.max(0, c.damage), 0);
             const subHits = isAoEHit && isSquadOrHorde ? multiplier : 1;
             let remainingDmg = totalIncoming;
             for (let m = 0; m < subHits; m++) {
@@ -2040,7 +2070,8 @@ async function openTAMSDamageDialog(target, {
               remainingDmg -= incoming;
               if (incoming <= 0 && m > 0) continue;
               const loc = isAoEHit && isSquadOrHorde && (m > 0 || i > 0) ? await getHitLocation() : locations[i];
-              hits.push({ location: loc, damage: incoming, armourPen, damageComponents: distributeDamageComponents(incoming, damageComponents), forceCrit: forceCrit ? "1" : "0" });
+              const hitComponents = subHits === 1 ? perType : distributeDamageComponents(incoming, perType);
+              hits.push({ location: loc, damage: incoming, armourPen, damageComponents: hitComponents, forceCrit: forceCrit ? "1" : "0" });
             }
           }
           const { pendingChecks, report } = await target.applyTAMSDamage(hits, { isAoE: isAoEHit, multiplier });
@@ -2437,7 +2468,7 @@ async function tamsRenderChatMessage(message, html, data) {
     const bonus = pts * 5;
     const newTotal = currentTotal + bonus;
     const success = newTotal >= dc;
-    if (pts > 0) await actor.update({ "system.stamina.value": actor.system.stamina.value - pts });
+    if (pts > 0) await actor.update(actor.applyResourceSpend("stamina", pts));
     container.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><small>${game.i18n.localize("TAMS.Combat.BoostLabel")}</small><span>+${bonus}</span></div>`;
     const totalRow = container.querySelector(".roll-total");
     if (totalRow) totalRow.innerHTML = game.i18n.format("TAMS.Checks.TotalVsDC", { total: newTotal, dc });
@@ -2495,7 +2526,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (resourceKey === "stamina") {
       const current = actor.system.stamina.value;
       if (current < cost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
-      await actor.update({ "system.stamina.value": current - cost });
+      await actor.update(actor.applyResourceSpend("stamina", cost));
     } else {
       const idx = parseInt(resourceKey);
       const res = actor.system.customResources[idx];
@@ -2512,16 +2543,11 @@ async function tamsRenderChatMessage(message, html, data) {
             rejectClose: false
           });
           if (!useBoth) return;
-          const resources = foundry.utils.duplicate(actor.system.customResources);
-          resources[idx].value = 0;
-          await actor.update({
-            "system.customResources": resources,
-            "system.stamina.value": stamina - remaining
-          });
+          const updates = actor.applyResourceSpend(idx, res.value);
+          actor.applyResourceSpend("stamina", remaining, updates);
+          await actor.update(updates);
         } else {
-          const resources = foundry.utils.duplicate(actor.system.customResources);
-          resources[idx].value -= cost;
-          await actor.update({ "system.customResources": resources });
+          await actor.update(actor.applyResourceSpend(idx, cost));
         }
       }
     }
@@ -2782,12 +2808,9 @@ async function tamsRenderChatMessage(message, html, data) {
     const bonus = points * 5;
     if (points > 0) {
       if (resId === "stamina") {
-        await actor.update({ "system.stamina.value": actor.system.stamina.value - points });
+        await actor.update(actor.applyResourceSpend("stamina", points));
       } else {
-        const idx = parseInt(resId);
-        const customResources = foundry.utils.duplicate(actor.system.customResources);
-        customResources[idx].value -= points;
-        await actor.update({ "system.customResources": customResources });
+        await actor.update(actor.applyResourceSpend(parseInt(resId), points));
       }
     }
     let finalCapped = capped;
@@ -2891,7 +2914,7 @@ async function tamsRenderChatMessage(message, html, data) {
         const resourceKey = weapon.system.resource;
         if (resourceKey === "stamina") {
           if (actor.system.stamina.value < cost) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NotEnoughStamina"));
-          await actor.update({ "system.stamina.value": actor.system.stamina.value - cost });
+          await actor.update(actor.applyResourceSpend("stamina", cost));
         } else {
           const idx = parseInt(resourceKey);
           const res = actor.system.customResources[idx];
@@ -2907,13 +2930,11 @@ async function tamsRenderChatMessage(message, html, data) {
                 rejectClose: false
               });
               if (!useBoth) return;
-              const resources = foundry.utils.duplicate(actor.system.customResources);
-              resources[idx].value = 0;
-              await actor.update({ "system.customResources": resources, "system.stamina.value": actor.system.stamina.value - remaining });
+              const updates = actor.applyResourceSpend(idx, res.value);
+              actor.applyResourceSpend("stamina", remaining, updates);
+              await actor.update(updates);
             } else {
-              const resources = foundry.utils.duplicate(actor.system.customResources);
-              resources[idx].value -= cost;
-              await actor.update({ "system.customResources": resources });
+              await actor.update(actor.applyResourceSpend(idx, cost));
             }
           }
         }
@@ -3100,12 +3121,8 @@ async function tamsRenderChatMessage(message, html, data) {
     const { resId, pts } = spending;
     const bonus = pts * 5, total = capped + bonus, success = total >= dc;
     if (pts > 0) {
-      if (resId === "stamina") await actor.update({ "system.stamina.value": actor.system.stamina.value - pts });
-      else {
-        const customResources = foundry.utils.duplicate(actor.system.customResources);
-        customResources[parseInt(resId)].value -= pts;
-        await actor.update({ "system.customResources": customResources });
-      }
+      if (resId === "stamina") await actor.update(actor.applyResourceSpend("stamina", pts));
+      else await actor.update(actor.applyResourceSpend(parseInt(resId), pts));
     }
     const resName = resources.find((r) => r.id === resId).name;
     container.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><span>Boost (${e$3(resName)}):</span><span>+${bonus}</span></div>`;
@@ -3158,12 +3175,8 @@ async function tamsRenderChatMessage(message, html, data) {
     const { resId, pts } = spending;
     const bonus = pts * 5, total = capped + bonus, success = total >= dc;
     if (pts > 0) {
-      if (resId === "stamina") await actor.update({ "system.stamina.value": actor.system.stamina.value - pts });
-      else {
-        const customResources = foundry.utils.duplicate(actor.system.customResources);
-        customResources[parseInt(resId)].value -= pts;
-        await actor.update({ "system.customResources": customResources });
-      }
+      if (resId === "stamina") await actor.update(actor.applyResourceSpend("stamina", pts));
+      else await actor.update(actor.applyResourceSpend(parseInt(resId), pts));
     }
     const resName = resources.find((r) => r.id === resId).name;
     container.querySelector(".roll-boost-container").innerHTML = `<div class="roll-row"><span>Boost (${e$3(resName)}):</span><span>+${bonus}</span></div>`;
@@ -3219,12 +3232,8 @@ async function tamsRenderChatMessage(message, html, data) {
     const newTotal = currentTotal + bonus;
     const success = newTotal >= difficulty;
     if (pts > 0) {
-      if (resId === "stamina") await actor.update({ "system.stamina.value": actor.system.stamina.value - pts });
-      else {
-        const customResources = foundry.utils.duplicate(actor.system.customResources);
-        customResources[parseInt(resId)].value -= pts;
-        await actor.update({ "system.customResources": customResources });
-      }
+      if (resId === "stamina") await actor.update(actor.applyResourceSpend("stamina", pts));
+      else await actor.update(actor.applyResourceSpend(parseInt(resId), pts));
     }
     const resName = resources.find((r) => r.id === resId).name;
     const boostContainer = container.querySelector(".roll-boost-container");
@@ -4089,10 +4098,14 @@ class TAMSActor extends Actor {
     const staminaHeal = computeLongRestFatigueHeal(sys.stats.endurance.total);
     if (staminaHeal > 0 && (sys.stamina.fatigue ?? 0) > 0) {
       const newFatigue = Math.max(0, sys.stamina.fatigue - staminaHeal);
+      const actualHeal = sys.stamina.fatigue - newFatigue;
+      const rawMax = computeRawStaminaMax(sys.stats.endurance.total, sys.stamina.mult, sys.traitStaminaExtra);
+      const newMax = computeFatiguedMax(rawMax, newFatigue);
       updates["system.stamina.fatigue"] = newFatigue;
+      updates["system.stamina.value"] = Math.min(newMax, (sys.stamina.value ?? 0) + actualHeal);
       resources.push({
         name: game.i18n.localize("TAMS.Stamina"),
-        fatigueHealed: sys.stamina.fatigue - newFatigue,
+        fatigueHealed: actualHeal,
         newFatigue
       });
     }
@@ -4105,9 +4118,13 @@ class TAMSActor extends Actor {
       const heal = computeLongRestFatigueHeal(governingStat);
       if (heal <= 0) return;
       const newFatigue = Math.max(0, res.fatigue - heal);
+      const actualHeal = res.fatigue - newFatigue;
+      const rawMax = computeRawResourceMax(governingStat, res.mult, res.bonus);
+      const newMax = computeFatiguedMax(rawMax, newFatigue);
       customResources[idx].fatigue = newFatigue;
+      customResources[idx].value = Math.min(newMax, (res.value ?? 0) + actualHeal);
       crChanged = true;
-      resources.push({ name: res.name, fatigueHealed: res.fatigue - newFatigue, newFatigue });
+      resources.push({ name: res.name, fatigueHealed: actualHeal, newFatigue });
     });
     if (crChanged) updates["system.customResources"] = customResources;
     if (resources.length === 0) {
@@ -4862,6 +4879,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         await this._onUpdateItemField(ev, ev.currentTarget);
       });
     });
+    this.element.querySelectorAll('input[data-action="updateCurrency"]').forEach((el) => {
+      el.addEventListener("change", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await this._onUpdateCurrency(ev, ev.currentTarget);
+      });
+    });
     const searchInput = this.element.querySelector("input.inventory-search");
     if (searchInput) {
       searchInput.addEventListener("input", (ev) => {
@@ -5059,7 +5083,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   _prepareItemCollections(context) {
-    var _a, _b;
+    var _a, _b, _c;
     const weapons = [];
     const equippedWeapons = [];
     const skills = [];
@@ -5120,11 +5144,16 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         isEquipped: i.type === "weapon" && i.system.location === "hand" || ["armor", "backpack", "shield"].includes(i.type) && i.system.equipped,
         canEquip: ["weapon", "armor", "shield", "backpack"].includes(i.type),
         isArmor: i.type === "armor",
+        hasCharges: i.type === "equipment" && (((_c = i.system.uses) == null ? void 0 : _c.max) ?? 0) > 0,
         armorZones,
         expanded: this._expandedItems.has(i.id)
       };
       allItems.push(itemData);
       if (i.type === "weapon") {
+        itemData.damageParts = i.system.damageBreakdown.map((c) => ({
+          damage: c.damage,
+          typeLabel: c.damageType ? game.i18n.localize(`TAMS.DamageType.${c.damageType}`) : ""
+        }));
         weapons.push(itemData);
         if (i.system.equipped) equippedWeapons.push(itemData);
         else inventoryWeapons.push(itemData);
@@ -5309,6 +5338,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       "custom": "TAMS.StatCustom"
     };
     context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical" };
+    context.lifeStateOptions = { "living": "TAMS.LifeState.living", "dead": "TAMS.LifeState.dead", "undead": "TAMS.LifeState.undead" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
     context.creatureSizeOptions = { "tiny": "TAMS.CreatureSizeOptions.Tiny", "small": "TAMS.CreatureSizeOptions.Small", "normal": "TAMS.CreatureSizeOptions.Normal", "large": "TAMS.CreatureSizeOptions.Large", "huge": "TAMS.CreatureSizeOptions.Huge", "giant": "TAMS.CreatureSizeOptions.Giant" };
@@ -5814,6 +5844,20 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (target.type === "checkbox") value = target.checked;
     const item = this.document.items.get(itemId);
     if (item) await item.update({ [field]: value });
+  }
+  /**
+   * Persist an edit to a single named currency value.
+   * Bypasses the generic submitOnChange form pipeline since system.currencies
+   * is an ObjectField with dynamically-configured keys (see _prepareCurrencyData).
+   * @param {Event} event The originating change event.
+   * @param {HTMLElement} target The input element that changed.
+   * @protected
+   */
+  async _onUpdateCurrency(event, target) {
+    const name = target.dataset.currency;
+    if (!name) return;
+    const value = parseFloat(target.value) || 0;
+    await this.document.update({ [`system.currencies.${name}`]: value });
   }
   /**
    * Resolve the item id from a clicked control or its containing row.
@@ -7661,6 +7705,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         raceResistanceLimbToggle: _TAMSItemSheet.prototype._onRaceResistanceLimbToggle,
         damageComponentCreate: _TAMSItemSheet.prototype._onDamageComponentCreate,
         damageComponentDelete: _TAMSItemSheet.prototype._onDamageComponentDelete,
+        updateDamageComponent: _TAMSItemSheet.prototype._onUpdateDamageComponent,
         tagToggle: _TAMSItemSheet.prototype._onTagToggle,
         toggleSection: _TAMSItemSheet.prototype._onToggleSection
       }
@@ -7980,6 +8025,13 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         }
       });
     });
+    this.element.querySelectorAll('[data-action="updateDamageComponent"]').forEach((el) => {
+      el.addEventListener("change", async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await this._onUpdateDamageComponent(ev, ev.currentTarget);
+      });
+    });
     this.element.querySelectorAll(".save-against-preset").forEach((select) => {
       select.addEventListener("change", (event) => {
         const value = event.target.value;
@@ -8099,6 +8151,24 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     const index = parseInt(target.closest("[data-index]").dataset.index);
     const components = foundry.utils.duplicate(this.document.system.damageComponents || []);
     components.splice(index, 1);
+    await this.document.update({ "system.damageComponents": components });
+  }
+  /**
+   * Persist an edit to one field of one damage component.
+   * Bypasses the generic submitOnChange form pipeline since system.damageComponents
+   * is an ArrayField of SchemaFields — dotted array-index names into it don't reliably
+   * survive the generic form submit (same class of issue as currency's ObjectField keys).
+   * @param {Event} event The originating change event.
+   * @param {HTMLElement} target The select/input element that changed.
+   * @protected
+   */
+  async _onUpdateDamageComponent(event, target) {
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const field = target.dataset.field;
+    if (!field || Number.isNaN(index)) return;
+    const components = foundry.utils.duplicate(this.document.system.damageComponents || []);
+    if (!components[index]) return;
+    components[index][field] = target.type === "number" ? parseFloat(target.value) || 0 : target.value;
     await this.document.update({ "system.damageComponents": components });
   }
   async _onPassiveTraitCreate(event, target) {

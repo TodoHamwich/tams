@@ -29,7 +29,7 @@
     "consumeAmmo": true,
     "special": "Reload 7. Paper cartridges reduce reload by 2.",
     "isAoE": false,
-    "damageType": "",
+    "damageType": "piercing",
     "tags": "Ranged, Firearm",
     "description": "",
     "misfireThreshold": 0,

@@ -23,6 +23,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         raceResistanceLimbToggle: TAMSItemSheet.prototype._onRaceResistanceLimbToggle,
         damageComponentCreate: TAMSItemSheet.prototype._onDamageComponentCreate,
         damageComponentDelete: TAMSItemSheet.prototype._onDamageComponentDelete,
+        updateDamageComponent: TAMSItemSheet.prototype._onUpdateDamageComponent,
         tagToggle: TAMSItemSheet.prototype._onTagToggle,
         toggleSection: TAMSItemSheet.prototype._onToggleSection
       }
@@ -363,6 +364,16 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
       });
     });
 
+    // Damage component fields (type/amount) — handled explicitly rather than via the
+    // generic submitOnChange form pipeline (see _onUpdateDamageComponent).
+    this.element.querySelectorAll('[data-action="updateDamageComponent"]').forEach(el => {
+      el.addEventListener('change', async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        await this._onUpdateDamageComponent(ev, ev.currentTarget);
+      });
+    });
+
     this.element.querySelectorAll('.save-against-preset').forEach(select => {
       select.addEventListener('change', event => {
         const value = event.target.value;
@@ -489,6 +500,25 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     const index = parseInt(target.closest("[data-index]").dataset.index);
     const components = foundry.utils.duplicate(this.document.system.damageComponents || []);
     components.splice(index, 1);
+    await this.document.update({ "system.damageComponents": components });
+  }
+
+  /**
+   * Persist an edit to one field of one damage component.
+   * Bypasses the generic submitOnChange form pipeline since system.damageComponents
+   * is an ArrayField of SchemaFields — dotted array-index names into it don't reliably
+   * survive the generic form submit (same class of issue as currency's ObjectField keys).
+   * @param {Event} event The originating change event.
+   * @param {HTMLElement} target The select/input element that changed.
+   * @protected
+   */
+  async _onUpdateDamageComponent(event, target) {
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const field = target.dataset.field;
+    if (!field || Number.isNaN(index)) return;
+    const components = foundry.utils.duplicate(this.document.system.damageComponents || []);
+    if (!components[index]) return;
+    components[index][field] = target.type === "number" ? (parseFloat(target.value) || 0) : target.value;
     await this.document.update({ "system.damageComponents": components });
   }
 

@@ -35,6 +35,12 @@
                         {{selectOptions themeOptions selected=system.theme localize=true}}
                     </select>
                 </div>
+                <div class="theme-selector">
+                    <label>{{localize 'TAMS.LifeState.Label'}}</label>
+                    <select name="system.lifeState">
+                        {{selectOptions lifeStateOptions selected=system.lifeState localize=true}}
+                    </select>
+                </div>
             </div>
         </div>
     </header>
@@ -214,11 +220,12 @@
         <div class="tab items {{#if (eq activeTab 'items')}}active{{/if}}" data-group="primary" data-tab="items" data-scrollable data-scroll-id="tab-items">
             <h3>{{localize 'TAMS.Weapons'}}<span class="section-line"></span><a data-action="itemCreate" data-type="weapon" title="{{localize 'TAMS.AddWeaponTooltip'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
+                <span class="drag-handle" aria-hidden="true" style="visibility: hidden;"><i class="fas fa-grip-vertical"></i></span>
                 <div class="item-name">{{localize 'TAMS.Name'}}</div>
-                <div class="item-stat">{{localize 'TAMS.Dmg'}}</div>
+                <div class="item-stat dmg-cell">{{localize 'TAMS.Dmg'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Fam'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Rate'}}</div>
-                <div class="item-stat">{{localize 'TAMS.Ammo'}}</div>
+                <div class="item-stat ammo-select-cell">{{localize 'TAMS.Ammo'}}</div>
                 <div class="item-stat ammo-total-cell">{{localize 'TAMS.Total'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Equip'}}</div>
                 <div class="item-controls"></div>
@@ -230,7 +237,11 @@
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
                     </h4>
-                    <div class="item-stat">{{item.system.calculatedDamage}}</div>
+                    <div class="item-stat dmg-cell">
+                        {{#each item.damageParts as |dp|}}
+                        <div class="dmg-line">{{dp.damage}}{{#if dp.typeLabel}} {{dp.typeLabel}}{{/if}}</div>
+                        {{/each}}
+                    </div>
                     <div class="item-stat">
                         <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
                     </div>
@@ -294,7 +305,11 @@
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
                     </h4>
-                    <div class="item-stat">{{item.system.calculatedDamage}}</div>
+                    <div class="item-stat dmg-cell">
+                        {{#each item.damageParts as |dp|}}
+                        <div class="dmg-line">{{dp.damage}}{{#if dp.typeLabel}} {{dp.typeLabel}}{{/if}}</div>
+                        {{/each}}
+                    </div>
                     <div class="item-stat">
                         <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
                     </div>
@@ -353,6 +368,7 @@
 
             <h3>{{localize 'TAMS.Skills'}}<span class="section-line"></span><a data-action="itemCreate" data-type="skill" title="{{localize 'TAMS.AddSkill'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
+                <span class="drag-handle" aria-hidden="true" style="visibility: hidden;"><i class="fas fa-grip-vertical"></i></span>
                 <div class="item-name">{{localize 'TAMS.Name'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Fam'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Stat'}}</div>
@@ -577,7 +593,7 @@
                                 <a class="item-control" data-action="itemRepair" data-item-id="{{item.id}}" title="{{localize 'TAMS.Repair.Action'}}"><i class="fas fa-hammer"></i></a>
                                 {{/if}}
                                 <a class="item-control" data-action="itemGive" data-item-id="{{item.id}}" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
-                                {{#if (eq item.type 'consumable')}}
+                                {{#if (or (eq item.type 'consumable') item.hasCharges)}}
                                 <a class="item-control" data-action="itemUseCharge" data-item-id="{{item.id}}" title="{{localize 'TAMS.UseCharge'}}"><i class="fas fa-flask"></i></a>
                                 {{/if}}
                                 <a class="item-control" data-action="itemEdit" data-item-id="{{item.id}}" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
@@ -629,7 +645,7 @@
                     {{#if cur.enabled}}
                     <div class="currency-item flexrow" style="align-items: center; background: rgba(0,0,0,0.05); padding: 2px 5px; border-radius: 3px; flex: 0 0 120px;">
                         <label style="font-size: 0.9em; flex: 1;">{{cur.name}}</label>
-                        <input type="number" name="system.currencies.{{cur.name}}" value="{{cur.value}}" style="width: 50px; height: 20px; text-align: right;"/>
+                        <input type="number" data-action="updateCurrency" data-currency="{{cur.name}}" value="{{cur.value}}" style="width: 50px; height: 20px; text-align: right;"/>
                     </div>
                     {{/if}}
                     {{/each}}

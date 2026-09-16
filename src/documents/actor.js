@@ -851,10 +851,16 @@ export class TAMSActor extends Actor {
     const staminaHeal = computeLongRestFatigueHeal(sys.stats.endurance.total);
     if (staminaHeal > 0 && (sys.stamina.fatigue ?? 0) > 0) {
       const newFatigue = Math.max(0, sys.stamina.fatigue - staminaHeal);
+      const actualHeal = sys.stamina.fatigue - newFatigue;
+      const rawMax = computeRawStaminaMax(sys.stats.endurance.total, sys.stamina.mult, sys.traitStaminaExtra);
+      const newMax = computeFatiguedMax(rawMax, newFatigue);
       updates["system.stamina.fatigue"] = newFatigue;
+      // Backfill current value by the amount of Fatigue healed — losing Fatigue raises the
+      // ceiling, and the character should feel that as regained resource, not just headroom.
+      updates["system.stamina.value"] = Math.min(newMax, (sys.stamina.value ?? 0) + actualHeal);
       resources.push({
         name: game.i18n.localize("TAMS.Stamina"),
-        fatigueHealed: sys.stamina.fatigue - newFatigue,
+        fatigueHealed: actualHeal,
         newFatigue
       });
     }
@@ -867,9 +873,13 @@ export class TAMSActor extends Actor {
       const heal = computeLongRestFatigueHeal(governingStat);
       if (heal <= 0) return;
       const newFatigue = Math.max(0, res.fatigue - heal);
+      const actualHeal = res.fatigue - newFatigue;
+      const rawMax = computeRawResourceMax(governingStat, res.mult, res.bonus);
+      const newMax = computeFatiguedMax(rawMax, newFatigue);
       customResources[idx].fatigue = newFatigue;
+      customResources[idx].value = Math.min(newMax, (res.value ?? 0) + actualHeal);
       crChanged = true;
-      resources.push({ name: res.name, fatigueHealed: res.fatigue - newFatigue, newFatigue });
+      resources.push({ name: res.name, fatigueHealed: actualHeal, newFatigue });
     });
     if (crChanged) updates["system.customResources"] = customResources;
 

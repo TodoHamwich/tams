@@ -514,6 +514,7 @@
     "ConditionalCost": "Conditional Cost",
     "AttackDetails": "Attack Details",
     "Uses": "Uses",
+    "Charges": "Charges",
     "Cost": "Cost",
     "IFStatement": "IF Statement",
     "IFCost": "IF Cost",
@@ -674,6 +675,12 @@
       "Started": "{name} is dying! {limb} was destroyed. {turns} turn(s) until death.",
       "Countdown": "{name} is dying — {turns} turn(s) remaining!",
       "Death": "{name} has died from their wounds."
+    },
+    "LifeState": {
+      "Label": "Life State",
+      "living": "Living",
+      "dead": "Dead",
+      "undead": "Undead"
     },
     "StaminaPayment": {
       "Title": "Insufficient Resources",
