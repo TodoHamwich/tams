@@ -243,6 +243,9 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       })),
       restSafe: new fields.BooleanField({ initial: false }),
       theme: new fields.StringField({ initial: "default" }),
+      // Honor tier naming style — independent of `theme` (the visual skin), since the two don't
+      // map 1:1 (e.g. a Cyberpunk-themed sheet might still want Grimdark honor names).
+      honorStyle: new fields.StringField({ initial: "fantasy" }),
       physicalNotes: new fields.StringField({ initial: "" }),
       traits: new fields.StringField({ initial: "" }),
       description: new fields.HTMLField({ initial: "" }),
@@ -2731,12 +2734,13 @@ async function tamsRenderChatMessage(message, html, data) {
                 <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-damage-types='${JSON.stringify(attackerDamageTypes)}' data-locations='${JSON.stringify(locations)}' data-is-aoe="${isAoEFromData ? "1" : "0"}" data-force-crit="${pendingAutoCrit ? "1" : "0"}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
             </div>
           `;
-      if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", { total: attackerTotal })}</div>`;
+      if (raw >= attackerRaw * 2) critInfo = `<div class="tams-crit partial">${game.i18n.format("TAMS.Combat.CriticalDodgeHit", { name: e$3(actor.name), total: attackerTotal })}</div>`;
+      else if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", { total: attackerTotal })}</div>`;
     } else {
       if (!critInfo) critInfo = `<div class="tams-success">${game.i18n.format("TAMS.Combat.DodgeSuccess", { total: attackerTotal })}</div>`;
     }
     const msg = `
-        <div class="tams-roll" data-actor-uuid="${actor.uuid}" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-attacker-damage-types='${JSON.stringify(attackerDamageTypes)}' data-first-location="${attackerLocations[0] || ""}" data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? "1" : "0"}" data-is-aoe="${isAoEFromData ? "1" : "0"}">
+        <div class="tams-roll" data-actor-uuid="${actor.uuid}" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-attacker-damage-types='${JSON.stringify(attackerDamageTypes)}' data-first-location="${attackerLocations[0] || ""}" data-attacker-locations='${JSON.stringify(attackerLocations)}' data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? "1" : "0"}" data-is-aoe="${isAoEFromData ? "1" : "0"}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.DodgeWith", { name: e$3(actor.name) })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
           <div class="roll-crit-info">${critInfo}</div>
           <div class="roll-hits-info">${damageInfo}</div>
@@ -2781,8 +2785,8 @@ async function tamsRenderChatMessage(message, html, data) {
       content: `
           <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
           <div class="form-group">
-              <label>${game.i18n.localize("TAMS.Combat.PointsSpentMax10")}</label>
-              <input type="number" id="res-points" value="${Math.min(pointsNeeded, 10)}" min="0" max="10"/>
+              <label>${game.i18n.localize("TAMS.Combat.PointsSpent")}</label>
+              <input type="number" id="res-points" value="${pointsNeeded}" min="0"/>
               <p><small>${game.i18n.localize("TAMS.Combat.BoostDodgeHint")}</small></p>
               <p><i>${pointsNeeded > 0 ? game.i18n.format("TAMS.Combat.MinToDodge", { points: pointsNeeded }) : game.i18n.localize("TAMS.Combat.AlreadyDodged")}</i></p>
           </div>
@@ -2796,7 +2800,7 @@ async function tamsRenderChatMessage(message, html, data) {
           const form = dialog.element;
           const resId2 = form.querySelector("#res-type").value;
           const res = resources.find((r) => r.id === resId2);
-          let requestedPoints = Math.clamp(parseInt(form.querySelector("#res-points").value) || 0, 0, 10);
+          let requestedPoints = Math.max(0, parseInt(form.querySelector("#res-points").value) || 0);
           if (requestedPoints > res.value) requestedPoints = res.value;
           return { resId: resId2, points: requestedPoints, unaware: form.querySelector("#unaware").checked };
         } },
@@ -2825,6 +2829,7 @@ async function tamsRenderChatMessage(message, html, data) {
     const attackerArmourPen = parseInt(container.dataset.attackerArmourPen) || 0;
     const attackerDamageTypes = JSON.parse(container.dataset.attackerDamageTypes || "[]");
     const firstLocation = container.dataset.firstLocation;
+    const attackerLocations = container.dataset.attackerLocations ? JSON.parse(container.dataset.attackerLocations) : firstLocation ? [firstLocation] : [];
     const targetLimb = container.dataset.targetLimb;
     const isAoEFromData = container.dataset.isAoe === "1";
     if (raw >= attackerRaw * 2) {
@@ -2834,10 +2839,10 @@ async function tamsRenderChatMessage(message, html, data) {
     }
     if (attackerTotal > total) {
       hitsScored = Math.min(1 + Math.floor((attackerTotal - total) / 5), attackerMulti);
-      const locations = [firstLocation];
+      const locations = [];
       const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
-      for (let i = 1; i < hitsScored; i++) {
-        locations.push(targetLimb && targetLimb !== "none" ? limbOptions[targetLimb] : await getHitLocation());
+      for (let i = 0; i < hitsScored; i++) {
+        locations.push(attackerLocations[i] || (targetLimb && targetLimb !== "none" ? limbOptions[targetLimb] : await getHitLocation()));
       }
       damageInfo = `
             <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.HitsTaken")} ${hitsScored} / ${attackerMulti}</b></div>
@@ -2846,7 +2851,8 @@ async function tamsRenderChatMessage(message, html, data) {
                 <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-damage-types='${JSON.stringify(attackerDamageTypes)}' data-locations='${JSON.stringify(locations)}' data-is-aoe="${isAoEFromData ? "1" : "0"}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
             </div>
           `;
-      if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", { total: attackerTotal })}</div>`;
+      if (raw >= attackerRaw * 2) critInfo = `<div class="tams-crit partial">${game.i18n.format("TAMS.Combat.CriticalDodgeHit", { name: e$3(actor.name), total: attackerTotal })}</div>`;
+      else if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", { total: attackerTotal })}</div>`;
     } else {
       if (!critInfo) critInfo = `<div class="tams-success">${game.i18n.format("TAMS.Combat.DodgeSuccess", { total: attackerTotal })}</div>`;
     }
@@ -3049,8 +3055,8 @@ async function tamsRenderChatMessage(message, html, data) {
     const applyToAttackerLabel = attackerName ? `Apply Hits to ${e$3(attackerName)}` : game.i18n.localize("TAMS.Checks.ApplyAllHits");
     const retButtons = hitsScored > 0 && !isMutual ? `
           <button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? "1" : "0"}">${applyToAttackerLabel}</button>
-          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}">${game.i18n.localize("TAMS.Dodge")}</button>
-          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${e$3(actor.name)}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
+          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}">${game.i18n.localize("TAMS.Dodge")}</button>
+          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${e$3(actor.name)}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
           <button class="tams-behind-toggle" style="background: #444; color: white;">B</button>
           <button class="tams-unaware-toggle" style="background: #444; color: white;">U</button>
       ` : isMutual ? `<button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? "1" : "0"}">${applyToAttackerLabel}</button>` : "";
@@ -4196,6 +4202,11 @@ class TAMSItem extends Item {
     }, { inplace: false });
   }
 }
+function computeSquadAttackBonus(squadSize, isRanged, numTargets) {
+  const maxTargets = isRanged ? Math.max(1, Math.ceil(squadSize / 2)) : Math.max(1, squadSize);
+  const bonus = numTargets < maxTargets ? maxTargets * 5 : 0;
+  return { maxTargets, bonus };
+}
 async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUuid, newLocation }, sender = null) {
   let target = await fromUuid(targetActorUuid);
   if (!target) return;
@@ -4355,67 +4366,88 @@ const HONOR_PATHS = {
   valor: {
     labelKey: "TAMS.Honor.Path.Valor",
     tiers: [
-      { min: 91, labelKey: "TAMS.Honor.Tier.Valor.Lionheart", glossKey: "TAMS.Honor.Gloss.Valor.Lionheart" },
-      { min: 76, labelKey: "TAMS.Honor.Tier.Valor.Valiant", glossKey: "TAMS.Honor.Gloss.Valor.Valiant" },
-      { min: 51, labelKey: "TAMS.Honor.Tier.Valor.Brave", glossKey: "TAMS.Honor.Gloss.Valor.Brave" },
-      { min: 26, labelKey: "TAMS.Honor.Tier.Valor.Steadfast", glossKey: "TAMS.Honor.Gloss.Valor.Steadfast" },
-      { min: 0, labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
-      { min: -25, labelKey: "TAMS.Honor.Tier.Valor.Timid", glossKey: "TAMS.Honor.Gloss.Valor.Timid" },
-      { min: -50, labelKey: "TAMS.Honor.Tier.Valor.Craven", glossKey: "TAMS.Honor.Gloss.Valor.Craven" },
-      { min: -75, labelKey: "TAMS.Honor.Tier.Valor.Dastard", glossKey: "TAMS.Honor.Gloss.Valor.Dastard" },
-      { min: -100, labelKey: "TAMS.Honor.Tier.Valor.Runagate", glossKey: "TAMS.Honor.Gloss.Valor.Runagate" }
+      { min: 91 },
+      { min: 76 },
+      { min: 51 },
+      { min: 26 },
+      { min: 0 },
+      { min: -25 },
+      { min: -50 },
+      { min: -75 },
+      { min: -100 }
     ]
   },
   justice: {
     labelKey: "TAMS.Honor.Path.Justice",
     tiers: [
-      { min: 91, labelKey: "TAMS.Honor.Tier.Justice.Great", glossKey: "TAMS.Honor.Gloss.Justice.Great" },
-      { min: 76, labelKey: "TAMS.Honor.Tier.Justice.Righteous", glossKey: "TAMS.Honor.Gloss.Justice.Righteous" },
-      { min: 51, labelKey: "TAMS.Honor.Tier.Justice.Just", glossKey: "TAMS.Honor.Gloss.Justice.Just" },
-      { min: 26, labelKey: "TAMS.Honor.Tier.Justice.Upright", glossKey: "TAMS.Honor.Gloss.Justice.Upright" },
-      { min: 0, labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
-      { min: -25, labelKey: "TAMS.Honor.Tier.Justice.Suspect", glossKey: "TAMS.Honor.Gloss.Justice.Suspect" },
-      { min: -50, labelKey: "TAMS.Honor.Tier.Justice.Corrupt", glossKey: "TAMS.Honor.Gloss.Justice.Corrupt" },
-      { min: -75, labelKey: "TAMS.Honor.Tier.Justice.Unjust", glossKey: "TAMS.Honor.Gloss.Justice.Unjust" },
-      { min: -100, labelKey: "TAMS.Honor.Tier.Justice.Tyrant", glossKey: "TAMS.Honor.Gloss.Justice.Tyrant" }
+      { min: 91 },
+      { min: 76 },
+      { min: 51 },
+      { min: 26 },
+      { min: 0 },
+      { min: -25 },
+      { min: -50 },
+      { min: -75 },
+      { min: -100 }
     ]
   },
   devotion: {
     labelKey: "TAMS.Honor.Path.Devotion",
     tiers: [
-      { min: 91, labelKey: "TAMS.Honor.Tier.Devotion.Sainted", glossKey: "TAMS.Honor.Gloss.Devotion.Sainted" },
-      { min: 76, labelKey: "TAMS.Honor.Tier.Devotion.Devoted", glossKey: "TAMS.Honor.Gloss.Devotion.Devoted" },
-      { min: 51, labelKey: "TAMS.Honor.Tier.Devotion.Pious", glossKey: "TAMS.Honor.Gloss.Devotion.Pious" },
-      { min: 26, labelKey: "TAMS.Honor.Tier.Devotion.Faithful", glossKey: "TAMS.Honor.Gloss.Devotion.Faithful" },
-      { min: 0, labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
-      { min: -25, labelKey: "TAMS.Honor.Tier.Devotion.Lapsed", glossKey: "TAMS.Honor.Gloss.Devotion.Lapsed" },
-      { min: -50, labelKey: "TAMS.Honor.Tier.Devotion.Faithless", glossKey: "TAMS.Honor.Gloss.Devotion.Faithless" },
-      { min: -75, labelKey: "TAMS.Honor.Tier.Devotion.Heretic", glossKey: "TAMS.Honor.Gloss.Devotion.Heretic" },
-      { min: -100, labelKey: "TAMS.Honor.Tier.Devotion.Accursed", glossKey: "TAMS.Honor.Gloss.Devotion.Accursed" }
+      { min: 91 },
+      { min: 76 },
+      { min: 51 },
+      { min: 26 },
+      { min: 0 },
+      { min: -25 },
+      { min: -50 },
+      { min: -75 },
+      { min: -100 }
     ]
   },
   renown: {
     labelKey: "TAMS.Honor.Path.Renown",
     tiers: [
-      { min: 91, labelKey: "TAMS.Honor.Tier.Renown.Magnificent", glossKey: "TAMS.Honor.Gloss.Renown.Magnificent" },
-      { min: 76, labelKey: "TAMS.Honor.Tier.Renown.Renowned", glossKey: "TAMS.Honor.Gloss.Renown.Renowned" },
-      { min: 51, labelKey: "TAMS.Honor.Tier.Renown.Honored", glossKey: "TAMS.Honor.Gloss.Renown.Honored" },
-      { min: 26, labelKey: "TAMS.Honor.Tier.Renown.Worthy", glossKey: "TAMS.Honor.Gloss.Renown.Worthy" },
-      { min: 0, labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
-      { min: -25, labelKey: "TAMS.Honor.Tier.Renown.Disgraced", glossKey: "TAMS.Honor.Gloss.Renown.Disgraced" },
-      { min: -50, labelKey: "TAMS.Honor.Tier.Renown.Infamous", glossKey: "TAMS.Honor.Gloss.Renown.Infamous" },
-      { min: -75, labelKey: "TAMS.Honor.Tier.Renown.Villainous", glossKey: "TAMS.Honor.Gloss.Renown.Villainous" },
-      { min: -100, labelKey: "TAMS.Honor.Tier.Renown.Damned", glossKey: "TAMS.Honor.Gloss.Renown.Damned" }
+      { min: 91 },
+      { min: 76 },
+      { min: 51 },
+      { min: 26 },
+      { min: 0 },
+      { min: -25 },
+      { min: -50 },
+      { min: -75 },
+      { min: -100 }
     ]
   }
 };
-function getHonorTier(score, path) {
+const HONOR_STYLES = {
+  fantasy: "TAMS.Honor.Style.Fantasy",
+  modern: "TAMS.Honor.Style.Modern",
+  cyberpunk: "TAMS.Honor.Style.Cyberpunk",
+  scifi: "TAMS.Honor.Style.Scifi",
+  grimdark: "TAMS.Honor.Style.Grimdark"
+};
+const STYLE_KEY = { fantasy: "Fantasy", modern: "Modern", cyberpunk: "Cyberpunk", scifi: "Scifi", grimdark: "Grimdark" };
+const PATH_KEY = { valor: "Valor", justice: "Justice", devotion: "Devotion", renown: "Renown" };
+function getHonorTierLabelKeys(pathId, index, style = "fantasy") {
+  if (index === 4) return { labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" };
+  const s = STYLE_KEY[style] ?? "Fantasy";
+  const p = PATH_KEY[pathId] ?? pathId;
+  return {
+    labelKey: `TAMS.Honor.Tier.${s}.${p}.T${index}`,
+    glossKey: `TAMS.Honor.Gloss.${s}.${p}.T${index}`
+  };
+}
+function getHonorTier(score, path, style = "fantasy") {
   const pathData = HONOR_PATHS[path];
   if (!pathData) return null;
-  for (const tier of pathData.tiers) {
-    if (score >= tier.min) return tier;
+  for (let i = 0; i < pathData.tiers.length; i++) {
+    if (score >= pathData.tiers[i].min) {
+      return { ...pathData.tiers[i], index: i, ...getHonorTierLabelKeys(path, i, style) };
+    }
   }
-  return pathData.tiers[pathData.tiers.length - 1];
+  const lastIndex = pathData.tiers.length - 1;
+  return { ...pathData.tiers[lastIndex], index: lastIndex, ...getHonorTierLabelKeys(path, lastIndex, style) };
 }
 function isHonorEnabled() {
   try {
@@ -5475,19 +5507,25 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     context.honorEnabled = isHonorEnabled();
     if (!context.honorEnabled) return;
     const honor = this.document.system.honor ?? {};
+    const style = this.document.system.honorStyle || "fantasy";
+    context.honorStyle = style;
+    context.honorStyleOptions = HONOR_STYLES;
     context.honorPaths = Object.entries(HONOR_PATHS).map(([id, pathData]) => {
       const score = honor[id] ?? 0;
-      const currentTier = getHonorTier(score, id);
-      const ci = pathData.tiers.indexOf(currentTier);
-      const mkTier = (tier, i) => ({
-        labelKey: tier.labelKey,
-        glossKey: tier.glossKey,
+      const currentTier = getHonorTier(score, id, style);
+      const ci = currentTier.index;
+      const mkTier = (i) => ({
+        ...getHonorTierLabelKeys(id, i, style),
         active: i <= 4 ? ci <= i : ci >= i,
         // honor: ci<=i; dishonor: ci>=i
-        current: ci === i
+        current: ci === i,
+        // Endpoint preview (see the template's honor-endpoint usage): once a path has committed
+        // to a direction, the opposite extreme stops being shown as a dim preview — only the
+        // side actually still in play (or both, while still at Common) gets it.
+        showEndpoint: i === 0 && score >= 0 || i === 8 && score <= 0
       });
-      const honorTiers = pathData.tiers.slice(0, 4).map((t, i) => mkTier(t, i));
-      const dishonorTiers = pathData.tiers.slice(5).map((t, j) => mkTier(t, j + 5));
+      const honorTiers = [0, 1, 2, 3].map((i) => mkTier(i));
+      const dishonorTiers = [5, 6, 7, 8].map((i) => mkTier(i));
       const HONOR_HI = [100, 90, 75, 50];
       const hFill = (s, n) => {
         const lo = pathData.tiers[n].min, hi = HONOR_HI[n];
@@ -5504,10 +5542,15 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const fills = [0, 1, 2, 3].map(
         (n) => parseFloat((score >= 0 ? hFill(score, n) : dFill(score, n)).toFixed(3))
       );
+      const ICONS = { valor: "fa-fist-raised", justice: "fa-balance-scale", devotion: "fa-praying-hands", renown: "fa-star" };
       return {
         id,
         score,
         labelKey: pathData.labelKey,
+        icon: ICONS[id] ?? "fa-star",
+        currentTierLabelKey: currentTier.labelKey,
+        currentTierGlossKey: currentTier.glossKey,
+        isDishonored: ci > 4,
         honorTiers,
         dishonorTiers,
         ht0: honorTiers[0],
@@ -5518,7 +5561,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         dt1: dishonorTiers[1],
         dt2: dishonorTiers[2],
         dt3: dishonorTiers[3],
-        common: { ...mkTier(pathData.tiers[4], 4), labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
+        common: mkTier(4),
         seg: {
           h0: ci <= 0,
           h1: ci <= 1,
@@ -6860,12 +6903,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const isRangedAttack = item.type === "weapon" ? !!item.system.isRanged : ((_h = item.system.calculator) == null ? void 0 : _h.range) > 10;
       if (isSquadOrHorde) {
         if (settings.npcType === "squad") {
-          maxSquadTargets = isRangedAttack ? Math.max(1, Math.ceil(squadSize / 2)) : Math.max(1, squadSize);
-          const actualTargets = [...game.user.targets].slice(0, maxSquadTargets);
-          const numTargetsCount = actualTargets.length > 0 ? actualTargets.length : tToken ? 1 : 0;
-          if (numTargetsCount > 0 && numTargetsCount < maxSquadTargets) {
-            squadBonus = (maxSquadTargets - numTargetsCount) * 5;
-          }
+          const numTargetsCount = game.user.targets.size;
+          ({ maxTargets: maxSquadTargets, bonus: squadBonus } = computeSquadAttackBonus(squadSize, isRangedAttack, numTargetsCount));
         } else if (settings.npcType === "horde") {
           if (isRangedAttack) {
             maxSquadTargets = Math.max(2, Math.floor(squadSize / 5));
@@ -7117,6 +7156,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-location="${hitLocation}"
+                                  data-locations='${JSON.stringify(tHits)}'
                                   data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-types='${damageTypesJson}'
@@ -7131,6 +7171,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-location="${hitLocation}"
+                                  data-locations='${JSON.stringify(tHits)}'
                                   data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-types='${damageTypesJson}'

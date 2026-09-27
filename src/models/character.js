@@ -133,6 +133,9 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       })),
       restSafe: new fields.BooleanField({initial: false}),
       theme: new fields.StringField({initial: "default"}),
+      // Honor tier naming style — independent of `theme` (the visual skin), since the two don't
+      // map 1:1 (e.g. a Cyberpunk-themed sheet might still want Grimdark honor names).
+      honorStyle: new fields.StringField({initial: "fantasy"}),
       physicalNotes: new fields.StringField({initial: ""}),
       traits: new fields.StringField({initial: ""}),
       description: new fields.HTMLField({initial: ""}),

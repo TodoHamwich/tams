@@ -840,6 +840,7 @@
       "DmgShort": "Dmg:",
       "ArmorShort": "Armor:",
       "CriticalDodge": "CRITICAL DODGE — {name}!",
+      "CriticalDodgeHit": "CRITICAL DODGE — {name}, but it's not enough to beat Total {total}!",
       "CriticalRetaliation": "CRITICAL RETALIATION — {name}!",
       "CriticalHitTaken": "CRITICAL HIT ON {name}!",
       "DodgeFailed": "Dodge Failed vs Total {total}",
@@ -1072,6 +1073,14 @@
       "To": "to",
       "PartyHonor": "Party Honor",
       "PartyHonorHint": "Tracks the party's collective standing on each honor path. Adjusted by the GM.",
+      "StyleLabel": "Honor Style",
+      "Style": {
+        "Fantasy":   "Fantasy",
+        "Modern":    "Modern",
+        "Cyberpunk": "Cyberpunk",
+        "Scifi":     "Sci-Fi",
+        "Grimdark":  "Grimdark"
+      },
       "Path": {
         "Valor":    "Valor",
         "Justice":  "Justice",
@@ -1080,88 +1089,128 @@
       },
       "Tier": {
         "Common": "Common",
-        "Valor": {
-          "Lionheart": "the Lionheart",
-          "Valiant":   "the Valiant",
-          "Brave":     "the Brave",
-          "Steadfast": "the Steadfast",
-          "Timid":     "the Timid",
-          "Craven":    "the Craven",
-          "Dastard":   "the Dastard",
-          "Runagate":  "the Runagate"
+        "Fantasy": {
+          "Valor":    { "T0": "the Lionheart",   "T1": "the Valiant",     "T2": "the Brave",       "T3": "the Steadfast",  "T5": "the Timid",       "T6": "the Craven",       "T7": "the Dastard",     "T8": "the Runagate" },
+          "Justice":  { "T0": "the Great",        "T1": "the Righteous",   "T2": "the Just",        "T3": "the Upright",    "T5": "the Suspect",     "T6": "the Corrupt",      "T7": "the Unjust",      "T8": "the Tyrant" },
+          "Devotion": { "T0": "the Sainted",      "T1": "the Devoted",     "T2": "the Pious",       "T3": "the Faithful",   "T5": "the Lapsed",      "T6": "the Faithless",    "T7": "the Heretic",     "T8": "the Accursed" },
+          "Renown":   { "T0": "the Magnificent",  "T1": "the Renowned",    "T2": "the Honored",     "T3": "the Worthy",     "T5": "the Disgraced",   "T6": "the Infamous",     "T7": "the Villainous",  "T8": "the Damned" }
         },
-        "Justice": {
-          "Great":     "the Great",
-          "Righteous": "the Righteous",
-          "Just":      "the Just",
-          "Upright":   "the Upright",
-          "Suspect":   "the Suspect",
-          "Corrupt":   "the Corrupt",
-          "Unjust":    "the Unjust",
-          "Tyrant":    "the Tyrant"
+        "Modern": {
+          "Valor":    { "T0": "Fearless",        "T1": "Heroic",         "T2": "Bold",           "T3": "Steady",         "T5": "Jumpy",           "T6": "Cowardly",         "T7": "Yellow-Bellied",  "T8": "Deserter" },
+          "Justice":  { "T0": "Incorruptible",   "T1": "Principled",     "T2": "Fair",           "T3": "Honest",         "T5": "Shady",           "T6": "Corrupt",          "T7": "Crooked",         "T8": "Despot" },
+          "Devotion": { "T0": "True Believer",   "T1": "Devout",         "T2": "Faithful",       "T3": "Observant",      "T5": "Doubtful",        "T6": "Lapsed",           "T7": "Faithless",       "T8": "Apostate" },
+          "Renown":   { "T0": "Legendary",       "T1": "Famous",         "T2": "Respected",      "T3": "Known",          "T5": "Disgraced",       "T6": "Notorious",        "T7": "Infamous",        "T8": "Disowned" }
         },
-        "Devotion": {
-          "Sainted":   "the Sainted",
-          "Devoted":   "the Devoted",
-          "Pious":     "the Pious",
-          "Faithful":  "the Faithful",
-          "Lapsed":    "the Lapsed",
-          "Faithless": "the Faithless",
-          "Heretic":   "the Heretic",
-          "Accursed":  "the Accursed"
+        "Cyberpunk": {
+          "Valor":    { "T0": "Chrome Legend",   "T1": "Live Wire",      "T2": "Steady Hand",    "T3": "Wired-In",       "T5": "Static Nerves",   "T6": "Flatliner",        "T7": "Bail-Out",       "T8": "Ghost" },
+          "Justice":  { "T0": "Code-Keeper",     "T1": "Straight Edge",  "T2": "Fair Dealer",    "T3": "On the Level",   "T5": "Grey Market",     "T6": "Bought Badge",     "T7": "Backstabber",    "T8": "Corpo Puppet" },
+          "Devotion": { "T0": "Machine-Blessed", "T1": "True Signal",    "T2": "Faithful Node",  "T3": "Synced",         "T5": "Static",          "T6": "Disconnected",     "T7": "Corrupted Code", "T8": "Blacklisted" },
+          "Renown":   { "T0": "Living Legend",   "T1": "High-Profile",   "T2": "Respected",      "T3": "On the Map",     "T5": "Flagged",         "T6": "Notorious",        "T7": "Marked",         "T8": "Ghost-Wiped" }
         },
-        "Renown": {
-          "Magnificent": "the Magnificent",
-          "Renowned":    "the Renowned",
-          "Honored":     "the Honored",
-          "Worthy":      "the Worthy",
-          "Disgraced":   "the Disgraced",
-          "Infamous":    "the Infamous",
-          "Villainous":  "the Villainous",
-          "Damned":      "the Damned"
+        "Scifi": {
+          "Valor":    { "T0": "Starborn",        "T1": "Vanguard",       "T2": "Daring",         "T3": "Steady",         "T5": "Shaken",          "T6": "Panic-Locked",     "T7": "Mutinous",       "T8": "AWOL" },
+          "Justice":  { "T0": "Star Arbiter",    "T1": "Adjudicator",    "T2": "Fair-Minded",    "T3": "Dutiful",        "T5": "Questionable",    "T6": "Corrupted",        "T7": "Lawless",        "T8": "Warlord" },
+          "Devotion": { "T0": "Ascendant",       "T1": "True Adherent",  "T2": "Faithful",       "T3": "Aligned",        "T5": "Wavering",        "T6": "Fallen",           "T7": "Heretic",        "T8": "Excommunicate" },
+          "Renown":   { "T0": "Star-Famed",      "T1": "Renowned",       "T2": "Respected",      "T3": "Recognized",     "T5": "Discredited",     "T6": "Notorious",        "T7": "Infamous",       "T8": "Exiled" }
+        },
+        "Grimdark": {
+          "Valor":    { "T0": "Undying",         "T1": "Bloodsworn",     "T2": "Grim",           "T3": "Hardened",       "T5": "Shaken",          "T6": "Broken",           "T7": "Craven Worm",    "T8": "Oathbreaker" },
+          "Justice":  { "T0": "Inquisitor",      "T1": "Zealous",        "T2": "Lawful",         "T3": "Dutiful",        "T5": "Compromised",     "T6": "Corrupt",          "T7": "Butcher",        "T8": "Tyrant-King" },
+          "Devotion": { "T0": "Beatified",       "T1": "Zealot",         "T2": "Devout",         "T3": "Faithful",       "T5": "Doubting",        "T6": "Faithless",        "T7": "Heretic",        "T8": "Damned" },
+          "Renown":   { "T0": "Immortalized",    "T1": "Storied",        "T2": "Honored",        "T3": "Known",          "T5": "Disgraced",       "T6": "Infamous",         "T7": "Villainous",     "T8": "Forgotten" }
         }
       },
       "Gloss": {
         "Common": "No particular standing",
-        "Valor": {
-          "Lionheart": "Fearless, a legend in their own time",
-          "Valiant":   "Distinguished in battle",
-          "Brave":     "Proven courage",
-          "Steadfast": "Reliable, holds the line",
-          "Timid":     "Avoids danger, unreliable",
-          "Craven":    "Known coward",
-          "Dastard":   "Cowardly and treacherous",
-          "Runagate":  "Deserter, fled duty entirely"
+        "Fantasy": {
+          "Valor": {
+            "T0": "Fearless, a legend in their own time", "T1": "Distinguished in battle", "T2": "Proven courage", "T3": "Reliable, holds the line",
+            "T5": "Avoids danger, unreliable", "T6": "Known coward", "T7": "Cowardly and treacherous", "T8": "Deserter, fled duty entirely"
+          },
+          "Justice": {
+            "T0": "A standard-bearer for all", "T1": "Upholds justice at personal cost", "T2": "Fair and principled", "T3": "Honest, trustworthy",
+            "T5": "Questionable character", "T6": "Known to abuse power", "T7": "Openly cruel and unfair", "T8": "Rules through fear and cruelty"
+          },
+          "Devotion": {
+            "T0": "Revered, almost beyond reproach", "T1": "Selfless service to a cause", "T2": "Devout, spiritually disciplined", "T3": "Keeps oaths and beliefs",
+            "T5": "Slipping from their oaths", "T6": "Broken oaths, untrustworthy", "T7": "Actively rejects what they once swore to", "T8": "Condemned, cast out"
+          },
+          "Renown": {
+            "T0": "Extraordinary, spoken of with awe", "T1": "Fame spreads beyond their home", "T2": "Well-regarded, known by name", "T3": "Earns respect through deeds",
+            "T5": "Fell from good standing", "T6": "Known for wrongdoing", "T7": "Actively harmful reputation", "T8": "Beyond redemption in public eyes"
+          }
         },
-        "Justice": {
-          "Great":     "A standard-bearer for all",
-          "Righteous": "Upholds justice at personal cost",
-          "Just":      "Fair and principled",
-          "Upright":   "Honest, trustworthy",
-          "Suspect":   "Questionable character",
-          "Corrupt":   "Known to abuse power",
-          "Unjust":    "Openly cruel and unfair",
-          "Tyrant":    "Rules through fear and cruelty"
+        "Modern": {
+          "Valor": {
+            "T0": "Never hesitates, no matter the danger", "T1": "Goes above and beyond under fire", "T2": "Takes the risk when it counts", "T3": "Keeps calm, holds their ground",
+            "T5": "Rattled, quick to flinch", "T6": "Backs down when it matters", "T7": "Openly avoids any real danger", "T8": "Abandoned their post entirely"
+          },
+          "Justice": {
+            "T0": "Cannot be bought or pressured, ever", "T1": "Sticks to their values, even at a cost", "T2": "Treats people even-handedly", "T3": "Straightforward and trustworthy",
+            "T5": "Cuts corners, bends the rules", "T6": "Takes bribes, abuses their position", "T7": "Openly dishonest, works every angle", "T8": "Rules through intimidation and control"
+          },
+          "Devotion": {
+            "T0": "Lives the cause entirely, no exceptions", "T1": "Deeply committed, rarely wavers", "T2": "Keeps to their word and their beliefs", "T3": "Follows through on what they've committed to",
+            "T5": "Starting to question everything they believed", "T6": "Stopped practicing what they once held dear", "T7": "Broke faith, no longer trusted on it", "T8": "Turned their back on it entirely"
+          },
+          "Renown": {
+            "T0": "A name everyone's heard of", "T1": "Recognized well beyond their own circle", "T2": "Well-regarded by those who know them", "T3": "Has a bit of a reputation",
+            "T5": "Fell hard from public favor", "T6": "Known, but not for the right reasons", "T7": "Their name is a byword for trouble", "T8": "Cut off, wants nothing to do with their old name"
+          }
         },
-        "Devotion": {
-          "Sainted":   "Revered, almost beyond reproach",
-          "Devoted":   "Selfless service to a cause",
-          "Pious":     "Devout, spiritually disciplined",
-          "Faithful":  "Keeps oaths and beliefs",
-          "Lapsed":    "Slipping from their oaths",
-          "Faithless": "Broken oaths, untrustworthy",
-          "Heretic":   "Actively rejects what they once swore to",
-          "Accursed":  "Condemned, cast out"
+        "Cyberpunk": {
+          "Valor": {
+            "T0": "A name whispered on every channel", "T1": "Runs straight into the worst of it", "T2": "Doesn't flinch when the shooting starts", "T3": "Calm, focused, trusted to hold the line",
+            "T5": "Signal's shaky, second-guesses every call", "T6": "Freezes when the heat comes down", "T7": "Cuts and runs, leaves the crew hanging", "T8": "Vanished mid-job, never showed again"
+          },
+          "Justice": {
+            "T0": "Lives by a code even the street respects", "T1": "Doesn't compromise, not even for the big score", "T2": "Honors every deal, no double-crosses", "T3": "Plays it straight, mostly",
+            "T5": "Deals both sides, no questions asked", "T6": "Enforcer for whoever pays best", "T7": "Sells out partners when it's convenient", "T8": "Owned outright, does what the suits say"
+          },
+          "Devotion": {
+            "T0": "Spoken of like something more than human", "T1": "Never wavers from what they believe in", "T2": "Reliable link in the network's chain", "T3": "Keeps in step with the cause",
+            "T5": "Connection's fraying, commitment going with it", "T6": "Cut ties with what they used to believe", "T7": "Values overwritten, can't be trusted anymore", "T8": "Cast out of the network entirely"
+          },
+          "Renown": {
+            "T0": "Every fixer in the city knows the name", "T1": "Shows up on more feeds than they'd like", "T2": "Word gets around, and it's good word", "T3": "Starting to get noticed",
+            "T5": "Under watch, name's on the wrong lists", "T6": "Known for jobs gone loud", "T7": "A target on every corp's shortlist", "T8": "Scrubbed from every record that mattered"
+          }
         },
-        "Renown": {
-          "Magnificent": "Extraordinary, spoken of with awe",
-          "Renowned":    "Fame spreads beyond their home",
-          "Honored":     "Well-regarded, known by name",
-          "Worthy":      "Earns respect through deeds",
-          "Disgraced":   "Fell from good standing",
-          "Infamous":    "Known for wrongdoing",
-          "Villainous":  "Actively harmful reputation",
-          "Damned":      "Beyond redemption in public eyes"
+        "Scifi": {
+          "Valor": {
+            "T0": "A hero spoken of across the systems", "T1": "First through the breach, every time", "T2": "Takes the risky approach and commits", "T3": "Holds formation under fire",
+            "T5": "Nerve cracking, hesitates at the console", "T6": "Freezes at the critical moment", "T7": "Refuses orders out of fear", "T8": "Abandoned their post and the crew"
+          },
+          "Justice": {
+            "T0": "Trusted to judge disputes across worlds", "T1": "Rules fairly, even against their own side", "T2": "Weighs both sides before deciding", "T3": "Follows protocol and the chain of command",
+            "T5": "Rulings that always seem to favor someone", "T6": "Bends the law for personal gain", "T7": "Ignores protocol entirely, rules by force", "T8": "Commands through fear across whole sectors"
+          },
+          "Devotion": {
+            "T0": "Held up as a model of the creed", "T1": "Lives the doctrine without compromise", "T2": "Keeps their vows and their calling", "T3": "In step with the cause's principles",
+            "T5": "Starting to doubt what they signed up for", "T6": "Drifted far from their original calling", "T7": "Openly preaches against what they once served", "T8": "Cast out, stripped of all standing"
+          },
+          "Renown": {
+            "T0": "Known across the whole sector", "T1": "Reputation reaches well beyond their home system", "T2": "Well thought of among their peers", "T3": "Starting to build a name",
+            "T5": "Reputation took a serious hit", "T6": "Known, and not for anything good", "T7": "A name spoken as a warning", "T8": "Banished, stripped of standing everywhere"
+          }
+        },
+        "Grimdark": {
+          "Valor": {
+            "T0": "Death itself hasn't managed to stop them", "T1": "Sworn to see it through, whatever the cost", "T2": "Grits through horror without flinching", "T3": "Numb to fear, keeps moving",
+            "T5": "Cracking under the weight of it", "T6": "Nerve gone, can no longer be relied on", "T7": "Grovels and flees at the first sign of blood", "T8": "Abandoned their sworn duty when it mattered"
+          },
+          "Justice": {
+            "T0": "Judges without mercy, and without doubt", "T1": "Enforces the law like a holy duty", "T2": "Follows the letter of the law, always", "T3": "Does what's required, nothing more",
+            "T5": "Looks the other way when it's convenient", "T6": "Sells judgment to the highest bidder", "T7": "Metes out punishment far past what's earned", "T8": "Law is whatever they say it is"
+          },
+          "Devotion": {
+            "T0": "Held up as sacred, beyond question", "T1": "Burns with a fanatic's certainty", "T2": "Unshaken in their faith", "T3": "Keeps their oaths, even when it costs them",
+            "T5": "Faith cracking under the weight of horror", "T6": "Abandoned their oaths when tested", "T7": "Turned openly against the faith", "T8": "Marked as lost, beyond all saving"
+          },
+          "Renown": {
+            "T0": "Their deeds will outlive the age itself", "T1": "Tales of them are already being told", "T2": "Respected by those who've earned the right to judge", "T3": "Word of them has started to spread",
+            "T5": "Fell from standing, and everyone knows it", "T6": "Spoken of only with contempt", "T7": "A name that brings dread, not respect", "T8": "Erased from memory — no glory, not even infamy"
+          }
         }
       }
     }

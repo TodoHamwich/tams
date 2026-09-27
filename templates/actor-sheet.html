@@ -904,6 +904,12 @@
         {{!-- Honor Tab --}}
         {{#if honorEnabled}}
         <div class="tab honor {{#if (eq activeTab 'honor')}}active{{/if}}" data-group="primary" data-tab="honor" data-scrollable data-scroll-id="tab-honor">
+          <div class="honor-style-row">
+              <label>{{localize 'TAMS.Honor.StyleLabel'}}</label>
+              <select name="system.honorStyle">
+                  {{selectOptions honorStyleOptions selected=system.honorStyle localize=true}}
+              </select>
+          </div>
           <div class="honor-tree-wrap">
 
             {{!-- Structural tree lines: 4 vertical stems at column centers (x=62,187,312,437). --}}
@@ -923,14 +929,18 @@
 
                 {{!-- Path name headers --}}
                 <div class="honor-row honor-headers">
-                    {{#each honorPaths as |path|}}<div class="honor-col"><span class="honor-path-label">{{localize path.labelKey}}</span></div>{{/each}}
+                    {{#each honorPaths as |path|}}<div class="honor-col"><span class="honor-path-label"><i class="fas {{path.icon}}"></i>{{localize path.labelKey}}</span></div>{{/each}}
                 </div>
 
-                {{!-- Slot 0 (top — most extreme): Lionheart/Great/Sainted/Magnificent  OR  Runagate/Tyrant/Accursed/Damned --}}
+                {{!-- Slot 0 (top — most extreme): Lionheart/Great/Sainted/Magnificent  OR  Runagate/Tyrant/Accursed/Damned.
+                     These two are the score endpoints (-100/+100) — shown at partial opacity (honor-endpoint)
+                     even when unreached, so players can see what the best/worst outcome is called. Once the
+                     score commits to a direction, the opposite endpoint drops the class (path.*.showEndpoint)
+                     and reverts to fully hidden-until-reached, same as every other tier. --}}
                 <div class="honor-row honor-tier-row">
                     {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-tier-slot">
-                        <div class="honor-node {{#if path.ht0.active}}honor-active{{/if}} {{#if path.ht0.current}}honor-current{{/if}}" title="{{localize path.ht0.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht0.labelKey}}</span></div>
-                        <div class="honor-node {{#if path.dt3.active}}dishonor-active{{/if}} {{#if path.dt3.current}}honor-current{{/if}}" title="{{localize path.dt3.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt3.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.ht0.showEndpoint}}honor-endpoint{{/if}} {{#if path.ht0.active}}honor-active{{/if}} {{#if path.ht0.current}}honor-current{{/if}}" title="{{localize path.ht0.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht0.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.dt3.showEndpoint}}honor-endpoint{{/if}} {{#if path.dt3.active}}dishonor-active{{/if}} {{#if path.dt3.current}}honor-current{{/if}}" title="{{localize path.dt3.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt3.labelKey}}</span></div>
                     </div></div>{{/each}}
                 </div>
                 <div class="honor-row honor-seg-row">
@@ -975,7 +985,10 @@
                     {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-node honor-common {{#if path.common.current}}honor-current{{/if}}" title="{{localize 'TAMS.Honor.Tier.Common'}} — {{localize 'TAMS.Honor.Gloss.Common'}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize 'TAMS.Honor.Tier.Common'}}</span></div></div>{{/each}}
                 </div>
 
-                {{!-- Footer: score + edit button --}}
+                {{!-- Footer: current tier name + score + edit button --}}
+                <div class="honor-row honor-current-label-row">
+                    {{#each honorPaths as |path|}}<div class="honor-col"><span class="honor-current-tier-name {{#if path.isDishonored}}dishonor{{else}}honor{{/if}}" title="{{localize path.currentTierGlossKey}}">{{localize path.currentTierLabelKey}}</span></div>{{/each}}
+                </div>
                 <div class="honor-row honor-footer-row">
                     {{#each honorPaths as |path|}}<div class="honor-col"><a class="honor-edit" data-action="honorEdit" data-path="{{path.id}}" title="{{localize 'TAMS.Honor.EditScore'}}"><span class="honor-score">{{path.score}}</span><i class="fas fa-pencil fa-xs"></i></a></div>{{/each}}
                 </div>

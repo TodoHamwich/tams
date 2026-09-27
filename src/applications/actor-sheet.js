@@ -1,7 +1,7 @@
-import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog } from '../utils/helpers.js';
+import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog, computeSquadAttackBonus } from '../utils/helpers.js';
 import { computeArmorRepair } from '../utils/inventory.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
-import { HONOR_PATHS, getHonorTier, isHonorEnabled } from '../utils/honor.js';
+import { HONOR_PATHS, HONOR_STYLES, getHonorTier, getHonorTierLabelKeys, isHonorEnabled } from '../utils/honor.js';
 import {
   SHAPE_CELLS, INVENTORY_TYPES, GRID_CELL, MAIN_GRID_COLS, MAIN_GRID_ROWS,
   gridPlacementValid, getItemCells, getFootprint, transformCells
@@ -758,20 +758,26 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     context.honorEnabled = isHonorEnabled();
     if (!context.honorEnabled) return;
     const honor = this.document.system.honor ?? {};
+    const style = this.document.system.honorStyle || "fantasy";
+    context.honorStyle = style;
+    context.honorStyleOptions = HONOR_STYLES;
     context.honorPaths = Object.entries(HONOR_PATHS).map(([id, pathData]) => {
       const score = honor[id] ?? 0;
-      const currentTier = getHonorTier(score, id);
-      const ci = pathData.tiers.indexOf(currentTier); // 0=Lionheart … 4=Common … 8=Runagate
+      const currentTier = getHonorTier(score, id, style);
+      const ci = currentTier.index; // 0=top … 4=Common … 8=bottom
 
-      const mkTier = (tier, i) => ({
-        labelKey: tier.labelKey,
-        glossKey: tier.glossKey,
+      const mkTier = (i) => ({
+        ...getHonorTierLabelKeys(id, i, style),
         active: i <= 4 ? ci <= i : ci >= i, // honor: ci<=i; dishonor: ci>=i
-        current: ci === i
+        current: ci === i,
+        // Endpoint preview (see the template's honor-endpoint usage): once a path has committed
+        // to a direction, the opposite extreme stops being shown as a dim preview — only the
+        // side actually still in play (or both, while still at Common) gets it.
+        showEndpoint: (i === 0 && score >= 0) || (i === 8 && score <= 0)
       });
 
-      const honorTiers    = pathData.tiers.slice(0, 4).map((t, i) => mkTier(t, i));
-      const dishonorTiers = pathData.tiers.slice(5).map((t, j) => mkTier(t, j + 5));
+      const honorTiers    = [0, 1, 2, 3].map(i => mkTier(i));
+      const dishonorTiers = [5, 6, 7, 8].map(i => mkTier(i));
 
       // Segment fill ratios (0–1): bars grow from bottom as score advances through each tier.
       // hFill(n): progress through honor tier n; returns 1 when the tier has been surpassed.
@@ -791,14 +797,20 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         parseFloat((score >= 0 ? hFill(score, n) : dFill(score, n)).toFixed(3))
       );
 
+      const ICONS = { valor: "fa-fist-raised", justice: "fa-balance-scale", devotion: "fa-praying-hands", renown: "fa-star" };
+
       return {
         id, score,
         labelKey: pathData.labelKey,
+        icon: ICONS[id] ?? "fa-star",
+        currentTierLabelKey: currentTier.labelKey,
+        currentTierGlossKey: currentTier.glossKey,
+        isDishonored: ci > 4,
         honorTiers,
         dishonorTiers,
         ht0: honorTiers[0], ht1: honorTiers[1], ht2: honorTiers[2], ht3: honorTiers[3],
         dt0: dishonorTiers[0], dt1: dishonorTiers[1], dt2: dishonorTiers[2], dt3: dishonorTiers[3],
-        common: { ...mkTier(pathData.tiers[4], 4), labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" },
+        common: mkTier(4),
         seg: {
           h0: ci <= 0, h1: ci <= 1, h2: ci <= 2, h3: ci <= 3,
           d0: ci >= 5, d1: ci >= 6, d2: ci >= 7, d3: ci >= 8,
@@ -2276,14 +2288,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         const isRangedAttack = item.type === 'weapon' ? !!item.system.isRanged : (item.system.calculator?.range > 10);
         if (isSquadOrHorde) {
             if (settings.npcType === 'squad') {
-                maxSquadTargets = isRangedAttack
-                    ? Math.max(1, Math.ceil(squadSize / 2))
-                    : Math.max(1, squadSize);
-                const actualTargets = [...game.user.targets].slice(0, maxSquadTargets);
-                const numTargetsCount = actualTargets.length > 0 ? actualTargets.length : (tToken ? 1 : 0);
-                if (numTargetsCount > 0 && numTargetsCount < maxSquadTargets) {
-                    squadBonus = (maxSquadTargets - numTargetsCount) * 5;
-                }
+                const numTargetsCount = game.user.targets.size;
+                ({ maxTargets: maxSquadTargets, bonus: squadBonus } = computeSquadAttackBonus(squadSize, isRangedAttack, numTargetsCount));
             } else if (settings.npcType === 'horde') {
                 if (isRangedAttack) {
                     maxSquadTargets = Math.max(2, Math.floor(squadSize / 5));
@@ -2555,6 +2561,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-location="${hitLocation}"
+                                  data-locations='${JSON.stringify(tHits)}'
                                   data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-types='${damageTypesJson}'
@@ -2569,6 +2576,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                                   data-total="${finalTotal}"
                                   data-multi="${multiVal}"
                                   data-location="${hitLocation}"
+                                  data-locations='${JSON.stringify(tHits)}'
                                   data-damage="${targetDamage}"
                                   data-armour-pen="${armourPen}"
                                   data-damage-types='${damageTypesJson}'

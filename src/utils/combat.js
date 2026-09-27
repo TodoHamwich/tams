@@ -1766,13 +1766,14 @@ export async function tamsRenderChatMessage(message, html, data) {
                 <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-damage-types='${JSON.stringify(attackerDamageTypes)}' data-locations='${JSON.stringify(locations)}' data-is-aoe="${isAoEFromData ? '1' : '0'}" data-force-crit="${pendingAutoCrit ? '1' : '0'}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
             </div>
           `;
-          if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", {total: attackerTotal})}</div>`;
+          if (raw >= (attackerRaw * 2)) critInfo = `<div class="tams-crit partial">${game.i18n.format("TAMS.Combat.CriticalDodgeHit", {name: e(actor.name), total: attackerTotal})}</div>`;
+          else if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", {total: attackerTotal})}</div>`;
       } else {
           if (!critInfo) critInfo = `<div class="tams-success">${game.i18n.format("TAMS.Combat.DodgeSuccess", {total: attackerTotal})}</div>`;
       }
 
       const msg = `
-        <div class="tams-roll" data-actor-uuid="${actor.uuid}" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-attacker-damage-types='${JSON.stringify(attackerDamageTypes)}' data-first-location="${attackerLocations[0] || ""}" data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? '1' : '0'}" data-is-aoe="${isAoEFromData ? '1' : '0'}">
+        <div class="tams-roll" data-actor-uuid="${actor.uuid}" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-attacker-damage-types='${JSON.stringify(attackerDamageTypes)}' data-first-location="${attackerLocations[0] || ""}" data-attacker-locations='${JSON.stringify(attackerLocations)}' data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? '1' : '0'}" data-is-aoe="${isAoEFromData ? '1' : '0'}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.DodgeWith", {name: e(actor.name)})} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           <div class="roll-crit-info">${critInfo}</div>
           <div class="roll-hits-info">${damageInfo}</div>
@@ -1823,8 +1824,8 @@ export async function tamsRenderChatMessage(message, html, data) {
         content: `
           <div class="form-group"><label>${game.i18n.localize("TAMS.Combat.Resource")}</label><select id="res-type">${options}</select></div>
           <div class="form-group">
-              <label>${game.i18n.localize("TAMS.Combat.PointsSpentMax10")}</label>
-              <input type="number" id="res-points" value="${Math.min(pointsNeeded, 10)}" min="0" max="10"/>
+              <label>${game.i18n.localize("TAMS.Combat.PointsSpent")}</label>
+              <input type="number" id="res-points" value="${pointsNeeded}" min="0"/>
               <p><small>${game.i18n.localize("TAMS.Combat.BoostDodgeHint")}</small></p>
               <p><i>${pointsNeeded > 0 ? game.i18n.format("TAMS.Combat.MinToDodge", {points: pointsNeeded}) : game.i18n.localize("TAMS.Combat.AlreadyDodged")}</i></p>
           </div>
@@ -1838,7 +1839,7 @@ export async function tamsRenderChatMessage(message, html, data) {
               const form = dialog.element;
               const resId = form.querySelector("#res-type").value;
               const res = resources.find(r => r.id === resId);
-              let requestedPoints = Math.clamp(parseInt(form.querySelector("#res-points").value) || 0, 0, 10);
+              let requestedPoints = Math.max(0, parseInt(form.querySelector("#res-points").value) || 0);
               if (requestedPoints > res.value) requestedPoints = res.value;
               return { resId, points: requestedPoints, unaware: form.querySelector("#unaware").checked };
           }},
@@ -1871,6 +1872,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       const attackerArmourPen = parseInt(container.dataset.attackerArmourPen) || 0;
       const attackerDamageTypes = JSON.parse(container.dataset.attackerDamageTypes || "[]");
       const firstLocation = container.dataset.firstLocation;
+      const attackerLocations = container.dataset.attackerLocations ? JSON.parse(container.dataset.attackerLocations) : (firstLocation ? [firstLocation] : []);
       const targetLimb = container.dataset.targetLimb;
       const isAoEFromData = container.dataset.isAoe === '1';
 
@@ -1882,10 +1884,10 @@ export async function tamsRenderChatMessage(message, html, data) {
 
       if (attackerTotal > total) {
           hitsScored = Math.min(1 + Math.floor((attackerTotal - total) / 5), attackerMulti);
-          const locations = [firstLocation];
+          const locations = [];
           const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
-          for (let i = 1; i < hitsScored; i++) {
-              locations.push(targetLimb && targetLimb !== 'none' ? limbOptions[targetLimb] : await getHitLocation());
+          for (let i = 0; i < hitsScored; i++) {
+              locations.push(attackerLocations[i] || (targetLimb && targetLimb !== 'none' ? limbOptions[targetLimb] : await getHitLocation()));
           }
           damageInfo = `
             <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.HitsTaken")} ${hitsScored} / ${attackerMulti}</b></div>
@@ -1894,7 +1896,8 @@ export async function tamsRenderChatMessage(message, html, data) {
                 <button class="tams-take-damage" data-damage="${attackerDamage}" data-armour-pen="${attackerArmourPen}" data-damage-types='${JSON.stringify(attackerDamageTypes)}' data-locations='${JSON.stringify(locations)}' data-is-aoe="${isAoEFromData ? '1' : '0'}">${game.i18n.localize("TAMS.Combat.TakeDamage")}</button>
             </div>
           `;
-          if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", {total: attackerTotal})}</div>`;
+          if (raw >= (attackerRaw * 2)) critInfo = `<div class="tams-crit partial">${game.i18n.format("TAMS.Combat.CriticalDodgeHit", {name: e(actor.name), total: attackerTotal})}</div>`;
+          else if (!critInfo) critInfo = `<div class="tams-failure">${game.i18n.format("TAMS.Combat.DodgeFailed", {total: attackerTotal})}</div>`;
       } else {
           if (!critInfo) critInfo = `<div class="tams-success">${game.i18n.format("TAMS.Combat.DodgeSuccess", {total: attackerTotal})}</div>`;
       }
@@ -2114,8 +2117,8 @@ export async function tamsRenderChatMessage(message, html, data) {
       const applyToAttackerLabel = attackerName ? `Apply Hits to ${e(attackerName)}` : game.i18n.localize("TAMS.Checks.ApplyAllHits");
       const retButtons = (hitsScored > 0 && !isMutual) ? `
           <button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? '1' : '0'}">${applyToAttackerLabel}</button>
-          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">${game.i18n.localize("TAMS.Dodge")}</button>
-          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${e(actor.name)}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
+          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">${game.i18n.localize("TAMS.Dodge")}</button>
+          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${e(actor.name)}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
           <button class="tams-behind-toggle" style="background: #444; color: white;">B</button>
           <button class="tams-unaware-toggle" style="background: #444; color: white;">U</button>
       ` : (isMutual ? `<button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? '1' : '0'}">${applyToAttackerLabel}</button>` : "");

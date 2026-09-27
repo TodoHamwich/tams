@@ -1,16 +1,70 @@
 // Honor tree tab
-$honor-gold:    #c9a84c;
-$honor-gold-bg: #f5e6b0;
-$dishonor-red:  #8b2020;
-$dishonor-bg:   #f9cccc;
-$node-size:     16px;
-$seg-h:         26px;
+//
+// Baseline colors here target a DARK sheet background — that's what actually renders for the
+// "Default" theme in practice (Foundry's own dark app chrome shows through wherever TAMS doesn't
+// set an explicit background) and for most of the explicit themes (grimdark/cyberpunk/gothic/
+// tactical/dark). The one light explicit theme (parchment) gets its own override block in
+// _themes.scss.
+$honor-gold:       #e0bb5c;
+$honor-gold-dim:   rgba(224, 187, 92, 0.55);
+$honor-gold-text:  #f1d99a;
+$dishonor-red:     #e2635f;
+$dishonor-red-dim: rgba(226, 99, 95, 0.55);
+$dishonor-red-text: #f0a5a2;
+$honor-neutral:    rgba(235, 230, 215, 0.32);
+$honor-text-dim:   rgba(235, 230, 215, 0.55);
+$honor-text:       #e8dfc8;
+$node-size:        14px;
+$node-size-lg:     20px;
+$seg-h:            24px;
 
-// Fixed-width container so SVG coordinates align predictably with the grid
+// Style selector row, above the tree. Overrides the base `.tams select` rule (white background,
+// black text) which reads as a harsh, oversized white box against this tab's dark panel — sized
+// to fit its content instead of stretching, and colored to match the rest of the tab.
+.honor-style-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+  font-size: 0.85em;
+
+  label {
+    color: $honor-text-dim;
+    font-family: $font-header;
+    letter-spacing: 0.03em;
+  }
+
+  select {
+    width: auto;
+    background: rgba(0, 0, 0, 0.35);
+    color: $honor-text;
+    border: 1px solid rgba(224, 187, 92, 0.3);
+    border-radius: 4px;
+    padding: 3px 6px;
+
+    &:focus {
+      outline: none;
+      border-color: $honor-gold;
+      box-shadow: 0 0 4px rgba(224, 187, 92, 0.4);
+    }
+
+    option { background: #221c12; color: $honor-text; }
+  }
+}
+
+// Card-like panel so the tree reads as a distinct piece of the sheet rather than floating
+// loose against whatever background the active theme happens to leave behind.
 .honor-tree-wrap {
   display: grid;
   width: 500px;
-  margin: 0 auto;
+  max-width: 100%;
+  margin: 6px auto 0;
+  padding: 14px 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(224, 187, 92, 0.18);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
 
   > .honor-tree-bg,
   > .honor-tree {
@@ -22,6 +76,8 @@ $seg-h:         26px;
     height: 100%;
     pointer-events: none;
     z-index: 0;
+
+    line { stroke: $honor-gold-dim; }
   }
 
   > .honor-tree {
@@ -33,7 +89,7 @@ $seg-h:         26px;
 .honor-tree {
   display: flex;
   flex-direction: column;
-  padding: 8px 12px 4px;
+  padding: 0 8px;
 
   // Every row is a flex row with 4 equal columns
   .honor-row {
@@ -52,17 +108,28 @@ $seg-h:         26px;
 
   // Path name headers
   .honor-headers .honor-col {
-    padding-bottom: 8px;
+    padding-bottom: 6px;
     .honor-path-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
       font-family: $font-header;
-      font-size: 0.9em;
+      font-size: 0.95em;
       font-weight: bold;
       letter-spacing: 0.04em;
-      color: #555;
+      color: $honor-text;
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+      i {
+        font-size: 0.85em;
+        color: $honor-gold;
+        opacity: 0.85;
+      }
     }
   }
 
@@ -77,6 +144,8 @@ $seg-h:         26px;
       top: 0;
       bottom: 0;
       width: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.07);
       transform: translateX(-50%);
       overflow: hidden;
 
@@ -85,12 +154,12 @@ $seg-h:         26px;
         position: absolute;
         left: 0; right: 0; bottom: 0;
         height: calc(var(--fill, 0) * 100%);
-        border-radius: 1px;
+        border-radius: 2px;
         transition: height 0.5s ease-out;
       }
 
-      &.seg-honor::after    { background: $honor-gold; }
-      &.seg-dishonor::after { background: $dishonor-red; }
+      &.seg-honor::after    { background: $honor-gold; box-shadow: 0 0 6px rgba(224, 187, 92, 0.5); }
+      &.seg-dishonor::after { background: $dishonor-red; box-shadow: 0 0 6px rgba(226, 99, 95, 0.5); }
     }
   }
 
@@ -103,7 +172,7 @@ $seg-h:         26px;
   .honor-tier-slot {
     position: relative;
     width: 100%;
-    height: 52px;
+    height: 46px;
     display: flex;
     justify-content: center;
 
@@ -112,14 +181,33 @@ $seg-h:         26px;
       top: 50%;
       transform: translateY(-50%);
     }
+
+    // The score endpoints (T0/T8) are shown even when unreached (see .honor-endpoint below),
+    // which means both the honor- and dishonor-direction node in this one slot can be visible
+    // at once — unlike every other slot, where only the reached side is ever shown. They need an
+    // actual horizontal offset, not just each other's default centered position, or their labels
+    // overlap and garble exactly like the dots-and-labels-sharing-one-spot bug this was already
+    // fixed for elsewhere.
+    //
+    // At the tree's fixed 500px width, each of the 4 columns is only ~116.5px wide (~58px each
+    // side of its own center) — measured live via the tester rig. An earlier ±34px offset with a
+    // 58px label width reached ~63px from center, which doesn't just fail to clear its own
+    // column, it runs into the *neighboring* column's endpoint too (confirmed live: Valor's
+    // right-side label was touching Justice's left-side label with zero gap). ±22px / 42px stays
+    // safely inside each column's own ~58px half-width with room to spare.
+    .honor-node.honor-endpoint {
+      &:nth-child(1) { transform: translate(-22px, -50%); } // honor-direction (e.g. Lionheart)
+      &:nth-child(2) { transform: translate(22px, -50%); }  // dishonor-direction (e.g. Runagate)
+    }
   }
 
-  // Tier nodes: centered dot + label (label hidden until active)
+  // Tier nodes: centered dot + label. Unreached tiers stay dimly visible (not invisible) so the
+  // ladder's full shape always reads, even at a score of 0 — they simply light up on reveal.
   .honor-node {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
     cursor: default;
     padding: 2px 0;
 
@@ -128,19 +216,26 @@ $seg-h:         26px;
       width: $node-size;
       height: $node-size;
       border-radius: 50%;
-      border: 2px solid transparent;
-      background: transparent;
+      border: 2px solid $honor-neutral;
+      background: rgba(255, 255, 255, 0.04);
       box-sizing: border-box;
       position: relative;
       z-index: 1;
-      opacity: 0;
-      transition: opacity 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+      transition: width 0.25s, height 0.25s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
     }
 
-    // Label: invisible by default; fades in when tier is reached
+    // Labels stay hidden until their tier is reached — two labels (the honor-direction name and
+    // the dishonor-direction name for this row) share the exact same position with no horizontal
+    // offset, so only one may ever be visible at a time or they garble together. The dots above
+    // don't have this problem: two dim circles stacked exactly on top of each other still just
+    // look like one circle, so dots can stay always-visible while labels can't.
     .honor-node-label {
-      font-size: 0.72em;
-      color: #555;
+      // display:block (it's a <span> in the markup) — max-width/overflow/ellipsis are no-ops on
+      // an inline element per the CSS spec, so without this the width caps below silently do
+      // nothing and long labels render at full natural width instead of truncating.
+      display: block;
+      font-size: 0.68em;
+      color: $honor-text-dim;
       text-align: center;
       line-height: 1.1;
       max-width: 100%;
@@ -148,19 +243,26 @@ $seg-h:         26px;
       text-overflow: ellipsis;
       white-space: nowrap;
       opacity: 0;
-      transition: opacity 0.35s, color 0.3s, font-weight 0.2s;
+      transition: opacity 0.3s, color 0.3s, font-weight 0.2s, font-size 0.2s;
+    }
+
+    // Endpoints (T0/T8, the -100/+100 extremes) stay semi-visible even unreached, so players can
+    // always see what the ultimate best/worst outcome is called. Narrower max-width than the
+    // default — see the ±22px offset comment above for the column-width math this pairs with.
+    &.honor-endpoint .honor-node-label {
+      opacity: 0.42;
+      max-width: 42px;
     }
 
     // Honor path reached: gold dot + label fades in
     &.honor-active {
       .honor-dot {
-        opacity: 1;
-        border-color: darken($honor-gold, 8%);
-        background: $honor-gold-bg;
+        border-color: $honor-gold;
+        background: rgba(224, 187, 92, 0.22);
       }
       .honor-node-label {
         opacity: 1;
-        color: darken($honor-gold, 30%);
+        color: $honor-gold-text;
         font-weight: 600;
       }
     }
@@ -168,29 +270,28 @@ $seg-h:         26px;
     // Dishonor path reached: red dot + label fades in
     &.dishonor-active {
       .honor-dot {
-        opacity: 1;
         border-color: $dishonor-red;
-        background: $dishonor-bg;
+        background: rgba(226, 99, 95, 0.22);
       }
       .honor-node-label {
         opacity: 1;
-        color: darken($dishonor-red, 5%);
+        color: $dishonor-red-text;
         font-weight: 600;
       }
     }
 
-    // Current tier: larger dot, bolder label
+    // Current tier: larger glowing dot, bold label
     &.honor-current {
       .honor-dot {
-        width: $node-size + 5px;
-        height: $node-size + 5px;
+        width: $node-size-lg;
+        height: $node-size-lg;
         border-width: 3px;
-        box-shadow: 0 0 8px rgba(0,0,0,0.35);
       }
+      &.honor-active .honor-dot { box-shadow: 0 0 10px rgba(224, 187, 92, 0.8); }
+      &.dishonor-active .honor-dot { box-shadow: 0 0 10px rgba(226, 99, 95, 0.8); }
       .honor-node-label {
-        opacity: 1;
         font-weight: bold;
-        font-size: 0.80em;
+        font-size: 0.76em;
       }
     }
   }
@@ -198,7 +299,7 @@ $seg-h:         26px;
   // Common bar at base: always-visible node, with a horizontal connector line behind it
   .honor-common-bar {
     position: relative;
-    margin: 3px 0;
+    margin: 4px 0;
 
     // Horizontal line connecting all four Common nodes
     &::before {
@@ -209,43 +310,67 @@ $seg-h:         26px;
       top: 50%;
       transform: translateY(-50%);
       height: 2px;
-      background: rgba(0,0,0,0.14);
+      background: rgba(255, 255, 255, 0.1);
       z-index: 0;
     }
 
     .honor-col { position: relative; z-index: 1; }
 
     .honor-node {
-      background: rgba(249, 249, 247, 0.88);
+      background: rgba(255, 255, 255, 0.06);
       border-radius: 4px;
-      padding: 3px 6px;
-      border: 1px solid rgba(0,0,0,0.15);
+      padding: 3px 7px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
 
       .honor-dot {
-        opacity: 1;
-        border-color: #888;
-        background: #c8c8c8;
+        border-color: rgba(235, 230, 215, 0.6);
+        background: rgba(235, 230, 215, 0.35);
       }
-      // Common label always visible
       .honor-node-label {
         opacity: 1;
-        color: #555;
+        color: $honor-text-dim;
         font-weight: 600;
-        font-size: 0.72em;
+        font-size: 0.7em;
       }
+
+      &.honor-current {
+        border-color: rgba(235, 230, 215, 0.4);
+        .honor-node-label { color: $honor-text; }
+      }
+    }
+  }
+
+  // Current tier name, shown large above the score — the at-a-glance readout for this path
+  .honor-current-label-row {
+    margin-top: 10px;
+
+    .honor-current-tier-name {
+      display: block; // see honor-node-label above — ellipsis/max-width need this on a <span>
+      font-family: $font-header;
+      font-size: 0.9em;
+      font-weight: bold;
+      letter-spacing: 0.03em;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+
+      &.honor    { color: $honor-gold-text; text-shadow: 0 0 8px rgba(224, 187, 92, 0.35); }
+      &.dishonor { color: $dishonor-red-text; text-shadow: 0 0 8px rgba(226, 99, 95, 0.35); }
     }
   }
 
   // Score + edit footer
   .honor-footer-row {
-    margin-top: 8px;
+    margin-top: 4px;
 
     .honor-col {
       font-size: 0.85em;
 
       .honor-score {
         font-weight: bold;
-        color: #444;
+        color: $honor-text-dim;
       }
 
       .honor-edit {
@@ -253,20 +378,20 @@ $seg-h:         26px;
         align-items: center;
         gap: 4px;
         cursor: pointer;
-        color: #555;
+        color: $honor-text-dim;
         padding: 3px 8px;
         border-radius: 4px;
-        border: 1px solid rgba(0,0,0,0.18);
-        background: rgba(0,0,0,0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
         transition: color 0.15s, background 0.15s, border-color 0.15s;
 
-        .honor-score { color: #333; font-weight: bold; }
+        .honor-score { color: $honor-text; font-weight: bold; }
         i { font-size: 0.75em; opacity: 0.6; }
 
         &:hover {
-          color: #111;
-          background: rgba(0,0,0,0.10);
-          border-color: rgba(0,0,0,0.25);
+          color: $honor-gold-text;
+          background: rgba(224, 187, 92, 0.1);
+          border-color: rgba(224, 187, 92, 0.35);
           i { opacity: 1; }
         }
       }

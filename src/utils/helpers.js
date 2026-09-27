@@ -3,6 +3,20 @@ import { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage } from './c
 export { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage };
 
 /**
+ * Squad attack: possible attacks are half the squad's size (ranged) or its full size (melee).
+ * With fewer targets than possible attacks, the squad gets +5 for each possible attack.
+ * @param {number} squadSize Current squad size.
+ * @param {boolean} isRanged Whether the attack is ranged.
+ * @param {number} numTargets Number of targeted tokens.
+ * @returns {{maxTargets: number, bonus: number}}
+ */
+export function computeSquadAttackBonus(squadSize, isRanged, numTargets) {
+  const maxTargets = isRanged ? Math.max(1, Math.ceil(squadSize / 2)) : Math.max(1, squadSize);
+  const bonus = numTargets < maxTargets ? maxTargets * 5 : 0;
+  return { maxTargets, bonus };
+}
+
+/**
  * Handle item transfer between actors.
  * @param {object} params
  * @param {object} params.itemData The item data to transfer.

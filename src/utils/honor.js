@@ -1,69 +1,79 @@
+// Tier thresholds are style-independent — only the flavor naming (labelKey/glossKey) varies by
+// style. Position 4 is always "Common" (the shared, un-styled baseline at score 0), positions
+// 0-3 are the honor side (most to least extreme), positions 5-8 are the dishonor side (least to
+// most extreme). See getHonorTierLabelKeys() for how a position maps to an i18n key.
 export const HONOR_PATHS = {
   valor: {
     labelKey: "TAMS.Honor.Path.Valor",
     tiers: [
-      { min: 91,   labelKey: "TAMS.Honor.Tier.Valor.Lionheart", glossKey: "TAMS.Honor.Gloss.Valor.Lionheart" },
-      { min: 76,   labelKey: "TAMS.Honor.Tier.Valor.Valiant",   glossKey: "TAMS.Honor.Gloss.Valor.Valiant"   },
-      { min: 51,   labelKey: "TAMS.Honor.Tier.Valor.Brave",     glossKey: "TAMS.Honor.Gloss.Valor.Brave"     },
-      { min: 26,   labelKey: "TAMS.Honor.Tier.Valor.Steadfast", glossKey: "TAMS.Honor.Gloss.Valor.Steadfast" },
-      { min: 0,    labelKey: "TAMS.Honor.Tier.Common",          glossKey: "TAMS.Honor.Gloss.Common"          },
-      { min: -25,  labelKey: "TAMS.Honor.Tier.Valor.Timid",     glossKey: "TAMS.Honor.Gloss.Valor.Timid"     },
-      { min: -50,  labelKey: "TAMS.Honor.Tier.Valor.Craven",    glossKey: "TAMS.Honor.Gloss.Valor.Craven"    },
-      { min: -75,  labelKey: "TAMS.Honor.Tier.Valor.Dastard",   glossKey: "TAMS.Honor.Gloss.Valor.Dastard"   },
-      { min: -100, labelKey: "TAMS.Honor.Tier.Valor.Runagate",  glossKey: "TAMS.Honor.Gloss.Valor.Runagate"  },
+      { min: 91 }, { min: 76 }, { min: 51 }, { min: 26 }, { min: 0 },
+      { min: -25 }, { min: -50 }, { min: -75 }, { min: -100 }
     ]
   },
   justice: {
     labelKey: "TAMS.Honor.Path.Justice",
     tiers: [
-      { min: 91,   labelKey: "TAMS.Honor.Tier.Justice.Great",     glossKey: "TAMS.Honor.Gloss.Justice.Great"     },
-      { min: 76,   labelKey: "TAMS.Honor.Tier.Justice.Righteous", glossKey: "TAMS.Honor.Gloss.Justice.Righteous" },
-      { min: 51,   labelKey: "TAMS.Honor.Tier.Justice.Just",      glossKey: "TAMS.Honor.Gloss.Justice.Just"      },
-      { min: 26,   labelKey: "TAMS.Honor.Tier.Justice.Upright",   glossKey: "TAMS.Honor.Gloss.Justice.Upright"   },
-      { min: 0,    labelKey: "TAMS.Honor.Tier.Common",            glossKey: "TAMS.Honor.Gloss.Common"            },
-      { min: -25,  labelKey: "TAMS.Honor.Tier.Justice.Suspect",   glossKey: "TAMS.Honor.Gloss.Justice.Suspect"   },
-      { min: -50,  labelKey: "TAMS.Honor.Tier.Justice.Corrupt",   glossKey: "TAMS.Honor.Gloss.Justice.Corrupt"   },
-      { min: -75,  labelKey: "TAMS.Honor.Tier.Justice.Unjust",    glossKey: "TAMS.Honor.Gloss.Justice.Unjust"    },
-      { min: -100, labelKey: "TAMS.Honor.Tier.Justice.Tyrant",    glossKey: "TAMS.Honor.Gloss.Justice.Tyrant"    },
+      { min: 91 }, { min: 76 }, { min: 51 }, { min: 26 }, { min: 0 },
+      { min: -25 }, { min: -50 }, { min: -75 }, { min: -100 }
     ]
   },
   devotion: {
     labelKey: "TAMS.Honor.Path.Devotion",
     tiers: [
-      { min: 91,   labelKey: "TAMS.Honor.Tier.Devotion.Sainted",   glossKey: "TAMS.Honor.Gloss.Devotion.Sainted"   },
-      { min: 76,   labelKey: "TAMS.Honor.Tier.Devotion.Devoted",   glossKey: "TAMS.Honor.Gloss.Devotion.Devoted"   },
-      { min: 51,   labelKey: "TAMS.Honor.Tier.Devotion.Pious",     glossKey: "TAMS.Honor.Gloss.Devotion.Pious"     },
-      { min: 26,   labelKey: "TAMS.Honor.Tier.Devotion.Faithful",  glossKey: "TAMS.Honor.Gloss.Devotion.Faithful"  },
-      { min: 0,    labelKey: "TAMS.Honor.Tier.Common",             glossKey: "TAMS.Honor.Gloss.Common"             },
-      { min: -25,  labelKey: "TAMS.Honor.Tier.Devotion.Lapsed",    glossKey: "TAMS.Honor.Gloss.Devotion.Lapsed"    },
-      { min: -50,  labelKey: "TAMS.Honor.Tier.Devotion.Faithless", glossKey: "TAMS.Honor.Gloss.Devotion.Faithless" },
-      { min: -75,  labelKey: "TAMS.Honor.Tier.Devotion.Heretic",   glossKey: "TAMS.Honor.Gloss.Devotion.Heretic"   },
-      { min: -100, labelKey: "TAMS.Honor.Tier.Devotion.Accursed",  glossKey: "TAMS.Honor.Gloss.Devotion.Accursed"  },
+      { min: 91 }, { min: 76 }, { min: 51 }, { min: 26 }, { min: 0 },
+      { min: -25 }, { min: -50 }, { min: -75 }, { min: -100 }
     ]
   },
   renown: {
     labelKey: "TAMS.Honor.Path.Renown",
     tiers: [
-      { min: 91,   labelKey: "TAMS.Honor.Tier.Renown.Magnificent", glossKey: "TAMS.Honor.Gloss.Renown.Magnificent" },
-      { min: 76,   labelKey: "TAMS.Honor.Tier.Renown.Renowned",    glossKey: "TAMS.Honor.Gloss.Renown.Renowned"    },
-      { min: 51,   labelKey: "TAMS.Honor.Tier.Renown.Honored",     glossKey: "TAMS.Honor.Gloss.Renown.Honored"     },
-      { min: 26,   labelKey: "TAMS.Honor.Tier.Renown.Worthy",      glossKey: "TAMS.Honor.Gloss.Renown.Worthy"      },
-      { min: 0,    labelKey: "TAMS.Honor.Tier.Common",             glossKey: "TAMS.Honor.Gloss.Common"             },
-      { min: -25,  labelKey: "TAMS.Honor.Tier.Renown.Disgraced",   glossKey: "TAMS.Honor.Gloss.Renown.Disgraced"   },
-      { min: -50,  labelKey: "TAMS.Honor.Tier.Renown.Infamous",    glossKey: "TAMS.Honor.Gloss.Renown.Infamous"    },
-      { min: -75,  labelKey: "TAMS.Honor.Tier.Renown.Villainous",  glossKey: "TAMS.Honor.Gloss.Renown.Villainous"  },
-      { min: -100, labelKey: "TAMS.Honor.Tier.Renown.Damned",      glossKey: "TAMS.Honor.Gloss.Renown.Damned"      },
+      { min: 91 }, { min: 76 }, { min: 51 }, { min: 26 }, { min: 0 },
+      { min: -25 }, { min: -50 }, { min: -75 }, { min: -100 }
     ]
   }
 };
 
-export function getHonorTier(score, path) {
+// Naming styles for honor tiers — an independent per-actor choice from the visual Theme, since
+// the two don't map 1:1 (e.g. a Cyberpunk-themed sheet might still want Grimdark honor names).
+export const HONOR_STYLES = {
+  fantasy:   "TAMS.Honor.Style.Fantasy",
+  modern:    "TAMS.Honor.Style.Modern",
+  cyberpunk: "TAMS.Honor.Style.Cyberpunk",
+  scifi:     "TAMS.Honor.Style.Scifi",
+  grimdark:  "TAMS.Honor.Style.Grimdark"
+};
+
+const STYLE_KEY = { fantasy: "Fantasy", modern: "Modern", cyberpunk: "Cyberpunk", scifi: "Scifi", grimdark: "Grimdark" };
+const PATH_KEY = { valor: "Valor", justice: "Justice", devotion: "Devotion", renown: "Renown" };
+
+/**
+ * Resolve the i18n keys for one tier position of one path, under a given naming style.
+ * Position 4 (Common) always resolves to the shared, style-independent key.
+ * @param {string} pathId "valor"|"justice"|"devotion"|"renown"
+ * @param {number} index 0-8 position in that path's tiers array
+ * @param {string} [style="fantasy"] one of HONOR_STYLES' keys
+ * @returns {{labelKey: string, glossKey: string}}
+ */
+export function getHonorTierLabelKeys(pathId, index, style = "fantasy") {
+  if (index === 4) return { labelKey: "TAMS.Honor.Tier.Common", glossKey: "TAMS.Honor.Gloss.Common" };
+  const s = STYLE_KEY[style] ?? "Fantasy";
+  const p = PATH_KEY[pathId] ?? pathId;
+  return {
+    labelKey: `TAMS.Honor.Tier.${s}.${p}.T${index}`,
+    glossKey: `TAMS.Honor.Gloss.${s}.${p}.T${index}`
+  };
+}
+
+export function getHonorTier(score, path, style = "fantasy") {
   const pathData = HONOR_PATHS[path];
   if (!pathData) return null;
-  for (const tier of pathData.tiers) {
-    if (score >= tier.min) return tier;
+  for (let i = 0; i < pathData.tiers.length; i++) {
+    if (score >= pathData.tiers[i].min) {
+      return { ...pathData.tiers[i], index: i, ...getHonorTierLabelKeys(path, i, style) };
+    }
   }
-  return pathData.tiers[pathData.tiers.length - 1];
+  const lastIndex = pathData.tiers.length - 1;
+  return { ...pathData.tiers[lastIndex], index: lastIndex, ...getHonorTierLabelKeys(path, lastIndex, style) };
 }
 
 export function isHonorEnabled() {

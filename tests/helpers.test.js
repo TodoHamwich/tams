@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getHitLocation } from '../src/utils/helpers.js';
+import { getHitLocation, computeSquadAttackBonus } from '../src/utils/helpers.js';
 
 describe('getHitLocation', () => {
   it('returns Head for 96+', async () => {
@@ -45,5 +45,21 @@ describe('getHitLocation', () => {
     // if (raw >= 41) Stomach
     // So 50 should be Stomach.
     expect(await getHitLocation()).toBe("Stomach");
+  });
+});
+
+describe('computeSquadAttackBonus', () => {
+  it('melee: +5 per possible attack (full size) when fewer targets', () => {
+    expect(computeSquadAttackBonus(8, false, 1)).toEqual({ maxTargets: 8, bonus: 40 });
+    expect(computeSquadAttackBonus(8, false, 0)).toEqual({ maxTargets: 8, bonus: 40 });
+  });
+
+  it('ranged: possible attacks are half size', () => {
+    expect(computeSquadAttackBonus(8, true, 2)).toEqual({ maxTargets: 4, bonus: 20 });
+  });
+
+  it('no bonus when targets fill every possible attack', () => {
+    expect(computeSquadAttackBonus(8, true, 4).bonus).toBe(0);
+    expect(computeSquadAttackBonus(4, false, 6).bonus).toBe(0);
   });
 });

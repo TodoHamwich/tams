@@ -68,3 +68,7 @@ TODO.md
 *.pdf
 test.json
 fvtt-Actor-*.json
+
+# Local-only side material (not part of the system)
+CharacterCreationStation/
+legacy-of-the-gods-tams.zip
