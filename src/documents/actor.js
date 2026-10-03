@@ -3,6 +3,9 @@ import {
   computeRawStaminaMax, computeRawResourceMax, computeFatiguedMax,
   computeShortRestFatigueGain, computeLongRestFatigueHeal
 } from '../utils/fatigue.js';
+import {
+  isLethal, hasCustomLethality, memberLethalUnit, memberCapacityFromLimb, rescaledLimbValue, dyingThreshold
+} from '../utils/lethality.js';
 
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
 
@@ -161,7 +164,10 @@ export class TAMSActor extends Actor {
 
         if (isSquadOrHorde) {
             const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
-            const limbCap = (isAoE ? multiplier : 1) * indMax; 
+            // One member's worth of damage per hit: a lethal limb with a raised threshold
+            // needs threshold × indMax to drop a member, so the cap scales with it.
+            const memberUnit = isLethal(limb) ? memberLethalUnit({ ...limb, individualMax: indMax }) : indMax;
+            const limbCap = (isAoE ? multiplier : 1) * memberUnit;
 
             const currentLimbHpBeforeHit = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
 
@@ -174,9 +180,11 @@ export class TAMSActor extends Actor {
             // Track DCs for lost members in this hit
             if (!limbLosses[limbKey]) limbLosses[limbKey] = [];
             const newLimbHpAfterHit = currentLimbHpBeforeHit - effective;
-            const oldSize = Math.max(0, Math.ceil(currentLimbHpBeforeHit / indMax));
-            const newSize = Math.max(0, Math.ceil(newLimbHpAfterHit / indMax));
-            const lostInThisHit = oldSize - newSize;
+            const limbForSize = { ...limb, individualMax: indMax };
+            const lostInThisHit = isLethal(limb)
+                ? memberCapacityFromLimb(limbForSize, currentLimbHpBeforeHit, currentSquadSize)
+                  - memberCapacityFromLimb(limbForSize, newLimbHpAfterHit, currentSquadSize)
+                : 0;
             
             if (lostInThisHit > 0) {
                 const damageTakenAlready = limb.max - currentLimbHpBeforeHit;
@@ -190,7 +198,9 @@ export class TAMSActor extends Actor {
         }
         
         const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
-        const newHp = Math.floor(currentHp) - effective;
+        let newHp = Math.floor(currentHp) - effective;
+        // Non-lethal squad/horde limbs keep tracking damage but bottom out at -max.
+        if (isSquadOrHorde && !isLethal(limb)) newHp = Math.max(newHp, -limb.max);
         updates[`system.limbs.${limbKey}.value`] = newHp;
         
         limbDamageReceived[limbKey] += effective;
@@ -229,7 +239,7 @@ export class TAMSActor extends Actor {
             if (!limb) continue;
             const newLimbVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
             const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
-            const potentialSize = Math.max(0, Math.ceil(newLimbVal / indMax));
+            const potentialSize = memberCapacityFromLimb({ ...limb, individualMax: indMax }, newLimbVal, currentSquadSize);
             if (potentialSize < finalSquadSize) {
                 finalSquadSize = potentialSize;
                 bottleneckLimb = lk;
@@ -249,16 +259,8 @@ export class TAMSActor extends Actor {
                     const limb = this.system.limbs[lk];
                     if (!limb) continue;
                     const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
-                    const newMax = finalSquadSize * indMax;
                     const currentVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
-                    const totalDamage = limb.max - currentVal;
-                    const remainderDamage = totalDamage % indMax;
-
-                    if (currentVal > 0) {
-                        updates[`system.limbs.${lk}.value`] = newMax - remainderDamage;
-                    } else {
-                        updates[`system.limbs.${lk}.value`] = Math.max(currentVal, -newMax);
-                    }
+                    updates[`system.limbs.${lk}.value`] = rescaledLimbValue({ ...limb, individualMax: indMax }, currentVal, finalSquadSize, currentSquadSize);
                 }
             } else {
                 report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadThreatenedMembers", {name: e(this.name), lostCount})} !!!</b><br>`;
@@ -312,12 +314,15 @@ export class TAMSActor extends Actor {
         let survivalDC = 0;
         let reasons = [];
         let survivalNeeded = false;
+        // Custom lethality (e.g. zombies): only lethal limbs past their threshold matter —
+        // total HP never forces unconscious/survival checks.
+        const customLethality = hasCustomLethality(this.system.limbs);
 
-        if (totalHp <= -maxHp) {
+        if (!customLethality && totalHp <= -maxHp) {
             survivalNeeded = true;
             survivalDC = Math.abs(totalHp);
             reasons.push(`${game.i18n.localize("TAMS.Checks.ReasonTotalHPBelowNegMax")} (${totalHp} / -${maxHp})`);
-        } else if (totalHp < 0) {
+        } else if (!customLethality && totalHp < 0) {
             pendingChecks.push({ 
                 type: 'unconscious', 
                 dc: Math.abs(totalHp), 
@@ -328,9 +333,12 @@ export class TAMSActor extends Actor {
         // Head/Thorax disabled → dying countdown instead of survival roll
         const existingCountdown = this.getFlag('tams', 'dyingCountdown');
         let dyingStarted = false;
-        for (const key of ['head', 'thorax']) {
+        const dyingLimbKeys = customLethality
+            ? limbKeys.filter(k => isLethal(this.system.limbs[k]))
+            : ['head', 'thorax'];
+        for (const key of dyingLimbKeys) {
             const limb = this.system.limbs[key];
-            if (limb.value < -limb.max && !existingCountdown && !dyingStarted) {
+            if (limb.value < dyingThreshold(limb) && !existingCountdown && !dyingStarted) {
                 dyingStarted = true;
                 const turnsLeft = Math.max(1, Math.floor(this.system.stats.endurance.total / 10));
                 await this.toggleStatusEffect("unconscious", { active: true });
@@ -398,7 +406,8 @@ export class TAMSActor extends Actor {
           const pendingMax = foundry.utils.hasProperty(updateData, maxPath)
             ? foundry.utils.getProperty(updateData, maxPath)
             : this.system.limbs[dyingCountdown.limbKey].max;
-          if (pendingValue >= -pendingMax) {
+          const trackedLimb = this.system.limbs[dyingCountdown.limbKey];
+          if (pendingValue >= dyingThreshold({ ...trackedLimb, max: pendingMax })) {
             await this.setFlag('tams', 'dyingCountdown', null);
             if (this.statuses?.has('unconscious')) {
               await this.toggleStatusEffect('unconscious', { active: false });

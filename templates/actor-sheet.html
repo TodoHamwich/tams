@@ -839,6 +839,18 @@
                     {{/each}}
                 </div>
                 {{/unless}}
+                <details class="tams-lethality" style="margin-top: 6px;">
+                    <summary class="small-header" title="{{localize 'TAMS.LethalityHint'}}"><i class="fas fa-skull"></i> {{localize 'TAMS.Lethality'}}</summary>
+                    <div class="grid grid-2col" style="margin-top: 4px;">
+                        {{#each system.limbs as |limb id|}}
+                        <div class="flexrow" style="align-items: center;">
+                            <label style="font-size: 13px;">{{limb.label}}</label>
+                            <input type="checkbox" name="system.limbs.{{id}}.lethal" {{checked limb.lethal}} title="{{localize 'TAMS.LethalTitle'}}" style="flex: 0 0 auto;"/>
+                            <input type="number" name="system.limbs.{{id}}.lethalThreshold" value="{{limb.lethalThreshold}}" step="0.5" min="0.5" class="small-input" title="{{localize 'TAMS.LethalThreshold'}}"/>
+                        </div>
+                        {{/each}}
+                    </div>
+                </details>
                 <hr>
                 <div class="flexrow" style="margin-bottom: 5px;">
                     <h3 style="flex: 1; margin: 0; border: none;">{{localize 'TAMS.ResourceModifiers'}}</h3>

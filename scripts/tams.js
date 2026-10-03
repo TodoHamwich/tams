@@ -189,13 +189,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         bravery: new fields.EmbeddedDataField(StatModifier, { initial: { label: "TAMS.StatBravery" } })
       }),
       limbs: new fields.SchemaField({
-        head: new fields.SchemaField({ value: new fields.NumberField({ initial: 5 }), max: new fields.NumberField({ initial: 5 }), mult: new fields.NumberField({ initial: 0.5 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Head" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        thorax: new fields.SchemaField({ value: new fields.NumberField({ initial: 10 }), max: new fields.NumberField({ initial: 10 }), mult: new fields.NumberField({ initial: 1 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Thorax" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        stomach: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Stomach" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        leftArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        rightArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        leftLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        rightLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) })
+        head: new fields.SchemaField({ value: new fields.NumberField({ initial: 5 }), max: new fields.NumberField({ initial: 5 }), mult: new fields.NumberField({ initial: 0.5 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Head" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({ initial: 10 }), max: new fields.NumberField({ initial: 10 }), mult: new fields.NumberField({ initial: 1 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Thorax" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Stomach" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) })
       }),
       inventory: new fields.SchemaField({
         usedCapacity: new fields.NumberField({ initial: 0 }),
@@ -1222,6 +1222,41 @@ function calculateMishapChance(effects, invokingTurns) {
 }
 function getMishapModifier(chance) {
   return Math.max(0, chance - 100);
+}
+function isLethal(limb) {
+  return (limb == null ? void 0 : limb.lethal) !== false;
+}
+function lethalThreshold(limb) {
+  const t = Number(limb == null ? void 0 : limb.lethalThreshold);
+  return t > 0 ? t : 1;
+}
+function hasCustomLethality(limbs) {
+  return Object.values(limbs ?? {}).some((l) => l && (!isLethal(l) || lethalThreshold(l) !== 1));
+}
+function memberLethalUnit(limb) {
+  return lethalThreshold(limb) * (limb.individualMax || 0);
+}
+function memberCapacityFromLimb(limb, value, currentSize) {
+  if (!isLethal(limb)) return Infinity;
+  const unit = memberLethalUnit(limb);
+  if (unit <= 0) return currentSize;
+  const damage = Math.max(0, limb.max - value);
+  return Math.max(0, currentSize - Math.floor(damage / unit));
+}
+function rescaledLimbValue(limb, value, newSize, oldSize) {
+  const indMax = limb.individualMax || 0;
+  const newMax = newSize * indMax;
+  if (!isLethal(limb)) {
+    const scaled = oldSize > 0 ? Math.round(value * newSize / oldSize) : value;
+    return Math.min(newMax, Math.max(-newMax, scaled));
+  }
+  if (newSize <= 0 || value <= 0 && lethalThreshold(limb) === 1) return Math.max(value, -newMax);
+  const unit = memberLethalUnit(limb);
+  const remainder = unit > 0 ? Math.max(0, limb.max - value) % unit : 0;
+  return newMax - remainder;
+}
+function dyingThreshold(limb) {
+  return -(lethalThreshold(limb) * (limb.max || 0));
 }
 const e$3 = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 async function tamsUpdateMessage(message, updateData) {
@@ -3357,9 +3392,11 @@ async function tamsRenderChatMessage(message, html, data) {
       for (let key of limbKeys) {
         const limb = actor.system.limbs[key];
         if (!limb) continue;
-        const indMax = Math.floor(end * limb.mult);
+        if (!isLethal(limb)) continue;
+        const indMax = limb.individualMax || Math.floor(end * limb.mult);
+        const memberUnit = memberLethalUnit({ ...limb, individualMax: indMax });
         const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
-        updates[`system.limbs.${key}.value`] = currentVal + successCount * indMax;
+        updates[`system.limbs.${key}.value`] = currentVal + successCount * memberUnit;
       }
       needsUpdate = true;
     }
@@ -3368,16 +3405,9 @@ async function tamsRenderChatMessage(message, html, data) {
       for (let key of limbKeys) {
         const limb = actor.system.limbs[key];
         if (!limb) continue;
-        const indMax = Math.floor(end * limb.mult);
-        const maxForNewSize = newSize * indMax;
+        const indMax = limb.individualMax || Math.floor(end * limb.mult);
         const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
-        const totalDamage = limb.max - currentVal;
-        const remainderDamage = totalDamage % indMax;
-        if (currentVal > 0) {
-          updates[`system.limbs.${key}.value`] = maxForNewSize - remainderDamage;
-        } else {
-          updates[`system.limbs.${key}.value`] = Math.max(currentVal, -maxForNewSize);
-        }
+        updates[`system.limbs.${key}.value`] = rescaledLimbValue({ ...limb, individualMax: indMax }, currentVal, newSize, currentSize);
       }
     }
     if (needsUpdate) await actor.update(updates);
@@ -3529,7 +3559,8 @@ class TAMSActor extends Actor {
       }
       if (isSquadOrHorde) {
         const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
-        const limbCap = (isAoE ? multiplier : 1) * indMax;
+        const memberUnit = isLethal(limb) ? memberLethalUnit({ ...limb, individualMax: indMax }) : indMax;
+        const limbCap = (isAoE ? multiplier : 1) * memberUnit;
         const currentLimbHpBeforeHit = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
         const cappedEffective = Math.min(effective, limbCap);
         overflow = effective - cappedEffective;
@@ -3537,9 +3568,8 @@ class TAMSActor extends Actor {
         effective = cappedEffective;
         if (!limbLosses[limbKey]) limbLosses[limbKey] = [];
         const newLimbHpAfterHit = currentLimbHpBeforeHit - effective;
-        const oldSize = Math.max(0, Math.ceil(currentLimbHpBeforeHit / indMax));
-        const newSize = Math.max(0, Math.ceil(newLimbHpAfterHit / indMax));
-        const lostInThisHit = oldSize - newSize;
+        const limbForSize = { ...limb, individualMax: indMax };
+        const lostInThisHit = isLethal(limb) ? memberCapacityFromLimb(limbForSize, currentLimbHpBeforeHit, currentSquadSize) - memberCapacityFromLimb(limbForSize, newLimbHpAfterHit, currentSquadSize) : 0;
         if (lostInThisHit > 0) {
           const damageTakenAlready = limb.max - currentLimbHpBeforeHit;
           const totalDamageOnLimb = damageTakenAlready + totalDamageOfHit;
@@ -3550,7 +3580,8 @@ class TAMSActor extends Actor {
         }
       }
       const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
-      const newHp = Math.floor(currentHp) - effective;
+      let newHp = Math.floor(currentHp) - effective;
+      if (isSquadOrHorde && !isLethal(limb)) newHp = Math.max(newHp, -limb.max);
       updates[`system.limbs.${limbKey}.value`] = newHp;
       limbDamageReceived[limbKey] += effective;
       let lossLabel = "";
@@ -3583,7 +3614,7 @@ class TAMSActor extends Actor {
         if (!limb) continue;
         const newLimbVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
         const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
-        const potentialSize = Math.max(0, Math.ceil(newLimbVal / indMax));
+        const potentialSize = memberCapacityFromLimb({ ...limb, individualMax: indMax }, newLimbVal, currentSquadSize);
         if (potentialSize < finalSquadSize) {
           finalSquadSize = potentialSize;
           bottleneckLimb = lk;
@@ -3601,15 +3632,8 @@ class TAMSActor extends Actor {
             const limb = this.system.limbs[lk];
             if (!limb) continue;
             const indMax = limb.individualMax || Math.floor(this.system.stats.endurance.total * limb.mult);
-            const newMax = finalSquadSize * indMax;
             const currentVal = updates[`system.limbs.${lk}.value`] ?? limb.value;
-            const totalDamage = limb.max - currentVal;
-            const remainderDamage = totalDamage % indMax;
-            if (currentVal > 0) {
-              updates[`system.limbs.${lk}.value`] = newMax - remainderDamage;
-            } else {
-              updates[`system.limbs.${lk}.value`] = Math.max(currentVal, -newMax);
-            }
+            updates[`system.limbs.${lk}.value`] = rescaledLimbValue({ ...limb, individualMax: indMax }, currentVal, finalSquadSize, currentSquadSize);
           }
         } else {
           report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Checks.SquadThreatenedMembers", { name: e$2(this.name), lostCount })} !!!</b><br>`;
@@ -3651,11 +3675,12 @@ class TAMSActor extends Actor {
       let survivalDC = 0;
       let reasons = [];
       let survivalNeeded = false;
-      if (totalHp <= -maxHp) {
+      const customLethality = hasCustomLethality(this.system.limbs);
+      if (!customLethality && totalHp <= -maxHp) {
         survivalNeeded = true;
         survivalDC = Math.abs(totalHp);
         reasons.push(`${game.i18n.localize("TAMS.Checks.ReasonTotalHPBelowNegMax")} (${totalHp} / -${maxHp})`);
-      } else if (totalHp < 0) {
+      } else if (!customLethality && totalHp < 0) {
         pendingChecks.push({
           type: "unconscious",
           dc: Math.abs(totalHp),
@@ -3664,9 +3689,10 @@ class TAMSActor extends Actor {
       }
       const existingCountdown = this.getFlag("tams", "dyingCountdown");
       let dyingStarted = false;
-      for (const key of ["head", "thorax"]) {
+      const dyingLimbKeys = customLethality ? limbKeys.filter((k) => isLethal(this.system.limbs[k])) : ["head", "thorax"];
+      for (const key of dyingLimbKeys) {
         const limb = this.system.limbs[key];
-        if (limb.value < -limb.max && !existingCountdown && !dyingStarted) {
+        if (limb.value < dyingThreshold(limb) && !existingCountdown && !dyingStarted) {
           dyingStarted = true;
           const turnsLeft = Math.max(1, Math.floor(this.system.stats.endurance.total / 10));
           await this.toggleStatusEffect("unconscious", { active: true });
@@ -3719,7 +3745,8 @@ class TAMSActor extends Actor {
           const maxPath = `system.limbs.${dyingCountdown.limbKey}.max`;
           const pendingValue = foundry.utils.getProperty(updateData, valuePath);
           const pendingMax = foundry.utils.hasProperty(updateData, maxPath) ? foundry.utils.getProperty(updateData, maxPath) : this.system.limbs[dyingCountdown.limbKey].max;
-          if (pendingValue >= -pendingMax) {
+          const trackedLimb = this.system.limbs[dyingCountdown.limbKey];
+          if (pendingValue >= dyingThreshold({ ...trackedLimb, max: pendingMax })) {
             await this.setFlag("tams", "dyingCountdown", null);
             if ((_c = this.statuses) == null ? void 0 : _c.has("unconscious")) {
               await this.toggleStatusEffect("unconscious", { active: false });

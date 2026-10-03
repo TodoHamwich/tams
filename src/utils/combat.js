@@ -1,4 +1,5 @@
 import { getMishapEntry, getMishapTable, calculateMishapChance, getMishapModifier, MISHAP_TABLE } from "./mishap.js";
+import { isLethal, memberLethalUnit, rescaledLimbValue } from "./lethality.js";
 
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
 
@@ -2462,9 +2463,13 @@ export async function tamsRenderChatMessage(message, html, data) {
             for (let key of limbKeys) {
                 const limb = actor.system.limbs[key];
                 if (!limb) continue;
-                const indMax = Math.floor(end * limb.mult);
+                // Non-lethal limbs are rescaled proportionally below, so only lethal ones get HP back here.
+                if (!isLethal(limb)) continue;
+                const indMax = limb.individualMax || Math.floor(end * limb.mult);
+                // A restored member gets back one member's worth of lethal damage (threshold × indMax).
+                const memberUnit = memberLethalUnit({ ...limb, individualMax: indMax });
                 const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
-                updates[`system.limbs.${key}.value`] = currentVal + (successCount * indMax);
+                updates[`system.limbs.${key}.value`] = currentVal + (successCount * memberUnit);
             }
             needsUpdate = true;
         }
@@ -2475,17 +2480,9 @@ export async function tamsRenderChatMessage(message, html, data) {
             for (let key of limbKeys) {
                 const limb = actor.system.limbs[key];
                 if (!limb) continue;
-                const indMax = Math.floor(end * limb.mult);
-                const maxForNewSize = newSize * indMax;
+                const indMax = limb.individualMax || Math.floor(end * limb.mult);
                 const currentVal = updates[`system.limbs.${key}.value`] ?? limb.value;
-                const totalDamage = limb.max - currentVal;
-                const remainderDamage = totalDamage % indMax;
-
-                if (currentVal > 0) {
-                    updates[`system.limbs.${key}.value`] = maxForNewSize - remainderDamage;
-                } else {
-                    updates[`system.limbs.${key}.value`] = Math.max(currentVal, -maxForNewSize);
-                }
+                updates[`system.limbs.${key}.value`] = rescaledLimbValue({ ...limb, individualMax: indMax }, currentVal, newSize, currentSize);
             }
         }
 
