@@ -8,6 +8,13 @@ import {
 } from '../utils/inventory-grid.js';
 import { TAMSContainerGridApp } from './inventory-container-app.js';
 
+/** Grid distance between two canvas points (measurePath since v12; measureDistance was removed). */
+function tamsMeasureDistance(a, b) {
+  const grid = canvas?.grid;
+  if (!grid || !a || !b) return 0;
+  return grid.measurePath([a, b]).distance ?? 0;
+}
+
 const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
 
@@ -918,8 +925,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const myToken = this.document.token?.object || canvas.tokens.controlled.find(t => t.actor?.id === this.document.id);
     if (myToken) {
         tokens.sort((a, b) => {
-            const distA = canvas.grid.measureDistance(myToken.center, a.center);
-            const distB = canvas.grid.measureDistance(myToken.center, b.center);
+            const distA = tamsMeasureDistance(myToken.center, a.center);
+            const distB = tamsMeasureDistance(myToken.center, b.center);
             return distA - distB;
         });
     }
@@ -2362,6 +2369,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     }
 
     let damageInfo = "";
+    let pendingAmmoUpdate = null;
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
         let damage = item.system.calculatedDamage;
         let weaponOverride = null;
@@ -2402,6 +2410,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
         
         let multiVal = 1;
+        // Ammo is only spent once the attack card has actually posted (see end of _onRoll),
+        // so a failure while building the card never eats rounds without a roll.
         if (item.type === 'weapon') {
             if (item.system.fireRate === '3') multiVal = 3;
             else if (item.system.fireRate === 'auto') multiVal = 10;
@@ -2418,10 +2428,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         if (currentAmmo <= 0) {
                             return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: item.name}));
                         }
-                        ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", {count: currentAmmo}));
+                        ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.NotEnoughAmmo", {count: currentAmmo}));
                         multiVal = currentAmmo;
                     }
-                    await item.update({"system.ammo.current": Math.max(0, currentAmmo - multiVal)});
+                    pendingAmmoUpdate = { doc: item, data: {"system.ammo.current": Math.max(0, currentAmmo - multiVal)} };
                 } else {
                     const ammoItem = this.document.items.get(ammoItemId);
                     if (!ammoItem) {
@@ -2432,10 +2442,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         if (currentAmmo <= 0) {
                             return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: ammoItem.name}));
                         }
-                        ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", {count: currentAmmo}));
+                        ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.NotEnoughAmmo", {count: currentAmmo}));
                         multiVal = currentAmmo;
                     }
-                    await ammoItem.update({"system.uses.value": Math.max(0, currentAmmo - multiVal)});
+                    pendingAmmoUpdate = { doc: ammoItem, data: {"system.uses.value": Math.max(0, currentAmmo - multiVal)} };
                 }
             }
         } else if (item.type === 'ability') {
@@ -2524,7 +2534,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 let targetDamage = damage;
                 let rangeInfo = "";
                 if (attackerToken && rangeBands) {
-                    const dist = canvas?.grid?.measureDistance(attackerToken.center, targetToken.center) ?? 0;
+                    const dist = tamsMeasureDistance(attackerToken.center, targetToken.center);
                     const distM = Math.round(dist);
                     if (dist <= rangeBands.close) {
                         rangeInfo = `${distM}m`;
@@ -2624,7 +2634,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             let targetDamage = damage;
             let rangeInfo = "";
             if (attackerToken && rangeBands) {
-                const dist = canvas?.grid?.measureDistance(attackerToken.center, targetToken.center) ?? 0;
+                const dist = tamsMeasureDistance(attackerToken.center, targetToken.center);
                 const distM = Math.round(dist);
                 if (dist <= rangeBands.close) {
                     rangeInfo = `${distM}m`;
@@ -2807,7 +2817,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         : finalTotal;
       await tamsCreateContestedCheck(this.document, label, contestTotal, rawResult, roll, statId);
     } else {
-      ChatMessage.create(tamsApplyRollMode({
+      await ChatMessage.create(tamsApplyRollMode({
         speaker: ChatMessage.getSpeaker({ actor: this.document }),
         content: messageContent,
         rolls: [roll],
@@ -2823,6 +2833,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
       }));
     }
+
+    if (pendingAmmoUpdate) await pendingAmmoUpdate.doc.update(pendingAmmoUpdate.data);
 
     if (item && ["weapon", "skill", "ability"].includes(item.type)) {
       item.update({"system.usedInScene": true});

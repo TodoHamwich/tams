@@ -4856,6 +4856,11 @@ __publicField(TAMSContainerGridApp, "PARTS", {
     template: "systems/tams/templates/inventory-container.html"
   }
 });
+function tamsMeasureDistance(a, b) {
+  const grid = canvas == null ? void 0 : canvas.grid;
+  if (!grid || !a || !b) return 0;
+  return grid.measurePath([a, b]).distance ?? 0;
+}
 const SIZE_STEPS = { tiny: -2, small: -1, normal: 0, large: 1, huge: 2, giant: 3 };
 const e$1 = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.sheets.ActorSheetV2) {
@@ -5702,8 +5707,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     });
     if (myToken) {
       tokens.sort((a, b) => {
-        const distA = canvas.grid.measureDistance(myToken.center, a.center);
-        const distB = canvas.grid.measureDistance(myToken.center, b.center);
+        const distA = tamsMeasureDistance(myToken.center, a.center);
+        const distB = tamsMeasureDistance(myToken.center, b.center);
         return distA - distB;
       });
     }
@@ -6541,7 +6546,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   async _onRoll(event, target) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u;
     const dataset = target.dataset;
     const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
     const tToken = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0] ?? null;
@@ -7002,6 +7007,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
     }
     let damageInfo = "";
+    let pendingAmmoUpdate = null;
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
       let damage = item.system.calculatedDamage;
       let weaponOverride = null;
@@ -7055,10 +7061,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
               if (currentAmmo <= 0) {
                 return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", { item: item.name }));
               }
-              ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", { count: currentAmmo }));
+              ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.NotEnoughAmmo", { count: currentAmmo }));
               multiVal = currentAmmo;
             }
-            await item.update({ "system.ammo.current": Math.max(0, currentAmmo - multiVal) });
+            pendingAmmoUpdate = { doc: item, data: { "system.ammo.current": Math.max(0, currentAmmo - multiVal) } };
           } else {
             const ammoItem = this.document.items.get(ammoItemId);
             if (!ammoItem) {
@@ -7069,10 +7075,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
               if (currentAmmo <= 0) {
                 return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", { item: ammoItem.name }));
               }
-              ui.notifications.info(game.i18n.format("TAMS.Checks.NotEnoughAmmo", { count: currentAmmo }));
+              ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.NotEnoughAmmo", { count: currentAmmo }));
               multiVal = currentAmmo;
             }
-            await ammoItem.update({ "system.uses.value": Math.max(0, currentAmmo - multiVal) });
+            pendingAmmoUpdate = { doc: ammoItem, data: { "system.uses.value": Math.max(0, currentAmmo - multiVal) } };
           }
         }
       } else if (item.type === "ability") {
@@ -7153,7 +7159,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           let targetDamage = damage;
           let rangeInfo = "";
           if (attackerToken && rangeBands) {
-            const dist = ((_r = canvas == null ? void 0 : canvas.grid) == null ? void 0 : _r.measureDistance(attackerToken.center, targetToken.center)) ?? 0;
+            const dist = tamsMeasureDistance(attackerToken.center, targetToken.center);
             const distM = Math.round(dist);
             if (dist <= rangeBands.close) {
               rangeInfo = `${distM}m`;
@@ -7248,7 +7254,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             let targetDamage = damage;
             let rangeInfo = "";
             if (attackerToken && rangeBands) {
-              const dist = ((_s = canvas == null ? void 0 : canvas.grid) == null ? void 0 : _s.measureDistance(attackerToken.center, targetToken.center)) ?? 0;
+              const dist = tamsMeasureDistance(attackerToken.center, targetToken.center);
               const distM = Math.round(dist);
               if (dist <= rangeBands.close) {
                 rangeInfo = `${distM}m`;
@@ -7355,7 +7361,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const isMagicAbility = abilityTags.some((t) => ["magic", "spell", "psychic", "alchemy", "divine"].includes(t));
       if (isMagicAbility) {
         let totalEffects = -1;
-        if ((_t = item.system.calculator) == null ? void 0 : _t.enabled) {
+        if ((_r = item.system.calculator) == null ? void 0 : _r.enabled) {
           const _c2 = item.system.calculator;
           totalEffects = (_c2.effects || 0) + Math.floor((_c2.rollBonus || 0) / 5) + (_c2.ignoreArmor || 0);
         }
@@ -7406,22 +7412,23 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const contestTotal = statId === "bravery" ? effectiveStat + familiarity + bonus - rawResult : finalTotal;
       await tamsCreateContestedCheck(this.document, label, contestTotal, rawResult, roll, statId);
     } else {
-      ChatMessage.create(tamsApplyRollMode({
+      await ChatMessage.create(tamsApplyRollMode({
         speaker: ChatMessage.getSpeaker({ actor: this.document }),
         content: messageContent,
         rolls: [roll],
         flags: {
           tams: {
-            inflictsStatusId: ((_u = item == null ? void 0 : item.system) == null ? void 0 : _u.inflictsStatusId) || "",
+            inflictsStatusId: ((_s = item == null ? void 0 : item.system) == null ? void 0 : _s.inflictsStatusId) || "",
             attackerActorId: this.document.id,
             attackerWeaponId: (item == null ? void 0 : item.id) || "",
-            hasSave: ((_v = item == null ? void 0 : item.system) == null ? void 0 : _v.hasSave) ?? false,
-            saveAgainst: ((_w = item == null ? void 0 : item.system) == null ? void 0 : _w.saveAgainst) ?? "",
+            hasSave: ((_t = item == null ? void 0 : item.system) == null ? void 0 : _t.hasSave) ?? false,
+            saveAgainst: ((_u = item == null ? void 0 : item.system) == null ? void 0 : _u.saveAgainst) ?? "",
             saveDC: finalTotal
           }
         }
       }));
     }
+    if (pendingAmmoUpdate) await pendingAmmoUpdate.doc.update(pendingAmmoUpdate.data);
     if (item && ["weapon", "skill", "ability"].includes(item.type)) {
       item.update({ "system.usedInScene": true });
     }
