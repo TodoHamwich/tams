@@ -1,4 +1,4 @@
-import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog, computeSquadAttackBonus } from '../utils/helpers.js';
+import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog, computeSquadAttackBonus, tamsApplyRollMode } from '../utils/helpers.js';
 import { computeArmorRepair } from '../utils/inventory.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
 import { HONOR_PATHS, HONOR_STYLES, getHonorTier, getHonorTierLabelKeys, isHonorEnabled } from '../utils/honor.js';
@@ -1375,7 +1375,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     await item.update(itemUpdates);
     if (Object.keys(actorUpdates).length > 0) await this.document.update(actorUpdates);
-    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content: report });
+    await ChatMessage.create(tamsApplyRollMode({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content: report }));
   }
 
   /**
@@ -2213,10 +2213,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 if (misfireRoll <= threshold) {
                     const currentAmmo = ammoItem.system.uses?.value || 0;
                     if (currentAmmo > 0) await ammoItem.update({"system.uses.value": currentAmmo - 1});
-                    await ChatMessage.create({
+                    await ChatMessage.create(tamsApplyRollMode({
                         content: `<div class="tams-roll tams-misfire"><strong>⚠️ ${game.i18n.localize("TAMS.Firearm.MisfireLabel")}</strong> — ${game.i18n.format("TAMS.Firearm.MisfireResult", {weapon: item.name, roll: misfireRoll, threshold})}</div>`,
                         speaker: ChatMessage.getSpeaker({actor: this.document})
-                    });
+                    }));
                     return;
                 }
             }
@@ -2807,7 +2807,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         : finalTotal;
       await tamsCreateContestedCheck(this.document, label, contestTotal, rawResult, roll, statId);
     } else {
-      ChatMessage.create({
+      ChatMessage.create(tamsApplyRollMode({
         speaker: ChatMessage.getSpeaker({ actor: this.document }),
         content: messageContent,
         rolls: [roll],
@@ -2821,7 +2821,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             saveDC: finalTotal
           }
         }
-      });
+      }));
     }
 
     if (item && ["weapon", "skill", "ability"].includes(item.type)) {

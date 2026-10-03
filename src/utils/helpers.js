@@ -1,6 +1,6 @@
 
-import { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage } from './combat.js';
-export { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage };
+import { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage, tamsApplyRollMode } from './combat.js';
+export { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage, tamsApplyRollMode };
 
 /**
  * Squad attack: possible attacks are half the squad's size (ranged) or its full size (melee).

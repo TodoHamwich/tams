@@ -1392,9 +1392,15 @@ function buildContestedCheckContent(initiatorName, label, initiatorTotal, initia
     </div>
   </div>`;
 }
+function tamsApplyRollMode(chatData) {
+  if (typeof ChatMessage.applyMode === "function") {
+    return ChatMessage.applyMode(chatData, game.settings.get("core", "messageMode"));
+  }
+  return ChatMessage.applyRollMode(chatData, game.settings.get("core", "rollMode"));
+}
 async function tamsCreateContestedCheck(actor, label, total, raw, _roll, statId) {
   const content = buildContestedCheckContent(actor.name, label, total, raw, []);
-  await ChatMessage.create({
+  await ChatMessage.create(tamsApplyRollMode({
     speaker: ChatMessage.getSpeaker({ actor }),
     content,
     flags: {
@@ -1409,7 +1415,7 @@ async function tamsCreateContestedCheck(actor, label, total, raw, _roll, statId)
         contests: []
       }
     }
-  });
+  }));
 }
 async function tamsHandleContestedCheckPending(msg) {
   var _a, _b, _c, _d;
@@ -6089,7 +6095,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     report += `</div>`;
     await item.update(itemUpdates);
     if (Object.keys(actorUpdates).length > 0) await this.document.update(actorUpdates);
-    await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content: report });
+    await ChatMessage.create(tamsApplyRollMode({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content: report }));
   }
   /**
    * Handle changing the actor or item image.
@@ -6838,10 +6844,10 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           if (misfireRoll <= threshold) {
             const currentAmmo = ((_e = ammoItem.system.uses) == null ? void 0 : _e.value) || 0;
             if (currentAmmo > 0) await ammoItem.update({ "system.uses.value": currentAmmo - 1 });
-            await ChatMessage.create({
+            await ChatMessage.create(tamsApplyRollMode({
               content: `<div class="tams-roll tams-misfire"><strong>⚠️ ${game.i18n.localize("TAMS.Firearm.MisfireLabel")}</strong> — ${game.i18n.format("TAMS.Firearm.MisfireResult", { weapon: item.name, roll: misfireRoll, threshold })}</div>`,
               speaker: ChatMessage.getSpeaker({ actor: this.document })
-            });
+            }));
             return;
           }
         }
@@ -7373,7 +7379,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const contestTotal = statId === "bravery" ? effectiveStat + familiarity + bonus - rawResult : finalTotal;
       await tamsCreateContestedCheck(this.document, label, contestTotal, rawResult, roll, statId);
     } else {
-      ChatMessage.create({
+      ChatMessage.create(tamsApplyRollMode({
         speaker: ChatMessage.getSpeaker({ actor: this.document }),
         content: messageContent,
         rolls: [roll],
@@ -7387,7 +7393,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             saveDC: finalTotal
           }
         }
-      });
+      }));
     }
     if (item && ["weapon", "skill", "ability"].includes(item.type)) {
       item.update({ "system.usedInScene": true });

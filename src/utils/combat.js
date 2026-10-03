@@ -209,9 +209,22 @@ function buildContestedCheckContent(initiatorName, label, initiatorTotal, initia
   </div>`;
 }
 
+/**
+ * Apply the user's currently selected chat roll mode (Public / Private GM / Blind / Self) to chat data.
+ * v14 renamed this to applyMode + the "messageMode" setting; v12/v13 use applyRollMode + "rollMode".
+ * @param {object} chatData ChatMessage creation data.
+ * @returns {object} The same chatData, with whisper/blind set.
+ */
+export function tamsApplyRollMode(chatData) {
+  if (typeof ChatMessage.applyMode === "function") {
+    return ChatMessage.applyMode(chatData, game.settings.get("core", "messageMode"));
+  }
+  return ChatMessage.applyRollMode(chatData, game.settings.get("core", "rollMode"));
+}
+
 export async function tamsCreateContestedCheck(actor, label, total, raw, _roll, statId) {
   const content = buildContestedCheckContent(actor.name, label, total, raw, []);
-  await ChatMessage.create({
+  await ChatMessage.create(tamsApplyRollMode({
     speaker: ChatMessage.getSpeaker({ actor }),
     content,
     flags: {
@@ -226,7 +239,7 @@ export async function tamsCreateContestedCheck(actor, label, total, raw, _roll, 
         contests: []
       }
     }
-  });
+  }));
 }
 
 export async function tamsHandleContestedCheckPending(msg) {
