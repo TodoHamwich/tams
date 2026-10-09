@@ -542,6 +542,13 @@
                 text-align: center;
                 font-weight: bold;
             }
+
+            // Linked caster profession's multiplier boost (src/utils/profession.js)
+            small.profession-boost {
+                flex: 0 0 auto;
+                color: #4caf50;
+                cursor: help;
+            }
         }
 
         .col-max {
@@ -696,4 +703,14 @@
     .carry-weight .fill.over-capacity {
         background: #c0392b !important;
     }
+}
+
+// Ability validation icon next to the ability name (see src/utils/ability-validation.js).
+.tams .tams-ability-issue {
+    margin-left: 4px;
+    font-size: 0.9em;
+    cursor: help;
+
+    &.error   { color: #d64545; }
+    &.warning { color: #e0a526; }
 }

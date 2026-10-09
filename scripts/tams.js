@@ -135,6 +135,24 @@ function computeLongRestTickHeal(governingStatValue) {
 function computeLongRestFatigueHeal(governingStatValue) {
   return computeLongRestTickHeal(governingStatValue) * 2;
 }
+const PROFESSION_TYPES = ["basic", "full", "half", "threeQuarter"];
+const PROFESSION_RANK_STEP = 5;
+const PROFESSION_MAX_RANK = 10;
+const MULT_STEP = 0.25;
+const CASTER_STAMINA_START = { full: 4, half: 3, threeQuarter: 3 };
+function professionRank(modifiers = []) {
+  const bonus = modifiers.filter((m) => m.target === "allProfessionRolls").reduce((sum, m) => sum + (Number(m.value) || 0), 0);
+  return Math.max(0, Math.min(PROFESSION_MAX_RANK, Math.floor(bonus / PROFESSION_RANK_STEP)));
+}
+function professionStaminaMultBonus(type, rank) {
+  if (!rank || rank <= 0) return 0;
+  if (type === "basic" || !CASTER_STAMINA_START[type]) return MULT_STEP * rank;
+  return MULT_STEP * Math.max(0, rank - CASTER_STAMINA_START[type] + 1);
+}
+function professionResourceMultBonus(type, rank) {
+  if (!CASTER_STAMINA_START[type] || !rank || rank <= 0) return 0;
+  return MULT_STEP * (rank - 1);
+}
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1, large: 1.5, huge: 2, giant: 2.5 };
 const SIZE_ORDER = ["tiny", "small", "normal", "large", "huge", "giant"];
 function getCapacityMode() {
@@ -239,7 +257,9 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         isOpposed: new fields.BooleanField({ initial: false }),
         colorSecondary: new fields.StringField({ initial: "#e74c3c" }),
         fatigue: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
-        spentSinceRest: new fields.NumberField({ initial: 0, integer: true, min: 0 })
+        spentSinceRest: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+        // id of a caster profession trait whose rank boosts this resource's multiplier
+        professionTraitId: new fields.StringField({ initial: "" })
       })),
       restSafe: new fields.BooleanField({ initial: false }),
       theme: new fields.StringField({ initial: "default" }),
@@ -328,6 +348,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.traitHPExtra = 0;
     this.traitStaminaExtra = 0;
     this.traitProfessionBonuses = {};
+    this.traitStaminaMultBonus = 0;
+    this.professionResourceMultBonuses = {};
     this.abilityPassiveBonuses = {};
     this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0 };
     const traits = this.parent.items.filter((i) => i.type === "trait" || i.type === "race");
@@ -351,6 +373,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
             this.traitProfessionBonuses[p] = (this.traitProfessionBonuses[p] || 0) + mod.value;
           }
         }
+      }
+      if (trait.type === "trait" && system.isProfession) {
+        const type = system.professionType || "basic";
+        const rank = professionRank(system.modifiers);
+        this.traitStaminaMultBonus += professionStaminaMultBonus(type, rank);
+        const resBonus = professionResourceMultBonus(type, rank);
+        if (resBonus) this.professionResourceMultBonuses[trait.id] = resBonus;
       }
     }
     const baseSize = this.settings.creatureSize || "normal";
@@ -459,7 +488,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    */
   _prepareStamina() {
     const end = this.stats.endurance.total;
-    const rawMax = computeRawStaminaMax(end, this.stamina.mult, this.traitStaminaExtra);
+    const rawMax = computeRawStaminaMax(end, this.staminaEffectiveMult(), this.traitStaminaExtra);
     this.stamina.max = computeFatiguedMax(rawMax, this.stamina.fatigue);
   }
   /**
@@ -470,9 +499,24 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     var _a;
     for (const res of this.customResources) {
       const statVal = res.stat === "custom" ? res.customValue ?? 10 : ((_a = this.stats[res.stat]) == null ? void 0 : _a.total) || 0;
-      const rawMax = computeRawResourceMax(statVal, res.mult, res.bonus);
+      const rawMax = computeRawResourceMax(statVal, this.resourceEffectiveMult(res), res.bonus);
       res.max = computeFatiguedMax(rawMax, res.fatigue);
     }
+  }
+  /**
+   * Stamina multiplier including profession-trait boosts.
+   * @param {number} [manualMult] Override the stored manual multiplier (e.g. a pending edit).
+   */
+  staminaEffectiveMult(manualMult = ((_a) => (_a = this.stamina) == null ? void 0 : _a.mult)()) {
+    return (manualMult ?? 1) + (this.traitStaminaMultBonus || 0);
+  }
+  /**
+   * A custom resource's multiplier including the boost from its linked caster profession trait.
+   * Reads `mult` and `professionTraitId` from the passed entry, so pending (duplicated) entries work.
+   */
+  resourceEffectiveMult(res) {
+    var _a;
+    return ((res == null ? void 0 : res.mult) ?? 1) + (((_a = this.professionResourceMultBonuses) == null ? void 0 : _a[res == null ? void 0 : res.professionTraitId]) || 0);
   }
   /**
    * Calculate used and maximum inventory capacity.
@@ -864,6 +908,10 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     return [{ damageType: this.damageType || "", damage: this.calculatedDamage }];
   }
   get calculatedCost() {
+    return Math.max(1, Math.floor(this.rawCalculatedCost));
+  }
+  /** Calculator cost before the minimum-1 clamp (lets the sheet warn when detriments are wasted). */
+  get rawCalculatedCost() {
     const c = this.calculator;
     let cost = 0;
     cost += (c.effects || 0) * 1;
@@ -931,7 +979,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     if (c.tagVicious) cost += 1;
     if (c.tagBrutal) cost += 2;
     cost += (c.tagOther || 0) * 1;
-    return Math.max(1, Math.floor(cost));
+    return cost;
   }
   prepareDerivedData() {
     var _a;
@@ -984,6 +1032,8 @@ class TAMSTraitData extends foundry.abstract.TypeDataModel {
     return {
       isProfession: new fields.BooleanField({ initial: false }),
       profession: new fields.StringField({ initial: "" }),
+      // "basic" | "full" | "half" | "threeQuarter" — see src/utils/profession.js
+      professionType: new fields.StringField({ initial: "basic" }),
       modifiers: new fields.ArrayField(new fields.SchemaField({
         target: new fields.StringField({ initial: "stats.strength.value" }),
         value: new fields.NumberField({ initial: 0 }),
@@ -2576,20 +2626,7 @@ async function tamsRenderChatMessage(message, html, data) {
       const res = actor.system.customResources[idx];
       if (res) {
         if (res.value < cost) {
-          const remaining = cost - res.value;
-          const stamina = actor.system.stamina.value;
-          if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", { resource: res.name }));
-          const useBoth = await foundry.applications.api.DialogV2.confirm({
-            window: { title: game.i18n.localize("TAMS.Combat.InsufficientResources") },
-            content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", { val: res.value, res: res.name, rem: remaining })}</p>`,
-            yes: { label: game.i18n.localize("TAMS.Yes"), default: true },
-            no: { label: game.i18n.localize("TAMS.No") },
-            rejectClose: false
-          });
-          if (!useBoth) return;
-          const updates = actor.applyResourceSpend(idx, res.value);
-          actor.applyResourceSpend("stamina", remaining, updates);
-          await actor.update(updates);
+          return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResource", { resource: res.name }));
         } else {
           await actor.update(actor.applyResourceSpend(idx, cost));
         }
@@ -2967,19 +3004,7 @@ async function tamsRenderChatMessage(message, html, data) {
           const res = actor.system.customResources[idx];
           if (res) {
             if (res.value < cost) {
-              const remaining = cost - res.value;
-              if (actor.system.stamina.value < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", { resource: res.name }));
-              const useBoth = await foundry.applications.api.DialogV2.confirm({
-                window: { title: game.i18n.localize("TAMS.Combat.InsufficientResources") },
-                content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", { val: res.value, res: res.name, rem: remaining })}</p>`,
-                yes: { label: game.i18n.localize("TAMS.Yes"), default: true },
-                no: { label: game.i18n.localize("TAMS.No") },
-                rejectClose: false
-              });
-              if (!useBoth) return;
-              const updates = actor.applyResourceSpend(idx, res.value);
-              actor.applyResourceSpend("stamina", remaining, updates);
-              await actor.update(updates);
+              return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResource", { resource: res.name }));
             } else {
               await actor.update(actor.applyResourceSpend(idx, cost));
             }
@@ -3430,6 +3455,12 @@ async function tamsRenderChatMessage(message, html, data) {
   }));
 }
 const e$2 = (s) => foundry.utils.escapeHTML(String(s ?? ""));
+function effStaminaMult(sys, manualMult = ((_b) => (_b = sys == null ? void 0 : sys.stamina) == null ? void 0 : _b.mult)()) {
+  return typeof (sys == null ? void 0 : sys.staminaEffectiveMult) === "function" ? sys.staminaEffectiveMult(manualMult) : manualMult ?? 1;
+}
+function effResourceMult(sys, res) {
+  return typeof (sys == null ? void 0 : sys.resourceEffectiveMult) === "function" ? sys.resourceEffectiveMult(res) : (res == null ? void 0 : res.mult) ?? 1;
+}
 class TAMSActor extends Actor {
   /**
    * Apply damage to this actor across multiple hits/locations.
@@ -3714,7 +3745,7 @@ class TAMSActor extends Actor {
   }
   /** @override */
   async _preUpdate(updateData, options, user) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
     const res = await super._preUpdate(updateData, options, user);
     if (res === false) return false;
     const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
@@ -3788,7 +3819,18 @@ class TAMSActor extends Actor {
     {
       const ALL_STATS = ["strength", "dexterity", "endurance", "wisdom", "intelligence", "bravery"];
       const warnings = [];
-      const customResources = foundry.utils.duplicate(this.system.customResources ?? []);
+      const pendingResources = foundry.utils.getProperty(updateData, "system.customResources");
+      const customResources = Array.isArray(pendingResources) ? foundry.utils.duplicate(pendingResources) : foundry.utils.duplicate(this.system.customResources ?? []);
+      if (pendingResources && !Array.isArray(pendingResources) && typeof pendingResources === "object") {
+        for (const [idx, changes] of Object.entries(pendingResources)) {
+          if (customResources[idx] && changes && typeof changes === "object")
+            foundry.utils.mergeObject(customResources[idx], changes);
+        }
+      }
+      for (const [key, val] of Object.entries(updateData)) {
+        const m = key.match(/^system\.customResources\.(\d+)\.(.+)$/);
+        if (m && customResources[m[1]]) foundry.utils.setProperty(customResources[m[1]], m[2], val);
+      }
       let customResourcesChanged = false;
       for (const statKey of ALL_STATS) {
         const hasVal = foundry.utils.hasProperty(updateData, `system.stats.${statKey}.value`);
@@ -3802,7 +3844,7 @@ class TAMSActor extends Actor {
         if (statKey === "endurance") {
           const staminaPath = "system.stamina.value";
           if (!foundry.utils.hasProperty(updateData, staminaPath)) {
-            const mult = ((_h = this.system.stamina) == null ? void 0 : _h.mult) ?? 1;
+            const mult = effStaminaMult(this.system);
             const staminaDelta = Math.floor(statDelta * mult);
             if (staminaDelta !== 0) {
               const newStamina = this.system.stamina.value + staminaDelta;
@@ -3826,33 +3868,20 @@ class TAMSActor extends Actor {
         }
         for (const [idx, res2] of customResources.entries()) {
           if (res2.stat !== statKey || res2.stat === "custom") continue;
-          const resDelta = Math.floor(statDelta * (res2.mult ?? 1));
+          const resDelta = Math.floor(statDelta * effResourceMult(this.system, res2));
           if (resDelta === 0) continue;
           const rawVal = (customResources[idx].value ?? 0) + resDelta;
-          if (rawVal < 0) {
-            const deficit = Math.abs(rawVal);
-            const pay = await this._offerStaminaPayment(res2.name, deficit);
-            if (pay) {
-              customResources[idx].value = 0;
-              const staminaPath = "system.stamina.value";
-              const currentStamina = foundry.utils.getProperty(updateData, staminaPath) ?? this.system.stamina.value;
-              foundry.utils.setProperty(updateData, staminaPath, currentStamina - deficit);
-            } else {
-              customResources[idx].value = rawVal;
-              warnings.push(`${this.name} — ${res2.name}: ${rawVal}`);
-            }
-          } else {
-            customResources[idx].value = rawVal;
-          }
+          customResources[idx].value = rawVal;
+          if (rawVal < 0) warnings.push(`${this.name} — ${res2.name}: ${rawVal}`);
           customResourcesChanged = true;
         }
       }
       if (foundry.utils.hasProperty(updateData, "system.stamina.mult") && !foundry.utils.hasProperty(updateData, "system.stamina.value")) {
         const newMult = foundry.utils.getProperty(updateData, "system.stamina.mult");
-        const oldMult = ((_i = this.system.stamina) == null ? void 0 : _i.mult) ?? 1;
+        const oldMult = ((_h = this.system.stamina) == null ? void 0 : _h.mult) ?? 1;
         if (newMult !== oldMult) {
           const endTotal = this.system.stats.endurance.total;
-          const delta = Math.floor(endTotal * newMult) - Math.floor(endTotal * oldMult);
+          const delta = Math.floor(endTotal * effStaminaMult(this.system, newMult)) - Math.floor(endTotal * effStaminaMult(this.system, oldMult));
           if (delta !== 0)
             foundry.utils.setProperty(updateData, "system.stamina.value", this.system.stamina.value + delta);
         }
@@ -3864,8 +3893,8 @@ class TAMSActor extends Actor {
         const newMult = foundry.utils.getProperty(updateData, multPath);
         const oldMult = origRes.mult ?? 1;
         if (newMult === oldMult || origRes.stat === "custom") continue;
-        const statVal = ((_j = this.system.stats[origRes.stat]) == null ? void 0 : _j.total) || 0;
-        const delta = Math.floor(statVal * newMult) - Math.floor(statVal * oldMult);
+        const statVal = ((_i = this.system.stats[origRes.stat]) == null ? void 0 : _i.total) || 0;
+        const delta = Math.floor(statVal * effResourceMult(this.system, { ...origRes, mult: newMult })) - Math.floor(statVal * effResourceMult(this.system, origRes));
         if (delta === 0) continue;
         customResources[idx].value = (customResources[idx].value ?? 0) + delta;
         customResources[idx].mult = newMult;
@@ -3875,7 +3904,7 @@ class TAMSActor extends Actor {
       if (foundry.utils.hasProperty(updateData, "system.stamina.fatigue")) {
         const newFatigue = foundry.utils.getProperty(updateData, "system.stamina.fatigue");
         const pendingMult = foundry.utils.hasProperty(updateData, "system.stamina.mult") ? foundry.utils.getProperty(updateData, "system.stamina.mult") : this.system.stamina.mult;
-        const rawMax = computeRawStaminaMax(stats.endurance.total, pendingMult, this.system.traitStaminaExtra);
+        const rawMax = computeRawStaminaMax(stats.endurance.total, effStaminaMult(this.system, pendingMult), this.system.traitStaminaExtra);
         const newMax = computeFatiguedMax(rawMax, newFatigue);
         const pendingValue = foundry.utils.hasProperty(updateData, "system.stamina.value") ? foundry.utils.getProperty(updateData, "system.stamina.value") : this.system.stamina.value;
         if (pendingValue > newMax) {
@@ -3887,8 +3916,8 @@ class TAMSActor extends Actor {
         if (!foundry.utils.hasProperty(updateData, fatiguePath)) continue;
         const orig = customResources[idx];
         const newFatigue = foundry.utils.getProperty(updateData, fatiguePath);
-        const statVal = orig.stat === "custom" ? orig.customValue ?? 10 : ((_k = stats[orig.stat]) == null ? void 0 : _k.total) || 0;
-        const rawMax = computeRawResourceMax(statVal, orig.mult, orig.bonus);
+        const statVal = orig.stat === "custom" ? orig.customValue ?? 10 : ((_j = stats[orig.stat]) == null ? void 0 : _j.total) || 0;
+        const rawMax = computeRawResourceMax(statVal, effResourceMult(this.system, orig), orig.bonus);
         const newMax = computeFatiguedMax(rawMax, newFatigue);
         const valuePath = `system.customResources.${idx}.value`;
         const pendingValue = foundry.utils.hasProperty(updateData, valuePath) ? foundry.utils.getProperty(updateData, valuePath) : customResources[idx].value ?? 0;
@@ -3901,7 +3930,7 @@ class TAMSActor extends Actor {
       if (customResourcesChanged)
         foundry.utils.setProperty(updateData, "system.customResources", customResources);
       if (warnings.length) {
-        const gmIds = ((_l = game.users) == null ? void 0 : _l.filter((u) => u.isGM).map((u) => u.id)) ?? [];
+        const gmIds = ((_k = game.users) == null ? void 0 : _k.filter((u) => u.isGM).map((u) => u.id)) ?? [];
         ChatMessage.create({
           whisper: gmIds,
           content: `<div class="tams-roll">${warnings.map((w) => `<div class="tams-crit failure">⚠ ${w} (insufficient resources)</div>`).join("")}</div>`
@@ -3965,29 +3994,19 @@ class TAMSActor extends Actor {
     });
     return result === true;
   }
-  async _offerStaminaPayment(resourceName, deficit) {
-    const result = await foundry.applications.api.DialogV2.confirm({
-      window: { title: game.i18n.localize("TAMS.StaminaPayment.Title") },
-      content: `<p>${game.i18n.format("TAMS.StaminaPayment.Prompt", { resource: resourceName, amount: deficit })}</p>`,
-      yes: { label: game.i18n.localize("TAMS.StaminaPayment.Pay"), default: false },
-      no: { label: game.i18n.localize("TAMS.StaminaPayment.Decline"), default: true },
-      rejectClose: false
-    });
-    return result === true;
-  }
   /**
    * Adjust stamina and custom resource current values when stat totals change
    * due to trait additions/removals.
    * @param {object} statDeltas - Map of statKey → delta (positive = gained, negative = lost)
    */
   async _adjustResourcesForStatDeltas(statDeltas) {
-    var _a, _b;
+    var _a;
     const updates = {};
     const warnings = [];
     for (const [statKey, statDelta] of Object.entries(statDeltas)) {
       if (statDelta === 0) continue;
       if (statKey === "endurance") {
-        const mult = ((_a = this.system.stamina) == null ? void 0 : _a.mult) ?? 1;
+        const mult = effStaminaMult(this.system);
         const delta = Math.floor(statDelta * mult);
         if (delta !== 0) {
           const newVal = this.system.stamina.value + delta;
@@ -4011,32 +4030,18 @@ class TAMSActor extends Actor {
       let changed = false;
       for (const [idx, res] of customResources.entries()) {
         if (res.stat !== statKey || res.stat === "custom") continue;
-        const delta = Math.floor(statDelta * (res.mult ?? 1));
+        const delta = Math.floor(statDelta * effResourceMult(this.system, res));
         if (delta === 0) continue;
         const rawVal = (customResources[idx].value ?? 0) + delta;
-        if (rawVal < 0) {
-          const deficit = Math.abs(rawVal);
-          const pay = await this._offerStaminaPayment(res.name, deficit);
-          if (pay) {
-            customResources[idx].value = 0;
-            const newStamina = (updates["system.stamina.value"] ?? this.system.stamina.value) - deficit;
-            updates["system.stamina.value"] = newStamina;
-            if (newStamina < 0)
-              warnings.push(`${this.name} — ${game.i18n.localize("TAMS.Stamina")}: ${newStamina}`);
-          } else {
-            customResources[idx].value = rawVal;
-            warnings.push(`${this.name} — ${res.name}: ${rawVal}`);
-          }
-        } else {
-          customResources[idx].value = rawVal;
-        }
+        customResources[idx].value = rawVal;
+        if (rawVal < 0) warnings.push(`${this.name} — ${res.name}: ${rawVal}`);
         changed = true;
       }
       if (changed) updates["system.customResources"] = customResources;
     }
     if (Object.keys(updates).length) await this.update(updates);
     if (warnings.length) {
-      const gmIds = ((_b = game.users) == null ? void 0 : _b.filter((u) => u.isGM).map((u) => u.id)) ?? [];
+      const gmIds = ((_a = game.users) == null ? void 0 : _a.filter((u) => u.isGM).map((u) => u.id)) ?? [];
       await ChatMessage.create({
         whisper: gmIds,
         content: `<div class="tams-roll">${warnings.map((w) => `<div class="tams-crit failure">⚠ ${w} (insufficient resources)</div>`).join("")}</div>`
@@ -4082,7 +4087,7 @@ class TAMSActor extends Actor {
     const staminaSpent = sys.stamina.spentSinceRest ?? 0;
     const staminaGain = computeShortRestFatigueGain(staminaSpent);
     const staminaNewFatigue = (sys.stamina.fatigue ?? 0) + staminaGain;
-    const staminaRawMax = computeRawStaminaMax(sys.stats.endurance.total, sys.stamina.mult, sys.traitStaminaExtra);
+    const staminaRawMax = computeRawStaminaMax(sys.stats.endurance.total, effStaminaMult(sys), sys.traitStaminaExtra);
     const staminaNewMax = computeFatiguedMax(staminaRawMax, staminaNewFatigue);
     updates["system.stamina.fatigue"] = staminaNewFatigue;
     updates["system.stamina.spentSinceRest"] = 0;
@@ -4100,7 +4105,7 @@ class TAMSActor extends Actor {
       const gain = computeShortRestFatigueGain(spent);
       const newFatigue = (res.fatigue ?? 0) + gain;
       const statVal = res.stat === "custom" ? res.customValue ?? 10 : ((_a = sys.stats[res.stat]) == null ? void 0 : _a.total) || 0;
-      const rawMax = computeRawResourceMax(statVal, res.mult, res.bonus);
+      const rawMax = computeRawResourceMax(statVal, effResourceMult(sys, res), res.bonus);
       const newMax = computeFatiguedMax(rawMax, newFatigue);
       customResources[idx].fatigue = newFatigue;
       customResources[idx].spentSinceRest = 0;
@@ -4118,27 +4123,18 @@ class TAMSActor extends Actor {
   }
   /**
    * Take a Long Rest: heal Fatigue on every resource via a bundled dinner+sleep tick.
-   * Gated to a rolling-24h use cap (Unsafe = 1, Safe = 3), tracked via a worldTime
-   * timestamp array flag (generalizes the once-per-day medicalAidGiven pattern).
-   * @returns {Promise<{blocked: boolean, cap?: number, resources?: {name: string, fatigueHealed: number, newFatigue: number}[]}>}
+   * Uncapped — the GM decides how often the party gets to rest.
+   * @returns {Promise<{resources: {name: string, fatigueHealed: number, newFatigue: number}[]}>}
    */
   async takeLongRest() {
-    var _a;
     const sys = this.system;
-    const cap = sys.restSafe ? 3 : 1;
-    const daySeconds = 86400;
-    const now = ((_a = game.time) == null ? void 0 : _a.worldTime) ?? 0;
-    const uses = (this.getFlag("tams", "longRestUses") ?? []).filter((t) => now - t < daySeconds);
-    if (uses.length >= cap) {
-      return { blocked: true, cap };
-    }
     const updates = {};
     const resources = [];
     const staminaHeal = computeLongRestFatigueHeal(sys.stats.endurance.total);
     if (staminaHeal > 0 && (sys.stamina.fatigue ?? 0) > 0) {
       const newFatigue = Math.max(0, sys.stamina.fatigue - staminaHeal);
       const actualHeal = sys.stamina.fatigue - newFatigue;
-      const rawMax = computeRawStaminaMax(sys.stats.endurance.total, sys.stamina.mult, sys.traitStaminaExtra);
+      const rawMax = computeRawStaminaMax(sys.stats.endurance.total, effStaminaMult(sys), sys.traitStaminaExtra);
       const newMax = computeFatiguedMax(rawMax, newFatigue);
       updates["system.stamina.fatigue"] = newFatigue;
       updates["system.stamina.value"] = Math.min(newMax, (sys.stamina.value ?? 0) + actualHeal);
@@ -4151,14 +4147,14 @@ class TAMSActor extends Actor {
     const customResources = foundry.utils.duplicate(sys.customResources ?? []);
     let crChanged = false;
     customResources.forEach((res, idx) => {
-      var _a2;
+      var _a;
       if ((res.fatigue ?? 0) <= 0) return;
-      const governingStat = res.stat === "custom" ? res.customValue ?? 0 : ((_a2 = sys.stats[res.stat]) == null ? void 0 : _a2.total) ?? 0;
+      const governingStat = res.stat === "custom" ? res.customValue ?? 0 : ((_a = sys.stats[res.stat]) == null ? void 0 : _a.total) ?? 0;
       const heal = computeLongRestFatigueHeal(governingStat);
       if (heal <= 0) return;
       const newFatigue = Math.max(0, res.fatigue - heal);
       const actualHeal = res.fatigue - newFatigue;
-      const rawMax = computeRawResourceMax(governingStat, res.mult, res.bonus);
+      const rawMax = computeRawResourceMax(governingStat, effResourceMult(sys, res), res.bonus);
       const newMax = computeFatiguedMax(rawMax, newFatigue);
       customResources[idx].fatigue = newFatigue;
       customResources[idx].value = Math.min(newMax, (res.value ?? 0) + actualHeal);
@@ -4167,11 +4163,10 @@ class TAMSActor extends Actor {
     });
     if (crChanged) updates["system.customResources"] = customResources;
     if (resources.length === 0) {
-      return { blocked: false, resources: [] };
+      return { resources: [] };
     }
     await this.update(updates);
-    await this.setFlag("tams", "longRestUses", [...uses, now]);
-    return { blocked: false, resources };
+    return { resources };
   }
   /** @override */
   async _onCreateEmbeddedDocuments(embeddedName, documents, result, options, userId) {
@@ -4856,6 +4851,46 @@ __publicField(TAMSContainerGridApp, "PARTS", {
     template: "systems/tams/templates/inventory-container.html"
   }
 });
+const MISHAP_TAGS = ["magic", "spell", "psychic", "alchemy", "divine"];
+function abilityTags(system) {
+  return (system == null ? void 0 : system.tags) ? system.tags.split(",").map((t) => t.trim().toLowerCase()) : [];
+}
+function mishapEffectCount(calculator) {
+  const c = calculator ?? {};
+  return (c.effects || 0) + Math.floor((c.rollBonus || 0) / 5) + (c.ignoreArmor || 0);
+}
+function getAbilityIssues(system, { onActor = false, customResources = [], statusIds = null } = {}) {
+  var _a;
+  if (!system) return [];
+  const issues = [];
+  const error = (key) => issues.push({ level: "error", key });
+  const warning = (key) => issues.push({ level: "warning", key });
+  const calc = system.calculator ?? {};
+  const components = system.damageComponents ?? [];
+  if (system.isAttack && !system.useWeaponDamage) {
+    const hasType = !!system.damageType || components.some((c) => c.damageType);
+    if (!hasType) error("noDamageType");
+    if (onActor || components.length) {
+      if ((system.calculatedDamage ?? 0) <= 0) error("zeroDamage");
+    }
+  }
+  if (onActor && !system.isApex && system.resource && system.resource !== "stamina") {
+    const idx = parseInt(system.resource);
+    if (isNaN(idx) || !customResources[idx]) error("missingResource");
+  }
+  if (!calc.enabled && !system.isApex && !system.isPassive && !((((_a = system.uses) == null ? void 0 : _a.max) ?? 0) > 0) && !((system.cost ?? 0) > 0)) {
+    error("zeroCost");
+  }
+  if (system.isPassive && !system.passiveBonus) error("passiveNoBonus");
+  if (calc.enabled && abilityTags(system).some((t) => MISHAP_TAGS.includes(t)) && mishapEffectCount(calc) <= 0) {
+    warning("mishapNoEffects");
+  }
+  if (system.inflictsStatusId && Array.isArray(statusIds) && !statusIds.includes(system.inflictsStatusId)) {
+    warning("unknownStatus");
+  }
+  if (calc.enabled && Math.floor(system.rawCalculatedCost ?? 1) < 1) warning("calcCostBelowOne");
+  return issues;
+}
 function tamsMeasureDistance(a, b) {
   const grid = canvas == null ? void 0 : canvas.grid;
   if (!grid || !a || !b) return 0;
@@ -4922,16 +4957,25 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   }
   /** @override */
   async _preRender(context, options) {
-    var _a;
+    var _a, _b;
     await super._preRender(context, options);
     this._savedScrollPositions = {};
     for (const el of ((_a = this.element) == null ? void 0 : _a.querySelectorAll("[data-scroll-id]")) ?? []) {
       this._savedScrollPositions[el.dataset.scrollId] = el.scrollTop;
     }
+    this._openDetails ?? (this._openDetails = /* @__PURE__ */ new Set());
+    for (const el of ((_b = this.element) == null ? void 0 : _b.querySelectorAll("details[data-details-id]")) ?? []) {
+      if (el.open) this._openDetails.add(el.dataset.detailsId);
+      else this._openDetails.delete(el.dataset.detailsId);
+    }
   }
   /** @override */
   _onRender(context, options) {
+    var _a;
     super._onRender(context, options);
+    for (const el of this.element.querySelectorAll("details[data-details-id]")) {
+      if ((_a = this._openDetails) == null ? void 0 : _a.has(el.dataset.detailsId)) el.open = true;
+    }
     if (this._savedScrollPositions) {
       for (const el of this.element.querySelectorAll("[data-scroll-id]")) {
         const saved = this._savedScrollPositions[el.dataset.scrollId];
@@ -4992,9 +5036,6 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       btn.addEventListener("click", async () => {
         const actor = this.document;
         const result = await actor.takeLongRest();
-        if (result.blocked) {
-          return ui.notifications.warn(game.i18n.format("TAMS.Rest.LongRestBlocked", { cap: result.cap }));
-        }
         const lines = result.resources.filter((r) => r.fatigueHealed > 0).map((r) => game.i18n.format("TAMS.Rest.LongRestLine", { name: r.name, healed: r.fatigueHealed }));
         if (lines.length === 0) {
           return ui.notifications.info(game.i18n.localize("TAMS.Rest.NoFatigue"));
@@ -5007,7 +5048,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     });
     this.element.querySelectorAll(".tams-medical-aid").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        var _a;
+        var _a2;
         const healer = this.document;
         const medicineSkill = healer.items.find((i) => i.type === "skill" && i.name.toLowerCase().includes("medicine"));
         if (!medicineSkill) return;
@@ -5015,7 +5056,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         const healPool = Math.ceil(familiarity / 2);
         if (healPool <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoPool"));
         const lastAidTime = healer.getFlag("tams", "medicalAidGiven") ?? 0;
-        const currentTime = ((_a = game.time) == null ? void 0 : _a.worldTime) ?? 0;
+        const currentTime = ((_a2 = game.time) == null ? void 0 : _a2.worldTime) ?? 0;
         const daySeconds = 86400;
         if (currentTime - lastAidTime < daySeconds) {
           return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidAlreadyGiven"));
@@ -5140,6 +5181,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     context.barrierPct = Math.clamp(system.tempDR / (system.hp.max || 1) * 100, 0, context.hpPercentage);
     context.barrierLeft = context.hpPercentage - context.barrierPct;
     context.capacityPercentage = Math.clamp(system.inventory.usedCapacity / (system.inventory.maxCapacity || 1) * 100, 0, 100);
+    const casterTraits = this.document.items.filter((i) => i.type === "trait" && i.system.isProfession && (i.system.professionType || "basic") !== "basic");
+    context.casterProfessionOptions = casterTraits.length ? {
+      "": game.i18n.localize("TAMS.ProfessionLinkNone"),
+      ...Object.fromEntries(casterTraits.map((t) => [t.id, t.system.profession || t.name]))
+    } : null;
     context.customResourceData = system.customResources.map((res) => {
       return {
         ...res,
@@ -5228,8 +5274,17 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         if (i.system.equipped) equippedWeapons.push(itemData);
         else inventoryWeapons.push(itemData);
       } else if (i.type === "skill") skills.push(itemData);
-      else if (i.type === "ability") abilities.push(itemData);
-      else if (i.type === "armor" || i.type === "shield") inventoryArmor.push(itemData);
+      else if (i.type === "ability") {
+        const issues = getAbilityIssues(i.system, {
+          onActor: true,
+          customResources: this.document.system.customResources ?? [],
+          statusIds: (CONFIG.statusEffects ?? []).map((se) => se.id)
+        }).map((iss) => ({ ...iss, text: game.i18n.localize(`TAMS.AbilityIssues.${iss.key}`) }));
+        const tooltip = (level) => issues.filter((iss) => iss.level === level).map((iss) => `• ${iss.text}`).join("<br>");
+        itemData.issueErrors = tooltip("error");
+        itemData.issueWarnings = tooltip("warning");
+        abilities.push(itemData);
+      } else if (i.type === "armor" || i.type === "shield") inventoryArmor.push(itemData);
       else if (i.type === "ammo") inventoryAmmo.push(itemData);
       else if (i.type === "consumable") inventoryConsumables.push(itemData);
       else if (i.type === "tool") inventoryTools.push(itemData);
@@ -6729,9 +6784,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         statValue = stat ? stat.value : 0;
         statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         label = game.i18n.format("TAMS.UsingAbilityLabel", { name: item.name });
-        const abilityTags = item.system.tags ? item.system.tags.split(",").map((t) => t.trim().toLowerCase()) : [];
-        const isRangedAbility = abilityTags.includes("ranged");
-        const isMeleeAbility = abilityTags.includes("melee");
+        const abilityTags2 = item.system.tags ? item.system.tags.split(",").map((t) => t.trim().toLowerCase()) : [];
+        const isRangedAbility = abilityTags2.includes("ranged");
+        const isMeleeAbility = abilityTags2.includes("melee");
         if (isRangedAbility || isMeleeAbility) {
           const expectedBroad = isRangedAbility ? "ranged weapon" : "melee weapon";
           for (const skill of this.document.items.filter((i) => i.type === "skill")) {
@@ -6740,7 +6795,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             const parenMatch = skill.name.match(/\(([^)]+)\)/);
             if (!parenMatch) continue;
             const specific = parenMatch[1].trim().toLowerCase();
-            const isSpecificMatch = abilityTags.includes(specific);
+            const isSpecificMatch = abilityTags2.includes(specific);
             const rawSkillFam = parseInt(skill.system.familiarity) || 0;
             const appliedFam = isSpecificMatch ? rawSkillFam : Math.floor(rawSkillFam / 2);
             if (appliedFam !== 0) {
@@ -6832,20 +6887,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           const res = this.document.system.customResources[idx];
           if (res) {
             if (res.value < effectiveCost) {
-              const remaining = effectiveCost - res.value;
-              const stamina = this.document.system.stamina.value;
-              if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", { resource: res.name }));
-              const useBoth = await foundry.applications.api.DialogV2.confirm({
-                window: { title: "Insufficient Resources" },
-                content: `<p>You only have ${res.value} ${e$1(res.name)}. Spend ${res.value} ${e$1(res.name)} and ${remaining} Stamina to use this ability?</p>`,
-                yes: { label: "Yes", default: true },
-                no: { label: "No" },
-                rejectClose: false
-              });
-              if (!useBoth) return;
-              const spendUpdates = this.document.applyResourceSpend(idx, res.value);
-              this.document.applyResourceSpend("stamina", remaining, spendUpdates);
-              await this.document.update(spendUpdates);
+              return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResource", { resource: res.name }));
             } else {
               await this.document.update(this.document.applyResourceSpend(idx, effectiveCost));
             }
@@ -7357,17 +7399,16 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     }
     let mishapButtonHtml = "";
     if (item && item.type === "ability") {
-      const abilityTags = item.system.tags ? item.system.tags.split(",").map((t) => t.trim().toLowerCase()) : [];
-      const isMagicAbility = abilityTags.some((t) => ["magic", "spell", "psychic", "alchemy", "divine"].includes(t));
+      const tags = abilityTags(item.system);
+      const isMagicAbility = tags.some((t) => MISHAP_TAGS.includes(t));
       if (isMagicAbility) {
         let totalEffects = -1;
         if ((_r = item.system.calculator) == null ? void 0 : _r.enabled) {
-          const _c2 = item.system.calculator;
-          totalEffects = (_c2.effects || 0) + Math.floor((_c2.rollBonus || 0) / 5) + (_c2.ignoreArmor || 0);
+          totalEffects = mishapEffectCount(item.system.calculator);
         }
         const castTime = item.system.castTime || "immediate";
         const mishapTagPriority = ["divine", "psychic", "alchemy", "magic", "spell"];
-        const mishapTag = mishapTagPriority.find((t) => abilityTags.includes(t)) ?? "magic";
+        const mishapTag = mishapTagPriority.find((t) => tags.includes(t)) ?? "magic";
         mishapButtonHtml = `
                 <div class="roll-row" style="margin-top: 5px;">
                     <button class="tams-mishap-check"
@@ -7798,7 +7839,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
   }
   /** @override */
   async _prepareContext(options) {
-    var _a;
+    var _a, _b;
     const context = await super._prepareContext(options);
     context.item = this.document;
     context.document = this.document;
@@ -7908,6 +7949,30 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       "allRolls": "TAMS.ModifierAllRolls",
       "allProfessionRolls": "TAMS.ModifierAllProfessionRolls"
     };
+    if (this.document.type === "trait") {
+      context.professionTypeOptions = Object.fromEntries(
+        PROFESSION_TYPES.map((t) => [t, `TAMS.ProfessionType.${t}`])
+      );
+      context.professionRankOptions = [
+        { value: 0, label: "—" },
+        ...Array.from({ length: PROFESSION_MAX_RANK }, (_, i) => {
+          const rank = i + 1;
+          return {
+            value: rank * PROFESSION_RANK_STEP,
+            label: game.i18n.format("TAMS.ProfessionRankOption", {
+              rank,
+              name: game.i18n.localize(`TAMS.ProfessionRank.${rank}`),
+              bonus: rank * PROFESSION_RANK_STEP
+            })
+          };
+        })
+      ];
+      for (const m of this.document.system.modifiers ?? []) {
+        if (m.target !== "allProfessionRolls") continue;
+        if (!context.professionRankOptions.some((o) => o.value === m.value))
+          context.professionRankOptions.push({ value: m.value, label: `+${m.value}` });
+      }
+    }
     if (this.document.type === "weapon") {
       const tags = ["accurate", "reliable", "unreliable", "vicious", "brutal", "balanced", "compact", "reach", "silent"];
       const activeTags = (this.document.system.tags || "").split(",").map((t) => t.trim().toLowerCase());
@@ -7975,6 +8040,11 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         });
       }
       context.resourceOptions = resources;
+      context.abilityIssues = getAbilityIssues(this.document.system, {
+        onActor: !!this.document.actor,
+        customResources: ((_a = this.document.actor) == null ? void 0 : _a.system.customResources) ?? [],
+        statusIds: (CONFIG.statusEffects ?? []).map((se) => se.id)
+      }).map((iss) => ({ ...iss, text: game.i18n.localize(`TAMS.AbilityIssues.${iss.key}`) }));
       context.selectedTargetingMode = selectedTargetingMode;
       context.enrichedDamageComponents = (this.document.system.damageComponents || []).map((c, index) => ({ ...c, index }));
       context.calculatorOptions = {
@@ -8062,7 +8132,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       const sys = this.document.system;
       if (this._sectionOpen === void 0) {
         this._sectionOpen = {
-          uses: ((_a = sys.uses) == null ? void 0 : _a.max) > 0,
+          uses: ((_b = sys.uses) == null ? void 0 : _b.max) > 0,
           conditionalCost: !!sys.ifStatement,
           sizeGrants: !!(sys.sizeGrantHP || sys.sizeGrantStealth || sys.sizeGrantCombat)
         };
@@ -8741,7 +8811,7 @@ const _TAMSItemMaker = class _TAMSItemMaker extends foundry.applications.api.Han
       shield: { armorValue: 5, size: "medium" },
       questItem: { quantity: 1, size: "small" },
       backpack: { capacity: 10, modifier: 0.5 },
-      trait: { isProfession: false, profession: "" },
+      trait: { isProfession: false, profession: "", professionType: "basic" },
       statusEffect: { statusId: "", mechanicalSummary: "", durationRounds: 0 }
     };
   }
@@ -8819,6 +8889,7 @@ const _TAMSItemMaker = class _TAMSItemMaker extends foundry.applications.api.Han
     for (const se of CONFIG.statusEffects ?? []) {
       sePresets[se.id] = se.label ?? se.id;
     }
+    context.professionTypeOptions = Object.fromEntries(PROFESSION_TYPES.map((t) => [t, `TAMS.ProfessionType.${t}`]));
     context.statusEffectOptions = { "": "TAMS.None", ...sePresets, "custom": "TAMS.StatusEffect.Custom" };
     return context;
   }
@@ -8953,7 +9024,7 @@ const _TAMSItemMaker = class _TAMSItemMaker extends foundry.applications.api.Han
       case "backpack":
         return { capacity: parseInt(s.capacity) || 10, modifier: parseFloat(s.modifier) || 0.5 };
       case "trait":
-        return { isProfession: !!s.isProfession, profession: s.profession ?? "" };
+        return { isProfession: !!s.isProfession, profession: s.profession ?? "", professionType: s.professionType || "basic" };
       case "statusEffect":
         return { statusId: s.statusId ?? "", mechanicalSummary: s.mechanicalSummary ?? "", durationRounds: parseInt(s.durationRounds) || 0 };
       default:

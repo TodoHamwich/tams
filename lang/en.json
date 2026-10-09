@@ -1,6 +1,5 @@
 {
   "TAMS": {
-    "None": "— None —",
     "Natural": "Natural",
     "NaturalHint": "Natural items (innate claws, natural armor, etc.) are part of the body and do not count toward encumbrance.",
     "StatBase": "Base Stat Value",
@@ -141,7 +140,6 @@
     "Dmg": "Dmg",
     "Fam": "Fam",
     "Rate": "Rate",
-    "Ammo": "Ammo",
     "Total": "Total",
     "Equip": "Equip",
     "Stat": "Stat",
@@ -260,7 +258,6 @@
       "LongRest": "Long Rest",
       "LongRestHint": "Heal Fatigue on all resources (dinner + sleep).",
       "LongRestLine": "{name}: healed {healed} Fatigue.",
-      "LongRestBlocked": "No Long Rest uses remaining in the last 24 hours (max {cap}).",
       "NoFatigue": "No Fatigue to recover.",
       "Safe": "Safe",
       "Unsafe": "Unsafe",
@@ -374,6 +371,31 @@
     "AddTrait": "Add Trait",
     "IsProfessionQ": "Is Profession?",
     "Profession": "Profession",
+    "ProfessionTypeLabel": "Profession Type",
+    "ProfessionTypeHint": "Basic: +0.25 Stamina multiplier per rank. Casters: +0.25 to their linked resource bar's multiplier per rank after the first; Stamina boosts start at rank 4 (Full) or rank 3 (Half / Three-Quarter).",
+    "ProfessionType": {
+      "basic": "Basic",
+      "full": "Full Caster",
+      "half": "Half Caster",
+      "threeQuarter": "Three-Quarter Caster"
+    },
+    "ProfessionRankOption": "{rank}. {name} (+{bonus})",
+    "ProfessionRankHint": "Profession rank — sets the profession roll bonus (+5 per rank) and drives the Stamina / resource multiplier boosts.",
+    "ProfessionRank": {
+      "1": "Trainee",
+      "2": "Assistant",
+      "3": "Associate",
+      "4": "Coordinator",
+      "5": "Specialist",
+      "6": "Supervisor",
+      "7": "Manager",
+      "8": "Senior Manager",
+      "9": "Director",
+      "10": "Chief"
+    },
+    "ProfessionLinkNone": "— No profession —",
+    "ProfessionLinkHint": "Caster profession whose rank boosts this resource's multiplier.",
+    "ProfessionBoostHint": "Multiplier boost from the linked caster profession's rank.",
     "Modifiers": "Modifiers",
     "AddModifier": "Add Modifier",
     "RemoveModifier": "Remove Modifier",
@@ -546,6 +568,16 @@
         "MisfireLabel": "MISFIRE",
         "MisfireResult": "{weapon} misfired on a roll of {roll} (threshold: {threshold}). Attack fails — clear the weapon before reloading."
     },
+    "AbilityIssues": {
+      "noDamageType": "Attack has no damage type — set Damage Type or add a typed damage component, or resistances won't apply.",
+      "zeroDamage": "Attack deals 0 damage — set the damage formula or components.",
+      "missingResource": "Cost resource no longer exists on this character — pick a resource.",
+      "zeroCost": "Cost is 0 — abilities cost at least 1 (or give it Uses).",
+      "passiveNoBonus": "Passive ability has no bonus — set the Passive Bonus.",
+      "mishapNoEffects": "Magic ability with 0 Effects in the calculator — its Mishap Check will always be 0%.",
+      "unknownStatus": "Inflicted status effect doesn't match any known status effect.",
+      "calcCostBelowOne": "Calculated cost is below 1 (detriments exceed effects) — it's raised to the minimum of 1."
+    },
     "Mishap": {
         "ButtonLabel": "Mishap Check",
         "DialogTitle": "Mishap Check",
@@ -569,11 +601,9 @@
         "Immediate": "Immediate",
         "OneTurn": "1 Turn"
     },
-    "Resource": "Resource",
     "LootItem": "Loot Item",
     "Qty": "Qty",
     "LootPileEmpty": "This loot pile is empty.",
-    "Settings": "Settings",
     "SkillCheckTitle": "Skill Check",
     "SkillCheckSpecificPrompt": "Is this for the specific specialty {name}?",
     "YesFullFam": "Yes (Full Fam)",
@@ -686,12 +716,6 @@
       "living": "Living",
       "dead": "Dead",
       "undead": "Undead"
-    },
-    "StaminaPayment": {
-      "Title": "Insufficient Resources",
-      "Prompt": "{resource} dropped to -{amount}. Spend {amount} Stamina to bring it back to 0?",
-      "Pay": "Pay Stamina",
-      "Decline": "Leave Negative"
     },
     "HPPayment": {
       "Title": "Insufficient Stamina",
@@ -891,8 +915,6 @@
       "SquadMembersRestored": "{count} squad members restored!",
       "SquadMembersLost": "{count} squad members lost!",
       "RetaliateNoAoE": "Retaliation doesn't support ranged AOE.",
-      "InsufficientResources": "Insufficient Resources",
-      "InsufficientResourcesContent": "You only have {val} {res}. Spend the remaining {rem} from Stamina?",
       "TakeDamage": "Take Damage",
       "Cover": "Cover:",
       "CoverLight": "Light (10)",
@@ -1046,7 +1068,6 @@
         "EnterDistance": "Please enter a travel distance greater than 0 Km.",
         "CookCheckDescription": "The Cook makes checks for each travel day (DC {dc}). Each success provides a Warm Meal bonus.",
         "NoValidWeapons": "Selected actor has no valid weapons or reaction abilities.",
-        "NotEnoughResOrStamina": "Not enough {resource} or Stamina to cover the cost.",
         "RetaliateNoAoE": "Retaliation is not possible against ranged AOE attacks.",
         "ItemCreationFailed": "Failed to create item of type {type}. See console for details.",
         "NoCharactersFound": "No characters found on this scene to give this item to.",

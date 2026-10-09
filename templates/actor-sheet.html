@@ -440,7 +440,7 @@
                 {{#each customResourceData as |res index|}}
                 <li class="resource-item flexcol" data-index="{{index}}">
                     <div class="flexrow">
-                        <label class="resource-label" style="flex: 1;">{{res.name}}{{#if (and res.isOpposed res.nameSecondary)}} / {{res.nameSecondary}}{{/if}}</label>
+                        <label class="resource-label">{{res.name}}{{#if (and res.isOpposed res.nameSecondary)}} / {{res.nameSecondary}}{{/if}}</label>
                         <div class="bar-container">
                             <input type="number" name="system.customResources.{{index}}.value" value="{{res.value}}" max="{{res.max}}" min="0" class="small-input"/>
                             <div class="bar {{#if res.isOpposed}}opposed{{/if}}" style="{{#if res.isOpposed}}background: {{res.color}} !important;{{/if}}">
@@ -466,7 +466,7 @@
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                     <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
-                        {{item.name}}
+                        {{item.name}} {{#if item.issueErrors}}<i class="fas fa-circle-exclamation tams-ability-issue error" data-tooltip="{{item.issueErrors}}"></i>{{/if}}{{#if item.issueWarnings}}<i class="fas fa-triangle-exclamation tams-ability-issue warning" data-tooltip="{{item.issueWarnings}}"></i>{{/if}}
                         {{#if item.system.isAttack}}
                         ({{localize 'TAMS.DmgColon'}} {{item.system.calculatedDamage}})
                         {{/if}}
@@ -839,7 +839,7 @@
                     {{/each}}
                 </div>
                 {{/unless}}
-                <details class="tams-lethality" style="margin-top: 6px;">
+                <details class="tams-lethality" data-details-id="lethality" style="margin-top: 6px;">
                     <summary class="small-header" title="{{localize 'TAMS.LethalityHint'}}"><i class="fas fa-skull"></i> {{localize 'TAMS.Lethality'}}</summary>
                     <div class="grid grid-2col" style="margin-top: 4px;">
                         {{#each system.limbs as |limb id|}}
@@ -873,6 +873,11 @@
                             {{#if res.isOpposed}}
                             <input type="text" name="system.customResources.{{index}}.nameSecondary" value="{{res.nameSecondary}}" placeholder="{{localize 'TAMS.ResourceNameSecondary'}}" style="font-size: 11px;"/>
                             {{/if}}
+                            {{#if (or ../casterProfessionOptions res.professionTraitId)}}
+                            <select name="system.customResources.{{index}}.professionTraitId" title="{{localize 'TAMS.ProfessionLinkHint'}}" style="font-size: 11px;">
+                                {{selectOptions ../casterProfessionOptions selected=res.professionTraitId}}
+                            </select>
+                            {{/if}}
                         </div>
                         <div class="col-stat">
                             <select name="system.customResources.{{index}}.stat">
@@ -890,7 +895,7 @@
                         </div>
                         <div class="col-mult">
                             <small>x</small>
-                            <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" class="small-input"/>
+                            <input type="number" name="system.customResources.{{index}}.mult" value="{{res.mult}}" step="0.25" class="small-input"/>{{#with (lookup ../system.professionResourceMultBonuses res.professionTraitId)}}<small class="profession-boost" title="{{localize 'TAMS.ProfessionBoostHint'}}">+{{this}}</small>{{/with}}
                         </div>
                         <div class="col-bonus">
                             <small>+</small>
@@ -1012,7 +1017,7 @@
 
         {{!-- Settings Tab --}}
         <div class="tab settings {{#if (eq activeTab 'settings')}}active{{/if}}" data-group="primary" data-tab="settings" data-scrollable data-scroll-id="tab-settings">
-            <h3>{{localize 'TAMS.Settings'}}</h3>
+            <h3>{{localize 'TAMS.Tabs.Settings'}}</h3>
             <div class="flexcol">
                 <div class="form-group flexrow" style="margin-bottom: 10px;">
                     <label>{{localize 'TAMS.CreatureSize'}}</label>

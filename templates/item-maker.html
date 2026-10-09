@@ -192,6 +192,12 @@
             <label>{{localize 'TAMS.Profession'}}</label>
             <input type="text" data-field="profession" value="{{f.profession}}" placeholder="e.g. Soldier"/>
         </div>
+        <div class="flexrow">
+            <label>{{localize 'TAMS.ProfessionTypeLabel'}}</label>
+            <select data-field="professionType">
+                {{selectOptions professionTypeOptions selected=f.professionType localize=true}}
+            </select>
+        </div>
         {{/if}}
 
         {{!-- STATUS EFFECT --}}

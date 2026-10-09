@@ -7,6 +7,7 @@ import {
   gridPlacementValid, getItemCells, getFootprint, transformCells
 } from '../utils/inventory-grid.js';
 import { TAMSContainerGridApp } from './inventory-container-app.js';
+import { MISHAP_TAGS, abilityTags, mishapEffectCount, getAbilityIssues } from '../utils/ability-validation.js';
 
 /** Grid distance between two canvas points (measurePath since v12; measureDistance was removed). */
 function tamsMeasureDistance(a, b) {
@@ -93,11 +94,22 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     for (const el of this.element?.querySelectorAll('[data-scroll-id]') ?? []) {
       this._savedScrollPositions[el.dataset.scrollId] = el.scrollTop;
     }
+    // Remember which collapsible <details> sections are open so a re-render
+    // (e.g. after toggling a field inside one) doesn't snap them shut.
+    this._openDetails ??= new Set();
+    for (const el of this.element?.querySelectorAll('details[data-details-id]') ?? []) {
+      if (el.open) this._openDetails.add(el.dataset.detailsId);
+      else this._openDetails.delete(el.dataset.detailsId);
+    }
   }
 
   /** @override */
   _onRender(context, options) {
     super._onRender(context, options);
+    // Re-open details before restoring scroll so the content height is right.
+    for (const el of this.element.querySelectorAll('details[data-details-id]')) {
+      if (this._openDetails?.has(el.dataset.detailsId)) el.open = true;
+    }
     if (this._savedScrollPositions) {
       for (const el of this.element.querySelectorAll('[data-scroll-id]')) {
         const saved = this._savedScrollPositions[el.dataset.scrollId];
@@ -173,9 +185,6 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       btn.addEventListener("click", async () => {
         const actor = this.document;
         const result = await actor.takeLongRest();
-        if (result.blocked) {
-          return ui.notifications.warn(game.i18n.format("TAMS.Rest.LongRestBlocked", { cap: result.cap }));
-        }
         const lines = result.resources
           .filter(r => r.fatigueHealed > 0)
           .map(r => game.i18n.format("TAMS.Rest.LongRestLine", { name: r.name, healed: r.fatigueHealed }));
@@ -346,6 +355,14 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     context.barrierLeft = context.hpPercentage - context.barrierPct;
     context.capacityPercentage = Math.clamp((system.inventory.usedCapacity / (system.inventory.maxCapacity || 1)) * 100, 0, 100);
 
+    // Caster profession traits a custom resource can be linked to (src/utils/profession.js).
+    const casterTraits = this.document.items.filter(i =>
+      i.type === "trait" && i.system.isProfession && (i.system.professionType || "basic") !== "basic");
+    context.casterProfessionOptions = casterTraits.length ? {
+      "": game.i18n.localize("TAMS.ProfessionLinkNone"),
+      ...Object.fromEntries(casterTraits.map(t => [t.id, t.system.profession || t.name]))
+    } : null;
+
     context.customResourceData = system.customResources.map(res => {
       return {
         ...res,
@@ -444,7 +461,17 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         else inventoryWeapons.push(itemData);
       }
       else if (i.type === 'skill') skills.push(itemData);
-      else if (i.type === 'ability') abilities.push(itemData);
+      else if (i.type === 'ability') {
+        const issues = getAbilityIssues(i.system, {
+          onActor: true,
+          customResources: this.document.system.customResources ?? [],
+          statusIds: (CONFIG.statusEffects ?? []).map(se => se.id)
+        }).map(iss => ({ ...iss, text: game.i18n.localize(`TAMS.AbilityIssues.${iss.key}`) }));
+        const tooltip = level => issues.filter(iss => iss.level === level).map(iss => `• ${iss.text}`).join("<br>");
+        itemData.issueErrors = tooltip("error");
+        itemData.issueWarnings = tooltip("warning");
+        abilities.push(itemData);
+      }
       else if (i.type === 'armor' || i.type === 'shield') inventoryArmor.push(itemData);
       else if (i.type === 'ammo') inventoryAmmo.push(itemData);
       else if (i.type === 'consumable') inventoryConsumables.push(itemData);
@@ -2169,23 +2196,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 const res = this.document.system.customResources[idx];
                 if (res) {
                     if (res.value < effectiveCost) {
-                        const remaining = effectiveCost - res.value;
-                        const stamina = this.document.system.stamina.value;
-                        if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", {resource: res.name}));
-
-                        const useBoth = await foundry.applications.api.DialogV2.confirm({
-                            window: { title: "Insufficient Resources" },
-                            content: `<p>You only have ${res.value} ${e(res.name)}. Spend ${res.value} ${e(res.name)} and ${remaining} Stamina to use this ability?</p>`,
-                            yes: { label: "Yes", default: true },
-                            no: { label: "No" },
-                            rejectClose: false
-                        });
-
-                        if (!useBoth) return;
-
-                        const spendUpdates = this.document.applyResourceSpend(idx, res.value);
-                        this.document.applyResourceSpend("stamina", remaining, spendUpdates);
-                        await this.document.update(spendUpdates);
+                        return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResource", {resource: res.name}));
                     } else {
                         await this.document.update(this.document.applyResourceSpend(idx, effectiveCost));
                     }
@@ -2746,19 +2757,16 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     let mishapButtonHtml = "";
     if (item && item.type === 'ability') {
-        const abilityTags = item.system.tags ? item.system.tags.split(",").map(t => t.trim().toLowerCase()) : [];
-        const isMagicAbility = abilityTags.some(t => ["magic", "spell", "psychic", "alchemy", "divine"].includes(t));
+        const tags = abilityTags(item.system);
+        const isMagicAbility = tags.some(t => MISHAP_TAGS.includes(t));
         if (isMagicAbility) {
             let totalEffects = -1;
             if (item.system.calculator?.enabled) {
-                const _c = item.system.calculator;
-                totalEffects = (_c.effects || 0)
-                    + Math.floor((_c.rollBonus || 0) / 5)
-                    + (_c.ignoreArmor || 0);
+                totalEffects = mishapEffectCount(item.system.calculator);
             }
             const castTime = item.system.castTime || "immediate";
             const mishapTagPriority = ["divine", "psychic", "alchemy", "magic", "spell"];
-            const mishapTag = mishapTagPriority.find(t => abilityTags.includes(t)) ?? "magic";
+            const mishapTag = mishapTagPriority.find(t => tags.includes(t)) ?? "magic";
             mishapButtonHtml = `
                 <div class="roll-row" style="margin-top: 5px;">
                     <button class="tams-mishap-check"

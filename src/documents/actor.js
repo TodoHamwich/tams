@@ -13,6 +13,15 @@ const e = s => foundry.utils.escapeHTML(String(s ?? ""));
  * The TAMS Actor document class.
  * Extends the core Actor class.
  */
+/** Stamina multiplier incl. profession boosts (falls back to the manual mult on plain test data). */
+function effStaminaMult(sys, manualMult = sys?.stamina?.mult) {
+  return typeof sys?.staminaEffectiveMult === "function" ? sys.staminaEffectiveMult(manualMult) : (manualMult ?? 1);
+}
+/** Custom resource multiplier incl. its linked caster profession boost. */
+function effResourceMult(sys, res) {
+  return typeof sys?.resourceEffectiveMult === "function" ? sys.resourceEffectiveMult(res) : (res?.mult ?? 1);
+}
+
 export class TAMSActor extends Actor {
   /**
    * Apply damage to this actor across multiple hits/locations.
@@ -464,7 +473,23 @@ export class TAMSActor extends Actor {
     {
       const ALL_STATS = ["strength", "dexterity", "endurance", "wisdom", "intelligence", "bravery"];
       const warnings = [];
-      const customResources = foundry.utils.duplicate(this.system.customResources ?? []);
+      // Start from the stored array with any pending per-field edits (name, stat,
+      // …) layered on top — if anything below writes the whole array back, it
+      // must not clobber the other fields the form submitted alongside it.
+      const pendingResources = foundry.utils.getProperty(updateData, "system.customResources");
+      const customResources = Array.isArray(pendingResources)
+        ? foundry.utils.duplicate(pendingResources)
+        : foundry.utils.duplicate(this.system.customResources ?? []);
+      if (pendingResources && !Array.isArray(pendingResources) && typeof pendingResources === "object") {
+        for (const [idx, changes] of Object.entries(pendingResources)) {
+          if (customResources[idx] && changes && typeof changes === "object")
+            foundry.utils.mergeObject(customResources[idx], changes);
+        }
+      }
+      for (const [key, val] of Object.entries(updateData)) {
+        const m = key.match(/^system\.customResources\.(\d+)\.(.+)$/);
+        if (m && customResources[m[1]]) foundry.utils.setProperty(customResources[m[1]], m[2], val);
+      }
       let customResourcesChanged = false;
 
       for (const statKey of ALL_STATS) {
@@ -484,7 +509,7 @@ export class TAMSActor extends Actor {
         if (statKey === "endurance") {
           const staminaPath = "system.stamina.value";
           if (!foundry.utils.hasProperty(updateData, staminaPath)) {
-            const mult = this.system.stamina?.mult ?? 1;
+            const mult = effStaminaMult(this.system);
             const staminaDelta = Math.floor(statDelta * mult);
             if (staminaDelta !== 0) {
               const newStamina = this.system.stamina.value + staminaDelta;
@@ -510,24 +535,11 @@ export class TAMSActor extends Actor {
         // Custom resources linked to this stat
         for (const [idx, res] of customResources.entries()) {
           if (res.stat !== statKey || res.stat === "custom") continue;
-          const resDelta = Math.floor(statDelta * (res.mult ?? 1));
+          const resDelta = Math.floor(statDelta * effResourceMult(this.system, res));
           if (resDelta === 0) continue;
           const rawVal = (customResources[idx].value ?? 0) + resDelta;
-          if (rawVal < 0) {
-            const deficit = Math.abs(rawVal);
-            const pay = await this._offerStaminaPayment(res.name, deficit);
-            if (pay) {
-              customResources[idx].value = 0;
-              const staminaPath = "system.stamina.value";
-              const currentStamina = foundry.utils.getProperty(updateData, staminaPath) ?? this.system.stamina.value;
-              foundry.utils.setProperty(updateData, staminaPath, currentStamina - deficit);
-            } else {
-              customResources[idx].value = rawVal;
-              warnings.push(`${this.name} — ${res.name}: ${rawVal}`);
-            }
-          } else {
-            customResources[idx].value = rawVal;
-          }
+          customResources[idx].value = rawVal;
+          if (rawVal < 0) warnings.push(`${this.name} — ${res.name}: ${rawVal}`);
           customResourcesChanged = true;
         }
       }
@@ -539,7 +551,7 @@ export class TAMSActor extends Actor {
         const oldMult = this.system.stamina?.mult ?? 1;
         if (newMult !== oldMult) {
           const endTotal = this.system.stats.endurance.total;
-          const delta = Math.floor(endTotal * newMult) - Math.floor(endTotal * oldMult);
+          const delta = Math.floor(endTotal * effStaminaMult(this.system, newMult)) - Math.floor(endTotal * effStaminaMult(this.system, oldMult));
           if (delta !== 0)
             foundry.utils.setProperty(updateData, "system.stamina.value", this.system.stamina.value + delta);
         }
@@ -554,7 +566,8 @@ export class TAMSActor extends Actor {
         const oldMult = origRes.mult ?? 1;
         if (newMult === oldMult || origRes.stat === "custom") continue;
         const statVal = this.system.stats[origRes.stat]?.total || 0;
-        const delta = Math.floor(statVal * newMult) - Math.floor(statVal * oldMult);
+        const delta = Math.floor(statVal * effResourceMult(this.system, { ...origRes, mult: newMult }))
+                    - Math.floor(statVal * effResourceMult(this.system, origRes));
         if (delta === 0) continue;
         customResources[idx].value = (customResources[idx].value ?? 0) + delta;
         customResources[idx].mult = newMult;
@@ -572,7 +585,7 @@ export class TAMSActor extends Actor {
         const pendingMult = foundry.utils.hasProperty(updateData, "system.stamina.mult")
           ? foundry.utils.getProperty(updateData, "system.stamina.mult")
           : this.system.stamina.mult;
-        const rawMax = computeRawStaminaMax(stats.endurance.total, pendingMult, this.system.traitStaminaExtra);
+        const rawMax = computeRawStaminaMax(stats.endurance.total, effStaminaMult(this.system, pendingMult), this.system.traitStaminaExtra);
         const newMax = computeFatiguedMax(rawMax, newFatigue);
         const pendingValue = foundry.utils.hasProperty(updateData, "system.stamina.value")
           ? foundry.utils.getProperty(updateData, "system.stamina.value")
@@ -588,7 +601,7 @@ export class TAMSActor extends Actor {
         const orig = customResources[idx];
         const newFatigue = foundry.utils.getProperty(updateData, fatiguePath);
         const statVal = orig.stat === "custom" ? (orig.customValue ?? 10) : (stats[orig.stat]?.total || 0);
-        const rawMax = computeRawResourceMax(statVal, orig.mult, orig.bonus);
+        const rawMax = computeRawResourceMax(statVal, effResourceMult(this.system, orig), orig.bonus);
         const newMax = computeFatiguedMax(rawMax, newFatigue);
         const valuePath = `system.customResources.${idx}.value`;
         const pendingValue = foundry.utils.hasProperty(updateData, valuePath)
@@ -674,17 +687,6 @@ export class TAMSActor extends Actor {
     return result === true;
   }
 
-  async _offerStaminaPayment(resourceName, deficit) {
-    const result = await foundry.applications.api.DialogV2.confirm({
-      window: { title: game.i18n.localize("TAMS.StaminaPayment.Title") },
-      content: `<p>${game.i18n.format("TAMS.StaminaPayment.Prompt", { resource: resourceName, amount: deficit })}</p>`,
-      yes: { label: game.i18n.localize("TAMS.StaminaPayment.Pay"), default: false },
-      no: { label: game.i18n.localize("TAMS.StaminaPayment.Decline"), default: true },
-      rejectClose: false
-    });
-    return result === true;
-  }
-
   /**
    * Adjust stamina and custom resource current values when stat totals change
    * due to trait additions/removals.
@@ -698,7 +700,7 @@ export class TAMSActor extends Actor {
       if (statDelta === 0) continue;
 
       if (statKey === "endurance") {
-        const mult = this.system.stamina?.mult ?? 1;
+        const mult = effStaminaMult(this.system);
         const delta = Math.floor(statDelta * mult);
         if (delta !== 0) {
           const newVal = this.system.stamina.value + delta;
@@ -723,25 +725,11 @@ export class TAMSActor extends Actor {
       let changed = false;
       for (const [idx, res] of customResources.entries()) {
         if (res.stat !== statKey || res.stat === "custom") continue;
-        const delta = Math.floor(statDelta * (res.mult ?? 1));
+        const delta = Math.floor(statDelta * effResourceMult(this.system, res));
         if (delta === 0) continue;
         const rawVal = (customResources[idx].value ?? 0) + delta;
-        if (rawVal < 0) {
-          const deficit = Math.abs(rawVal);
-          const pay = await this._offerStaminaPayment(res.name, deficit);
-          if (pay) {
-            customResources[idx].value = 0;
-            const newStamina = (updates["system.stamina.value"] ?? this.system.stamina.value) - deficit;
-            updates["system.stamina.value"] = newStamina;
-            if (newStamina < 0)
-              warnings.push(`${this.name} — ${game.i18n.localize("TAMS.Stamina")}: ${newStamina}`);
-          } else {
-            customResources[idx].value = rawVal;
-            warnings.push(`${this.name} — ${res.name}: ${rawVal}`);
-          }
-        } else {
-          customResources[idx].value = rawVal;
-        }
+        customResources[idx].value = rawVal;
+        if (rawVal < 0) warnings.push(`${this.name} — ${res.name}: ${rawVal}`);
         changed = true;
       }
       if (changed) updates["system.customResources"] = customResources;
@@ -801,7 +789,7 @@ export class TAMSActor extends Actor {
     const staminaSpent = sys.stamina.spentSinceRest ?? 0;
     const staminaGain = computeShortRestFatigueGain(staminaSpent);
     const staminaNewFatigue = (sys.stamina.fatigue ?? 0) + staminaGain;
-    const staminaRawMax = computeRawStaminaMax(sys.stats.endurance.total, sys.stamina.mult, sys.traitStaminaExtra);
+    const staminaRawMax = computeRawStaminaMax(sys.stats.endurance.total, effStaminaMult(sys), sys.traitStaminaExtra);
     const staminaNewMax = computeFatiguedMax(staminaRawMax, staminaNewFatigue);
     updates["system.stamina.fatigue"] = staminaNewFatigue;
     updates["system.stamina.spentSinceRest"] = 0;
@@ -819,7 +807,7 @@ export class TAMSActor extends Actor {
       const gain = computeShortRestFatigueGain(spent);
       const newFatigue = (res.fatigue ?? 0) + gain;
       const statVal = res.stat === "custom" ? (res.customValue ?? 10) : (sys.stats[res.stat]?.total || 0);
-      const rawMax = computeRawResourceMax(statVal, res.mult, res.bonus);
+      const rawMax = computeRawResourceMax(statVal, effResourceMult(sys, res), res.bonus);
       const newMax = computeFatiguedMax(rawMax, newFatigue);
       customResources[idx].fatigue = newFatigue;
       customResources[idx].spentSinceRest = 0;
@@ -839,21 +827,11 @@ export class TAMSActor extends Actor {
 
   /**
    * Take a Long Rest: heal Fatigue on every resource via a bundled dinner+sleep tick.
-   * Gated to a rolling-24h use cap (Unsafe = 1, Safe = 3), tracked via a worldTime
-   * timestamp array flag (generalizes the once-per-day medicalAidGiven pattern).
-   * @returns {Promise<{blocked: boolean, cap?: number, resources?: {name: string, fatigueHealed: number, newFatigue: number}[]}>}
+   * Uncapped — the GM decides how often the party gets to rest.
+   * @returns {Promise<{resources: {name: string, fatigueHealed: number, newFatigue: number}[]}>}
    */
   async takeLongRest() {
     const sys = this.system;
-    const cap = sys.restSafe ? 3 : 1;
-    const daySeconds = 86400;
-    const now = game.time?.worldTime ?? 0;
-    const uses = (this.getFlag('tams', 'longRestUses') ?? []).filter(t => now - t < daySeconds);
-
-    if (uses.length >= cap) {
-      return { blocked: true, cap };
-    }
-
     const updates = {};
     const resources = [];
 
@@ -861,7 +839,7 @@ export class TAMSActor extends Actor {
     if (staminaHeal > 0 && (sys.stamina.fatigue ?? 0) > 0) {
       const newFatigue = Math.max(0, sys.stamina.fatigue - staminaHeal);
       const actualHeal = sys.stamina.fatigue - newFatigue;
-      const rawMax = computeRawStaminaMax(sys.stats.endurance.total, sys.stamina.mult, sys.traitStaminaExtra);
+      const rawMax = computeRawStaminaMax(sys.stats.endurance.total, effStaminaMult(sys), sys.traitStaminaExtra);
       const newMax = computeFatiguedMax(rawMax, newFatigue);
       updates["system.stamina.fatigue"] = newFatigue;
       // Backfill current value by the amount of Fatigue healed — losing Fatigue raises the
@@ -883,7 +861,7 @@ export class TAMSActor extends Actor {
       if (heal <= 0) return;
       const newFatigue = Math.max(0, res.fatigue - heal);
       const actualHeal = res.fatigue - newFatigue;
-      const rawMax = computeRawResourceMax(governingStat, res.mult, res.bonus);
+      const rawMax = computeRawResourceMax(governingStat, effResourceMult(sys, res), res.bonus);
       const newMax = computeFatiguedMax(rawMax, newFatigue);
       customResources[idx].fatigue = newFatigue;
       customResources[idx].value = Math.min(newMax, (res.value ?? 0) + actualHeal);
@@ -893,12 +871,11 @@ export class TAMSActor extends Actor {
     if (crChanged) updates["system.customResources"] = customResources;
 
     if (resources.length === 0) {
-      return { blocked: false, resources: [] };
+      return { resources: [] };
     }
 
     await this.update(updates);
-    await this.setFlag('tams', 'longRestUses', [...uses, now]);
-    return { blocked: false, resources };
+    return { resources };
   }
 
   /** @override */

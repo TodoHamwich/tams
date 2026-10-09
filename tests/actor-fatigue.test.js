@@ -80,33 +80,43 @@ describe('TAMSActor.takeLongRest', () => {
       stamina: { value: 10, max: 20, mult: 1.0, fatigue: 5, spentSinceRest: 0 }
     });
     const result = await actor.takeLongRest();
-    expect(result.blocked).toBe(false);
+    expect(result.resources).toHaveLength(1);
     // floor(20/10)*2 = 4 healed, 5 - 4 = 1 remaining
     expect(actor.system.stamina.fatigue).toBe(1);
   });
 
-  it('enforces the Unsafe cap of 1 use per rolling 24 hours', async () => {
-    const actor = makeActor({
-      stamina: { value: 10, max: 20, mult: 1.0, fatigue: 5, spentSinceRest: 0 },
-      restSafe: false
-    });
-    await actor.takeLongRest();
-    const second = await actor.takeLongRest();
-    expect(second.blocked).toBe(true);
-    expect(second.cap).toBe(1);
-  });
-
-  it('allows up to 3 uses per rolling 24 hours when Safe', async () => {
+  it('is not capped — repeated Long Rests keep healing Fatigue', async () => {
     const actor = makeActor({
       stamina: { value: 10, max: 20, mult: 1.0, fatigue: 20, spentSinceRest: 0 },
-      restSafe: true
+      restSafe: false
     });
-    await actor.takeLongRest();
-    await actor.takeLongRest();
-    const third = await actor.takeLongRest();
-    expect(third.blocked).toBe(false);
-    const fourth = await actor.takeLongRest();
-    expect(fourth.blocked).toBe(true);
-    expect(fourth.cap).toBe(3);
+    for (let i = 0; i < 4; i++) await actor.takeLongRest();
+    // 4 rests × 4 healed = 16, 20 - 16 = 4 remaining
+    expect(actor.system.stamina.fatigue).toBe(4);
+  });
+});
+
+describe('TAMSActor._preUpdate custom resource writes', () => {
+  it('keeps spentSinceRest from a custom resource spend so Short Rest can gain Fatigue', async () => {
+    const actor = makeActor({ settings: { squadSize: 1 }, limbs: {} });
+    const spend = actor.applyResourceSpend(0, 10);
+    const updateData = foundry.utils.expandObject(spend);
+    await actor._preUpdate(updateData, {}, {});
+    expect(updateData.system.customResources[0].spentSinceRest).toBe(10);
+    expect(updateData.system.customResources[0].value).toBe(0);
+  });
+
+  it('keeps renamed name/stat when the form also submits fatigue', async () => {
+    const actor = makeActor({ settings: { squadSize: 1 }, limbs: {} });
+    const updateData = foundry.utils.expandObject({
+      "system.customResources.0.name": "Ki",
+      "system.customResources.0.stat": "endurance",
+      "system.customResources.0.fatigue": 0,
+      "system.customResources.0.value": 10
+    });
+    await actor._preUpdate(updateData, {}, {});
+    const res = foundry.utils.getProperty(updateData, "system.customResources")[0];
+    expect(res.name).toBe("Ki");
+    expect(res.stat).toBe("endurance");
   });
 });

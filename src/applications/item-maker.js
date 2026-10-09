@@ -1,3 +1,4 @@
+import { PROFESSION_TYPES } from '../utils/profession.js';
 /**
  * TAMS Item Maker — standalone dialog for creating any item type.
  * Launch via game.tams.openItemMaker(actor) or game.tams.openItemMaker().
@@ -21,7 +22,7 @@ export class TAMSItemMaker extends foundry.applications.api.HandlebarsApplicatio
       shield:       { armorValue: 5, size: "medium" },
       questItem:    { quantity: 1, size: "small" },
       backpack:     { capacity: 10, modifier: 0.5 },
-      trait:        { isProfession: false, profession: "" },
+      trait:        { isProfession: false, profession: "", professionType: "basic" },
       statusEffect: { statusId: "", mechanicalSummary: "", durationRounds: 0 }
     };
   }
@@ -134,6 +135,7 @@ export class TAMSItemMaker extends foundry.applications.api.HandlebarsApplicatio
     for (const se of (CONFIG.statusEffects ?? [])) {
       sePresets[se.id] = se.label ?? se.id;
     }
+    context.professionTypeOptions = Object.fromEntries(PROFESSION_TYPES.map(t => [t, `TAMS.ProfessionType.${t}`]));
     context.statusEffectOptions = { "": "TAMS.None", ...sePresets, "custom": "TAMS.StatusEffect.Custom" };
 
     return context;
@@ -289,7 +291,7 @@ export class TAMSItemMaker extends foundry.applications.api.HandlebarsApplicatio
         return { capacity: parseInt(s.capacity) || 10, modifier: parseFloat(s.modifier) || 0.5 };
 
       case "trait":
-        return { isProfession: !!s.isProfession, profession: s.profession ?? "" };
+        return { isProfession: !!s.isProfession, profession: s.profession ?? "", professionType: s.professionType || "basic" };
 
       case "statusEffect":
         return { statusId: s.statusId ?? "", mechanicalSummary: s.mechanicalSummary ?? "", durationRounds: parseInt(s.durationRounds) || 0 };

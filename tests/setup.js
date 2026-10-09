@@ -72,7 +72,25 @@ global.foundry = {
       return true;
     },
     escapeHTML: (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"),
-    duplicate: (obj) => JSON.parse(JSON.stringify(obj))
+    duplicate: (obj) => JSON.parse(JSON.stringify(obj)),
+    expandObject: (obj) => {
+      const out = {};
+      for (const [k, v] of Object.entries(obj)) {
+        const parts = k.split('.');
+        let cur = out;
+        for (let i = 0; i < parts.length - 1; i++) cur = (cur[parts[i]] ??= {});
+        cur[parts[parts.length - 1]] = v;
+      }
+      return out;
+    },
+    mergeObject: (target, source) => {
+      for (const [k, v] of Object.entries(source)) {
+        if (v && typeof v === 'object' && !Array.isArray(v) && target[k] && typeof target[k] === 'object') {
+          globalThis.foundry.utils.mergeObject(target[k], v);
+        } else target[k] = v;
+      }
+      return target;
+    }
   }
 };
 

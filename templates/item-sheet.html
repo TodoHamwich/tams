@@ -48,6 +48,14 @@
                 <input type="text" name="system.profession" value="{{system.profession}}"/>
                 {{/if}}
             </div>
+            {{#if system.isProfession}}
+            <div class="flexrow">
+                <label title="{{localize 'TAMS.ProfessionTypeHint'}}">{{localize 'TAMS.ProfessionTypeLabel'}}</label>
+                <select name="system.professionType">
+                    {{selectOptions professionTypeOptions selected=system.professionType localize=true}}
+                </select>
+            </div>
+            {{/if}}
             <hr>
             <div class="flexrow" style="align-items: center; margin-bottom: 5px;">
                 <h3 style="margin: 0; border: none;">{{localize 'TAMS.Modifiers'}}</h3>
@@ -61,7 +69,15 @@
                     <select name="system.modifiers.{{index}}.target" style="flex: 2;">
                         {{selectOptions ../modifierTargetOptions selected=mod.target localize=true}}
                     </select>
+                    {{#if (eq mod.target "allProfessionRolls")}}
+                    <select name="system.modifiers.{{index}}.value" title="{{localize 'TAMS.ProfessionRankHint'}}" style="flex: 2;">
+                        {{#each ../professionRankOptions as |opt|}}
+                        <option value="{{opt.value}}" {{#if (eq opt.value mod.value)}}selected{{/if}}>{{opt.label}}</option>
+                        {{/each}}
+                    </select>
+                    {{else}}
                     <input type="number" name="system.modifiers.{{index}}.value" value="{{mod.value}}" style="flex: 0 0 50px; text-align: center;"/>
+                    {{/if}}
                     <select name="system.modifiers.{{index}}.type" style="flex: 1;">
                         <option value="add" {{#if (eq mod.type "add")}}selected{{/if}}>Add</option>
                     </select>
@@ -462,6 +478,14 @@
             {{!--  ABILITY SHEET                                              --}}
             {{!-- ═══════════════════════════════════════════════════════════ --}}
             {{#if (eq item.type "ability")}}
+
+            {{#if abilityIssues.length}}
+            <ul class="tams-ability-issues">
+                {{#each abilityIssues as |iss|}}
+                <li class="{{iss.level}}"><i class="fas {{#if (eq iss.level 'error')}}fa-circle-exclamation{{else}}fa-triangle-exclamation{{/if}}"></i> {{iss.text}}</li>
+                {{/each}}
+            </ul>
+            {{/if}}
 
             {{!-- Section 1: General --}}
             <h3>{{localize 'TAMS.Abilities'}}</h3>

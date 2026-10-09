@@ -392,6 +392,11 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
   }
 
   get calculatedCost() {
+    return Math.max(1, Math.floor(this.rawCalculatedCost));
+  }
+
+  /** Calculator cost before the minimum-1 clamp (lets the sheet warn when detriments are wasted). */
+  get rawCalculatedCost() {
     const c = this.calculator;
     let cost = 0;
     cost += (c.effects || 0) * 1;
@@ -459,7 +464,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     if (c.tagVicious) cost += 1;
     if (c.tagBrutal) cost += 2;
     cost += (c.tagOther || 0) * 1;
-    return Math.max(1, Math.floor(cost));
+    return cost;
   }
 
   prepareDerivedData() {
@@ -524,6 +529,8 @@ export class TAMSTraitData extends foundry.abstract.TypeDataModel {
     return {
       isProfession: new fields.BooleanField({initial: false}),
       profession: new fields.StringField({initial: ""}),
+      // "basic" | "full" | "half" | "threeQuarter" — see src/utils/profession.js
+      professionType: new fields.StringField({initial: "basic"}),
       modifiers: new fields.ArrayField(new fields.SchemaField({
         target: new fields.StringField({initial: "stats.strength.value"}),
         value: new fields.NumberField({initial: 0}),

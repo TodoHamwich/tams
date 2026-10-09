@@ -1,5 +1,6 @@
 import { computeEncumbrance } from '../utils/inventory.js';
 import { computeRawStaminaMax, computeRawResourceMax, computeFatiguedMax } from '../utils/fatigue.js';
+import { professionRank, professionStaminaMultBonus, professionResourceMultBonus } from '../utils/profession.js';
 
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1.0, large: 1.5, huge: 2.0, giant: 2.5 };
 const SIZE_ORDER = ['tiny', 'small', 'normal', 'large', 'huge', 'giant'];
@@ -129,7 +130,9 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         isOpposed: new fields.BooleanField({initial: false}),
         colorSecondary: new fields.StringField({initial: "#e74c3c"}),
         fatigue: new fields.NumberField({initial: 0, integer: true, min: 0}),
-        spentSinceRest: new fields.NumberField({initial: 0, integer: true, min: 0})
+        spentSinceRest: new fields.NumberField({initial: 0, integer: true, min: 0}),
+        // id of a caster profession trait whose rank boosts this resource's multiplier
+        professionTraitId: new fields.StringField({initial: ""})
       })),
       restSafe: new fields.BooleanField({initial: false}),
       theme: new fields.StringField({initial: "default"}),
@@ -220,6 +223,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.traitHPExtra = 0;
     this.traitStaminaExtra = 0;
     this.traitProfessionBonuses = {};
+    this.traitStaminaMultBonus = 0;
+    this.professionResourceMultBonuses = {};
     this.abilityPassiveBonuses = {};
     this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0 };
 
@@ -244,6 +249,15 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
             this.traitProfessionBonuses[p] = (this.traitProfessionBonuses[p] || 0) + mod.value;
           }
         }
+      }
+      // Profession rank (from the All Profession Rolls modifier) boosts Stamina and,
+      // for casters, the custom resource linked to this trait. See src/utils/profession.js.
+      if (trait.type === "trait" && system.isProfession) {
+        const type = system.professionType || "basic";
+        const rank = professionRank(system.modifiers);
+        this.traitStaminaMultBonus += professionStaminaMultBonus(type, rank);
+        const resBonus = professionResourceMultBonus(type, rank);
+        if (resBonus) this.professionResourceMultBonuses[trait.id] = resBonus;
       }
     }
 
@@ -367,7 +381,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
    */
   _prepareStamina() {
     const end = this.stats.endurance.total;
-    const rawMax = computeRawStaminaMax(end, this.stamina.mult, this.traitStaminaExtra);
+    const rawMax = computeRawStaminaMax(end, this.staminaEffectiveMult(), this.traitStaminaExtra);
     this.stamina.max = computeFatiguedMax(rawMax, this.stamina.fatigue);
   }
 
@@ -378,9 +392,25 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
   _prepareCustomResources() {
     for (const res of this.customResources) {
       const statVal = res.stat === "custom" ? (res.customValue ?? 10) : (this.stats[res.stat]?.total || 0);
-      const rawMax = computeRawResourceMax(statVal, res.mult, res.bonus);
+      const rawMax = computeRawResourceMax(statVal, this.resourceEffectiveMult(res), res.bonus);
       res.max = computeFatiguedMax(rawMax, res.fatigue);
     }
+  }
+
+  /**
+   * Stamina multiplier including profession-trait boosts.
+   * @param {number} [manualMult] Override the stored manual multiplier (e.g. a pending edit).
+   */
+  staminaEffectiveMult(manualMult = this.stamina?.mult) {
+    return (manualMult ?? 1) + (this.traitStaminaMultBonus || 0);
+  }
+
+  /**
+   * A custom resource's multiplier including the boost from its linked caster profession trait.
+   * Reads `mult` and `professionTraitId` from the passed entry, so pending (duplicated) entries work.
+   */
+  resourceEffectiveMult(res) {
+    return (res?.mult ?? 1) + (this.professionResourceMultBonuses?.[res?.professionTraitId] || 0);
   }
 
   /**

@@ -1549,23 +1549,7 @@ export async function tamsRenderChatMessage(message, html, data) {
             const res = actor.system.customResources[idx];
             if (res) {
                 if (res.value < cost) {
-                    const remaining = cost - res.value;
-                    const stamina = actor.system.stamina.value;
-                    if (stamina < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", {resource: res.name}));
-
-                    const useBoth = await foundry.applications.api.DialogV2.confirm({
-                        window: { title: game.i18n.localize("TAMS.Combat.InsufficientResources") },
-                        content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", {val: res.value, res: res.name, rem: remaining})}</p>`,
-                        yes: { label: game.i18n.localize("TAMS.Yes"), default: true },
-                        no: { label: game.i18n.localize("TAMS.No") },
-                        rejectClose: false
-                    });
-
-                    if (!useBoth) return;
-
-                    const updates = actor.applyResourceSpend(idx, res.value);
-                    actor.applyResourceSpend("stamina", remaining, updates);
-                    await actor.update(updates);
+                    return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResource", {resource: res.name}));
                 } else {
                     await actor.update(actor.applyResourceSpend(idx, cost));
                 }
@@ -1988,19 +1972,7 @@ export async function tamsRenderChatMessage(message, html, data) {
                 const res = actor.system.customResources[idx];
                 if (res) {
                     if (res.value < cost) {
-                        const remaining = cost - res.value;
-                        if (actor.system.stamina.value < remaining) return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResOrStamina", {resource: res.name}));
-                        const useBoth = await foundry.applications.api.DialogV2.confirm({
-                            window: { title: game.i18n.localize("TAMS.Combat.InsufficientResources") },
-                            content: `<p>${game.i18n.format("TAMS.Combat.InsufficientResourcesContent", {val: res.value, res: res.name, rem: remaining})}</p>`,
-                            yes: { label: game.i18n.localize("TAMS.Yes"), default: true },
-                            no: { label: game.i18n.localize("TAMS.No") },
-                            rejectClose: false
-                        });
-                        if (!useBoth) return;
-                        const updates = actor.applyResourceSpend(idx, res.value);
-                        actor.applyResourceSpend("stamina", remaining, updates);
-                        await actor.update(updates);
+                        return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NotEnoughResource", {resource: res.name}));
                     } else {
                         await actor.update(actor.applyResourceSpend(idx, cost));
                     }

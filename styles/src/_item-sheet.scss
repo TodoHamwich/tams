@@ -87,6 +87,26 @@
     font-size: 0.95em;
 }
 
+// Ability validation (src/utils/ability-validation.js): red = broken, amber = warning.
+.tams-ability-issues {
+    list-style: none;
+    margin: 0 0 8px;
+    padding: 0;
+
+    li {
+        border-left: 4px solid;
+        border-radius: 3px;
+        padding: 4px 8px;
+        margin-bottom: 3px;
+        font-size: 0.9em;
+
+        &.error   { border-color: #d64545; background: rgba(214, 69, 69, 0.15); }
+        &.error i { color: #d64545; }
+        &.warning   { border-color: #e0a526; background: rgba(224, 165, 38, 0.15); }
+        &.warning i { color: #e0a526; }
+    }
+}
+
 .tams.loot {
     min-width: 300px;
     min-height: 200px;

@@ -1174,6 +1174,11 @@ details.limb-filter[open] summary .limb-arrow-down {
   text-align: center;
   font-weight: bold;
 }
+.resource-modifiers-list .modifier-row .col-mult small.profession-boost, .resource-modifiers-list .modifier-row .col-bonus small.profession-boost {
+  flex: 0 0 auto;
+  color: #4caf50;
+  cursor: help;
+}
 .resource-modifiers-list .modifier-row .col-max {
   text-align: center;
   font-weight: bold;
@@ -1332,6 +1337,18 @@ details.limb-filter[open] summary .limb-arrow-down {
   background: #c0392b !important;
 }
 
+.tams .tams-ability-issue {
+  margin-left: 4px;
+  font-size: 0.9em;
+  cursor: help;
+}
+.tams .tams-ability-issue.error {
+  color: #d64545;
+}
+.tams .tams-ability-issue.warning {
+  color: #e0a526;
+}
+
 .tams-item-form .charname input {
   font-size: 22px;
   height: 32px;
@@ -1408,6 +1425,33 @@ details.limb-filter[open] summary .limb-arrow-down {
   border-radius: 3px;
   padding: 1px 6px;
   font-size: 0.95em;
+}
+
+.tams-ability-issues {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.tams-ability-issues li {
+  border-left: 4px solid;
+  border-radius: 3px;
+  padding: 4px 8px;
+  margin-bottom: 3px;
+  font-size: 0.9em;
+}
+.tams-ability-issues li.error {
+  border-color: #d64545;
+  background: rgba(214, 69, 69, 0.15);
+}
+.tams-ability-issues li.error i {
+  color: #d64545;
+}
+.tams-ability-issues li.warning {
+  border-color: #e0a526;
+  background: rgba(224, 165, 38, 0.15);
+}
+.tams-ability-issues li.warning i {
+  color: #e0a526;
 }
 
 .tams.loot {

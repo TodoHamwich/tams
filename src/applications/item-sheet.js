@@ -1,3 +1,6 @@
+import { getAbilityIssues } from '../utils/ability-validation.js';
+import { PROFESSION_TYPES, PROFESSION_MAX_RANK, PROFESSION_RANK_STEP } from '../utils/profession.js';
+
 /**
  * The TAMS Item Sheet Application.
  * Extends ItemSheetV2 class.
@@ -161,6 +164,27 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
       "allProfessionRolls": "TAMS.ModifierAllProfessionRolls"
     };
 
+    if (this.document.type === 'trait') {
+        context.professionTypeOptions = Object.fromEntries(
+          PROFESSION_TYPES.map(t => [t, `TAMS.ProfessionType.${t}`]));
+        // The All Profession Rolls modifier doubles as the profession rank (1:1, +5 per rank).
+        context.professionRankOptions = [
+          { value: 0, label: "—" },
+          ...Array.from({ length: PROFESSION_MAX_RANK }, (_, i) => {
+            const rank = i + 1;
+            return { value: rank * PROFESSION_RANK_STEP,
+                     label: game.i18n.format("TAMS.ProfessionRankOption", {
+                       rank, name: game.i18n.localize(`TAMS.ProfessionRank.${rank}`), bonus: rank * PROFESSION_RANK_STEP }) };
+          })
+        ];
+        // Keep any off-step legacy value selectable so a save doesn't silently zero it.
+        for (const m of this.document.system.modifiers ?? []) {
+          if (m.target !== "allProfessionRolls") continue;
+          if (!context.professionRankOptions.some(o => o.value === m.value))
+            context.professionRankOptions.push({ value: m.value, label: `+${m.value}` });
+        }
+    }
+
     if (this.document.type === 'weapon') {
         const tags = ["accurate", "reliable", "unreliable", "vicious", "brutal", "balanced", "compact", "reach", "silent"];
         const activeTags = (this.document.system.tags || "").split(",").map(t => t.trim().toLowerCase());
@@ -226,6 +250,11 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
             });
         }
         context.resourceOptions = resources;
+        context.abilityIssues = getAbilityIssues(this.document.system, {
+          onActor: !!this.document.actor,
+          customResources: this.document.actor?.system.customResources ?? [],
+          statusIds: (CONFIG.statusEffects ?? []).map(se => se.id)
+        }).map(iss => ({ ...iss, text: game.i18n.localize(`TAMS.AbilityIssues.${iss.key}`) }));
         context.selectedTargetingMode = selectedTargetingMode;
         context.enrichedDamageComponents = (this.document.system.damageComponents || []).map((c, index) => ({...c, index}));
 
