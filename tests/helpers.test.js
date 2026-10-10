@@ -49,13 +49,14 @@ describe('getHitLocation', () => {
 });
 
 describe('computeSquadAttackBonus', () => {
-  it('melee: +5 per possible attack (full size) when fewer targets', () => {
-    expect(computeSquadAttackBonus(8, false, 1)).toEqual({ maxTargets: 8, bonus: 40 });
+  it('melee: +5 per unused possible attack (full size)', () => {
+    expect(computeSquadAttackBonus(8, false, 1)).toEqual({ maxTargets: 8, bonus: 35 });
+    expect(computeSquadAttackBonus(3, false, 2)).toEqual({ maxTargets: 3, bonus: 5 });
     expect(computeSquadAttackBonus(8, false, 0)).toEqual({ maxTargets: 8, bonus: 40 });
   });
 
   it('ranged: possible attacks are half size', () => {
-    expect(computeSquadAttackBonus(8, true, 2)).toEqual({ maxTargets: 4, bonus: 20 });
+    expect(computeSquadAttackBonus(8, true, 2)).toEqual({ maxTargets: 4, bonus: 10 });
   });
 
   it('no bonus when targets fill every possible attack', () => {

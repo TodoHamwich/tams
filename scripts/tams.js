@@ -4232,7 +4232,7 @@ class TAMSItem extends Item {
 }
 function computeSquadAttackBonus(squadSize, isRanged, numTargets) {
   const maxTargets = isRanged ? Math.max(1, Math.ceil(squadSize / 2)) : Math.max(1, squadSize);
-  const bonus = numTargets < maxTargets ? maxTargets * 5 : 0;
+  const bonus = Math.max(0, maxTargets - numTargets) * 5;
   return { maxTargets, bonus };
 }
 async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUuid, newLocation }, sender = null) {

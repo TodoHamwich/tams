@@ -4,7 +4,7 @@ export { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage, tamsApplyR
 
 /**
  * Squad attack: possible attacks are half the squad's size (ranged) or its full size (melee).
- * With fewer targets than possible attacks, the squad gets +5 for each possible attack.
+ * Each possible attack left without a target gives the squad +5 (no targets = every attack unused).
  * @param {number} squadSize Current squad size.
  * @param {boolean} isRanged Whether the attack is ranged.
  * @param {number} numTargets Number of targeted tokens.
@@ -12,7 +12,7 @@ export { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage, tamsApplyR
  */
 export function computeSquadAttackBonus(squadSize, isRanged, numTargets) {
   const maxTargets = isRanged ? Math.max(1, Math.ceil(squadSize / 2)) : Math.max(1, squadSize);
-  const bonus = numTargets < maxTargets ? maxTargets * 5 : 0;
+  const bonus = Math.max(0, maxTargets - numTargets) * 5;
   return { maxTargets, bonus };
 }
 
