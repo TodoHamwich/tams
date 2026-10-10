@@ -1,3 +1,5 @@
+import { bonusDamageComponents } from '../utils/magic-items.js';
+
 // ── Shared field helpers ──────────────────────────────────────────────────────
 
 function sharedFields(fields) {
@@ -50,6 +52,61 @@ function sizeGrantFields(fields) {
   };
 }
 
+// Magic effects block shared by physical items — see src/utils/magic-items.js.
+// `curse` on a modifier/resistance hides that entry from players until the curse is revealed.
+function magicFields(fields) {
+  return {
+    magic: new fields.SchemaField({
+      requiresEquipped: new fields.BooleanField({ initial: true }),
+      modifiers: new fields.ArrayField(new fields.SchemaField({
+        target: new fields.StringField({ initial: "stats.strength.value" }),
+        value: new fields.NumberField({ initial: 0 }),
+        curse: new fields.BooleanField({ initial: false }),
+      }), { initial: [] }),
+      resistances: new fields.ArrayField(new fields.SchemaField({
+        damageType: new fields.StringField({ initial: "" }),
+        category: new fields.StringField({ initial: "resistance" }),
+        value: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+        limbs: new fields.ArrayField(new fields.StringField({ initial: "" }), { initial: [] }),
+        curse: new fields.BooleanField({ initial: false }),
+      }), { initial: [] }),
+      injuryCheckBonus: new fields.NumberField({ initial: 0, integer: true }),
+      ...sizeGrantFields(fields),
+      grantedAbilities: new fields.ArrayField(new fields.ObjectField(), { initial: [] }),
+      onHitStatusIds: new fields.ArrayField(new fields.StringField({ initial: "" }), { initial: [] }),
+      bonusDamage: new fields.ArrayField(new fields.SchemaField({
+        damageType: new fields.StringField({ initial: "" }),
+        amount: new fields.NumberField({ initial: 0, nullable: true }),
+      }), { initial: [] }),
+      requirements: new fields.ArrayField(new fields.SchemaField({
+        type: new fields.StringField({ initial: "stat" }),
+        key: new fields.StringField({ initial: "" }),
+        value: new fields.NumberField({ initial: 0, integer: true }),
+      }), { initial: [] }),
+      identified: new fields.BooleanField({ initial: true }),
+      unidentifiedName: new fields.StringField({ initial: "" }),
+      unidentifiedDescription: new fields.StringField({ initial: "" }),
+      cursed: new fields.BooleanField({ initial: false }),
+      curseRevealed: new fields.BooleanField({ initial: false }),
+      curseDescription: new fields.StringField({ initial: "" }),
+    }),
+  };
+}
+
+/**
+ * Bonus damage from the item's magic block, if its requirements are met on its owner.
+ * Unowned items (sidebar/compendium) always show it.
+ * @param {TypeDataModel} system
+ * @returns {{damageType: string, damage: number}[]}
+ */
+function activeBonusDamage(system) {
+  const item = system.parent;
+  const actor = item?.actor;
+  const state = actor?.system?.magicState?.[item.id];
+  if (actor && !state?.onUse) return [];
+  return bonusDamageComponents(system.magic);
+}
+
 // ── DataModel classes ─────────────────────────────────────────────────────────
 
 /**
@@ -96,11 +153,18 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
         amount: new fields.NumberField({initial: 0, nullable: true}),
       }), {initial: []}),
       inflictsStatusId: new fields.StringField({initial: ""}),
+      ...magicFields(fields),
       ...sharedFields(fields),
     };
   }
 
+  /** Weapon damage including any magic bonus damage. */
   get calculatedDamage() {
+    return this.baseDamage + activeBonusDamage(this).reduce((sum, c) => sum + c.damage, 0);
+  }
+
+  /** Weapon damage without magic bonus damage. */
+  get baseDamage() {
     if (this.damageComponents?.length) {
       return this.damageComponents.reduce((sum, c) => sum + Math.floor(c.amount || 0), 0);
     }
@@ -125,10 +189,10 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
   }
 
   get damageBreakdown() {
-    if (this.damageComponents?.length) {
-      return this.damageComponents.map(c => ({damageType: c.damageType || "", damage: Math.floor(c.amount || 0)}));
-    }
-    return [{damageType: this.damageType || "", damage: this.calculatedDamage}];
+    const base = this.damageComponents?.length
+      ? this.damageComponents.map(c => ({damageType: c.damageType || "", damage: Math.floor(c.amount || 0)}))
+      : [{damageType: this.damageType || "", damage: this.baseDamage}];
+    return [...base, ...activeBonusDamage(this)];
   }
 }
 
@@ -156,6 +220,8 @@ export class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
     return {
       ...inventoryFields(fields),
       ...usesFields(fields),
+      equipped: new fields.BooleanField({initial: false}),
+      ...magicFields(fields),
       ...sharedFields(fields),
     };
   }
@@ -179,6 +245,7 @@ export class TAMSArmorData extends foundry.abstract.TypeDataModel {
         leftLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) }),
         rightLeg: new fields.SchemaField({ value: new fields.NumberField({initial: 0}), max: new fields.NumberField({initial: 0}) })
       }),
+      ...magicFields(fields),
       ...sharedFields(fields),
     };
   }
@@ -195,6 +262,7 @@ export class TAMSAmmoData extends foundry.abstract.TypeDataModel {
       ...usesFields(fields),
       misfireRisk: new fields.BooleanField({initial: false}),
       isSlug: new fields.BooleanField({initial: false}),
+      ...magicFields(fields),
       ...sharedFields(fields),
     };
   }
@@ -222,6 +290,8 @@ export class TAMSToolData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       ...inventoryFields(fields, { size: "medium" }),
+      equipped: new fields.BooleanField({initial: false}),
+      ...magicFields(fields),
       ...sharedFields(fields),
     };
   }
@@ -237,6 +307,7 @@ export class TAMSShieldData extends foundry.abstract.TypeDataModel {
       armorValue: new fields.NumberField({initial: 5, integer: true, min: 0}),
       equipped: new fields.BooleanField({initial: false}),
       ...inventoryFields(fields, { size: "medium", location: "hand" }),
+      ...magicFields(fields),
       ...sharedFields(fields),
     };
   }
@@ -250,6 +321,8 @@ export class TAMSQuestItemData extends foundry.abstract.TypeDataModel {
     const fields = foundry.data.fields;
     return {
       ...inventoryFields(fields),
+      equipped: new fields.BooleanField({initial: false}),
+      ...magicFields(fields),
       ...sharedFields(fields),
     };
   }
@@ -277,6 +350,7 @@ export class TAMSBackpackData extends foundry.abstract.TypeDataModel {
         movement: new fields.NumberField({initial: 0, integer: true})
       }),
       ...sizeGrantFields(fields),
+      ...magicFields(fields),
       ...sharedFields(fields),
     };
   }

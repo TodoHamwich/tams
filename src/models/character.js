@@ -1,6 +1,7 @@
 import { computeEncumbrance } from '../utils/inventory.js';
 import { computeRawStaminaMax, computeRawResourceMax, computeFatiguedMax } from '../utils/fatigue.js';
 import { professionRank, professionStaminaMultBonus, professionResourceMultBonus } from '../utils/profession.js';
+import { buildRequirementContext, computeMagicState } from '../utils/magic-items.js';
 
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1.0, large: 1.5, huge: 2.0, giant: 2.5 };
 const SIZE_ORDER = ['tiny', 'small', 'normal', 'large', 'huge', 'giant'];
@@ -228,28 +229,35 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.abilityPassiveBonuses = {};
     this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0 };
 
+    // Every stat/roll modifier that applied, by source — used for roll breakdowns.
+    this.modifierSources = [];
+    const applyModifier = (mod, sourceItem, system = sourceItem.system) => {
+      // "itemAttacks" only applies to rolls with that item (see itemAttackBonus).
+      if (!mod.value || mod.target === "itemAttacks") return;
+      if (mod.target.startsWith("stats.")) {
+        const statKey = mod.target.split(".")[1];
+        if (this.stats[statKey]) {
+          this.stats[statKey].traitBonus += mod.value;
+        }
+      } else if (mod.target === "hp.max") {
+        this.traitHPExtra += mod.value;
+      } else if (mod.target === "stamina.max") {
+        this.traitStaminaExtra += mod.value;
+      } else if (mod.target === "allRolls") {
+        this.traitRollBonus += mod.value;
+      } else if (mod.target === "allProfessionRolls") {
+        if (system.isProfession && system.profession) {
+          const p = system.profession.trim().toLowerCase();
+          this.traitProfessionBonuses[p] = (this.traitProfessionBonuses[p] || 0) + mod.value;
+        }
+      }
+      this.modifierSources.push({ itemId: sourceItem.id, target: mod.target, value: mod.value });
+    };
+
     const traits = this.parent.items.filter(i => i.type === "trait" || i.type === "race");
     for (const trait of traits) {
       const system = trait.system;
-      for (const mod of system.modifiers) {
-        if (mod.target.startsWith("stats.")) {
-          const statKey = mod.target.split(".")[1];
-          if (this.stats[statKey]) {
-            this.stats[statKey].traitBonus += mod.value;
-          }
-        } else if (mod.target === "hp.max") {
-          this.traitHPExtra += mod.value;
-        } else if (mod.target === "stamina.max") {
-          this.traitStaminaExtra += mod.value;
-        } else if (mod.target === "allRolls") {
-          this.traitRollBonus += mod.value;
-        } else if (mod.target === "allProfessionRolls") {
-          if (system.isProfession && system.profession) {
-            const p = system.profession.trim().toLowerCase();
-            this.traitProfessionBonuses[p] = (this.traitProfessionBonuses[p] || 0) + mod.value;
-          }
-        }
-      }
+      for (const mod of system.modifiers) applyModifier(mod, trait);
       // Profession rank (from the All Profession Rolls modifier) boosts Stamina and,
       // for casters, the custom resource linked to this trait. See src/utils/profession.js.
       if (trait.type === "trait" && system.isProfession) {
@@ -259,6 +267,16 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         const resBonus = professionResourceMultBonus(type, rank);
         if (resBonus) this.professionResourceMultBonuses[trait.id] = resBonus;
       }
+    }
+
+    // Magic items: requirements are checked against stats BEFORE magic modifiers, so an
+    // item can't meet its own requirement. See src/utils/magic-items.js.
+    const statTotals = Object.fromEntries(statKeys.map(k => [k, this.stats[k]?.total ?? 0]));
+    this.magicState = computeMagicState(
+      this.parent.items, buildRequirementContext(this.parent.items, statTotals), this.parent.items);
+    const activeMagicItems = this.parent.items.filter(i => this.magicState[i.id]?.passive);
+    for (const item of activeMagicItems) {
+      for (const mod of item.system.magic.modifiers) applyModifier(mod, item, {});
     }
 
     // Compute effective sizes from character settings and size grants on traits/abilities.
@@ -277,18 +295,27 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       if (s.sizeGrantStealth) stealthSize = bestSize(stealthSize, s.sizeGrantStealth);
       if (s.sizeGrantCombat)  combatSize  = bestSize(combatSize,  s.sizeGrantCombat);
     }
+    for (const item of activeMagicItems) {
+      const m = item.system.magic;
+      if (m.sizeGrantHP)      hpSize      = bestSize(hpSize,      m.sizeGrantHP);
+      if (m.sizeGrantStealth) stealthSize = bestSize(stealthSize, m.sizeGrantStealth);
+      if (m.sizeGrantCombat)  combatSize  = bestSize(combatSize,  m.sizeGrantCombat);
+    }
 
     this.effectiveHPSize      = hpSize;
     this.effectiveStealthSize = stealthSize;
     this.effectiveCombatSize  = combatSize;
 
-    // Accumulate injury check bonus and resistances from race items.
+    // Accumulate injury check bonus and resistances from race items and active magic items.
     this.injuryCheckBonus = 0;
     this.effectiveResistances = (this.resistances ?? []).map(r => ({...r, limbs: [...(r.limbs ?? [])]}));
-    for (const item of this.parent.items) {
-      if (item.type !== "race") continue;
-      this.injuryCheckBonus += item.system.injuryCheckBonus || 0;
-      for (const r of (item.system.resistances || [])) {
+    const resistanceSources = [
+      ...this.parent.items.filter(i => i.type === "race").map(i => i.system),
+      ...activeMagicItems.map(i => i.system.magic)
+    ];
+    for (const source of resistanceSources) {
+      this.injuryCheckBonus += source.injuryCheckBonus || 0;
+      for (const r of (source.resistances || [])) {
         if (!r.damageType) continue;
         const existing = this.effectiveResistances.find(
           e => e.damageType === r.damageType && sameLimbScope(e, r)

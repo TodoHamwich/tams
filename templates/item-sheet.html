@@ -7,7 +7,11 @@
                 <i class="fas fa-edit"></i>
             </div>
         </div>
+        {{#if (and isMagicType (not showMagicIdentity))}}
+        <h1 class="charname">{{displayName}}</h1>
+        {{else}}
         <h1 class="charname"><input name="name" type="text" value="{{document.name}}" placeholder="Name"/></h1>
+        {{/if}}
     </header>
 
     <section class="sheet-body" data-scrollable data-scroll-id="item-body">
@@ -1162,6 +1166,198 @@
             </div>
             {{/if}}
 
+            {{!-- ═══════════════════════════════════════════════════════════ --}}
+            {{!--  MAGIC EFFECTS (physical items) — GM edits, players read     --}}
+            {{!-- ═══════════════════════════════════════════════════════════ --}}
+            {{#if (and isMagicType showMagicIdentity)}}
+            <hr>
+            <details class="magic-section-toggle tams-magic-section" {{#if magicSectionOpen}}open{{/if}}>
+                <summary><h3 style="display: inline; border: none;"><i class="fas fa-wand-sparkles"></i> {{localize 'TAMS.Magic.Section'}}</h3></summary>
+
+                {{#if isGM}}
+                <div class="flexrow magic-gm-row" title="{{localize 'TAMS.Magic.GMOnlyHint'}}">
+                    <label>{{localize 'TAMS.Magic.Identified'}}</label>
+                    <input type="checkbox" name="system.magic.identified" {{checked system.magic.identified}}/>
+                    <label>{{localize 'TAMS.Magic.Cursed'}}</label>
+                    <input type="checkbox" name="system.magic.cursed" {{checked system.magic.cursed}}/>
+                    {{#if system.magic.cursed}}
+                    <label>{{localize 'TAMS.Magic.CurseRevealed'}}</label>
+                    <input type="checkbox" name="system.magic.curseRevealed" {{checked system.magic.curseRevealed}}/>
+                    {{/if}}
+                </div>
+                {{#unless system.magic.identified}}
+                <div class="flexcol magic-unidentified">
+                    <label>{{localize 'TAMS.Magic.UnidentifiedName'}}</label>
+                    <input type="text" name="system.magic.unidentifiedName" value="{{system.magic.unidentifiedName}}" placeholder="{{localize 'TAMS.Magic.UnidentifiedItem'}}"/>
+                    <label>{{localize 'TAMS.Magic.UnidentifiedDescription'}}</label>
+                    <textarea name="system.magic.unidentifiedDescription" rows="3">{{system.magic.unidentifiedDescription}}</textarea>
+                </div>
+                {{/unless}}
+                {{/if}}
+
+                {{#if (and system.magic.cursed showCurse)}}
+                <div class="flexcol magic-curse">
+                    <label><b>{{localize 'TAMS.Magic.CurseDescription'}}</b></label>
+                    <textarea name="system.magic.curseDescription" rows="2" {{magicDisabled}}>{{system.magic.curseDescription}}</textarea>
+                </div>
+                {{/if}}
+
+                {{#if magicCanRequireEquip}}
+                <div class="flexrow">
+                    <label title="{{localize 'TAMS.Magic.RequiresEquippedHint'}}">{{localize 'TAMS.Magic.RequiresEquipped'}}</label>
+                    <input type="checkbox" name="system.magic.requiresEquipped" {{checked system.magic.requiresEquipped}} {{magicDisabled}}/>
+                </div>
+                {{/if}}
+
+                {{!-- Requirements --}}
+                <div class="flexrow magic-list-header">
+                    <h4 title="{{localize 'TAMS.Magic.RequirementsHint'}}">{{localize 'TAMS.Magic.Requirements'}}</h4>
+                    {{#if magicEditable}}<a data-action="magicAdd" data-list="requirements" title="{{localize 'TAMS.Magic.Add'}}"><i class="fas fa-plus"></i></a>{{/if}}
+                </div>
+                {{#each magicRequirements as |req|}}
+                <div class="flexrow magic-row" data-index="{{req.index}}">
+                    <select data-magic-list="requirements" data-index="{{req.index}}" data-field="type" {{../magicDisabled}}>
+                        {{selectOptions ../requirementTypeOptions selected=req.type localize=true}}
+                    </select>
+                    {{#if req.isStat}}
+                    <select data-magic-list="requirements" data-index="{{req.index}}" data-field="key" {{../magicDisabled}}>
+                        {{selectOptions ../statOptionsNoCustom selected=req.key localize=true}}
+                    </select>
+                    {{else}}
+                    <input type="text" data-magic-list="requirements" data-index="{{req.index}}" data-field="key" value="{{req.key}}" placeholder="{{localize 'TAMS.Magic.RequirementNamePlaceholder'}}" {{../magicDisabled}}/>
+                    {{/if}}
+                    {{#if req.hasValue}}
+                    <input type="number" class="magic-num" data-magic-list="requirements" data-index="{{req.index}}" data-field="value" value="{{req.value}}" title="{{#if req.isStat}}{{localize 'TAMS.Magic.MinStatHint'}}{{else}}{{localize 'TAMS.Magic.MinRankHint'}}{{/if}}" {{../magicDisabled}}/>
+                    {{/if}}
+                    {{#if ../magicEditable}}<a class="magic-del" data-action="magicDelete" data-list="requirements" data-index="{{req.index}}"><i class="fas fa-trash"></i></a>{{/if}}
+                </div>
+                {{/each}}
+
+                {{!-- Modifiers --}}
+                <div class="flexrow magic-list-header">
+                    <h4>{{localize 'TAMS.Modifiers'}}</h4>
+                    {{#if magicEditable}}<a data-action="magicAdd" data-list="modifiers" title="{{localize 'TAMS.Magic.Add'}}"><i class="fas fa-plus"></i></a>{{/if}}
+                </div>
+                {{#each magicModifiers as |mod|}}
+                <div class="flexrow magic-row {{#if mod.curse}}magic-curse-row{{/if}}" data-index="{{mod.index}}">
+                    <select data-magic-list="modifiers" data-index="{{mod.index}}" data-field="target" {{../magicDisabled}}>
+                        {{selectOptions ../magicModifierTargetOptions selected=mod.target localize=true}}
+                    </select>
+                    <input type="number" class="magic-num" data-magic-list="modifiers" data-index="{{mod.index}}" data-field="value" value="{{mod.value}}" {{../magicDisabled}}/>
+                    {{#if ../isGM}}<label class="magic-curse-flag" title="{{localize 'TAMS.Magic.CurseFlagHint'}}"><input type="checkbox" data-magic-list="modifiers" data-index="{{mod.index}}" data-field="curse" {{checked mod.curse}}/><i class="fas fa-skull"></i></label>{{/if}}
+                    {{#if ../magicEditable}}<a class="magic-del" data-action="magicDelete" data-list="modifiers" data-index="{{mod.index}}"><i class="fas fa-trash"></i></a>{{/if}}
+                </div>
+                {{/each}}
+
+                {{!-- Resistances --}}
+                <div class="flexrow magic-list-header">
+                    <h4>{{localize 'TAMS.Race.Resistances'}}</h4>
+                    {{#if magicEditable}}<a data-action="magicAdd" data-list="resistances" title="{{localize 'TAMS.Magic.Add'}}"><i class="fas fa-plus"></i></a>{{/if}}
+                </div>
+                {{#each magicResistances as |res|}}
+                <div class="magic-row-block {{#if res.curse}}magic-curse-row{{/if}}" data-index="{{res.index}}">
+                    <div class="flexrow magic-row">
+                        <select data-magic-list="resistances" data-index="{{res.index}}" data-field="damageType" {{../magicDisabled}}>
+                            {{selectOptions ../damageTypeOptions selected=res.damageType localize=true}}
+                        </select>
+                        <select data-magic-list="resistances" data-index="{{res.index}}" data-field="category" {{../magicDisabled}}>
+                            <option value="resistance"    {{#if (eq res.category "resistance")}}selected{{/if}}>{{localize 'TAMS.Resistance'}}</option>
+                            <option value="immunity"      {{#if (eq res.category "immunity")}}selected{{/if}}>{{localize 'TAMS.Immunity'}}</option>
+                            <option value="vulnerability" {{#if (eq res.category "vulnerability")}}selected{{/if}}>{{localize 'TAMS.Vulnerability'}}</option>
+                            <option value="healing"       {{#if (eq res.category "healing")}}selected{{/if}}>{{localize 'TAMS.Healing'}}</option>
+                        </select>
+                        <input type="number" class="magic-num" data-magic-list="resistances" data-index="{{res.index}}" data-field="value" value="{{res.value}}" {{../magicDisabled}}/>
+                        {{#if ../isGM}}<label class="magic-curse-flag" title="{{localize 'TAMS.Magic.CurseFlagHint'}}"><input type="checkbox" data-magic-list="resistances" data-index="{{res.index}}" data-field="curse" {{checked res.curse}}/><i class="fas fa-skull"></i></label>{{/if}}
+                        {{#if ../magicEditable}}<a class="magic-del" data-action="magicDelete" data-list="resistances" data-index="{{res.index}}"><i class="fas fa-trash"></i></a>{{/if}}
+                    </div>
+                    <div class="flexrow magic-limbs">
+                        {{#each res.limbButtons as |btn|}}
+                        <a {{#if ../../magicEditable}}data-action="magicLimbToggle"{{/if}} data-limb-key="{{btn.key}}" class="magic-limb {{#if btn.active}}active{{/if}}" title="{{localize btn.i18nKey}}">{{localize btn.abbrevKey}}</a>
+                        {{/each}}
+                    </div>
+                </div>
+                {{/each}}
+
+                {{!-- Bonus damage --}}
+                {{#if magicStatusApplies}}
+                <div class="flexrow magic-list-header">
+                    <h4 title="{{localize 'TAMS.Magic.BonusDamageHint'}}">{{localize 'TAMS.Magic.BonusDamage'}}</h4>
+                    {{#if magicEditable}}<a data-action="magicAdd" data-list="bonusDamage" title="{{localize 'TAMS.Magic.Add'}}"><i class="fas fa-plus"></i></a>{{/if}}
+                </div>
+                {{#each magicBonusDamage as |dmg|}}
+                <div class="flexrow magic-row" data-index="{{dmg.index}}">
+                    <select data-magic-list="bonusDamage" data-index="{{dmg.index}}" data-field="damageType" {{../magicDisabled}}>
+                        {{selectOptions ../damageTypeOptions selected=dmg.damageType localize=true}}
+                    </select>
+                    <input type="number" class="magic-num" data-magic-list="bonusDamage" data-index="{{dmg.index}}" data-field="amount" value="{{dmg.amount}}" {{../magicDisabled}}/>
+                    {{#if ../magicEditable}}<a class="magic-del" data-action="magicDelete" data-list="bonusDamage" data-index="{{dmg.index}}"><i class="fas fa-trash"></i></a>{{/if}}
+                </div>
+                {{/each}}
+
+                {{!-- On-hit statuses --}}
+                <div class="flexrow magic-list-header">
+                    <h4 title="{{localize 'TAMS.Magic.OnHitStatusesHint'}}">{{localize 'TAMS.Magic.OnHitStatuses'}}</h4>
+                    {{#if magicEditable}}<a data-action="magicAdd" data-list="onHitStatusIds" title="{{localize 'TAMS.Magic.Add'}}"><i class="fas fa-plus"></i></a>{{/if}}
+                </div>
+                <datalist id="tams-magic-status-ids-{{document.id}}">
+                    {{#each statusIdOptions as |opt|}}<option value="{{opt.id}}">{{opt.label}}</option>{{/each}}
+                </datalist>
+                {{#each magicStatuses as |st|}}
+                <div class="flexrow magic-row" data-index="{{st.index}}">
+                    <input type="text" list="tams-magic-status-ids-{{../document.id}}" data-magic-list="onHitStatusIds" data-index="{{st.index}}" data-field="" value="{{st.id}}" placeholder="{{localize 'TAMS.StatusEffect.CustomPlaceholder'}}" {{../magicDisabled}}/>
+                    {{#if ../magicEditable}}<a class="magic-del" data-action="magicDelete" data-list="onHitStatusIds" data-index="{{st.index}}"><i class="fas fa-trash"></i></a>{{/if}}
+                </div>
+                {{/each}}
+                {{/if}}
+
+                {{!-- Injury check bonus + size grants --}}
+                <div class="flexrow">
+                    <label title="{{localize 'TAMS.Race.InjuryCheckBonusHint'}}">{{localize 'TAMS.Race.InjuryCheckBonus'}}</label>
+                    <input type="number" class="magic-num" name="system.magic.injuryCheckBonus" value="{{system.magic.injuryCheckBonus}}" {{magicDisabled}}/>
+                </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.SizeGrantHP'}}</label>
+                    <select name="system.magic.sizeGrantHP" {{magicDisabled}}>
+                        <option value="">{{localize 'TAMS.None'}}</option>
+                        {{selectOptions creatureSizeOptions selected=system.magic.sizeGrantHP localize=true}}
+                    </select>
+                </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.SizeGrantStealth'}}</label>
+                    <select name="system.magic.sizeGrantStealth" {{magicDisabled}}>
+                        <option value="">{{localize 'TAMS.None'}}</option>
+                        {{selectOptions creatureSizeOptions selected=system.magic.sizeGrantStealth localize=true}}
+                    </select>
+                </div>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.SizeGrantCombat'}}</label>
+                    <select name="system.magic.sizeGrantCombat" {{magicDisabled}}>
+                        <option value="">{{localize 'TAMS.None'}}</option>
+                        {{selectOptions creatureSizeOptions selected=system.magic.sizeGrantCombat localize=true}}
+                    </select>
+                </div>
+
+                {{!-- Granted abilities --}}
+                <div class="flexrow magic-list-header">
+                    <h4 title="{{localize 'TAMS.Magic.GrantedAbilitiesHint'}}">{{localize 'TAMS.Race.GrantedAbilities'}}</h4>
+                </div>
+                <div class="granted-abilities-list flexcol magic-granted">
+                    {{#each magicGrantedAbilities as |ability|}}
+                    <div class="flexrow magic-row" data-index="{{ability.index}}">
+                        <img src="{{ability.img}}" width="20" height="20"/>
+                        <span class="magic-granted-name">{{ability.name}}</span>
+                        {{#if ../magicEditable}}<a class="magic-del" data-action="magicDelete" data-list="grantedAbilities" data-index="{{ability.index}}"><i class="fas fa-times"></i></a>{{/if}}
+                    </div>
+                    {{/each}}
+                    {{#if magicEditable}}
+                    {{#unless magicGrantedAbilities.length}}
+                    <p class="magic-empty">{{localize 'TAMS.Race.DropAbilityHere'}}</p>
+                    {{/unless}}
+                    {{/if}}
+                </div>
+            </details>
+            {{/if}}
+
             {{#unless (eq item.type "weapon")}}
             <hr>
             <div class="flexrow">
@@ -1180,7 +1376,11 @@
             {{/if}}
             <hr>
             <label>{{localize 'TAMS.Description'}}</label>
+            {{#if (and isMagicType (not showMagicIdentity))}}
+            <div class="magic-public-description" style="white-space: pre-wrap;">{{publicDescription}}</div>
+            {{else}}
             <textarea name="system.description" rows="10">{{system.description}}</textarea>
+            {{/if}}
         </div>
     </section>
 </section>

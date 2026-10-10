@@ -1,5 +1,6 @@
 import { getMishapEntry, getMishapTable, calculateMishapChance, getMishapModifier, MISHAP_TABLE } from "./mishap.js";
 import { isLethal, memberLethalUnit, rescaledLimbValue } from "./lethality.js";
+import { itemAttackBonus } from "./magic-items.js";
 
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
 
@@ -1000,9 +1001,12 @@ async function openTAMSDamageDialog(target, {
             ChatMessage.create({ content: report });
             if (pendingChecks.length > 0) showCombinedInjuryDialog(target, pendingChecks);
 
-            const inflictsStatusId = message?.getFlag('tams', 'inflictsStatusId');
-            if (inflictsStatusId && hits.length > 0) {
-                await target.toggleStatusEffect(inflictsStatusId, { active: true });
+            // inflictsStatusIds: the item's own status + magic on-hit statuses (weapon/ammo).
+            // Older cards only carry the single inflictsStatusId.
+            const statusIds = message?.getFlag('tams', 'inflictsStatusIds')
+                ?? [message?.getFlag('tams', 'inflictsStatusId')].filter(Boolean);
+            if (hits.length > 0) {
+                for (const statusId of statusIds) await target.toggleStatusEffect(statusId, { active: true });
             }
           }
         }
@@ -1947,7 +1951,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       const weapons = actor.items.filter(i => (i.type === 'weapon') || (i.type === 'ability' && i.system.isReaction && i.system.isAttack));
       if (!weapons.length) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoValidWeapons"));
 
-      const options = weapons.map(w => `<option value="${w.id}">${w.name} (${w.type === 'ability' ? 'Ability' : 'Weapon'}, Fam ${w.system.familiarity||0})</option>`).join('');
+      const options = weapons.map(w => `<option value="${w.id}">${e(w.displayName)} (${w.type === 'ability' ? 'Ability' : 'Weapon'}, Fam ${w.system.familiarity||0})</option>`).join('');
       let chosenId = await foundry.applications.api.DialogV2.wait({
         window: { title: game.i18n.localize("TAMS.Combat.ChooseWeaponRetaliate") },
         content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Weapon")}</label><select id="ret-weapon">${options}</select></div>`,
@@ -2038,6 +2042,9 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (abilityTypeBonus.all) profBonus += abilityTypeBonus.all;
       if (weapon.type !== 'all' && abilityTypeBonus[weapon.type]) profBonus += abilityTypeBonus[weapon.type];
       if (tags.includes("accurate")) profBonus += 5;
+      if (weapon.type === 'weapon' && actor.system.magicState?.[weapon.id]?.onUse) {
+          profBonus += itemAttackBonus(weapon.system.magic);
+      }
       if (weapon.type === 'weapon') {
           const wNameLower = weapon.name.toLowerCase();
           const expectedBroad = weapon.system.isRanged ? "ranged weapon" : "melee weapon";

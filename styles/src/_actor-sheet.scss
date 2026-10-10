@@ -714,3 +714,19 @@
     &.error   { color: #d64545; }
     &.warning { color: #e0a526; }
 }
+
+// Magic item markers (src/utils/magic-items.js)
+.tams .tams-magic-icon {
+    margin-left: 4px;
+    font-size: 0.8em;
+    color: #7e57c2;
+    cursor: help;
+
+    &.inactive { color: #999; opacity: 0.7; }
+}
+.tams .tams-curse-icon {
+    margin-left: 3px;
+    font-size: 0.8em;
+    color: #b71c1c;
+    cursor: help;
+}

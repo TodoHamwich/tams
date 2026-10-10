@@ -1349,6 +1349,24 @@ details.limb-filter[open] summary .limb-arrow-down {
   color: #e0a526;
 }
 
+.tams .tams-magic-icon {
+  margin-left: 4px;
+  font-size: 0.8em;
+  color: #7e57c2;
+  cursor: help;
+}
+.tams .tams-magic-icon.inactive {
+  color: #999;
+  opacity: 0.7;
+}
+
+.tams .tams-curse-icon {
+  margin-left: 3px;
+  font-size: 0.8em;
+  color: #b71c1c;
+  cursor: help;
+}
+
 .tams-item-form .charname input {
   font-size: 22px;
   height: 32px;
@@ -1469,6 +1487,110 @@ details.limb-filter[open] summary .limb-arrow-down {
 }
 .tams.loot .items-list .item:hover {
   background: rgba(0, 0, 0, 0.05);
+}
+
+.tams-magic-section summary {
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+.tams-magic-section .magic-gm-row {
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  border: 1px dashed #7e57c2;
+  border-radius: 3px;
+  margin-bottom: 4px;
+}
+.tams-magic-section .magic-gm-row label {
+  flex: 0 0 auto;
+}
+.tams-magic-section .magic-gm-row input[type=checkbox] {
+  flex: 0 0 auto;
+}
+.tams-magic-section .magic-unidentified, .tams-magic-section .magic-curse {
+  gap: 2px;
+  margin-bottom: 6px;
+}
+.tams-magic-section .magic-list-header {
+  align-items: center;
+  margin-top: 6px;
+}
+.tams-magic-section .magic-list-header h4 {
+  margin: 0;
+  border: none;
+  flex: 1;
+}
+.tams-magic-section .magic-list-header a {
+  flex: 0 0 20px;
+  text-align: right;
+}
+.tams-magic-section .magic-row {
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 3px;
+}
+.tams-magic-section .magic-row .magic-num {
+  flex: 0 0 55px;
+  text-align: center;
+}
+.tams-magic-section .magic-row .magic-del {
+  flex: 0 0 20px;
+  text-align: right;
+}
+.tams-magic-section .magic-row img {
+  flex: 0 0 20px;
+  border: none;
+}
+.tams-magic-section .magic-row .magic-granted-name {
+  flex: 1;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+.tams-magic-section .magic-curse-flag {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #b71c1c;
+  cursor: help;
+}
+.tams-magic-section .magic-curse-row {
+  border-left: 3px solid #b71c1c;
+  padding-left: 3px;
+}
+.tams-magic-section .magic-limbs {
+  justify-content: center;
+  gap: 2px;
+  flex-wrap: nowrap;
+  margin-bottom: 4px;
+}
+.tams-magic-section .magic-limb {
+  flex: 0 0 auto;
+  font-size: 0.68em;
+  padding: 0 3px;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  color: #666;
+  white-space: nowrap;
+}
+.tams-magic-section .magic-limb.active {
+  border-color: #2e7d32;
+  background: rgba(46, 125, 50, 0.18);
+  color: #2e7d32;
+}
+.tams-magic-section .magic-granted {
+  min-height: 36px;
+  border: 1px dashed #bbb;
+  border-radius: 3px;
+  padding: 6px;
+  gap: 3px;
+}
+.tams-magic-section .magic-empty {
+  color: #999;
+  font-style: italic;
+  font-size: 0.82em;
+  text-align: center;
+  margin: 4px 0;
 }
 
 /* Chat Rolls */

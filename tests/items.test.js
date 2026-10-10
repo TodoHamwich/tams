@@ -123,6 +123,30 @@ describe('TAMSWeaponData', () => {
       ]);
     });
   });
+
+  describe('magic bonus damage', () => {
+    beforeEach(() => {
+      weaponData.damageType = "slashing";
+      weaponData.magic = { bonusDamage: [{ damageType: "fire", amount: 5 }] };
+      weaponData.parent = { id: "w1", actor: mockActor };
+    });
+
+    it('is added on top as its own component while the item is active', () => {
+      mockActor.system.magicState = { w1: { onUse: true } };
+      expect(weaponData.calculatedDamage).toBe(15); // 10 base + 5 fire
+      expect(weaponData.baseDamage).toBe(10);
+      expect(weaponData.damageBreakdown).toEqual([
+        { damageType: "slashing", damage: 10 },
+        { damageType: "fire", damage: 5 },
+      ]);
+    });
+
+    it('is left out when the requirements are not met', () => {
+      mockActor.system.magicState = { w1: { onUse: false } };
+      expect(weaponData.calculatedDamage).toBe(10);
+      expect(weaponData.damageBreakdown).toEqual([{ damageType: "slashing", damage: 10 }]);
+    });
+  });
 });
 
 describe('TAMSAbilityData', () => {

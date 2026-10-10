@@ -235,7 +235,7 @@
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                     <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
-                        {{item.name}}
+                        {{item.name}} {{#if item.isMagic}}<i class="fas fa-wand-sparkles tams-magic-icon {{#if item.magicInactive}}inactive{{/if}}" data-tooltip="{{#if item.magicUnmet}}{{localize 'TAMS.Magic.RequirementsUnmet'}}{{else if item.magicInactive}}{{localize 'TAMS.Magic.Inactive'}}{{else}}{{localize 'TAMS.Magic.Active'}}{{/if}}"></i>{{/if}}{{#if item.isCursed}}<i class="fas fa-skull tams-curse-icon" data-tooltip="{{localize 'TAMS.Magic.Cursed'}}"></i>{{/if}}
                     </h4>
                     <div class="item-stat dmg-cell">
                         {{#each item.damageParts as |dp|}}
@@ -466,7 +466,7 @@
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                     <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
-                        {{item.name}} {{#if item.issueErrors}}<i class="fas fa-circle-exclamation tams-ability-issue error" data-tooltip="{{item.issueErrors}}"></i>{{/if}}{{#if item.issueWarnings}}<i class="fas fa-triangle-exclamation tams-ability-issue warning" data-tooltip="{{item.issueWarnings}}"></i>{{/if}}
+                        {{item.name}} {{#if item.isGrantedByMagic}}<i class="fas fa-wand-sparkles tams-magic-icon" data-tooltip="{{localize 'TAMS.Magic.GrantedByItem'}}"></i>{{/if}}{{#if item.issueErrors}}<i class="fas fa-circle-exclamation tams-ability-issue error" data-tooltip="{{item.issueErrors}}"></i>{{/if}}{{#if item.issueWarnings}}<i class="fas fa-triangle-exclamation tams-ability-issue warning" data-tooltip="{{item.issueWarnings}}"></i>{{/if}}
                         {{#if item.system.isAttack}}
                         ({{localize 'TAMS.DmgColon'}} {{item.system.calculatedDamage}})
                         {{/if}}
@@ -572,7 +572,7 @@
                         <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}} {{#if (eq section.type 'container')}}nested-item{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                             <img src="{{item.img}}" title="{{item.name}}" width="32" height="32" style="border-radius: 3px; border: 1px solid #7a7971; cursor: pointer;" data-action="toggleItemDetails" data-item-id="{{item.id}}"/>
                             <div class="item-name-col" style="padding-left: 10px;" data-action="toggleItemDetails" data-item-id="{{item.id}}">
-                                <h4 class="item-name" style="font-family: 'MedievalSharp', serif; margin: 0;">{{item.name}}</h4>
+                                <h4 class="item-name" style="font-family: 'MedievalSharp', serif; margin: 0;">{{item.name}} {{#if item.isMagic}}<i class="fas fa-wand-sparkles tams-magic-icon {{#if item.magicInactive}}inactive{{/if}}" data-tooltip="{{#if item.magicUnmet}}{{localize 'TAMS.Magic.RequirementsUnmet'}}{{else if item.magicInactive}}{{localize 'TAMS.Magic.Inactive'}}{{else}}{{localize 'TAMS.Magic.Active'}}{{/if}}"></i>{{/if}}{{#if item.isCursed}}<i class="fas fa-skull tams-curse-icon" data-tooltip="{{localize 'TAMS.Magic.Cursed'}}"></i>{{/if}}</h4>
                                 <div class="item-sub-props">
                                     <span class="prop-tag">{{capitalize item.type}}</span>
                                     <span class="prop-tag">{{item.system.size}}</span>

@@ -19,7 +19,7 @@
                  data-document-id="{{../item.id}}"
                  data-type="Item"
                  data-uuid="{{../item.uuid}}"
-                 title="{{../item.name}}"
+                 title="{{../item.displayName}}"
                  style="--gx:{{add ../item.system.gridX dx}};--gy:{{add ../item.system.gridY dy}};--dx:{{dx}};--dy:{{dy}};--bw:{{../bw}};--bh:{{../bh}};background-image:url('{{../item.img}}')">
                 {{#if (and (eq dx 0) (eq dy 0))}}
                 {{#if (gt ../item.system.quantity 1)}}<span class="item-qty">{{../item.system.quantity}}</span>{{/if}}
@@ -39,9 +39,9 @@
                  data-document-id="{{item.id}}"
                  data-type="Item"
                  data-uuid="{{item.uuid}}"
-                 title="{{item.name}}"
+                 title="{{item.displayName}}"
                  style="--gw:{{gridW}};--gh:{{gridH}}">
-                <img src="{{item.img}}" alt="{{item.name}}">
+                <img src="{{item.img}}" alt="{{item.displayName}}">
                 {{#if (gt item.system.quantity 1)}}<span class="item-qty">{{item.system.quantity}}</span>{{/if}}
             </div>
             {{/each}}

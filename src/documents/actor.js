@@ -922,6 +922,42 @@ export class TAMSActor extends Actor {
     if (Object.values(statDeltas).some(v => v !== 0)) await this._adjustResourcesForStatDeltas(statDeltas);
   }
 
+  /**
+   * Add/remove the abilities granted by magic items so they match which items are active
+   * (system.magicState, see src/utils/magic-items.js). Granted copies carry
+   * flags.tams.magicGrant = "<sourceItemId>:<index>:<name>"; they are deleted when the source
+   * stops applying (unequipped, dropped, requirements unmet, ability removed from the item).
+   */
+  async syncMagicGrants() {
+    if (!this.isOwner) return;
+    const state = this.system.magicState ?? {};
+    const desired = new Map();
+    for (const item of this.items) {
+      if (!state[item.id]?.passive) continue;
+      (item.system.magic?.grantedAbilities ?? []).forEach((a, idx) => {
+        desired.set(`${item.id}:${idx}:${a.name ?? ""}`, a);
+      });
+    }
+
+    const toDelete = [];
+    const present = new Set();
+    for (const item of this.items) {
+      const key = item.getFlag("tams", "magicGrant");
+      if (!key) continue;
+      if (desired.has(key) && !present.has(key)) present.add(key);
+      else toDelete.push(item.id);
+    }
+    const toCreate = [...desired].filter(([key]) => !present.has(key)).map(([key, a]) => {
+      const d = foundry.utils.duplicate(a);
+      delete d._id;
+      foundry.utils.setProperty(d, "flags.tams.magicGrant", key);
+      return d;
+    });
+
+    if (toDelete.length) await this.deleteEmbeddedDocuments("Item", toDelete);
+    if (toCreate.length) await this.createEmbeddedDocuments("Item", toCreate);
+  }
+
   async _onDropItem(event, data) {
     const item = await Item.fromDropData(data);
     if (item?.type === "statusEffect" && item.system.statusId) {

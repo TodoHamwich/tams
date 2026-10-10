@@ -1,4 +1,5 @@
 import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog, computeSquadAttackBonus, tamsApplyRollMode } from '../utils/helpers.js';
+import { MAGIC_ITEM_TYPES, hasMagicEffects, isItemEquipped, curseVisible, bonusDamageComponents, itemAttackBonus } from '../utils/magic-items.js';
 import { computeArmorRepair } from '../utils/inventory.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
 import { HONOR_PATHS, HONOR_STYLES, getHonorTier, getHonorTierLabelKeys, isHonorEnabled } from '../utils/honor.js';
@@ -433,16 +434,28 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
       }
 
+      // Abilities granted by an unidentified magic item stay hidden from players.
+      const grantSource = i.magicGrantSource;
+      if (grantSource && !grantSource.isIdentityVisible) continue;
+
+      const isMagic = MAGIC_ITEM_TYPES.includes(i.type) && hasMagicEffects(i.system.magic) && i.isIdentityVisible;
+      const magicState = this.document.system.magicState?.[i.id];
       const itemData = {
         id: i.id,
         uuid: i.uuid,
-        name: i.name,
+        name: i.displayName,
         img: i.img,
         system: i.system,
         type: i.type,
         isGreyedOut: isGreyedOut,
-        isEquipped: (i.type === 'weapon' && i.system.location === 'hand') || (['armor', 'backpack', 'shield'].includes(i.type) && i.system.equipped),
-        canEquip: ['weapon', 'armor', 'shield', 'backpack'].includes(i.type),
+        isEquipped: isItemEquipped(i),
+        canEquip: ['weapon', 'armor', 'shield', 'backpack', 'equipment'].includes(i.type)
+          || (['tool', 'questItem'].includes(i.type) && hasMagicEffects(i.system.magic)),
+        isMagic,
+        magicInactive: isMagic && !magicState?.passive,
+        magicUnmet: isMagic && magicState && !magicState.requirementsMet,
+        isCursed: MAGIC_ITEM_TYPES.includes(i.type) && i.system.magic?.cursed && curseVisible(i.system.magic, game.user.isGM),
+        isGrantedByMagic: !!grantSource,
         isArmor: i.type === 'armor',
         hasCharges: i.type === 'equipment' && (i.system.uses?.max ?? 0) > 0,
         armorZones: armorZones,
@@ -452,7 +465,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       allItems.push(itemData);
 
       if (i.type === 'weapon') {
-        itemData.damageParts = i.system.damageBreakdown.map(c => ({
+        // Players don't see an unidentified weapon's bonus damage on the sheet.
+        const parts = i.isIdentityVisible ? i.system.damageBreakdown
+          : i.system.damageBreakdown.slice(0, Math.max(1, i.system.damageBreakdown.length - bonusDamageComponents(i.system.magic).length));
+        itemData.damageParts = parts.map(c => ({
           damage: c.damage,
           typeLabel: c.damageType ? game.i18n.localize(`TAMS.DamageType.${c.damageType}`) : ""
         }));
@@ -907,7 +923,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       window: { title: game.i18n.localize("TAMS.DeleteConfirmTitle") },
-      content: game.i18n.format("TAMS.DeleteConfirmContent", {name: e(item.name)}),
+      content: game.i18n.format("TAMS.DeleteConfirmContent", {name: e(item.displayName)}),
       yes: { default: false },
       rejectClose: false
     });
@@ -961,7 +977,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const options = tokens.map(t => `<option value="${t.actor.uuid}">${e(t.name)}${t.actor.isToken ? ` (${game.i18n.localize("TAMS.Loot")})` : ""}</option>`).join("");
     const content = `
         <div class="form-group">
-            <p>${game.i18n.localize('TAMS.GiveItem')}: <b>${e(item.name)}</b></p>
+            <p>${game.i18n.localize('TAMS.GiveItem')}: <b>${e(item.displayName)}</b></p>
             <label>${game.i18n.localize('TAMS.Recipient')}</label>
             <select name="recipientUuid" style="width: 100%; margin-bottom: 10px;">
                 ${options}
@@ -970,7 +986,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     `;
 
     foundry.applications.api.DialogV2.wait({
-        window: { title: `${game.i18n.localize('TAMS.GiveItem')}: ${e(item.name)}` },
+        window: { title: `${game.i18n.localize('TAMS.GiveItem')}: ${e(item.displayName)}` },
         content: content,
         rejectClose: false,
         buttons: [
@@ -994,7 +1010,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         targetActorUuid: recipientUuid,
                         newLocation: "stowed"
                     });
-                    ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.GivingItem", {item: e(item.name), target: e(targetActor.name)}));
+                    ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.GivingItem", {item: e(item.displayName), target: e(targetActor.name)}));
                 }
             }
           },
@@ -1046,14 +1062,15 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const item = this.document.items.get(itemId);
     if (!item) return;
 
-    const enrichedDesc = item.system.description
-        ? await TextEditor.enrichHTML(item.system.description, {secrets: false})
+    const description = item.publicDescription;
+    const enrichedDesc = description
+        ? await TextEditor.enrichHTML(description, {secrets: false})
         : `<em>${game.i18n.localize("TAMS.NoDescription")}</em>`;
     const content = `
       <div class="tams-item-description">
         <div class="item-desc-header" style="display:flex; align-items:center; gap:8px; margin-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.2); padding-bottom:4px;">
           <img src="${foundry.utils.escapeHTML(item.img)}" width="32" height="32" style="border-radius:3px;"/>
-          <strong style="font-size:1.1em;">${foundry.utils.escapeHTML(item.name)}</strong>
+          <strong style="font-size:1.1em;">${foundry.utils.escapeHTML(item.publicName)}</strong>
         </div>
         ${enrichedDesc}
       </div>`;
@@ -1084,7 +1101,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       quantity -= 1;
       value = Math.max(0, max - 1);
     } else {
-      ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: item.name}));
+      ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: item.displayName}));
       return;
     }
 
@@ -1255,7 +1272,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       if (toHand && this._equipLimitReached("hand")) return;
       return item.update({ "system.location": toHand ? "hand" : "stowed" });
     }
-    if (["armor", "shield", "backpack"].includes(item.type)) {
+    if (["armor", "shield", "backpack", "equipment", "tool", "questItem"].includes(item.type)) {
       const equip = !item.system.equipped;
       if (equip && item.type === "shield" && this._equipLimitReached("hand")) return;
       return item.update({ "system.equipped": equip });
@@ -1343,7 +1360,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     for (const s of skills) optionsHtml += `<option value="${s.id}">${s.name}</option>`;
 
     const choice = await foundry.applications.api.DialogV2.wait({
-      window: { title: game.i18n.format("TAMS.Repair.Title", { name: item.name }) },
+      window: { title: game.i18n.format("TAMS.Repair.Title", { name: item.displayName }) },
       content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Repair.SelectSkill")}</label><select name="skill" style="width:100%">${optionsHtml}</select></div>`,
       rejectClose: false,
       buttons: [
@@ -1370,7 +1387,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     const itemUpdates = {};
     const actorUpdates = {};
-    let report = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Repair.Title", { name: item.name })}</h3>`;
+    let report = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Repair.Title", { name: e(item.publicName) })}</h3>`;
     report += `<div class="roll-row"><small>${game.i18n.localize("TAMS.Repair.Using")}:</small><span>${checkLabel} (${checkValue})</span></div>`;
     let repaired = false;
 
@@ -1530,7 +1547,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         if (this._equipLimitReached("hand")) return;
         return item.update({ "system.location": "hand" });
       }
-      if (["armor", "shield", "backpack"].includes(item.type)) {
+      if (["armor", "shield", "backpack", "equipment", "tool", "questItem"].includes(item.type)) {
         if (item.type === "shield" && this._equipLimitReached("hand")) return;
         return item.update({ "system.equipped": true });
       }
@@ -1621,7 +1638,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             targetActorUuid: this.document.uuid,
             newLocation: newLocation
         });
-        ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.RequestTransfer", {item: item.name, name: this.document.name}));
+        ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.RequestTransfer", {item: item.displayName, name: this.document.name}));
         return;
     }
 
@@ -1865,9 +1882,34 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     bar.classList.add("has-item");
     bar.querySelector(".info-bar-img").src = item.img;
-    bar.querySelector(".info-bar-name").textContent = item.name;
+    bar.querySelector(".info-bar-name").textContent = item.displayName;
     bar.querySelector(".info-bar-type").textContent = item.type;
     bar.querySelectorAll(".info-bar-actions a[data-action]").forEach(a => a.dataset.itemId = itemId);
+  }
+
+  /**
+   * Ask which weapon an ability that uses weapon damage is made with.
+   * @param {Item} ability
+   * @returns {Promise<Item|null>} The weapon, or null if there is none / the user cancelled.
+   * @protected
+   */
+  async _chooseWeaponForAbility(ability) {
+    const weapons = this.document.items.filter(i => i.type === 'weapon');
+    if (weapons.length === 0) {
+      ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoWeaponsForAbility"));
+      return null;
+    }
+    if (weapons.length === 1) return weapons[0];
+    const opts = weapons.map(w => `<option value="${w.id}">${e(w.displayName)} (${w.system.calculatedDamage} ${game.i18n.localize("TAMS.Dmg")})</option>`).join('');
+    return await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.format("TAMS.ChooseWeaponForAbility", {name: ability.name}) },
+      content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Weapon")}</label><select id="tams-weapon-picker">${opts}</select></div>`,
+      rejectClose: false,
+      buttons: [
+        { action: "ok", label: game.i18n.localize("TAMS.Confirm"), default: true, callback: (event, button, dialog) => weapons.find(w => w.id === dialog.element.querySelector('#tams-weapon-picker').value) },
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      ]
+    }) ?? null;
   }
 
   /**
@@ -1898,19 +1940,35 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     const bonusSources = [];
     const statModSources = [];
+    let abilityWeapon = null;
     const traits = this.document.items.filter(i => i.type === 'trait');
+    // Modifier totals per source item (traits, races, active magic items) for a target.
+    const modifierSourcesFor = (targets) => {
+        const totals = new Map();
+        for (const src of (this.document.system.modifierSources ?? [])) {
+            if (!targets.includes(src.target)) continue;
+            totals.set(src.itemId, (totals.get(src.itemId) || 0) + src.value);
+        }
+        return [...totals].filter(([, value]) => value !== 0).map(([itemId, value]) => ({
+            label: this.document.items.get(itemId)?.publicName ?? "?", value
+        }));
+    };
+
+    // Magic "Attacks with this item" bonus, while the item's requirements are met.
+    const addItemAttackBonus = (weapon) => {
+        if (!weapon || !this.document.system.magicState?.[weapon.id]?.onUse) return;
+        const val = itemAttackBonus(weapon.system.magic);
+        if (val === 0) return;
+        bonus += val;
+        bonusSources.push({ label: weapon.publicName, value: val });
+    };
 
     const addStatModSources = (sId) => {
         statModSources.length = 0;
         const s = this.document.system.stats[sId];
         if (!s) return;
         if (s.mod !== 0) statModSources.push({ label: game.i18n.localize("TAMS.StatMod"), value: s.mod });
-        for (const trait of traits) {
-            const val = trait.system.modifiers
-                .filter(m => m.target === `stats.${sId}`)
-                .reduce((acc, m) => acc + m.value, 0);
-            if (val !== 0) statModSources.push({ label: trait.name, value: val });
-        }
+        statModSources.push(...modifierSourcesFor([`stats.${sId}`, `stats.${sId}.value`]));
         const backpackPen = this.document.system.backpackPenalties;
         if (backpackPen && (sId === 'strength' || sId === 'dexterity')) {
             const val = backpackPen[sId];
@@ -1922,10 +1980,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const traitRollBonus = (this.document.system.traitRollBonus || 0);
     if (traitRollBonus !== 0) {
         bonus += traitRollBonus;
-        for (const trait of traits) {
-            const val = trait.system.modifiers.filter(m => m.target === 'allRolls').reduce((acc, m) => acc + m.value, 0);
-            if (val !== 0) bonusSources.push({ label: trait.name, value: val });
-        }
+        bonusSources.push(...modifierSourcesFor(['allRolls']));
     }
 
     // Add Profession Bonuses
@@ -2008,7 +2063,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         statValue = stat.value;
         addStatModSources(statId);
         statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
-        label = `Attacking with ${item.name}`;
+        label = `Attacking with ${item.publicName}`;
 
         // Apply familiarity from "Ranged Weapon (X)" or "Melee Weapon (X)" skills:
         // full familiarity if the specific part matches this weapon, half for all others of the same category.
@@ -2029,6 +2084,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 bonusSources.push({ label: item.system.isRanged ? "Ranged Weapon Skill" : "Melee Weapon Skill", value: appliedFam });
             }
         }
+        addItemAttackBonus(item);
     }
 
     if (item && item.type === 'skill') {
@@ -2081,6 +2137,12 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             }
         }
         if (item.system.isAttack) {
+            // Pick the weapon before rolling: its magic attack bonus counts toward this roll.
+            if (item.system.useWeaponDamage) {
+                abilityWeapon = await this._chooseWeaponForAbility(item);
+                if (!abilityWeapon) return;
+                addItemAttackBonus(abilityWeapon);
+            }
             statId = item.system.attackStat;
             addStatModSources(statId);
             const stat = this.document.system.stats[statId];
@@ -2134,7 +2196,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             const options = resources.map(r => `<option value="${r.id}" ${r.id === resourceKey ? 'selected' : ''}>${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join('');
 
             foundry.applications.api.DialogV2.wait({
-                window: { title: game.i18n.format("TAMS.RefillUses", {name: item.name}) },
+                window: { title: game.i18n.format("TAMS.RefillUses", {name: item.displayName}) },
                 content: `
                     <div class="form-group">
                         <label>${game.i18n.format("TAMS.AmountToRefill", {max: missing})}</label>
@@ -2164,7 +2226,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                             await actor.update(actor.applyResourceSpend(parseInt(resId), totalCost));
                         }
                         await item.update({"system.uses.value": usesVal + amount});
-                        ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.RefilledUses", {amount, item: item.name}));
+                        ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.RefilledUses", {amount, item: item.displayName}));
                     }
                   },
                   { action: "cancel", label: game.i18n.localize("TAMS.Cancel") }
@@ -2232,7 +2294,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                     const currentAmmo = ammoItem.system.uses?.value || 0;
                     if (currentAmmo > 0) await ammoItem.update({"system.uses.value": currentAmmo - 1});
                     await ChatMessage.create(tamsApplyRollMode({
-                        content: `<div class="tams-roll tams-misfire"><strong>⚠️ ${game.i18n.localize("TAMS.Firearm.MisfireLabel")}</strong> — ${game.i18n.format("TAMS.Firearm.MisfireResult", {weapon: item.name, roll: misfireRoll, threshold})}</div>`,
+                        content: `<div class="tams-roll tams-misfire"><strong>⚠️ ${game.i18n.localize("TAMS.Firearm.MisfireLabel")}</strong> — ${game.i18n.format("TAMS.Firearm.MisfireResult", {weapon: e(item.publicName), roll: misfireRoll, threshold})}</div>`,
                         speaker: ChatMessage.getSpeaker({actor: this.document})
                     }));
                     return;
@@ -2381,29 +2443,13 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     let damageInfo = "";
     let pendingAmmoUpdate = null;
+    let firedAmmo = null;
+    let magicStatusIds = [];
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
         let damage = item.system.calculatedDamage;
         let weaponOverride = null;
-        if (item.type === 'ability' && item.system.useWeaponDamage) {
-            const weapons = this.document.items.filter(i => i.type === 'weapon');
-            if (weapons.length === 0) {
-                return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoWeaponsForAbility"));
-            }
-            if (weapons.length === 1) {
-                weaponOverride = weapons[0];
-            } else {
-                const opts = weapons.map(w => `<option value="${w.id}">${w.name} (${w.system.calculatedDamage} ${game.i18n.localize("TAMS.Dmg")})</option>`).join('');
-                weaponOverride = await foundry.applications.api.DialogV2.wait({
-                    window: { title: game.i18n.format("TAMS.ChooseWeaponForAbility", {name: item.name}) },
-                    content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Weapon")}</label><select id="tams-weapon-picker">${opts}</select></div>`,
-                    rejectClose: false,
-                    buttons: [
-                        { action: "ok", label: game.i18n.localize("TAMS.Confirm"), default: true, callback: (event, button, dialog) => weapons.find(w => w.id === dialog.element.querySelector('#tams-weapon-picker').value) },
-                        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
-                    ]
-                });
-                if (!weaponOverride) return;
-            }
+        if (item.type === 'ability' && item.system.useWeaponDamage && abilityWeapon) {
+            weaponOverride = abilityWeapon;
             damage = weaponOverride.system.calculatedDamage;
         }
         const isRanged = item.type === 'weapon' ? !!item.system.isRanged : (weaponOverride ? !!weaponOverride.system.isRanged : (item.system.calculator?.range > 10));
@@ -2431,13 +2477,13 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             if (item.system.consumeAmmo) {
                 const ammoItemId = item.system.ammoItemId ?? "custom";
                 if (!ammoItemId) {
-                    return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoAmmoSelected", {item: item.name}));
+                    return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoAmmoSelected", {item: item.displayName}));
                 }
                 if (ammoItemId === "custom") {
                     const currentAmmo = item.system.ammo?.current || 0;
                     if (currentAmmo < multiVal) {
                         if (currentAmmo <= 0) {
-                            return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: item.name}));
+                            return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: item.displayName}));
                         }
                         ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.NotEnoughAmmo", {count: currentAmmo}));
                         multiVal = currentAmmo;
@@ -2446,17 +2492,18 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 } else {
                     const ammoItem = this.document.items.get(ammoItemId);
                     if (!ammoItem) {
-                        return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoAmmoSelected", {item: item.name}));
+                        return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoAmmoSelected", {item: item.displayName}));
                     }
                     const currentAmmo = ammoItem.system.uses?.value || 0;
                     if (currentAmmo < multiVal) {
                         if (currentAmmo <= 0) {
-                            return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: ammoItem.name}));
+                            return ui.notifications.warn(game.i18n.format("TAMS.Checks.Notifications.NoChargesLeft", {item: ammoItem.displayName}));
                         }
                         ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.NotEnoughAmmo", {count: currentAmmo}));
                         multiVal = currentAmmo;
                     }
                     pendingAmmoUpdate = { doc: ammoItem, data: {"system.uses.value": Math.max(0, currentAmmo - multiVal)} };
+                    firedAmmo = ammoItem;
                 }
             }
         } else if (item.type === 'ability') {
@@ -2476,7 +2523,20 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 armourPen = item.system.armourPenetration || 0;
             }
         }
-        const damageBreakdown = (weaponOverride ? weaponOverride.system.damageBreakdown : item.system.damageBreakdown) || [];
+        let damageBreakdown = (weaponOverride ? weaponOverride.system.damageBreakdown : item.system.damageBreakdown) || [];
+
+        // Magic: fired ammo adds its bonus damage; the weapon's own bonus damage is already in
+        // calculatedDamage/damageBreakdown. On-hit statuses come from the weapon and the ammo.
+        const magicState = this.document.system.magicState ?? {};
+        const ammoBonus = (firedAmmo && magicState[firedAmmo.id]?.onUse) ? bonusDamageComponents(firedAmmo.system.magic) : [];
+        if (ammoBonus.length) {
+            damageBreakdown = [...damageBreakdown, ...ammoBonus];
+            damage += ammoBonus.reduce((sum, c) => sum + c.damage, 0);
+        }
+        for (const source of [weaponOverride ?? item, firedAmmo]) {
+            if (!source || !magicState[source.id]?.onUse) continue;
+            magicStatusIds.push(...(source.system.magic?.onHitStatusIds ?? []).filter(Boolean));
+        }
         const damageTypesJson = JSON.stringify(damageBreakdown).replace(/'/g, "&#39;");
 
         const isAoE = !!item.system.isAoE || (item.system.calculator?.enabled && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === 'aoe'));
@@ -2832,6 +2892,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         flags: {
           tams: {
             inflictsStatusId: item?.system?.inflictsStatusId || "",
+            inflictsStatusIds: [...new Set([item?.system?.inflictsStatusId, ...magicStatusIds].filter(Boolean))],
             attackerActorId: this.document.id,
             attackerWeaponId: item?.id || "",
             hasSave: item?.system?.hasSave ?? false,

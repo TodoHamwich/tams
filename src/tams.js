@@ -312,12 +312,36 @@ Hooks.once("init", async function() {
     }
   };
 
-  Hooks.on("updateActor", (actor) => tamsSyncEncumbrance(actor));
-  Hooks.on("createItem", (item) => { if (item.parent) tamsSyncEncumbrance(item.parent); });
-  Hooks.on("updateItem", (item) => { if (item.parent) tamsSyncEncumbrance(item.parent); });
-  Hooks.on("deleteItem", (item) => {
+  // Magic item granted abilities: only the client that made the change syncs, so the
+  // add/remove happens once. Debounced per actor since one equip can fire several hooks.
+  const magicSyncTimers = new Map();
+  const tamsQueueMagicSync = (actor, userId) => {
+    if (!actor || userId !== game.user.id || typeof actor.syncMagicGrants !== "function") return;
+    clearTimeout(magicSyncTimers.get(actor.uuid));
+    magicSyncTimers.set(actor.uuid, setTimeout(() => {
+      magicSyncTimers.delete(actor.uuid);
+      actor.syncMagicGrants();
+    }, 50));
+  };
+
+  Hooks.on("updateActor", (actor, changes, options, userId) => {
+    tamsSyncEncumbrance(actor);
+    tamsQueueMagicSync(actor, userId);
+  });
+  Hooks.on("createItem", (item, options, userId) => {
     if (!item.parent) return;
     tamsSyncEncumbrance(item.parent);
+    tamsQueueMagicSync(item.parent, userId);
+  });
+  Hooks.on("updateItem", (item, changes, options, userId) => {
+    if (!item.parent) return;
+    tamsSyncEncumbrance(item.parent);
+    tamsQueueMagicSync(item.parent, userId);
+  });
+  Hooks.on("deleteItem", (item, options, userId) => {
+    if (!item.parent) return;
+    tamsSyncEncumbrance(item.parent);
+    tamsQueueMagicSync(item.parent, userId);
     if (item.type !== "armor") return;
     const actor = item.parent;
     const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];

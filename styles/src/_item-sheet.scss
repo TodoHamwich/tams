@@ -126,3 +126,69 @@
         background: rgba(0,0,0,0.05);
     }
 }
+
+// Magic Effects section (templates/item-sheet.html)
+.tams-magic-section {
+    summary { cursor: pointer; margin-bottom: 4px; }
+
+    .magic-gm-row {
+        align-items: center;
+        gap: 4px;
+        padding: 3px 4px;
+        border: 1px dashed #7e57c2;
+        border-radius: 3px;
+        margin-bottom: 4px;
+        label { flex: 0 0 auto; }
+        input[type="checkbox"] { flex: 0 0 auto; }
+    }
+    .magic-unidentified, .magic-curse { gap: 2px; margin-bottom: 6px; }
+    .magic-list-header {
+        align-items: center;
+        margin-top: 6px;
+        h4 { margin: 0; border: none; flex: 1; }
+        a { flex: 0 0 20px; text-align: right; }
+    }
+    .magic-row {
+        align-items: center;
+        gap: 5px;
+        margin-bottom: 3px;
+        .magic-num { flex: 0 0 55px; text-align: center; }
+        .magic-del { flex: 0 0 20px; text-align: right; }
+        img { flex: 0 0 20px; border: none; }
+        .magic-granted-name { flex: 1; font-weight: bold; font-size: 0.9em; }
+    }
+    .magic-curse-flag {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        color: #b71c1c;
+        cursor: help;
+    }
+    .magic-curse-row { border-left: 3px solid #b71c1c; padding-left: 3px; }
+    .magic-limbs {
+        justify-content: center;
+        gap: 2px;
+        flex-wrap: nowrap;
+        margin-bottom: 4px;
+    }
+    .magic-limb {
+        flex: 0 0 auto;
+        font-size: 0.68em;
+        padding: 0 3px;
+        border: 1px solid #aaa;
+        border-radius: 3px;
+        color: #666;
+        white-space: nowrap;
+
+        &.active { border-color: #2e7d32; background: rgba(46, 125, 50, 0.18); color: #2e7d32; }
+    }
+    .magic-granted {
+        min-height: 36px;
+        border: 1px dashed #bbb;
+        border-radius: 3px;
+        padding: 6px;
+        gap: 3px;
+    }
+    .magic-empty { color: #999; font-style: italic; font-size: 0.82em; text-align: center; margin: 4px 0; }
+}

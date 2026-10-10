@@ -1,5 +1,29 @@
 import { getAbilityIssues } from '../utils/ability-validation.js';
 import { PROFESSION_TYPES, PROFESSION_MAX_RANK, PROFESSION_RANK_STEP } from '../utils/profession.js';
+import { MAGIC_ITEM_TYPES, REQUIREMENT_TYPES, curseVisible } from '../utils/magic-items.js';
+
+const LIMB_KEYS = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+const LIMB_I18N = {
+  head: 'TAMS.HitLocations.Head', thorax: 'TAMS.HitLocations.Thorax',
+  stomach: 'TAMS.HitLocations.Stomach', leftArm: 'TAMS.HitLocations.LeftArm',
+  rightArm: 'TAMS.HitLocations.RightArm', leftLeg: 'TAMS.HitLocations.LeftLeg',
+  rightLeg: 'TAMS.HitLocations.RightLeg'
+};
+const LIMB_ABBREV = {
+  head: 'TAMS.Race.LimbAbbrev.Head', thorax: 'TAMS.Race.LimbAbbrev.Thorax',
+  stomach: 'TAMS.Race.LimbAbbrev.Stomach', leftArm: 'TAMS.Race.LimbAbbrev.LeftArm',
+  rightArm: 'TAMS.Race.LimbAbbrev.RightArm', leftLeg: 'TAMS.Race.LimbAbbrev.LeftLeg',
+  rightLeg: 'TAMS.Race.LimbAbbrev.RightLeg'
+};
+
+/** Blank entry for each magic-effect list (see magicFields in src/models/item.js). */
+const MAGIC_LIST_DEFAULTS = {
+  modifiers: () => ({ target: "stats.strength.value", value: 0, curse: false }),
+  resistances: () => ({ damageType: "", category: "resistance", value: 0, limbs: [], curse: false }),
+  onHitStatusIds: () => "",
+  bonusDamage: () => ({ damageType: "", amount: 0 }),
+  requirements: () => ({ type: "stat", key: "strength", value: 0 }),
+};
 
 /**
  * The TAMS Item Sheet Application.
@@ -28,14 +52,17 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
         damageComponentDelete: TAMSItemSheet.prototype._onDamageComponentDelete,
         updateDamageComponent: TAMSItemSheet.prototype._onUpdateDamageComponent,
         tagToggle: TAMSItemSheet.prototype._onTagToggle,
-        toggleSection: TAMSItemSheet.prototype._onToggleSection
+        toggleSection: TAMSItemSheet.prototype._onToggleSection,
+        magicAdd: TAMSItemSheet.prototype._onMagicAdd,
+        magicDelete: TAMSItemSheet.prototype._onMagicDelete,
+        magicLimbToggle: TAMSItemSheet.prototype._onMagicLimbToggle
       }
     }, { inplace: false });
   }
 
   /** @override */
   get title() {
-    return this.document.name;
+    return this.document.displayName ?? this.document.name;
   }
 
   static PARTS = {
@@ -205,19 +232,6 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     }
 
     if (this.document.type === 'race') {
-        const LIMB_KEYS = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
-        const LIMB_I18N = {
-            head: 'TAMS.HitLocations.Head', thorax: 'TAMS.HitLocations.Thorax',
-            stomach: 'TAMS.HitLocations.Stomach', leftArm: 'TAMS.HitLocations.LeftArm',
-            rightArm: 'TAMS.HitLocations.RightArm', leftLeg: 'TAMS.HitLocations.LeftLeg',
-            rightLeg: 'TAMS.HitLocations.RightLeg'
-        };
-        const LIMB_ABBREV = {
-            head: 'TAMS.Race.LimbAbbrev.Head', thorax: 'TAMS.Race.LimbAbbrev.Thorax',
-            stomach: 'TAMS.Race.LimbAbbrev.Stomach', leftArm: 'TAMS.Race.LimbAbbrev.LeftArm',
-            rightArm: 'TAMS.Race.LimbAbbrev.RightArm', leftLeg: 'TAMS.Race.LimbAbbrev.LeftLeg',
-            rightLeg: 'TAMS.Race.LimbAbbrev.RightLeg'
-        };
         context.enrichedResistances = (this.document.system.resistances || []).map((res, index) => {
             const active = new Set(res.limbs ?? []);
             return {
@@ -231,6 +245,8 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
             };
         });
     }
+
+    if (MAGIC_ITEM_TYPES.includes(this.document.type)) this._prepareMagicContext(context);
 
     context.rechargeTypeOptions = {
       "combat": "TAMS.Ability.RechargeOnCombat",
@@ -403,6 +419,20 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
       });
     });
 
+    this.element.querySelectorAll('[data-magic-list]').forEach(el => {
+      el.addEventListener('change', async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const t = ev.currentTarget;
+        t.dataset.list = t.dataset.magicList;
+        await this._onUpdateMagicEntry(ev, t);
+      });
+    });
+
+    this.element.querySelector('.magic-section-toggle')?.addEventListener('toggle', ev => {
+      this._magicOpen = ev.currentTarget.open;
+    });
+
     this.element.querySelectorAll('.save-against-preset').forEach(select => {
       select.addEventListener('change', event => {
         const value = event.target.value;
@@ -423,7 +453,9 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
 
   /** @override */
   async _onDrop(event) {
-    if (this.document.type !== 'race') return;
+    const isMagic = MAGIC_ITEM_TYPES.includes(this.document.type);
+    if (this.document.type !== 'race' && !isMagic) return;
+    if (isMagic && !game.user.isGM) return;
     const data = TextEditor.getDragEventData(event);
     if (data.type !== 'Item') return;
 
@@ -434,9 +466,152 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     }
 
     const abilityData = item.toObject();
+    if (isMagic) {
+      const granted = foundry.utils.duplicate(this.document.system.magic?.grantedAbilities ?? []);
+      granted.push(abilityData);
+      return this.document.update({ 'system.magic.grantedAbilities': granted });
+    }
     const abilities = foundry.utils.duplicate(this.document.system.grantedAbilities || []);
     abilities.push(abilityData);
     await this.document.update({ 'system.grantedAbilities': abilities });
+  }
+
+  /**
+   * Build the context for the Magic Effects section. Only the GM can edit it; players see it
+   * read-only, without curse-flagged entries until the curse is revealed, and not at all while
+   * the item is unidentified.
+   * @param {object} context
+   * @protected
+   */
+  _prepareMagicContext(context) {
+    const magic = this.document.system.magic ?? {};
+    const isGM = game.user.isGM;
+    const showCurse = curseVisible(magic, isGM);
+    const visible = (entry) => showCurse || !entry.curse;
+    const indexed = (list) => (list ?? []).map((entry, index) => ({ entry, index }));
+
+    context.isMagicType = true;
+    context.isGM = isGM;
+    context.magicEditable = isGM && this.isEditable;
+    context.showMagicIdentity = this.document.isIdentityVisible;
+    context.showCurse = showCurse;
+    context.magicDisabled = context.magicEditable ? "" : "disabled";
+    context.displayName = this.document.displayName;
+    context.publicDescription = this.document.publicDescription;
+    context.magicSectionOpen = this._magicOpen ?? (isGM || false);
+
+    context.magicModifiers = indexed(magic.modifiers).filter(({ entry }) => visible(entry))
+      .map(({ entry, index }) => ({ ...entry, index }));
+    context.magicResistances = indexed(magic.resistances).filter(({ entry }) => visible(entry))
+      .map(({ entry, index }) => {
+        const active = new Set(entry.limbs ?? []);
+        return {
+          ...entry, index,
+          isGlobal: active.size === 0,
+          limbButtons: LIMB_KEYS.map(key => ({
+            key, active: active.has(key), i18nKey: LIMB_I18N[key], abbrevKey: LIMB_ABBREV[key]
+          }))
+        };
+      });
+    context.magicStatuses = indexed(magic.onHitStatusIds).map(({ entry, index }) => ({ id: entry, index }));
+    context.magicBonusDamage = indexed(magic.bonusDamage).map(({ entry, index }) => ({ ...entry, index }));
+    context.magicRequirements = indexed(magic.requirements).map(({ entry, index }) => ({
+      ...entry, index,
+      isStat: entry.type === "stat",
+      hasValue: entry.type === "stat" || entry.type === "profession"
+    }));
+    context.magicGrantedAbilities = (magic.grantedAbilities ?? []).map((a, index) => ({
+      name: a.name, img: a.img, cost: a.system?.cost, index
+    }));
+    context.magicModifierTargetOptions = {
+      ...context.modifierTargetOptions,
+      itemAttacks: "TAMS.Magic.ItemAttacks"
+    };
+    context.requirementTypeOptions = Object.fromEntries(
+      REQUIREMENT_TYPES.map(t => [t, `TAMS.Magic.RequirementType.${t}`]));
+    context.statusIdOptions = (CONFIG.statusEffects ?? []).filter(se => se.tams)
+      .map(se => ({ id: se.id, label: game.i18n.localize(se.name ?? se.label ?? se.id) }));
+
+    // Unequippable types (ammo) ignore "requires equipped".
+    context.magicCanRequireEquip = this.document.type !== "ammo";
+    context.magicStatusApplies = ["weapon", "ammo"].includes(this.document.type);
+  }
+
+  /**
+   * Add a blank entry to one of the magic-effect lists.
+   * @param {Event} event
+   * @param {HTMLElement} target Carries data-list.
+   * @protected
+   */
+  async _onMagicAdd(event, target) {
+    const list = target.dataset.list;
+    if (!MAGIC_LIST_DEFAULTS[list] || !game.user.isGM) return;
+    const entries = foundry.utils.duplicate(this.document.system.magic?.[list] ?? []);
+    entries.push(MAGIC_LIST_DEFAULTS[list]());
+    await this.document.update({ [`system.magic.${list}`]: entries });
+  }
+
+  /**
+   * Remove one entry from a magic-effect list (incl. grantedAbilities).
+   * @param {Event} event
+   * @param {HTMLElement} target Carries data-list and data-index.
+   * @protected
+   */
+  async _onMagicDelete(event, target) {
+    const list = target.dataset.list;
+    const index = parseInt(target.dataset.index ?? target.closest("[data-index]")?.dataset.index);
+    if (!game.user.isGM || Number.isNaN(index)) return;
+    const entries = foundry.utils.duplicate(this.document.system.magic?.[list] ?? []);
+    if (index < 0 || index >= entries.length) return;
+    entries.splice(index, 1);
+    await this.document.update({ [`system.magic.${list}`]: entries });
+  }
+
+  /**
+   * Toggle a limb on a magic resistance's limb scope.
+   * @param {Event} event
+   * @param {HTMLElement} target Carries data-limb-key; row carries data-index.
+   * @protected
+   */
+  async _onMagicLimbToggle(event, target) {
+    if (!game.user.isGM) return;
+    const index = parseInt(target.closest("[data-index]").dataset.index);
+    const limbKey = target.dataset.limbKey;
+    const entries = foundry.utils.duplicate(this.document.system.magic?.resistances ?? []);
+    const entry = entries[index];
+    if (!entry) return;
+    const limbs = new Set(entry.limbs ?? []);
+    if (limbs.has(limbKey)) limbs.delete(limbKey); else limbs.add(limbKey);
+    entry.limbs = [...limbs];
+    await this.document.update({ "system.magic.resistances": entries });
+  }
+
+  /**
+   * Persist an edit to one field of one magic-effect list entry. Same reason as
+   * _onUpdateDamageComponent: array-of-schema fields don't survive the generic form submit.
+   * @param {Event} event
+   * @param {HTMLElement} target Carries data-list, data-index and data-field ("" for string lists).
+   * @protected
+   */
+  async _onUpdateMagicEntry(event, target) {
+    if (!game.user.isGM) return;
+    const list = target.dataset.list;
+    const index = parseInt(target.dataset.index);
+    const field = target.dataset.field;
+    if (!MAGIC_LIST_DEFAULTS[list] || Number.isNaN(index)) return;
+    const entries = foundry.utils.duplicate(this.document.system.magic?.[list] ?? []);
+    if (index < 0 || index >= entries.length) return;
+    const value = target.type === "checkbox" ? target.checked
+      : target.type === "number" ? (parseFloat(target.value) || 0)
+      : target.value;
+    if (field) {
+      entries[index][field] = value;
+      // A new requirement type wants a fresh key (a stat key vs. a name).
+      if (list === "requirements" && field === "type") entries[index].key = value === "stat" ? "strength" : "";
+    } else {
+      entries[index] = value;
+    }
+    await this.document.update({ [`system.magic.${list}`]: entries });
   }
 
   /**
