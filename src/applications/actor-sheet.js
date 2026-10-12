@@ -1365,7 +1365,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       rejectClose: false,
       buttons: [
         { action: "repair", icon: "fa-solid fa-hammer", label: game.i18n.localize("TAMS.Repair.Action"), default: true, callback: (event, button, dialog) => dialog.element.querySelector('[name="skill"]').value },
-        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
     });
     if (!choice) return;
@@ -1907,9 +1907,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       rejectClose: false,
       buttons: [
         { action: "ok", label: game.i18n.localize("TAMS.Confirm"), default: true, callback: (event, button, dialog) => weapons.find(w => w.id === dialog.element.querySelector('#tams-weapon-picker').value) },
-        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
-    }) ?? null;
+    }) || null;
   }
 
   /**
@@ -2379,6 +2379,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                         squadBonus = (maxSquadTargets - numTargetsCount) * 5;
                     }
                 } else {
+                    // Melee hordes hit every targeted enemy (rulebook: anyone within their size in meters).
+                    maxSquadTargets = Infinity;
                     const smartMult = settings.isSmart ? 2 : 1;
                     squadBonus = squadSize * smartMult;
                 }
@@ -2448,9 +2450,12 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (item && (item.type === 'weapon' || (item.type === 'ability' && item.system.isAttack))) {
         let damage = item.system.calculatedDamage;
         let weaponOverride = null;
+        let weaponAbilityBreakdown = null;
         if (item.type === 'ability' && item.system.useWeaponDamage && abilityWeapon) {
             weaponOverride = abilityWeapon;
-            damage = weaponOverride.system.calculatedDamage;
+            // The ability's multiplier, bonus and split extras apply on top of the weapon.
+            weaponAbilityBreakdown = item.system.weaponDamageBreakdown(weaponOverride);
+            damage = weaponAbilityBreakdown.reduce((sum, c) => sum + c.damage, 0);
         }
         const isRanged = item.type === 'weapon' ? !!item.system.isRanged : (weaponOverride ? !!weaponOverride.system.isRanged : (item.system.calculator?.range > 10));
 
@@ -2523,7 +2528,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 armourPen = item.system.armourPenetration || 0;
             }
         }
-        let damageBreakdown = (weaponOverride ? weaponOverride.system.damageBreakdown : item.system.damageBreakdown) || [];
+        let damageBreakdown = (weaponAbilityBreakdown ?? item.system.damageBreakdown) || [];
 
         // Magic: fired ammo adds its bonus damage; the weapon's own bonus damage is already in
         // calculatedDamage/damageBreakdown. On-hit statuses come from the weapon and the ammo.

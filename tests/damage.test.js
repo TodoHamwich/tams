@@ -110,6 +110,17 @@ describe('TAMSActor applyDamage', () => {
         expect(actor.system.limbs.thorax.value).toBe(30); // 50 - 20
     });
 
+    it('caps AoE pre-split per-member sub-hits at one member each (no multiplier)', async () => {
+        // The AoE damage dialog splits "2 members hit × 25" into two 25-damage sub-hits.
+        // Each sub-hit is one member, so each caps at 10 → 20 total, not 50.
+        const hits = [
+            { damage: 25, location: "Thorax", armourPen: 0 },
+            { damage: 25, location: "Thorax", armourPen: 0 }
+        ];
+        await actor.applyTAMSDamage(hits, { isAoE: true });
+        expect(actor.system.limbs.thorax.value).toBe(30); // 50 - 2×10
+    });
+
     it('does not accumulate damage for capping purposes across multiple hits to the same limb', async () => {
         // Individual max 10.
         // Hit 1: 7 damage. Effective 7.

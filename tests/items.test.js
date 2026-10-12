@@ -92,15 +92,15 @@ describe('TAMSWeaponData', () => {
       expect(weaponData.calculatedDamage).toBe(1000); // 1.0 multiplier
     });
 
-    it('sums damageComponents amounts when present, ignoring the stat formula', () => {
+    it('adds damageComponents amounts on top of the stat formula', () => {
       weaponData.isRanged = false;
       weaponData.isHeavy = true;
-      weaponData.isTwoHanded = true; // would otherwise be 20 * 1.0 = 20
+      weaponData.isTwoHanded = true; // 20 * 1.0 = 20
       weaponData.damageComponents = [
-        { damageType: "slashing", amount: 6 },
+        { damageType: "fire", amount: 6 },
         { damageType: "necrotic", amount: 4.7 },
       ];
-      expect(weaponData.calculatedDamage).toBe(10); // 6 + floor(4.7) = 10
+      expect(weaponData.calculatedDamage).toBe(30); // 20 + 6 + floor(4.7)
     });
   });
 
@@ -112,15 +112,26 @@ describe('TAMSWeaponData', () => {
       expect(weaponData.damageBreakdown).toEqual([{ damageType: "piercing", damage: 25 }]);
     });
 
-    it('returns each damageComponents entry as its own breakdown item when present', () => {
+    it('puts the stat damage in damageType and each component after it', () => {
+      weaponData.isRanged = true;
+      weaponData.rangedDamage = 25;
+      weaponData.damageType = "piercing";
       weaponData.damageComponents = [
-        { damageType: "slashing", amount: 6 },
+        { damageType: "fire", amount: 6 },
         { damageType: "necrotic", amount: 4 },
       ];
       expect(weaponData.damageBreakdown).toEqual([
-        { damageType: "slashing", damage: 6 },
+        { damageType: "piercing", damage: 25 },
+        { damageType: "fire", damage: 6 },
         { damageType: "necrotic", damage: 4 },
       ]);
+    });
+
+    it('drops a zero stat part when components carry the damage', () => {
+      weaponData.isRanged = true;
+      weaponData.rangedDamage = 0;
+      weaponData.damageComponents = [{ damageType: "fire", amount: 6 }];
+      expect(weaponData.damageBreakdown).toEqual([{ damageType: "fire", damage: 6 }]);
     });
   });
 
@@ -223,16 +234,17 @@ describe('TAMSAbilityData', () => {
       expect(abilityData.calculatedDamage).toBe(15);
     });
 
-    it('sums damageComponents amounts when present, ignoring damage/damageStat/damageMult', () => {
+    it('adds damageComponents amounts on top of the formula damage', () => {
       abilityData.isAttack = true;
       abilityData.damageStat = 'custom';
-      abilityData.damage = 999; // should be ignored
+      abilityData.damage = 10;
+      abilityData.damageBonus = 0;
       abilityData.damageComponents = [
         { damageType: "slashing", amount: 6 },
         { damageType: "necrotic", amount: 4 },
       ];
       abilityData.parent = { actor: {} };
-      expect(abilityData.calculatedDamage).toBe(10);
+      expect(abilityData.calculatedDamage).toBe(20);
     });
   });
 
@@ -247,15 +259,60 @@ describe('TAMSAbilityData', () => {
       expect(abilityData.damageBreakdown).toEqual([{ damageType: "necrotic", damage: 10 }]);
     });
 
-    it('returns each damageComponents entry as its own breakdown item when present', () => {
+    it('puts the formula damage in damageType and each component after it', () => {
+      abilityData.isAttack = true;
+      abilityData.damageStat = 'custom';
+      abilityData.damage = 10;
+      abilityData.damageBonus = 0;
+      abilityData.damageType = "fire";
       abilityData.damageComponents = [
         { damageType: "slashing", amount: 6 },
         { damageType: "necrotic", amount: 4 },
       ];
+      abilityData.parent = { actor: {} };
       expect(abilityData.damageBreakdown).toEqual([
+        { damageType: "fire", damage: 10 },
         { damageType: "slashing", damage: 6 },
         { damageType: "necrotic", damage: 4 },
       ]);
+    });
+  });
+
+  describe('weaponDamageBreakdown (useWeaponDamage)', () => {
+    // Flaming sword: 20 Slashing stat damage + a 5 Fire split extra.
+    const sword = { system: { statDamage: 20, damageType: "slashing", damageComponents: [{ damageType: "fire", amount: 5 }], magic: {} } };
+
+    it('defaults to the weapon damage unchanged', () => {
+      expect(abilityData.weaponDamageBreakdown(sword)).toEqual([
+        { damageType: "slashing", damage: 20 },
+        { damageType: "fire", damage: 5 },
+      ]);
+    });
+
+    it('multiplies only the main type (rounded down), then adds the flat bonus', () => {
+      abilityData.weaponDamageMult = 1.25; // 20 × 1.25 = 25
+      abilityData.damageBonus = 3;
+      expect(abilityData.weaponDamageBreakdown(sword)).toEqual([
+        { damageType: "slashing", damage: 28 },
+        { damageType: "fire", damage: 5 },
+      ]);
+      abilityData.weaponDamageMult = 1.33; // 26.6 → 26
+      abilityData.damageBonus = 0;
+      expect(abilityData.weaponDamageBreakdown(sword)[0].damage).toBe(26);
+    });
+
+    it("adds the ability's own split extras after the weapon's", () => {
+      abilityData.damageComponents = [{ damageType: "radiant", amount: 8 }];
+      expect(abilityData.weaponDamageBreakdown(sword)).toEqual([
+        { damageType: "slashing", damage: 20 },
+        { damageType: "fire", damage: 5 },
+        { damageType: "radiant", damage: 8 },
+      ]);
+    });
+
+    it("ignores the ability's own damageMult (its 0.5 default must not halve weapon damage)", () => {
+      abilityData.damageMult = 0.5;
+      expect(abilityData.weaponDamageBreakdown(sword)[0].damage).toBe(20);
     });
   });
 

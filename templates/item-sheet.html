@@ -866,6 +866,14 @@
                         <div class="flexrow" style="grid-column: 1 / -1;">
                             <em style="color: #888; font-size: 0.9em;">{{localize 'TAMS.UseWeaponDamageHint'}}</em>
                         </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.WeaponDamageMultiplier'}}</label>
+                            <input type="number" name="system.weaponDamageMult" value="{{system.weaponDamageMult}}" step="0.05"/>
+                        </div>
+                        <div class="flexrow">
+                            <label>{{localize 'TAMS.DamageBonus'}}</label>
+                            <input type="number" name="system.damageBonus" value="{{system.damageBonus}}"/>
+                        </div>
                         {{else}}
                         <div class="flexrow">
                             <label>{{localize 'TAMS.DamageStat'}}</label>
@@ -893,6 +901,7 @@
                                 {{selectOptions damageTypeOptions selected=system.damageType localize=true}}
                             </select>
                         </div>
+                        {{/if}}
 
                         {{!-- Split-type damage (optional) --}}
                         <div class="flexrow" style="align-items: center;">
@@ -915,11 +924,12 @@
                         </div>
                         {{/if}}
 
+                        {{#unless system.useWeaponDamage}}
                         <div class="flexrow">
                             <label>{{localize 'TAMS.CalculatedDamage'}}</label>
                             <span class="ability-cost-badge">{{system.calculatedDamage}}</span>
                         </div>
-                        {{/if}}
+                        {{/unless}}
                         <div class="flexrow">
                             <label>{{localize 'TAMS.ArmourPenetration'}}</label>
                             <input type="number" name="system.armourPenetration" value="{{system.armourPenetration}}"/>

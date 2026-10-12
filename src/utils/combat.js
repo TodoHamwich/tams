@@ -371,7 +371,7 @@ export async function tamsCallGroupCheck() {
           difficulty: parseInt(dialog.element.querySelector("#gc-difficulty").value) || 0
         })
       },
-      { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
     ]
   });
 
@@ -997,7 +997,10 @@ async function openTAMSDamageDialog(target, {
                 }
             }
 
-            const { pendingChecks, report } = await target.applyTAMSDamage(hits, { isAoE: isAoEHit, multiplier });
+            // The AoE multiplier is already spent above: each squad/horde member hit got its own
+            // sub-hit, so each sub-hit is capped at one member (passing the multiplier again
+            // would let every sub-hit kill `multiplier` members).
+            const { pendingChecks, report } = await target.applyTAMSDamage(hits, { isAoE: isAoEHit });
             ChatMessage.create({ content: report });
             if (pendingChecks.length > 0) showCombinedInjuryDialog(target, pendingChecks);
 
@@ -1097,7 +1100,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           rejectClose: false,
           buttons: [
             { action: "roll", label: game.i18n.localize("TAMS.GroupCheck.RollAll"), default: true, callback: (event, button, dialog) => dialog.element.querySelector("#gc-player-roll").value },
-            { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+            { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
           ]
         });
 
@@ -1231,7 +1234,7 @@ export async function tamsRenderChatMessage(message, html, data) {
             rejectClose: false,
             buttons: [
               { action: "ok", label: game.i18n.localize("TAMS.ContestedCheck.Roll"), default: true, callback: (event, button, dialog) => game.actors.get(dialog.element.querySelector("#cc-actor-choice").value) },
-              { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+              { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
             ]
           });
         } else {
@@ -1279,7 +1282,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           rejectClose: false,
           buttons: [
             { action: "roll", label: game.i18n.localize("TAMS.ContestedCheck.Roll"), default: true, callback: (event, button, dialog) => dialog.element.querySelector("#cc-roll-choice").value },
-            { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+            { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
           ]
         });
 
@@ -1462,7 +1465,7 @@ export async function tamsRenderChatMessage(message, html, data) {
               const pts = Math.clamp(parseInt(dialog.element.querySelector("#res-points").value) || 0, 0, maxPoints);
               return { pts };
           }},
-          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
         ]
       });
 
@@ -1595,7 +1598,7 @@ export async function tamsRenderChatMessage(message, html, data) {
                     const form = dialog.element;
                     return { effects: parseInt(form.querySelector("#mishap-effects")?.value) || 0, oneTurn: form.querySelector("#mishap-oneturn")?.checked, turns: parseInt(form.querySelector("#mishap-turns")?.value) || 0, reduced: form.querySelector("#mishap-reduced")?.checked };
                 }},
-                { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+                { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
             ]
         });
         if (!result) return;
@@ -1845,7 +1848,7 @@ export async function tamsRenderChatMessage(message, html, data) {
               if (requestedPoints > res.value) requestedPoints = res.value;
               return { resId, points: requestedPoints, unaware: form.querySelector("#unaware").checked };
           }},
-          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
         ]
       });
 
@@ -1958,7 +1961,7 @@ export async function tamsRenderChatMessage(message, html, data) {
         rejectClose: false,
         buttons: [
           { action: "go", label: game.i18n.localize("TAMS.Combat.RetaliateButton"), default: true, callback: (event, button, dialog) => dialog.element.querySelector('#ret-weapon').value },
-          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
         ]
       });
       const weapon = actor.items.get(chosenId);
@@ -2181,7 +2184,7 @@ export async function tamsRenderChatMessage(message, html, data) {
                     if (pts > res.value) pts = res.value;
                     return { resId, pts };
                 }},
-                { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+                { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
             ]
         });
 
@@ -2240,7 +2243,7 @@ export async function tamsRenderChatMessage(message, html, data) {
                     if (pts > res.value) pts = res.value;
                     return { resId, pts };
                 }},
-                { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+                { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
             ]
         });
 
@@ -2301,7 +2304,7 @@ export async function tamsRenderChatMessage(message, html, data) {
                     if (pts > res.value) pts = res.value;
                     return { resId, pts };
                 }},
-                { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+                { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
             ]
         });
 
@@ -2410,10 +2413,10 @@ export async function tamsRenderChatMessage(message, html, data) {
                 rejectClose: false,
                 buttons: [
                     { action: "roll", label: game.i18n.localize("TAMS.Combat.Roll"), default: true, callback: (event, button, dialog) => parseInt(dialog.element.querySelector("#dc").value) || 0 },
-                    { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+                    { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
                 ]
             });
-            if (dc === null) return;
+            if (dc === false) return;
         }
 
         let rollResults = [], successCount = 0;

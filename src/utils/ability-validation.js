@@ -36,7 +36,9 @@ export function getAbilityIssues(system, { onActor = false, customResources = []
   const components = system.damageComponents ?? [];
 
   if (system.isAttack && !system.useWeaponDamage) {
-    const hasType = !!system.damageType || components.some(c => c.damageType);
+    // Split components add on top of the stat damage, which is dealt as damageType, so a
+    // typed component only covers for a missing damageType when there is no stat damage.
+    const hasType = !!system.damageType || ((system.statDamage ?? 0) <= 0 && components.some(c => c.damageType));
     if (!hasType) error("noDamageType");
     if (onActor || components.length) {
       if ((system.calculatedDamage ?? 0) <= 0) error("zeroDamage");

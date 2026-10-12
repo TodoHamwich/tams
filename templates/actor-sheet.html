@@ -467,7 +467,7 @@
                     <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} {{#if item.isGrantedByMagic}}<i class="fas fa-wand-sparkles tams-magic-icon" data-tooltip="{{localize 'TAMS.Magic.GrantedByItem'}}"></i>{{/if}}{{#if item.issueErrors}}<i class="fas fa-circle-exclamation tams-ability-issue error" data-tooltip="{{item.issueErrors}}"></i>{{/if}}{{#if item.issueWarnings}}<i class="fas fa-triangle-exclamation tams-ability-issue warning" data-tooltip="{{item.issueWarnings}}"></i>{{/if}}
-                        {{#if item.system.isAttack}}
+                        {{#if (and item.system.isAttack (not item.system.useWeaponDamage))}}
                         ({{localize 'TAMS.DmgColon'}} {{item.system.calculatedDamage}})
                         {{/if}}
                         {{#if (gt item.system.uses.max 0)}}

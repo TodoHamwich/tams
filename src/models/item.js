@@ -107,6 +107,25 @@ function activeBonusDamage(system) {
   return bonusDamageComponents(system.magic);
 }
 
+/**
+ * A weapon/ability's split-type damage components, normalized to breakdown entries.
+ * @returns {{damageType: string, damage: number}[]}
+ */
+function splitComponents(system) {
+  return (system.damageComponents ?? []).map(c => ({damageType: c.damageType || "", damage: Math.floor(c.amount || 0)}));
+}
+
+/**
+ * Damage breakdown: the stat-derived damage as `damageType`, plus each split component on top.
+ * A zero stat part is dropped when components carry the damage, so it never shows as an empty type.
+ * @returns {{damageType: string, damage: number}[]}
+ */
+function withSplitComponents(system, statDamage) {
+  const extras = splitComponents(system);
+  const base = {damageType: system.damageType || "", damage: statDamage};
+  return (statDamage > 0 || !extras.length) ? [base, ...extras] : extras;
+}
+
 // ── DataModel classes ─────────────────────────────────────────────────────────
 
 /**
@@ -144,10 +163,9 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       special: new fields.StringField({initial: ""}),
       isAoE: new fields.BooleanField({initial: false}),
       damageType: new fields.StringField({initial: ""}),
-      // Optional split-type damage (e.g. a weapon dealing both Slashing and Necrotic damage in
-      // one hit). Each component's `amount` is an authored fixed number, not stat-derived — the
-      // isLight/isHeavy/isTwoHanded stat formula below only applies to single-type weapons.
-      // Leave empty to use the legacy single `damageType` + formula-derived damage below.
+      // Optional split-type damage (e.g. a sword dealing Slashing + Necrotic in one hit). The
+      // stat-derived damage below stays in `damageType`; each component ADDS a fixed `amount`
+      // of its own type on top, independently subject to resistances.
       damageComponents: new fields.ArrayField(new fields.SchemaField({
         damageType: new fields.StringField({initial: ""}),
         amount: new fields.NumberField({initial: 0, nullable: true}),
@@ -163,11 +181,13 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     return this.baseDamage + activeBonusDamage(this).reduce((sum, c) => sum + c.damage, 0);
   }
 
-  /** Weapon damage without magic bonus damage. */
+  /** Weapon damage without magic bonus damage: stat damage plus any split components. */
   get baseDamage() {
-    if (this.damageComponents?.length) {
-      return this.damageComponents.reduce((sum, c) => sum + Math.floor(c.amount || 0), 0);
-    }
+    return this.statDamage + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
+  }
+
+  /** The weapon's own stat-derived (or ranged) damage, dealt as `damageType`. */
+  get statDamage() {
     if (this.isRanged) return Math.floor(this.rangedDamage || 0);
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
@@ -189,10 +209,7 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
   }
 
   get damageBreakdown() {
-    const base = this.damageComponents?.length
-      ? this.damageComponents.map(c => ({damageType: c.damageType || "", damage: Math.floor(c.amount || 0)}))
-      : [{damageType: this.damageType || "", damage: this.baseDamage}];
-    return [...base, ...activeBonusDamage(this)];
+    return [...withSplitComponents(this, this.statDamage), ...activeBonusDamage(this)];
   }
 }
 
@@ -372,6 +389,9 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       ...usesFields(fields),
       isAttack: new fields.BooleanField({initial: false}),
       useWeaponDamage: new fields.BooleanField({initial: false}),
+      // With useWeaponDamage: scales the weapon's main-type damage (its own split/magic extras
+      // stay flat). Separate from damageMult, whose 0.5 default would halve existing abilities.
+      weaponDamageMult: new fields.NumberField({initial: 1, step: 0.05, nullable: true}),
       damage: new fields.NumberField({initial: 0, nullable: true}),
       armourPenetration: new fields.NumberField({initial: 0, integer: true, min: 0, nullable: true}),
       attackStat: new fields.StringField({initial: "strength"}),
@@ -382,8 +402,8 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       multiAttack: new fields.NumberField({initial: 1, nullable: true}),
       isAoE: new fields.BooleanField({initial: false}),
       damageType: new fields.StringField({initial: ""}),
-      // See TAMSWeaponData.damageComponents — same optional split-type override; leave empty to
-      // use the legacy single damageType + damage/damageStat/damageMult formula below.
+      // See TAMSWeaponData.damageComponents — same additive split-type damage on top of the
+      // damage/damageStat/damageMult formula below.
       damageComponents: new fields.ArrayField(new fields.SchemaField({
         damageType: new fields.StringField({initial: ""}),
         amount: new fields.NumberField({initial: 0, nullable: true}),
@@ -444,9 +464,11 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
 
   get calculatedDamage() {
     if ( !this.isAttack ) return 0;
-    if (this.damageComponents?.length) {
-      return this.damageComponents.reduce((sum, c) => sum + Math.floor(c.amount || 0), 0);
-    }
+    return this.statDamage + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
+  }
+
+  /** The ability's own formula damage, dealt as `damageType`. */
+  get statDamage() {
     const actor = this.parent?.actor;
     if ( !actor ) return 0;
 
@@ -459,10 +481,23 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
   }
 
   get damageBreakdown() {
-    if (this.damageComponents?.length) {
-      return this.damageComponents.map(c => ({damageType: c.damageType || "", damage: Math.floor(c.amount || 0)}));
-    }
-    return [{damageType: this.damageType || "", damage: this.calculatedDamage}];
+    if ( !this.isAttack ) return [{damageType: this.damageType || "", damage: 0}];
+    return withSplitComponents(this, this.statDamage);
+  }
+
+  /**
+   * Damage breakdown for a useWeaponDamage attack made with `weapon`: the weapon's stat damage
+   * × weaponDamageMult (rounded down) + damageBonus in the weapon's damageType, then the
+   * weapon's own split and magic extras unscaled, then this ability's split extras.
+   * @param {Item} weapon
+   * @returns {{damageType: string, damage: number}[]}
+   */
+  weaponDamageBreakdown(weapon) {
+    const w = weapon.system;
+    const main = Math.max(0, Math.floor((w.statDamage || 0) * (this.weaponDamageMult ?? 1)) + (this.damageBonus || 0));
+    const extras = [...splitComponents(w), ...activeBonusDamage(w), ...splitComponents(this)];
+    const base = {damageType: w.damageType || "", damage: main};
+    return (main > 0 || !extras.length) ? [base, ...extras] : extras;
   }
 
   get calculatedCost() {

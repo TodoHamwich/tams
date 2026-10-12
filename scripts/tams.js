@@ -778,6 +778,14 @@ function activeBonusDamage(system) {
   if (actor && !(state == null ? void 0 : state.onUse)) return [];
   return bonusDamageComponents(system.magic);
 }
+function splitComponents(system) {
+  return (system.damageComponents ?? []).map((c) => ({ damageType: c.damageType || "", damage: Math.floor(c.amount || 0) }));
+}
+function withSplitComponents(system, statDamage) {
+  const extras = splitComponents(system);
+  const base = { damageType: system.damageType || "", damage: statDamage };
+  return statDamage > 0 || !extras.length ? [base, ...extras] : extras;
+}
 class TAMSWeaponData extends foundry.abstract.TypeDataModel {
   static defineSchema() {
     const fields = foundry.data.fields;
@@ -810,10 +818,9 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       special: new fields.StringField({ initial: "" }),
       isAoE: new fields.BooleanField({ initial: false }),
       damageType: new fields.StringField({ initial: "" }),
-      // Optional split-type damage (e.g. a weapon dealing both Slashing and Necrotic damage in
-      // one hit). Each component's `amount` is an authored fixed number, not stat-derived — the
-      // isLight/isHeavy/isTwoHanded stat formula below only applies to single-type weapons.
-      // Leave empty to use the legacy single `damageType` + formula-derived damage below.
+      // Optional split-type damage (e.g. a sword dealing Slashing + Necrotic in one hit). The
+      // stat-derived damage below stays in `damageType`; each component ADDS a fixed `amount`
+      // of its own type on top, independently subject to resistances.
       damageComponents: new fields.ArrayField(new fields.SchemaField({
         damageType: new fields.StringField({ initial: "" }),
         amount: new fields.NumberField({ initial: 0, nullable: true })
@@ -827,14 +834,15 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
   get calculatedDamage() {
     return this.baseDamage + activeBonusDamage(this).reduce((sum, c) => sum + c.damage, 0);
   }
-  /** Weapon damage without magic bonus damage. */
+  /** Weapon damage without magic bonus damage: stat damage plus any split components. */
   get baseDamage() {
-    var _a, _b, _c;
-    if ((_a = this.damageComponents) == null ? void 0 : _a.length) {
-      return this.damageComponents.reduce((sum, c) => sum + Math.floor(c.amount || 0), 0);
-    }
+    return this.statDamage + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
+  }
+  /** The weapon's own stat-derived (or ranged) damage, dealt as `damageType`. */
+  get statDamage() {
+    var _a, _b;
     if (this.isRanged) return Math.floor(this.rangedDamage || 0);
-    const actor = (_b = this.parent) == null ? void 0 : _b.actor;
+    const actor = (_a = this.parent) == null ? void 0 : _a.actor;
     if (!actor) return 0;
     let statKey = "strength";
     if (this.damageStat && this.damageStat !== "default") {
@@ -844,16 +852,14 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
     } else {
       statKey = this.isLight ? "dexterity" : "strength";
     }
-    const statValue = ((_c = actor.system.stats[statKey]) == null ? void 0 : _c.total) || 0;
+    const statValue = ((_b = actor.system.stats[statKey]) == null ? void 0 : _b.total) || 0;
     let mult = 0.5;
     if (this.isHeavy) mult += 0.25;
     if (this.isTwoHanded) mult += 0.25;
     return Math.ceil(statValue * mult);
   }
   get damageBreakdown() {
-    var _a;
-    const base = ((_a = this.damageComponents) == null ? void 0 : _a.length) ? this.damageComponents.map((c) => ({ damageType: c.damageType || "", damage: Math.floor(c.amount || 0) })) : [{ damageType: this.damageType || "", damage: this.baseDamage }];
-    return [...base, ...activeBonusDamage(this)];
+    return [...withSplitComponents(this, this.statDamage), ...activeBonusDamage(this)];
   }
 }
 class TAMSSkillData extends foundry.abstract.TypeDataModel {
@@ -993,6 +999,9 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       ...usesFields(fields),
       isAttack: new fields.BooleanField({ initial: false }),
       useWeaponDamage: new fields.BooleanField({ initial: false }),
+      // With useWeaponDamage: scales the weapon's main-type damage (its own split/magic extras
+      // stay flat). Separate from damageMult, whose 0.5 default would halve existing abilities.
+      weaponDamageMult: new fields.NumberField({ initial: 1, step: 0.05, nullable: true }),
       damage: new fields.NumberField({ initial: 0, nullable: true }),
       armourPenetration: new fields.NumberField({ initial: 0, integer: true, min: 0, nullable: true }),
       attackStat: new fields.StringField({ initial: "strength" }),
@@ -1003,8 +1012,8 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
       multiAttack: new fields.NumberField({ initial: 1, nullable: true }),
       isAoE: new fields.BooleanField({ initial: false }),
       damageType: new fields.StringField({ initial: "" }),
-      // See TAMSWeaponData.damageComponents — same optional split-type override; leave empty to
-      // use the legacy single damageType + damage/damageStat/damageMult formula below.
+      // See TAMSWeaponData.damageComponents — same additive split-type damage on top of the
+      // damage/damageStat/damageMult formula below.
       damageComponents: new fields.ArrayField(new fields.SchemaField({
         damageType: new fields.StringField({ initial: "" }),
         amount: new fields.NumberField({ initial: 0, nullable: true })
@@ -1063,25 +1072,37 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
     };
   }
   get calculatedDamage() {
-    var _a, _b, _c;
     if (!this.isAttack) return 0;
-    if ((_a = this.damageComponents) == null ? void 0 : _a.length) {
-      return this.damageComponents.reduce((sum, c) => sum + Math.floor(c.amount || 0), 0);
-    }
-    const actor = (_b = this.parent) == null ? void 0 : _b.actor;
+    return this.statDamage + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
+  }
+  /** The ability's own formula damage, dealt as `damageType`. */
+  get statDamage() {
+    var _a, _b;
+    const actor = (_a = this.parent) == null ? void 0 : _a.actor;
     if (!actor) return 0;
     if (this.damageStat === "custom") {
       return (this.damage || 0) + (this.damageBonus || 0);
     }
-    const damageStatValue = ((_c = actor.system.stats[this.damageStat]) == null ? void 0 : _c.total) || 0;
+    const damageStatValue = ((_b = actor.system.stats[this.damageStat]) == null ? void 0 : _b.total) || 0;
     return Math.floor(damageStatValue * this.damageMult) + this.damageBonus + (this.damage || 0);
   }
   get damageBreakdown() {
-    var _a;
-    if ((_a = this.damageComponents) == null ? void 0 : _a.length) {
-      return this.damageComponents.map((c) => ({ damageType: c.damageType || "", damage: Math.floor(c.amount || 0) }));
-    }
-    return [{ damageType: this.damageType || "", damage: this.calculatedDamage }];
+    if (!this.isAttack) return [{ damageType: this.damageType || "", damage: 0 }];
+    return withSplitComponents(this, this.statDamage);
+  }
+  /**
+   * Damage breakdown for a useWeaponDamage attack made with `weapon`: the weapon's stat damage
+   * × weaponDamageMult (rounded down) + damageBonus in the weapon's damageType, then the
+   * weapon's own split and magic extras unscaled, then this ability's split extras.
+   * @param {Item} weapon
+   * @returns {{damageType: string, damage: number}[]}
+   */
+  weaponDamageBreakdown(weapon) {
+    const w = weapon.system;
+    const main = Math.max(0, Math.floor((w.statDamage || 0) * (this.weaponDamageMult ?? 1)) + (this.damageBonus || 0));
+    const extras = [...splitComponents(w), ...activeBonusDamage(w), ...splitComponents(this)];
+    const base = { damageType: w.damageType || "", damage: main };
+    return main > 0 || !extras.length ? [base, ...extras] : extras;
   }
   get calculatedCost() {
     return Math.max(1, Math.floor(this.rawCalculatedCost));
@@ -1787,7 +1808,7 @@ async function tamsCallGroupCheck() {
           difficulty: parseInt(dialog.element.querySelector("#gc-difficulty").value) || 0
         })
       },
-      { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+      { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
     ]
   });
   if (!config) return;
@@ -2344,7 +2365,7 @@ async function openTAMSDamageDialog(target, {
               hits.push({ location: loc, damage: incoming, armourPen, damageComponents: hitComponents, forceCrit: forceCrit ? "1" : "0" });
             }
           }
-          const { pendingChecks, report } = await target.applyTAMSDamage(hits, { isAoE: isAoEHit, multiplier });
+          const { pendingChecks, report } = await target.applyTAMSDamage(hits, { isAoE: isAoEHit });
           ChatMessage.create({ content: report });
           if (pendingChecks.length > 0) showCombinedInjuryDialog(target, pendingChecks);
           const statusIds = (message == null ? void 0 : message.getFlag("tams", "inflictsStatusIds")) ?? [message == null ? void 0 : message.getFlag("tams", "inflictsStatusId")].filter(Boolean);
@@ -2419,7 +2440,7 @@ async function tamsRenderChatMessage(message, html, data) {
         rejectClose: false,
         buttons: [
           { action: "roll", label: game.i18n.localize("TAMS.GroupCheck.RollAll"), default: true, callback: (event, button, dialog) => dialog.element.querySelector("#gc-player-roll").value },
-          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
         ]
       });
       if (!chosenRollChoice) return;
@@ -2542,7 +2563,7 @@ async function tamsRenderChatMessage(message, html, data) {
           rejectClose: false,
           buttons: [
             { action: "ok", label: game.i18n.localize("TAMS.ContestedCheck.Roll"), default: true, callback: (event, button, dialog) => game.actors.get(dialog.element.querySelector("#cc-actor-choice").value) },
-            { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+            { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
           ]
         });
       } else {
@@ -2579,7 +2600,7 @@ async function tamsRenderChatMessage(message, html, data) {
         rejectClose: false,
         buttons: [
           { action: "roll", label: game.i18n.localize("TAMS.ContestedCheck.Roll"), default: true, callback: (event, button, dialog) => dialog.element.querySelector("#cc-roll-choice").value },
-          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
         ]
       });
       if (!chosenRollChoice) return;
@@ -2730,7 +2751,7 @@ async function tamsRenderChatMessage(message, html, data) {
           const pts2 = Math.clamp(parseInt(dialog.element.querySelector("#res-points").value) || 0, 0, maxPoints);
           return { pts: pts2 };
         } },
-        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
     });
     if (!spending) return;
@@ -2838,7 +2859,7 @@ async function tamsRenderChatMessage(message, html, data) {
           const form = dialog.element;
           return { effects: parseInt((_a2 = form.querySelector("#mishap-effects")) == null ? void 0 : _a2.value) || 0, oneTurn: (_b2 = form.querySelector("#mishap-oneturn")) == null ? void 0 : _b2.checked, turns: parseInt((_c = form.querySelector("#mishap-turns")) == null ? void 0 : _c.value) || 0, reduced: (_d = form.querySelector("#mishap-reduced")) == null ? void 0 : _d.checked };
         } },
-        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
     });
     if (!result) return;
@@ -3058,7 +3079,7 @@ async function tamsRenderChatMessage(message, html, data) {
           if (requestedPoints > res.value) requestedPoints = res.value;
           return { resId: resId2, points: requestedPoints, unaware: form.querySelector("#unaware").checked };
         } },
-        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
     });
     if (!spending) return;
@@ -3163,7 +3184,7 @@ async function tamsRenderChatMessage(message, html, data) {
       rejectClose: false,
       buttons: [
         { action: "go", label: game.i18n.localize("TAMS.Combat.RetaliateButton"), default: true, callback: (event, button, dialog) => dialog.element.querySelector("#ret-weapon").value },
-        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
     });
     const weapon = actor.items.get(chosenId);
@@ -3365,7 +3386,7 @@ async function tamsRenderChatMessage(message, html, data) {
           if (pts2 > res.value) pts2 = res.value;
           return { resId: resId2, pts: pts2 };
         } },
-        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
     });
     if (!spending) return;
@@ -3419,7 +3440,7 @@ async function tamsRenderChatMessage(message, html, data) {
           if (pts2 > res.value) pts2 = res.value;
           return { resId: resId2, pts: pts2 };
         } },
-        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
     });
     if (!spending) return;
@@ -3474,7 +3495,7 @@ async function tamsRenderChatMessage(message, html, data) {
           if (pts2 > res.value) pts2 = res.value;
           return { resId: resId2, pts: pts2 };
         } },
-        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
     });
     if (!spending) return;
@@ -3569,10 +3590,10 @@ async function tamsRenderChatMessage(message, html, data) {
         rejectClose: false,
         buttons: [
           { action: "roll", label: game.i18n.localize("TAMS.Combat.Roll"), default: true, callback: (event, button, dialog) => parseInt(dialog.element.querySelector("#dc").value) || 0 },
-          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+          { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
         ]
       });
-      if (dc === null) return;
+      if (dc === false) return;
     }
     let rollResults = [], successCount = 0;
     for (let i = 0; i < count; i++) {
@@ -5112,7 +5133,7 @@ function getAbilityIssues(system, { onActor = false, customResources = [], statu
   const calc = system.calculator ?? {};
   const components = system.damageComponents ?? [];
   if (system.isAttack && !system.useWeaponDamage) {
-    const hasType = !!system.damageType || components.some((c) => c.damageType);
+    const hasType = !!system.damageType || (system.statDamage ?? 0) <= 0 && components.some((c) => c.damageType);
     if (!hasType) error("noDamageType");
     if (onActor || components.length) {
       if ((system.calculatedDamage ?? 0) <= 0) error("zeroDamage");
@@ -6389,7 +6410,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       rejectClose: false,
       buttons: [
         { action: "repair", icon: "fa-solid fa-hammer", label: game.i18n.localize("TAMS.Repair.Action"), default: true, callback: (event2, button, dialog) => dialog.element.querySelector('[name="skill"]').value },
-        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", icon: "fa-solid fa-times", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
     });
     if (!choice) return;
@@ -6869,9 +6890,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       rejectClose: false,
       buttons: [
         { action: "ok", label: game.i18n.localize("TAMS.Confirm"), default: true, callback: (event, button, dialog) => weapons.find((w) => w.id === dialog.element.querySelector("#tams-weapon-picker").value) },
-        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
       ]
-    }) ?? null;
+    }) || null;
   }
   /**
    * Handle rolling a stat or skill check.
@@ -7296,6 +7317,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
               squadBonus = (maxSquadTargets - numTargetsCount) * 5;
             }
           } else {
+            maxSquadTargets = Infinity;
             const smartMult = settings.isSmart ? 2 : 1;
             squadBonus = squadSize * smartMult;
           }
@@ -7357,9 +7379,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (item && (item.type === "weapon" || item.type === "ability" && item.system.isAttack)) {
       let damage = item.system.calculatedDamage;
       let weaponOverride = null;
+      let weaponAbilityBreakdown = null;
       if (item.type === "ability" && item.system.useWeaponDamage && abilityWeapon) {
         weaponOverride = abilityWeapon;
-        damage = weaponOverride.system.calculatedDamage;
+        weaponAbilityBreakdown = item.system.weaponDamageBreakdown(weaponOverride);
+        damage = weaponAbilityBreakdown.reduce((sum, c) => sum + c.damage, 0);
       }
       const isRanged = item.type === "weapon" ? !!item.system.isRanged : weaponOverride ? !!weaponOverride.system.isRanged : ((_i = item.system.calculator) == null ? void 0 : _i.range) > 10;
       const isCrit = difficulty > 0 && dcTotal >= difficulty * 2;
@@ -7424,7 +7448,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           armourPen = item.system.armourPenetration || 0;
         }
       }
-      let damageBreakdown = (weaponOverride ? weaponOverride.system.damageBreakdown : item.system.damageBreakdown) || [];
+      let damageBreakdown = (weaponAbilityBreakdown ?? item.system.damageBreakdown) || [];
       const magicState = this.document.system.magicState ?? {};
       const ammoBonus = firedAmmo && ((_m = magicState[firedAmmo.id]) == null ? void 0 : _m.onUse) ? bonusDamageComponents(firedAmmo.system.magic) : [];
       if (ammoBonus.length) {

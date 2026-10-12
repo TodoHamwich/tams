@@ -566,7 +566,8 @@
     "IsReactionQ": "Is Reaction?",
     "IsAttackQ": "Is Attack?",
     "UseWeaponDamage": "Use Weapon Damage?",
-    "UseWeaponDamageHint": "Damage, armour penetration, and damage type are taken from a chosen weapon at roll time.",
+    "UseWeaponDamageHint": "Damage and damage type come from a chosen weapon at roll time. Its main damage is multiplied (rounded down), then the bonus and any split damage below are added; the weapon's own armour penetration adds to this ability's.",
+    "WeaponDamageMultiplier": "Weapon Damage ×",
     "ChooseWeaponForAbility": "Choose Weapon for {name}",
     "MultiAttack": "Multi-Attack",
     "BaseDamage": "Base Damage",
@@ -1000,7 +1001,7 @@
     "ResistanceValue": "Value",
     "DamageTypeLabel": "Damage Type",
     "DamageComponents": "Split-Type Damage",
-    "DamageComponentsHint": "Optional: split this attack's damage across multiple types (e.g. Slashing + Necrotic), each independently subject to resistances. Leave empty to use the single Damage Type above.",
+    "DamageComponentsHint": "Optional: extra damage of other types added on top of the normal damage (e.g. +9 Necrotic on a Slashing sword), each independently subject to resistances. The normal stat damage still uses the Damage Type above.",
     "AddDamageComponent": "Add Damage Type",
     "ResistanceCategoryLabel": "Category",
     "GroupCheck": {

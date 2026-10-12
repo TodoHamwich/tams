@@ -304,7 +304,7 @@
             <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                 <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                     {{item.name}} {{#if item.issueErrors}}<i class="fas fa-circle-exclamation tams-ability-issue error" data-tooltip="{{item.issueErrors}}"></i>{{/if}}{{#if item.issueWarnings}}<i class="fas fa-triangle-exclamation tams-ability-issue warning" data-tooltip="{{item.issueWarnings}}"></i>{{/if}}
-                    {{#if item.system.isAttack}}({{localize 'TAMS.DmgColon'}} {{item.system.calculatedDamage}}){{/if}}
+                    {{#if (and item.system.isAttack (not item.system.useWeaponDamage))}}({{localize 'TAMS.DmgColon'}} {{item.system.calculatedDamage}}){{/if}}
                     {{#if (gt item.system.uses.max 0)}}
                     ({{localize 'TAMS.UsesColon'}} {{item.system.uses.value}}/{{item.system.uses.max}})
                     {{else}}
