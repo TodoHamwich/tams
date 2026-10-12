@@ -1,4 +1,4 @@
-import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog, computeSquadAttackBonus, tamsApplyRollMode } from '../utils/helpers.js';
+import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog, computeSquadAttackBonus, tamsApplyRollMode, moveInOrder, HAZARD_TIERS } from '../utils/helpers.js';
 import { MAGIC_ITEM_TYPES, hasMagicEffects, isItemEquipped, curseVisible, bonusDamageComponents, itemAttackBonus } from '../utils/magic-items.js';
 import { computeArmorRepair } from '../utils/inventory.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
@@ -47,6 +47,9 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         updateItemField: TAMSActorSheet.prototype._onUpdateItemField,
         editImage: TAMSActorSheet.prototype._onEditImage,
         fullHeal: TAMSActorSheet.prototype._onFullHeal,
+        hazardDamage: TAMSActorSheet.prototype._onHazardDamage,
+        moveItemUp: TAMSActorSheet.prototype._onMoveItemUp,
+        moveItemDown: TAMSActorSheet.prototype._onMoveItemDown,
         itemGive: TAMSActorSheet.prototype._onItemGive,
         itemExport: TAMSActorSheet.prototype._onItemExport,
         toggleLimbMultipliers: TAMSActorSheet.prototype._onToggleLimbMultipliers,
@@ -1470,6 +1473,96 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.ActorFullyHealed", {name: this.document.name}));
   }
 
+  /** Move an item one row up in its displayed list (skills, abilities, weapons, traits). */
+  async _onMoveItemUp(event, target) {
+    return this._moveItem(target, -1);
+  }
+
+  /** Move an item one row down in its displayed list. */
+  async _onMoveItemDown(event, target) {
+    return this._moveItem(target, 1);
+  }
+
+  /**
+   * Reorder within the list the clicked row is displayed in. Rows sharing a parent but split
+   * by `data-reorder-group` (equipped vs unequipped weapons) keep separate orderings.
+   * @param {HTMLElement} target The clicked arrow.
+   * @param {-1|1} dir
+   * @protected
+   */
+  async _moveItem(target, dir) {
+    const row = target.closest("[data-item-id]");
+    const list = row?.parentElement;
+    if (!list) return;
+    const group = row.dataset.reorderGroup;
+    const ids = [...list.children]
+      .filter(el => el.dataset.itemId && el.dataset.reorderGroup === group)
+      .map(el => el.dataset.itemId);
+    const updates = moveInOrder(ids, row.dataset.itemId, dir);
+    if (updates.length) await this.document.updateEmbeddedDocuments("Item", updates);
+  }
+
+  /**
+   * Hazardous Area damage (rulebook "Hazardous Areas"): the tier's damage to one random limb,
+   * plus `spread` other random limbs if the creature is still inside. Goes through
+   * applyTAMSDamage like any hit; "bypass armour" skips armour only.
+   * @protected
+   */
+  async _onHazardDamage(event, target) {
+    const actor = this.document;
+    const tierOptions = Object.entries(HAZARD_TIERS).map(([key, t]) =>
+      `<option value="${key}">${game.i18n.format(`TAMS.Hazard.Tier.${key}`, {damage: t.damage})}</option>`).join("");
+    const typeKeys = Object.keys(game.i18n.translations?.TAMS?.DamageType ?? {}).filter(k => k !== "None");
+    const typeOptions = [`<option value="">${game.i18n.localize("TAMS.DamageType.None")}</option>`,
+      ...typeKeys.map(k => `<option value="${k}">${game.i18n.localize(`TAMS.DamageType.${k}`)}</option>`)].join("");
+
+    const choice = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.format("TAMS.Hazard.Title", {name: actor.name}) },
+      content: `
+        <div class="form-group"><label>${game.i18n.localize("TAMS.Hazard.TierLabel")}</label><select id="hazard-tier">${tierOptions}</select></div>
+        <div class="form-group"><label>${game.i18n.localize("TAMS.DamageTypeLabel")}</label><select id="hazard-type">${typeOptions}</select></div>
+        <div class="form-group"><label>${game.i18n.localize("TAMS.Hazard.Spreads")}</label><input type="checkbox" id="hazard-spreads"/></div>
+        <div class="form-group"><label>${game.i18n.localize("TAMS.Hazard.BypassArmour")}</label><input type="checkbox" id="hazard-bypass"/></div>`,
+      rejectClose: false,
+      buttons: [
+        { action: "apply", label: game.i18n.localize("TAMS.Hazard.Apply"), default: true, callback: (event, button, dialog) => {
+            const form = dialog.element;
+            return {
+              tier: form.querySelector("#hazard-tier").value,
+              damageType: form.querySelector("#hazard-type").value,
+              spreads: form.querySelector("#hazard-spreads").checked,
+              ignoreArmor: form.querySelector("#hazard-bypass").checked
+            };
+        }},
+        { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
+      ]
+    });
+    if (!choice) return;
+
+    const tier = HAZARD_TIERS[choice.tier];
+    if (!tier) return;
+    const limbCount = 1 + (choice.spreads ? tier.spread : 0);
+    const locations = [];
+    // Spread limbs are other limbs: re-roll duplicates (bounded, then take any unhit limb).
+    const allLocations = ["Head", "Thorax", "Stomach", "Left Arm", "Right Arm", "Left Leg", "Right Leg"];
+    for (let tries = 0; locations.length < limbCount && tries < 50; tries++) {
+      const loc = await getHitLocation();
+      if (!locations.includes(loc)) locations.push(loc);
+    }
+    for (const loc of allLocations) {
+      if (locations.length >= limbCount) break;
+      if (!locations.includes(loc)) locations.push(loc);
+    }
+
+    const hits = locations.map(location => ({
+      damage: tier.damage, location, armourPen: 0, damageType: choice.damageType, ignoreArmor: choice.ignoreArmor
+    }));
+    const { pendingChecks, report } = await actor.applyTAMSDamage(hits);
+    const header = game.i18n.format("TAMS.Hazard.ChatHeader", {tier: game.i18n.format(`TAMS.Hazard.Tier.${choice.tier}`, {damage: tier.damage})});
+    ChatMessage.create({ content: `<b>${header}</b><br>${report}` });
+    if (pendingChecks.length > 0) showCombinedInjuryDialog(actor, pendingChecks);
+  }
+
   /** @override */
   _canDragDrop(selector) {
     return this.isEditable;
@@ -1601,27 +1694,6 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     // 2. Determine if it's the same actor
     const isSameActor = item.parent?.uuid === this.document.uuid;
-
-    // Reorder within the same-type list (skills, abilities, weapons)
-    if (isSameActor && ["skill", "ability", "weapon"].includes(item.type) && targetEl?.dataset.itemId) {
-        const targetItemId = targetEl.dataset.itemId;
-        if (targetItemId !== item.id) {
-            const targetItem = this.document.items.get(targetItemId);
-            if (targetItem && targetItem.type === item.type) {
-                const ordered = [...this.document.items]
-                    .filter(i => i.type === item.type)
-                    .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
-                const withoutDragged = ordered.filter(i => i.id !== item.id);
-                const targetIdx = withoutDragged.findIndex(i => i.id === targetItem.id);
-                const targetBounds = targetEl.getBoundingClientRect();
-                const insertAfter = event.clientY > (targetBounds.top + targetBounds.height / 2);
-                withoutDragged.splice(insertAfter ? targetIdx + 1 : targetIdx, 0, item);
-                const updates = withoutDragged.map((i, idx) => ({ _id: i.id, sort: (idx + 1) * 100000 }));
-                await this.document.updateEmbeddedDocuments("Item", updates);
-                return;
-            }
-        }
-    }
 
     if ( isSameActor ) {
         await item.update({"system.location": newLocation});
@@ -2444,6 +2516,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     }
 
     let damageInfo = "";
+    let reachHtml = "";
     let pendingAmmoUpdate = null;
     let firedAmmo = null;
     let magicStatusIds = [];
@@ -2458,6 +2531,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             damage = weaponAbilityBreakdown.reduce((sum, c) => sum + c.damage, 0);
         }
         const isRanged = item.type === 'weapon' ? !!item.system.isRanged : (weaponOverride ? !!weaponOverride.system.isRanged : (item.system.calculator?.range > 10));
+        const reach = (weaponOverride ?? (item.type === 'weapon' ? item : null))?.system.reach || 0;
+        if (reach > 0 && !isRanged) {
+            reachHtml = `<div class="roll-row"><small>${game.i18n.format("TAMS.ReachValue", {reach})}</small></div>`;
+        }
 
         const isCrit = difficulty > 0 && dcTotal >= (difficulty * 2);
         let forceCrit = false;
@@ -2853,6 +2930,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         ${ifButtonHtml}
         ${mishapButtonHtml}
         ${saveButtonHtml}
+        ${reachHtml}
         ${damageInfo}
         ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
             ${game.i18n.format("TAMS.Checks.Notifications.ReliableReroll", {original: originalResult})}

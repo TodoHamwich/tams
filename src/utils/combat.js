@@ -1739,7 +1739,9 @@ export async function tamsRenderChatMessage(message, html, data) {
       const roll = await new Roll('1d100').evaluate();
       const raw = roll.total;
       const capped = Math.min(raw, cap);
-      const total = capped;
+      // Dodge-type passive abilities add after the DEX cap ("All Rolls" passives don't apply).
+      const dodgeBonus = actor.system.abilityTypeBonus?.dodge || 0;
+      const total = capped + dodgeBonus;
 
       let critInfo = "";
       if (raw >= (attackerRaw * 2)) {
@@ -1778,12 +1780,13 @@ export async function tamsRenderChatMessage(message, html, data) {
       }
 
       const msg = `
-        <div class="tams-roll" data-actor-uuid="${actor.uuid}" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-attacker-damage-types='${JSON.stringify(attackerDamageTypes)}' data-first-location="${attackerLocations[0] || ""}" data-attacker-locations='${JSON.stringify(attackerLocations)}' data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-unaware="${isUnaware ? '1' : '0'}" data-is-aoe="${isAoEFromData ? '1' : '0'}">
+        <div class="tams-roll" data-actor-uuid="${actor.uuid}" data-actor-id="${actor.id}" data-attacker-total="${attackerTotal}" data-attacker-raw="${attackerRaw}" data-attacker-multi="${attackerMulti}" data-attacker-damage="${attackerDamage}" data-attacker-armour-pen="${attackerArmourPen}" data-attacker-damage-types='${JSON.stringify(attackerDamageTypes)}' data-first-location="${attackerLocations[0] || ""}" data-attacker-locations='${JSON.stringify(attackerLocations)}' data-target-limb="${targetLimb}" data-raw="${raw}" data-capped="${capped}" data-dodge-bonus="${dodgeBonus}" data-unaware="${isUnaware ? '1' : '0'}" data-is-aoe="${isAoEFromData ? '1' : '0'}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.DodgeWith", {name: e(actor.name)})} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           <div class="roll-crit-info">${critInfo}</div>
           <div class="roll-hits-info">${damageInfo}</div>
           <div class="roll-row"><span>${game.i18n.localize("TAMS.Combat.RawDiceResult")}</span><span class="roll-value">${raw}</span></div>
           <div class="roll-row"><small>${game.i18n.format("TAMS.Combat.StatCapLabel", {name: "Dex", value: cap})}</small><span>${capped}</span></div>
+          ${dodgeBonus ? `<div class="roll-row"><small>${game.i18n.localize("TAMS.AbilityPassive_dodge")}</small><span>${dodgeBonus > 0 ? '+' : ''}${dodgeBonus}</span></div>` : ""}
           <div class="roll-boost-container"></div>
           <hr>
           <div class="roll-total">${game.i18n.localize("TAMS.Total")}: <b>${total}</b></div>
@@ -1816,7 +1819,8 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (!actor || !actor.isOwner) return;
 
       const isUnawareFromData = container.dataset.unaware === '1';
-      const pointsNeeded = Math.max(0, Math.ceil((attackerTotal - capped) / 5));
+      const dodgeBonus = parseInt(container.dataset.dodgeBonus) || 0;
+      const pointsNeeded = Math.max(0, Math.ceil((attackerTotal - capped - dodgeBonus) / 5));
 
       const resources = [{id: "stamina", name: game.i18n.localize("TAMS.Stamina"), value: actor.system.stamina.value}];
       actor.system.customResources.forEach((res, idx) => {
@@ -1867,7 +1871,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       let finalCapped = capped;
       if (unaware) finalCapped = Math.floor(finalCapped * 0.5);
 
-      const total = finalCapped + bonus;
+      const total = finalCapped + dodgeBonus + bonus;
       let critInfo = "";
       let hitsScored = 0;
       let damageInfo = "";

@@ -166,7 +166,8 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
       "all":     "TAMS.PassiveRollType.All",
       "weapon":  "TAMS.PassiveRollType.Weapon",
       "skill":   "TAMS.PassiveRollType.Skill",
-      "ability": "TAMS.PassiveRollType.Ability"
+      "ability": "TAMS.PassiveRollType.Ability",
+      "dodge":   "TAMS.PassiveRollType.Dodge"
     };
 
     context.creatureSizeOptions = {

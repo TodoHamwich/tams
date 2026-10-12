@@ -34,6 +34,30 @@ describe('TAMSActor applyDamage', () => {
     };
   });
 
+  describe('ignoreArmor hits (hazard bypass)', () => {
+    beforeEach(() => {
+      actor.system.limbs.thorax.armor = 4;
+    });
+
+    it('deals full damage through armour without costing armour points', async () => {
+      await actor.applyTAMSDamage([{ damage: 6, location: "Thorax", armourPen: 0, ignoreArmor: true }]);
+      expect(actor.system.limbs.thorax.value).toBe(4); // 10 - 6, armour ignored
+      expect(actor.system.limbs.thorax.armor).toBe(4);
+    });
+
+    it('still lets armour block a normal hit', async () => {
+      await actor.applyTAMSDamage([{ damage: 6, location: "Thorax", armourPen: 0 }]);
+      expect(actor.system.limbs.thorax.value).toBe(8); // 10 - (6 - 4)
+    });
+
+    it('still applies resistances', async () => {
+      actor.system.effectiveResistances = [{ damageType: "fire", category: "resistance", value: 2, limbs: [] }];
+      await actor.applyTAMSDamage([{ damage: 6, location: "Thorax", armourPen: 0, damageType: "fire", ignoreArmor: true }]);
+      expect(actor.system.limbs.thorax.value).toBe(6); // 10 - (6 - 2)
+      expect(actor.system.limbs.thorax.armor).toBe(4);
+    });
+  });
+
   it('applies basic damage correctly to a limb', async () => {
     const hits = [{ damage: 3, location: "Thorax", armourPen: 0 }];
     await actor.applyTAMSDamage(hits);

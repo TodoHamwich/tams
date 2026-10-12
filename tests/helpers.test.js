@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getHitLocation, computeSquadAttackBonus } from '../src/utils/helpers.js';
+import { getHitLocation, computeSquadAttackBonus, moveInOrder } from '../src/utils/helpers.js';
 
 describe('getHitLocation', () => {
   it('returns Head for 96+', async () => {
@@ -62,5 +62,24 @@ describe('computeSquadAttackBonus', () => {
   it('no bonus when targets fill every possible attack', () => {
     expect(computeSquadAttackBonus(8, true, 4).bonus).toBe(0);
     expect(computeSquadAttackBonus(4, false, 6).bonus).toBe(0);
+  });
+});
+
+describe('moveInOrder', () => {
+  const sorted = ids => ids.map((_id, i) => ({ _id, sort: (i + 1) * 100000 }));
+
+  it('swaps an item with its upper neighbour and renumbers', () => {
+    expect(moveInOrder(['a', 'b', 'c'], 'b', -1)).toEqual(sorted(['b', 'a', 'c']));
+  });
+
+  it('swaps an item with its lower neighbour', () => {
+    expect(moveInOrder(['a', 'b', 'c'], 'b', 1)).toEqual(sorted(['a', 'c', 'b']));
+  });
+
+  it('does nothing at either end, for a single item, or an unknown id', () => {
+    expect(moveInOrder(['a', 'b'], 'a', -1)).toEqual([]);
+    expect(moveInOrder(['a', 'b'], 'b', 1)).toEqual([]);
+    expect(moveInOrder(['a'], 'a', 1)).toEqual([]);
+    expect(moveInOrder(['a', 'b'], 'z', 1)).toEqual([]);
   });
 });

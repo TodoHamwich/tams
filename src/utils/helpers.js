@@ -3,6 +3,32 @@ import { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage, tamsApplyR
 export { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage, tamsApplyRollMode };
 
 /**
+ * Move one item up or down within a displayed list and renumber the list's sort values.
+ * @param {string[]} ids Item ids in their displayed order.
+ * @param {string} id The item to move.
+ * @param {-1|1} dir -1 = up, 1 = down.
+ * @returns {{_id: string, sort: number}[]} Sort updates, or [] if the item can't move.
+ */
+export function moveInOrder(ids, id, dir) {
+  const from = ids.indexOf(id);
+  const to = from + dir;
+  if (from === -1 || to < 0 || to >= ids.length) return [];
+  const order = [...ids];
+  [order[from], order[to]] = [order[to], order[from]];
+  return order.map((_id, idx) => ({ _id, sort: (idx + 1) * 100000 }));
+}
+
+/**
+ * Hazardous Area tiers (rulebook "Hazardous Areas"): damage to one limb, plus how many other
+ * limbs it spreads to if the creature is still inside at the end of the activation.
+ */
+export const HAZARD_TIERS = {
+  light:  { damage: 5,  spread: 1 },
+  heavy:  { damage: 10, spread: 1 },
+  deadly: { damage: 15, spread: 2 },
+};
+
+/**
  * Squad attack: possible attacks are half the squad's size (ranged) or its full size (melee).
  * Each possible attack left without a target gives the squad +5 (no targets = every attack unused).
  * @param {number} squadSize Current squad size.

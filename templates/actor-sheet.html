@@ -157,7 +157,7 @@
                         </div>
                     </div>
 
-                    <h3 class="small-header">{{localize 'TAMS.LimbsHPAndArmor'}} <a class="full-heal" data-action="fullHeal" title="{{localize 'TAMS.FullHealAllLimbs'}}"><i class="fas fa-heartbeat"></i></a></h3>
+                    <h3 class="small-header">{{localize 'TAMS.LimbsHPAndArmor'}} <a class="full-heal" data-action="fullHeal" title="{{localize 'TAMS.FullHealAllLimbs'}}"><i class="fas fa-heartbeat"></i></a> <a class="hazard-damage" data-action="hazardDamage" title="{{localize 'TAMS.Hazard.Button'}}"><i class="fas fa-biohazard"></i></a></h3>
                     <div class="limb-header">
                         <div class="header-label">{{localize 'TAMS.Limb'}}</div>
                         <div class="header-hp">{{localize 'TAMS.HP'}}</div>
@@ -220,7 +220,7 @@
         <div class="tab items {{#if (eq activeTab 'items')}}active{{/if}}" data-group="primary" data-tab="items" data-scrollable data-scroll-id="tab-items">
             <h3>{{localize 'TAMS.Weapons'}}<span class="section-line"></span><a data-action="itemCreate" data-type="weapon" title="{{localize 'TAMS.AddWeaponTooltip'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
-                <span class="drag-handle" aria-hidden="true" style="visibility: hidden;"><i class="fas fa-grip-vertical"></i></span>
+                <span class="reorder-arrows" aria-hidden="true" style="visibility: hidden;"><a><i class="fas fa-caret-up"></i></a><a><i class="fas fa-caret-down"></i></a></span>
                 <div class="item-name">{{localize 'TAMS.Name'}}</div>
                 <div class="item-stat dmg-cell">{{localize 'TAMS.Dmg'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Fam'}}</div>
@@ -232,8 +232,8 @@
             </li>
             <ol class="items-list">
                 {{#each equippedWeapons as |item id|}}
-                <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
-                    <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
+                <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-reorder-group="equipped" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
+                    <span class="reorder-arrows"><a data-action="moveItemUp" title="{{localize 'TAMS.MoveUp'}}"><i class="fas fa-caret-up"></i></a><a data-action="moveItemDown" title="{{localize 'TAMS.MoveDown'}}"><i class="fas fa-caret-down"></i></a></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} {{#if item.isMagic}}<i class="fas fa-wand-sparkles tams-magic-icon {{#if item.magicInactive}}inactive{{/if}}" data-tooltip="{{#if item.magicUnmet}}{{localize 'TAMS.Magic.RequirementsUnmet'}}{{else if item.magicInactive}}{{localize 'TAMS.Magic.Inactive'}}{{else}}{{localize 'TAMS.Magic.Active'}}{{/if}}"></i>{{/if}}{{#if item.isCursed}}<i class="fas fa-skull tams-curse-icon" data-tooltip="{{localize 'TAMS.Magic.Cursed'}}"></i>{{/if}}
                     </h4>
@@ -241,6 +241,7 @@
                         {{#each item.damageParts as |dp|}}
                         <div class="dmg-line">{{dp.damage}}{{#if dp.typeLabel}} {{dp.typeLabel}}{{/if}}</div>
                         {{/each}}
+                        {{#if (and item.system.reach (not item.system.isRanged))}}<div class="dmg-line weapon-reach"><small>{{localize 'TAMS.ReachValue' reach=item.system.reach}}</small></div>{{/if}}
                     </div>
                     <div class="item-stat">
                         <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
@@ -300,8 +301,8 @@
                     <span>{{localize 'TAMS.UnequippedWeapons'}}</span>
                 </li>
                 {{#each inventoryWeapons as |item id|}}
-                <li class="item flexrow item-unequipped {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
-                    <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
+                <li class="item flexrow item-unequipped {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-reorder-group="unequipped" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
+                    <span class="reorder-arrows"><a data-action="moveItemUp" title="{{localize 'TAMS.MoveUp'}}"><i class="fas fa-caret-up"></i></a><a data-action="moveItemDown" title="{{localize 'TAMS.MoveDown'}}"><i class="fas fa-caret-down"></i></a></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
                     </h4>
@@ -309,6 +310,7 @@
                         {{#each item.damageParts as |dp|}}
                         <div class="dmg-line">{{dp.damage}}{{#if dp.typeLabel}} {{dp.typeLabel}}{{/if}}</div>
                         {{/each}}
+                        {{#if (and item.system.reach (not item.system.isRanged))}}<div class="dmg-line weapon-reach"><small>{{localize 'TAMS.ReachValue' reach=item.system.reach}}</small></div>{{/if}}
                     </div>
                     <div class="item-stat">
                         <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
@@ -368,7 +370,7 @@
 
             <h3>{{localize 'TAMS.Skills'}}<span class="section-line"></span><a data-action="itemCreate" data-type="skill" title="{{localize 'TAMS.AddSkill'}}"><i class="fas fa-plus"></i> {{localize 'TAMS.Add'}}</a></h3>
             <li class="item flexrow item-header">
-                <span class="drag-handle" aria-hidden="true" style="visibility: hidden;"><i class="fas fa-grip-vertical"></i></span>
+                <span class="reorder-arrows" aria-hidden="true" style="visibility: hidden;"><a><i class="fas fa-caret-up"></i></a><a><i class="fas fa-caret-down"></i></a></span>
                 <div class="item-name">{{localize 'TAMS.Name'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Fam'}}</div>
                 <div class="item-stat">{{localize 'TAMS.Stat'}}</div>
@@ -377,7 +379,7 @@
             <ol class="items-list">
                 {{#each skills as |item id|}}
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
-                    <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
+                    <span class="reorder-arrows"><a data-action="moveItemUp" title="{{localize 'TAMS.MoveUp'}}"><i class="fas fa-caret-up"></i></a><a data-action="moveItemDown" title="{{localize 'TAMS.MoveDown'}}"><i class="fas fa-caret-down"></i></a></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}}
                     </h4>
@@ -464,7 +466,7 @@
             <ol class="items-list">
                 {{#each abilities as |item id|}}
                 <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
-                    <span class="drag-handle" title="{{localize 'TAMS.DragToReorder'}}"><i class="fas fa-grip-vertical"></i></span>
+                    <span class="reorder-arrows"><a data-action="moveItemUp" title="{{localize 'TAMS.MoveUp'}}"><i class="fas fa-caret-up"></i></a><a data-action="moveItemDown" title="{{localize 'TAMS.MoveDown'}}"><i class="fas fa-caret-down"></i></a></span>
                     <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">
                         {{item.name}} {{#if item.isGrantedByMagic}}<i class="fas fa-wand-sparkles tams-magic-icon" data-tooltip="{{localize 'TAMS.Magic.GrantedByItem'}}"></i>{{/if}}{{#if item.issueErrors}}<i class="fas fa-circle-exclamation tams-ability-issue error" data-tooltip="{{item.issueErrors}}"></i>{{/if}}{{#if item.issueWarnings}}<i class="fas fa-triangle-exclamation tams-ability-issue warning" data-tooltip="{{item.issueWarnings}}"></i>{{/if}}
                         {{#if (and item.system.isAttack (not item.system.useWeaponDamage))}}
@@ -712,7 +714,9 @@
                         <span class="trait-profession" style="margin-left: 5px; font-style: italic; font-size: 11px; opacity: 0.8;">({{trait.system.profession}})</span>
                         {{/if}}
                     </div>
-                    <div class="item-controls" style="flex: 0 0 60px; text-align: right;">
+                    <div class="item-controls" style="flex: 0 0 90px; text-align: right;">
+                        <a class="item-control" title="{{localize 'TAMS.MoveUp'}}" data-action="moveItemUp"><i class="fas fa-caret-up"></i></a>
+                        <a class="item-control" title="{{localize 'TAMS.MoveDown'}}" data-action="moveItemDown"><i class="fas fa-caret-down"></i></a>
                         <a class="item-control item-edit" title="{{localize 'TAMS.EditItem'}}" data-action="itemEdit"><i class="fas fa-edit"></i></a>
                         <a class="item-control item-delete" title="{{localize 'TAMS.DeleteItem'}}" data-action="itemDelete"><i class="fas fa-trash"></i></a>
                     </div>

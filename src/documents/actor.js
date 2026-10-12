@@ -25,7 +25,8 @@ function effResourceMult(sys, res) {
 export class TAMSActor extends Actor {
   /**
    * Apply damage to this actor across multiple hits/locations.
-   * @param {object[]} hits Array of hit objects: { damage, location, armourPen }
+   * @param {object[]} hits Array of hit objects: { damage, location, armourPen, ignoreArmor? }
+   *   (`ignoreArmor` skips armour entirely, e.g. a hazard's bypass; barrier and resistances still apply)
    * @param {object} options Additional options
    * @param {boolean} [options.isAoE=false] Is this an AoE attack?
    * @param {number} [options.multiplier=1] For squads/hordes, how many members were hit by the AoE.
@@ -80,7 +81,7 @@ export class TAMSActor extends Actor {
         
         const otherArmor = limb.otherArmor || 0;
         const armor = Math.floor(armorValue + otherArmor);
-        const effectiveArmor = Math.max(0, armor - armourPen);
+        const effectiveArmor = hit.ignoreArmor ? 0 : Math.max(0, armor - armourPen);
 
         // Barrier absorbs incoming damage before armor
         let barrierLabel = "";
@@ -215,7 +216,7 @@ export class TAMSActor extends Actor {
         limbDamageReceived[limbKey] += effective;
 
         let lossLabel = "";
-        if (armorValue > 0 && (effective + overflow) < adjustedIncoming) {
+        if (!hit.ignoreArmor && armorValue > 0 && (effective + overflow) < adjustedIncoming) {
             const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
             const pending = updates[key];
             const currentVal = pending !== undefined ? pending : (isAltArmor ? limb.armorMax : limb.armor);
@@ -228,6 +229,7 @@ export class TAMSActor extends Actor {
         const overflowLabel = overflow > 0 ? game.i18n.format("TAMS.Checks.OverflowCapped", {overflow}) : "";
         const lossMsg = lossLabel ? `, ${lossLabel}` : "";
         report += `• ${game.i18n.format("TAMS.Checks.DamageReport", {loc, effective, blocked, penLabel, lossLabel: lossMsg, overflowLabel})}<br>`;
+        if (hit.ignoreArmor) report += `  ↳ ${game.i18n.localize("TAMS.Checks.ArmorBypassed")}<br>`;
         if (barrierLabel) report += `  ↳ ${barrierLabel}<br>`;
         if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
 

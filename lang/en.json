@@ -36,6 +36,26 @@
     "StatBravery": "Bravery",
     "StatCustom": "Custom",
     "ArmourPenetration": "Armour Penetration",
+    "Reach": "Reach",
+    "ReachMeters": "Reach (m)",
+    "ReachHint": "How far this melee weapon reaches, in meters. Shown on the sheet and attack card; 0 hides it.",
+    "ReachValue": "Reach {reach}m",
+    "MoveUp": "Move up",
+    "MoveDown": "Move down",
+    "Hazard": {
+      "Button": "Hazard damage",
+      "Title": "Hazardous Area: {name}",
+      "TierLabel": "Hazard",
+      "Tier": {
+        "light": "Light ({damage} dmg)",
+        "heavy": "Heavy ({damage} dmg)",
+        "deadly": "Deadly ({damage} dmg)"
+      },
+      "Spreads": "Still inside (spreads to more limbs)",
+      "BypassArmour": "Bypass armour",
+      "Apply": "Apply",
+      "ChatHeader": "Hazardous Area: {tier}"
+    },
     "HasArmourPen": "Has Armour Pen?",
     "Value": "AP Value",
     "DeleteConfirmTitle": "Delete Item",
@@ -99,11 +119,13 @@
     "AbilityPassive_weapon": "Passive (Weapon Rolls)",
     "AbilityPassive_skill": "Passive (Skill Rolls)",
     "AbilityPassive_ability": "Passive (Ability Rolls)",
+    "AbilityPassive_dodge": "Passive (Dodge)",
     "PassiveRollType": {
       "All": "All Rolls",
       "Weapon": "Weapon Rolls",
       "Skill": "Skill Rolls",
-      "Ability": "Ability Rolls"
+      "Ability": "Ability Rolls",
+      "Dodge": "Dodge"
     },
     "SizeGrants": "Size Grants",
     "SizeGrantHP": "HP Size",
@@ -583,7 +605,6 @@
     "IFStatement": "IF Statement",
     "IFCost": "IF Cost",
     "MaxRoll": "Guaranteed Max",
-    "DragToReorder": "Drag to reorder",
     "GuaranteedMaxNote": "Guaranteed Max — no dice rolled, crits not possible.",
     "GuaranteedMaxHint": "Guaranteed Max: cannot crit. Fails only if task difficulty exceeds your total.",
     "ApplyIFCost": "Apply IF Cost ({cost})",
@@ -1061,6 +1082,7 @@
       "ArmorPenetrated": " (Penetrated {pen})",
       "ArmorHPLost": "1 armor HP lost",
       "ArmorPointLost": "1 armor point lost",
+      "ArmorBypassed": "Armour bypassed",
       "OverflowCapped": " [Capped: {overflow} ignored]",
       "SquadLostMembers": "{name} lost {lostCount} members! Remaining size: {finalSquadSize}",
       "SquadThreatenedMembers": "{name} at risk of losing {lostCount} members!",

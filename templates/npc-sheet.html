@@ -134,7 +134,7 @@
                     </div>
                 </div>
 
-                <h3 class="small-header">{{localize 'TAMS.LimbsHPAndArmor'}} <a class="full-heal" data-action="fullHeal" title="{{localize 'TAMS.FullHealAllLimbs'}}"><i class="fas fa-heartbeat"></i></a></h3>
+                <h3 class="small-header">{{localize 'TAMS.LimbsHPAndArmor'}} <a class="full-heal" data-action="fullHeal" title="{{localize 'TAMS.FullHealAllLimbs'}}"><i class="fas fa-heartbeat"></i></a> <a class="hazard-damage" data-action="hazardDamage" title="{{localize 'TAMS.Hazard.Button'}}"><i class="fas fa-biohazard"></i></a></h3>
                 <div class="limb-header">
                     <div class="header-label">{{localize 'TAMS.Limb'}}</div>
                     <div class="header-hp">{{localize 'TAMS.HP'}}</div>
@@ -233,7 +233,7 @@
             {{#each weapons as |item id|}}
             <li class="item flexrow {{#if item.isGreyedOut}}greyed-out{{/if}}" data-item-id="{{item.id}}" data-document-id="{{item.id}}" data-type="Item" data-uuid="{{item.uuid}}" draggable="true">
                 <h4 class="item-name rollable" data-action="roll" data-item-id="{{item.id}}" data-label="{{item.name}}" data-familiarity="{{item.system.familiarity}}">{{item.name}}</h4>
-                <div class="item-stat">{{item.system.calculatedDamage}}</div>
+                <div class="item-stat">{{item.system.calculatedDamage}}{{#if (and item.system.reach (not item.system.isRanged))}}<br><small>{{localize 'TAMS.ReachValue' reach=item.system.reach}}</small>{{/if}}</div>
                 <div class="item-stat">
                     <input type="number" class="small-input" data-action="updateItemField" data-item-id="{{item.id}}" data-field="system.familiarity" value="{{item.system.familiarity}}" title="{{localize 'TAMS.FamiliarityHint'}}"/>
                 </div>
@@ -258,6 +258,8 @@
                     {{else}}-{{/if}}
                 </div>
                 <div class="item-controls">
+                    <a class="item-control" data-action="moveItemUp" title="{{localize 'TAMS.MoveUp'}}"><i class="fas fa-caret-up"></i></a>
+                    <a class="item-control" data-action="moveItemDown" title="{{localize 'TAMS.MoveDown'}}"><i class="fas fa-caret-down"></i></a>
                     <a class="item-control" data-action="itemGive" data-item-id="{{item.id}}" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
                     <a class="item-control" data-action="itemExport" data-item-id="{{item.id}}" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
                     <a class="item-control" data-action="itemEdit" data-item-id="{{item.id}}" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
@@ -288,6 +290,8 @@
                     </select>
                 </div>
                 <div class="item-controls">
+                    <a class="item-control" data-action="moveItemUp" title="{{localize 'TAMS.MoveUp'}}"><i class="fas fa-caret-up"></i></a>
+                    <a class="item-control" data-action="moveItemDown" title="{{localize 'TAMS.MoveDown'}}"><i class="fas fa-caret-down"></i></a>
                     <a class="item-control" data-action="itemGive" data-item-id="{{item.id}}" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
                     <a class="item-control" data-action="itemExport" data-item-id="{{item.id}}" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
                     <a class="item-control" data-action="itemEdit" data-item-id="{{item.id}}" title="{{localize 'TAMS.EditItem'}}"><i class="fas fa-edit"></i></a>
@@ -316,6 +320,8 @@
                     {{/if}}
                 </h4>
                 <div class="item-controls">
+                    <a class="item-control" data-action="moveItemUp" title="{{localize 'TAMS.MoveUp'}}"><i class="fas fa-caret-up"></i></a>
+                    <a class="item-control" data-action="moveItemDown" title="{{localize 'TAMS.MoveDown'}}"><i class="fas fa-caret-down"></i></a>
                     <a class="item-control" data-action="itemGive" data-item-id="{{item.id}}" title="{{localize 'TAMS.GiveItem'}}"><i class="fas fa-gift"></i></a>
                     <a class="item-control" data-action="itemExport" data-item-id="{{item.id}}" title="{{localize 'TAMS.ExportToItemsTab'}}"><i class="fas fa-file-export"></i></a>
                     {{#if (or item.system.isApex (gt item.system.uses.max 0))}}

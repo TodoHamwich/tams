@@ -92,13 +92,15 @@
     }
 }
 
-.tams .drag-handle {
-    cursor: grab;
-    color: rgba(0, 0, 0, 0.25);
-    padding: 0 4px;
-    font-size: 0.8em;
+.tams .reorder-arrows {
+    display: flex;
+    flex-direction: column;
     flex: 0 0 auto;
-    &:hover { color: rgba(0, 0, 0, 0.55); }
+    padding: 0 4px;
+    line-height: 0.8;
+    font-size: 0.85em;
+    a { color: inherit; opacity: 0.35; cursor: pointer; }
+    a:hover { opacity: 0.8; }
 }
 
 .tams .inventory-category-header,

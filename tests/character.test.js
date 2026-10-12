@@ -110,6 +110,17 @@ describe('TAMSCharacterData', () => {
   });
 
   describe('_prepareTraitModifiers', () => {
+    it('collects Dodge passives separately; All passives never reach dodge', () => {
+      const passive = (passiveRollType, passiveBonus) => ({
+        type: "ability",
+        system: { isPassive: true, passiveEnabled: true, passiveBonus, passiveTag: "", passiveRollType }
+      });
+      charData.parent = { items: [passive("dodge", 5), passive("dodge", 3), passive("all", 10)] };
+      charData._prepareTraitModifiers();
+      expect(charData.abilityTypeBonus.dodge).toBe(8);
+      expect(charData.abilityTypeBonus.all).toBe(10);
+    });
+
     it('applies stat bonuses from traits', () => {
       const trait1 = {
         type: "trait",

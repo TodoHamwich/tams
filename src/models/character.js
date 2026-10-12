@@ -227,7 +227,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.traitStaminaMultBonus = 0;
     this.professionResourceMultBonuses = {};
     this.abilityPassiveBonuses = {};
-    this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0 };
+    // "dodge" only takes Dodge-type passives; "all" passives never apply to Dodge.
+    this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0, dodge: 0 };
 
     // Every stat/roll modifier that applied, by source — used for roll breakdowns.
     this.modifierSources = [];

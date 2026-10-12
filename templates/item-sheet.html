@@ -278,6 +278,11 @@
                         <label>{{localize 'TAMS.RangedDamage'}}</label>
                         <input type="number" name="system.rangedDamage" value="{{system.rangedDamage}}" data-dtype="Number"/>
                     </div>
+                    {{else}}
+                    <div class="flexrow">
+                        <label title="{{localize 'TAMS.ReachHint'}}">{{localize 'TAMS.ReachMeters'}}</label>
+                        <input type="number" name="system.reach" value="{{system.reach}}" min="0" step="0.5" data-dtype="Number"/>
+                    </div>
                     {{/if}}
                     <div class="flexrow">
                         <label>{{localize 'TAMS.HasArmourPen'}}</label>

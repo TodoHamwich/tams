@@ -162,6 +162,8 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
       consumeAmmo: new fields.BooleanField({initial: false}),
       special: new fields.StringField({initial: ""}),
       isAoE: new fields.BooleanField({initial: false}),
+      // Melee reach in meters; display only (0 = not shown).
+      reach: new fields.NumberField({initial: 0, min: 0, nullable: true}),
       damageType: new fields.StringField({initial: ""}),
       // Optional split-type damage (e.g. a sword dealing Slashing + Necrotic in one hit). The
       // stat-derived damage below stays in `damageType`; each component ADDS a fixed `amount`
