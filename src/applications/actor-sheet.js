@@ -1516,10 +1516,18 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const typeOptions = [`<option value="">${game.i18n.localize("TAMS.DamageType.None")}</option>`,
       ...typeKeys.map(k => `<option value="${k}">${game.i18n.localize(`TAMS.DamageType.${k}`)}</option>`)].join("");
 
+    // Squads/hordes: how many members are in the hazard (same defaults as the AoE damage dialog).
+    const settings = actor.system.settings ?? {};
+    const isSquadOrHorde = settings.isNPC && (settings.npcType === "squad" || settings.npcType === "horde");
+    const squadSize = settings.squadSize || 1;
+    const membersHtml = isSquadOrHorde ? `
+        <div class="form-group"><label>${game.i18n.format("TAMS.Combat.TargetsHitInSquad", {type: settings.npcType.toUpperCase(), max: squadSize})}</label>
+          <input type="number" id="hazard-members" value="${Math.min(settings.npcType === "squad" ? 2 : 4, squadSize)}" min="1" max="${squadSize}"/></div>` : "";
+
     const choice = await foundry.applications.api.DialogV2.wait({
       window: { title: game.i18n.format("TAMS.Hazard.Title", {name: actor.name}) },
       content: `
-        <div class="form-group"><label>${game.i18n.localize("TAMS.Hazard.TierLabel")}</label><select id="hazard-tier">${tierOptions}</select></div>
+        <div class="form-group"><label>${game.i18n.localize("TAMS.Hazard.TierLabel")}</label><select id="hazard-tier">${tierOptions}</select></div>${membersHtml}
         <div class="form-group"><label>${game.i18n.localize("TAMS.DamageTypeLabel")}</label><select id="hazard-type">${typeOptions}</select></div>
         <div class="form-group"><label>${game.i18n.localize("TAMS.Hazard.Spreads")}</label><input type="checkbox" id="hazard-spreads"/></div>
         <div class="form-group"><label>${game.i18n.localize("TAMS.Hazard.BypassArmour")}</label><input type="checkbox" id="hazard-bypass"/></div>`,
@@ -1531,7 +1539,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
               tier: form.querySelector("#hazard-tier").value,
               damageType: form.querySelector("#hazard-type").value,
               spreads: form.querySelector("#hazard-spreads").checked,
-              ignoreArmor: form.querySelector("#hazard-bypass").checked
+              ignoreArmor: form.querySelector("#hazard-bypass").checked,
+              members: Math.clamp(parseInt(form.querySelector("#hazard-members")?.value) || 1, 1, squadSize)
             };
         }},
         { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
@@ -1542,21 +1551,30 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     const tier = HAZARD_TIERS[choice.tier];
     if (!tier) return;
     const limbCount = 1 + (choice.spreads ? tier.spread : 0);
-    const locations = [];
     // Spread limbs are other limbs: re-roll duplicates (bounded, then take any unhit limb).
     const allLocations = ["Head", "Thorax", "Stomach", "Left Arm", "Right Arm", "Left Leg", "Right Leg"];
-    for (let tries = 0; locations.length < limbCount && tries < 50; tries++) {
-      const loc = await getHitLocation();
-      if (!locations.includes(loc)) locations.push(loc);
-    }
-    for (const loc of allLocations) {
-      if (locations.length >= limbCount) break;
-      if (!locations.includes(loc)) locations.push(loc);
-    }
+    const rollLimbs = async () => {
+      const locations = [];
+      for (let tries = 0; locations.length < limbCount && tries < 50; tries++) {
+        const loc = await getHitLocation();
+        if (!locations.includes(loc)) locations.push(loc);
+      }
+      for (const loc of allLocations) {
+        if (locations.length >= limbCount) break;
+        if (!locations.includes(loc)) locations.push(loc);
+      }
+      return locations;
+    };
 
-    const hits = locations.map(location => ({
-      damage: tier.damage, location, armourPen: 0, damageType: choice.damageType, ignoreArmor: choice.ignoreArmor
-    }));
+    // Each squad/horde member in the hazard gets their own limbs; each hit is one member's
+    // worth (non-AoE), so applyTAMSDamage caps it at one member like any other hit.
+    const hits = [];
+    const members = isSquadOrHorde ? choice.members : 1;
+    for (let m = 0; m < members; m++) {
+      for (const location of await rollLimbs()) {
+        hits.push({ damage: tier.damage, location, armourPen: 0, damageType: choice.damageType, ignoreArmor: choice.ignoreArmor });
+      }
+    }
     const { pendingChecks, report } = await actor.applyTAMSDamage(hits);
     const header = game.i18n.format("TAMS.Hazard.ChatHeader", {tier: game.i18n.format(`TAMS.Hazard.Tier.${choice.tier}`, {damage: tier.damage})});
     ChatMessage.create({ content: `<b>${header}</b><br>${report}` });
