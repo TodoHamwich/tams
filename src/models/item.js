@@ -78,6 +78,7 @@ function magicFields(fields) {
         damageType: new fields.StringField({ initial: "" }),
         amount: new fields.NumberField({ initial: 0, nullable: true }),
       }), { initial: [] }),
+      armourPenetration: new fields.NumberField({ initial: 0, integer: true, min: 0, nullable: true }),
       requirements: new fields.ArrayField(new fields.SchemaField({
         type: new fields.StringField({ initial: "stat" }),
         key: new fields.StringField({ initial: "" }),

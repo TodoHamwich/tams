@@ -34,7 +34,8 @@ export function hasMagicEffects(magic) {
   if (!magic) return false;
   return !!(magic.modifiers?.length || magic.resistances?.length || magic.injuryCheckBonus
     || magic.sizeGrantHP || magic.sizeGrantStealth || magic.sizeGrantCombat
-    || magic.grantedAbilities?.length || magic.onHitStatusIds?.length || magic.bonusDamage?.length);
+    || magic.grantedAbilities?.length || magic.onHitStatusIds?.length || magic.bonusDamage?.length
+    || magic.armourPenetration);
 }
 
 /**
@@ -181,6 +182,16 @@ export function itemAttackBonus(magic) {
   return (magic?.modifiers ?? [])
     .filter(m => m.target === ITEM_ATTACK_TARGET)
     .reduce((sum, m) => sum + (Number(m.value) || 0), 0);
+}
+
+/**
+ * Armour Penetration the item adds to attacks made with it (or, on ammo, when fired).
+ * Adds to the weapon's own AP, whether or not the weapon has the Armour Penetration tag.
+ * @param {object} magic
+ * @returns {number}
+ */
+export function magicArmourPen(magic) {
+  return Math.max(0, Math.floor(Number(magic?.armourPenetration) || 0));
 }
 
 /**

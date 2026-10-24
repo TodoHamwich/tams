@@ -160,7 +160,7 @@ const STAT_KEYS = ["strength", "dexterity", "endurance", "wisdom", "intelligence
 function hasMagicEffects(magic) {
   var _a, _b, _c, _d, _e;
   if (!magic) return false;
-  return !!(((_a = magic.modifiers) == null ? void 0 : _a.length) || ((_b = magic.resistances) == null ? void 0 : _b.length) || magic.injuryCheckBonus || magic.sizeGrantHP || magic.sizeGrantStealth || magic.sizeGrantCombat || ((_c = magic.grantedAbilities) == null ? void 0 : _c.length) || ((_d = magic.onHitStatusIds) == null ? void 0 : _d.length) || ((_e = magic.bonusDamage) == null ? void 0 : _e.length));
+  return !!(((_a = magic.modifiers) == null ? void 0 : _a.length) || ((_b = magic.resistances) == null ? void 0 : _b.length) || magic.injuryCheckBonus || magic.sizeGrantHP || magic.sizeGrantStealth || magic.sizeGrantCombat || ((_c = magic.grantedAbilities) == null ? void 0 : _c.length) || ((_d = magic.onHitStatusIds) == null ? void 0 : _d.length) || ((_e = magic.bonusDamage) == null ? void 0 : _e.length) || magic.armourPenetration);
 }
 function isItemEquipped(item) {
   if (!(item == null ? void 0 : item.system)) return false;
@@ -236,6 +236,9 @@ function publicItemName(item, fallback = "Unidentified Item") {
 const ITEM_ATTACK_TARGET = "itemAttacks";
 function itemAttackBonus(magic) {
   return ((magic == null ? void 0 : magic.modifiers) ?? []).filter((m) => m.target === ITEM_ATTACK_TARGET).reduce((sum, m) => sum + (Number(m.value) || 0), 0);
+}
+function magicArmourPen(magic) {
+  return Math.max(0, Math.floor(Number(magic == null ? void 0 : magic.armourPenetration) || 0));
 }
 function bonusDamageComponents(magic) {
   return ((magic == null ? void 0 : magic.bonusDamage) ?? []).map((c) => ({ damageType: c.damageType || "", damage: Math.floor(Number(c.amount) || 0) })).filter((c) => c.damage > 0);
@@ -756,6 +759,7 @@ function magicFields(fields) {
         damageType: new fields.StringField({ initial: "" }),
         amount: new fields.NumberField({ initial: 0, nullable: true })
       }), { initial: [] }),
+      armourPenetration: new fields.NumberField({ initial: 0, integer: true, min: 0, nullable: true }),
       requirements: new fields.ArrayField(new fields.SchemaField({
         type: new fields.StringField({ initial: "stat" }),
         key: new fields.StringField({ initial: "" }),
@@ -3152,7 +3156,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (message2) await tamsUpdateMessage(message2, { content: container.outerHTML });
   }));
   root.querySelectorAll(".tams-retaliate").forEach((el) => el.addEventListener("click", async (ev) => {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     ev.preventDefault();
     const btn = ev.currentTarget;
     const attackerRaw = parseInt(btn.dataset.raw);
@@ -3293,8 +3297,11 @@ async function tamsRenderChatMessage(message, html, data) {
     else if (attackerRaw >= raw * 2) critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { name: e$3(actor.name) })}</div>`;
     let multiVal = weapon.type === "weapon" ? weapon.system.fireRate === "3" ? 3 : weapon.system.fireRate === "auto" ? 10 : weapon.system.fireRate === "custom" ? weapon.system.fireRateCustom : 1 : weapon.system.multiAttack || 1;
     const damage = weapon.system.calculatedDamage;
-    const armourPen = weapon.type === "weapon" && weapon.system.hasArmourPen ? weapon.system.armourPenetration || 0 : weapon.system.armourPenetration || 0;
-    const defenderTargetLimb = weapon.type === "ability" && ((_f = weapon.system.calculator) == null ? void 0 : _f.enabled) ? weapon.system.calculator.targetLimb : "none";
+    let armourPen = weapon.type === "weapon" ? weapon.system.hasArmourPen ? weapon.system.armourPenetration || 0 : 0 : weapon.system.armourPenetration || 0;
+    if (weapon.type === "weapon" && ((_g = (_f = actor.system.magicState) == null ? void 0 : _f[weapon.id]) == null ? void 0 : _g.onUse)) {
+      armourPen += magicArmourPen(weapon.system.magic);
+    }
+    const defenderTargetLimb = weapon.type === "ability" && ((_h = weapon.system.calculator) == null ? void 0 : _h.enabled) ? weapon.system.calculator.targetLimb : "none";
     let hitsScored = total >= attackerTotal || isMutual ? Math.min(1 + Math.floor(Math.max(0, total - attackerTotal) / 5), multiVal) : 0;
     let retLocations = [];
     const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
@@ -7004,7 +7011,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   async _onRoll(event, target) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A;
     const dataset = target.dataset;
     const item = dataset.itemId ? this.document.items.get(dataset.itemId) : null;
     const tToken = [...((_a = game == null ? void 0 : game.user) == null ? void 0 : _a.targets) ?? []][0] ?? null;
@@ -7558,17 +7565,20 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
       let damageBreakdown = (weaponAbilityBreakdown ?? item.system.damageBreakdown) || [];
       const magicState = this.document.system.magicState ?? {};
-      const ammoBonus = firedAmmo && ((_n = magicState[firedAmmo.id]) == null ? void 0 : _n.onUse) ? bonusDamageComponents(firedAmmo.system.magic) : [];
+      for (const source of [item.type === "weapon" ? item : weaponOverride, firedAmmo]) {
+        if (source && ((_n = magicState[source.id]) == null ? void 0 : _n.onUse)) armourPen += magicArmourPen(source.system.magic);
+      }
+      const ammoBonus = firedAmmo && ((_o = magicState[firedAmmo.id]) == null ? void 0 : _o.onUse) ? bonusDamageComponents(firedAmmo.system.magic) : [];
       if (ammoBonus.length) {
         damageBreakdown = [...damageBreakdown, ...ammoBonus];
         damage += ammoBonus.reduce((sum, c) => sum + c.damage, 0);
       }
       for (const source of [weaponOverride ?? item, firedAmmo]) {
-        if (!source || !((_o = magicState[source.id]) == null ? void 0 : _o.onUse)) continue;
-        magicStatusIds.push(...(((_p = source.system.magic) == null ? void 0 : _p.onHitStatusIds) ?? []).filter(Boolean));
+        if (!source || !((_p = magicState[source.id]) == null ? void 0 : _p.onUse)) continue;
+        magicStatusIds.push(...(((_q = source.system.magic) == null ? void 0 : _q.onHitStatusIds) ?? []).filter(Boolean));
       }
       const damageTypesJson = JSON.stringify(damageBreakdown).replace(/'/g, "&#39;");
-      const isAoE = !!item.system.isAoE || ((_q = item.system.calculator) == null ? void 0 : _q.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
+      const isAoE = !!item.system.isAoE || ((_r = item.system.calculator) == null ? void 0 : _r.enabled) && (item.system.calculator.aoeRadius > 0 || item.system.calculator.targetType === "aoe");
       let targets = isAoE ? [...game.user.targets] : tToken ? [tToken] : [];
       if (isSquadOrHorde) {
         targets = [...game.user.targets].slice(0, maxSquadTargets);
@@ -7576,7 +7586,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
       if (targets.length > 0) {
         let hitLocation;
-        if (item.type === "ability" && ((_r = item.system.calculator) == null ? void 0 : _r.enabled) && ((_s = item.system.calculator) == null ? void 0 : _s.targetLimb) && item.system.calculator.targetLimb !== "none") {
+        if (item.type === "ability" && ((_s = item.system.calculator) == null ? void 0 : _s.enabled) && ((_t = item.system.calculator) == null ? void 0 : _t.targetLimb) && item.system.calculator.targetLimb !== "none") {
           const limbKey = item.system.calculator.targetLimb;
           const limbOptions = {
             "head": "Head",
@@ -7608,13 +7618,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           heavyRifle: { close: 500, medium: 800 }
         };
         const _rangedWeapon = isRanged && item.type === "weapon" && item.system.rangeCategory;
-        const attackerToken = _rangedWeapon ? ((_t = this.document.token) == null ? void 0 : _t.object) || canvas.tokens.controlled.find((t) => {
+        const attackerToken = _rangedWeapon ? ((_u = this.document.token) == null ? void 0 : _u.object) || canvas.tokens.controlled.find((t) => {
           var _a2;
           return ((_a2 = t.actor) == null ? void 0 : _a2.id) === this.document.id;
         }) : null;
         const isShotgun = item.type === "weapon" && item.system.rangeCategory === "shotgun";
         const _linkedAmmoId = item.type === "weapon" ? item.system.ammoItemId ?? "custom" : "custom";
-        const isSlugAmmo = isShotgun && _linkedAmmoId !== "custom" ? !!((_u = this.document.items.get(_linkedAmmoId)) == null ? void 0 : _u.system.isSlug) : false;
+        const isSlugAmmo = isShotgun && _linkedAmmoId !== "custom" ? !!((_v = this.document.items.get(_linkedAmmoId)) == null ? void 0 : _v.system.isSlug) : false;
         const effectiveRangeCategory = isShotgun && isSlugAmmo ? "slug" : item.system.rangeCategory || "";
         const rangeBands = RANGE_BANDS[effectiveRangeCategory] ?? null;
         damageInfo = `<div class="tams-targets-container">`;
@@ -7832,7 +7842,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const isMagicAbility = tags.some((t) => MISHAP_TAGS.includes(t));
       if (isMagicAbility) {
         let totalEffects = -1;
-        if ((_v = item.system.calculator) == null ? void 0 : _v.enabled) {
+        if ((_w = item.system.calculator) == null ? void 0 : _w.enabled) {
           totalEffects = mishapEffectCount(item.system.calculator);
         }
         const castTime = item.system.castTime || "immediate";
@@ -7889,12 +7899,12 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         rolls: [roll],
         flags: {
           tams: {
-            inflictsStatusId: ((_w = item == null ? void 0 : item.system) == null ? void 0 : _w.inflictsStatusId) || "",
-            inflictsStatusIds: [...new Set([(_x = item == null ? void 0 : item.system) == null ? void 0 : _x.inflictsStatusId, ...magicStatusIds].filter(Boolean))],
+            inflictsStatusId: ((_x = item == null ? void 0 : item.system) == null ? void 0 : _x.inflictsStatusId) || "",
+            inflictsStatusIds: [...new Set([(_y = item == null ? void 0 : item.system) == null ? void 0 : _y.inflictsStatusId, ...magicStatusIds].filter(Boolean))],
             attackerActorId: this.document.id,
             attackerWeaponId: (item == null ? void 0 : item.id) || "",
-            hasSave: ((_y = item == null ? void 0 : item.system) == null ? void 0 : _y.hasSave) ?? false,
-            saveAgainst: ((_z = item == null ? void 0 : item.system) == null ? void 0 : _z.saveAgainst) ?? "",
+            hasSave: ((_z = item == null ? void 0 : item.system) == null ? void 0 : _z.hasSave) ?? false,
+            saveAgainst: ((_A = item == null ? void 0 : item.system) == null ? void 0 : _A.saveAgainst) ?? "",
             saveDC: finalTotal
           }
         }

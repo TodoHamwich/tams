@@ -1309,6 +1309,11 @@
                 </div>
                 {{/each}}
 
+                <div class="flexrow">
+                    <label title="{{localize 'TAMS.Magic.ArmourPenHint'}}">{{localize 'TAMS.Magic.ArmourPen'}}</label>
+                    <input type="number" class="magic-num" name="system.magic.armourPenetration" value="{{system.magic.armourPenetration}}" min="0" {{magicDisabled}}/>
+                </div>
+
                 {{!-- On-hit statuses --}}
                 <div class="flexrow magic-list-header">
                     <h4 title="{{localize 'TAMS.Magic.OnHitStatusesHint'}}">{{localize 'TAMS.Magic.OnHitStatuses'}}</h4>

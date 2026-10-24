@@ -369,6 +369,8 @@
         "Add": "Add",
         "BonusDamage": "Bonus Damage",
         "BonusDamageHint": "Extra damage added on top of the normal damage, as its own damage type (checked against resistances separately). On ammo, it is added when the ammo is fired.",
+        "ArmourPen": "Armour Penetration",
+        "ArmourPenHint": "Added to the item's own Armour Penetration on attacks made with it, including retaliation and abilities that use its damage. On ammo, it is added when the ammo is fired.",
         "OnHitStatuses": "On-Hit Statuses",
         "OnHitStatusesHint": "Status effects applied to the target when hits are applied. On ammo, they apply when the ammo is fired.",
         "GrantedAbilitiesHint": "Abilities the owner gains while this item's effects apply. Drop abilities here.",

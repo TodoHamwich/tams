@@ -1,5 +1,5 @@
 import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog, computeSquadAttackBonus, tamsApplyRollMode, moveInOrder, HAZARD_TIERS } from '../utils/helpers.js';
-import { MAGIC_ITEM_TYPES, hasMagicEffects, isItemEquipped, curseVisible, bonusDamageComponents, itemAttackBonus } from '../utils/magic-items.js';
+import { MAGIC_ITEM_TYPES, hasMagicEffects, isItemEquipped, curseVisible, bonusDamageComponents, itemAttackBonus, magicArmourPen } from '../utils/magic-items.js';
 import { computeArmorRepair } from '../utils/inventory.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
 import { HONOR_PATHS, HONOR_STYLES, getHonorTier, getHonorTierLabelKeys, isHonorEnabled } from '../utils/honor.js';
@@ -2628,6 +2628,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         // Magic: fired ammo adds its bonus damage; the weapon's own bonus damage is already in
         // calculatedDamage/damageBreakdown. On-hit statuses come from the weapon and the ammo.
         const magicState = this.document.system.magicState ?? {};
+        // Magic AP from the weapon used (directly or via a weapon-damage ability) and fired ammo.
+        for (const source of [item.type === 'weapon' ? item : weaponOverride, firedAmmo]) {
+            if (source && magicState[source.id]?.onUse) armourPen += magicArmourPen(source.system.magic);
+        }
         const ammoBonus = (firedAmmo && magicState[firedAmmo.id]?.onUse) ? bonusDamageComponents(firedAmmo.system.magic) : [];
         if (ammoBonus.length) {
             damageBreakdown = [...damageBreakdown, ...ammoBonus];

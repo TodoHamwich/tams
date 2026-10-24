@@ -1,6 +1,6 @@
 import { getMishapEntry, getMishapTable, calculateMishapChance, getMishapModifier, MISHAP_TABLE } from "./mishap.js";
 import { isLethal, memberLethalUnit, rescaledLimbValue } from "./lethality.js";
-import { itemAttackBonus } from "./magic-items.js";
+import { itemAttackBonus, magicArmourPen } from "./magic-items.js";
 
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
 
@@ -2081,7 +2081,12 @@ export async function tamsRenderChatMessage(message, html, data) {
 
       let multiVal = weapon.type === 'weapon' ? (weapon.system.fireRate === '3' ? 3 : (weapon.system.fireRate === 'auto' ? 10 : (weapon.system.fireRate === 'custom' ? weapon.system.fireRateCustom : 1))) : (weapon.system.multiAttack || 1);
       const damage = weapon.system.calculatedDamage;
-      const armourPen = (weapon.type === 'weapon' && weapon.system.hasArmourPen) ? (weapon.system.armourPenetration || 0) : (weapon.system.armourPenetration || 0);
+      let armourPen = weapon.type === 'weapon'
+          ? (weapon.system.hasArmourPen ? (weapon.system.armourPenetration || 0) : 0)
+          : (weapon.system.armourPenetration || 0);
+      if (weapon.type === 'weapon' && actor.system.magicState?.[weapon.id]?.onUse) {
+          armourPen += magicArmourPen(weapon.system.magic);
+      }
       const defenderTargetLimb = (weapon.type === 'ability' && weapon.system.calculator?.enabled) ? weapon.system.calculator.targetLimb : 'none';
 
       let hitsScored = total >= attackerTotal || isMutual ? Math.min(1 + Math.floor(Math.max(0, total - attackerTotal) / 5), multiVal) : 0;

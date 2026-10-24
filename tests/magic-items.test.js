@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   hasMagicEffects, isItemEquipped, buildRequirementContext, requirementMet, unmetRequirements,
-  computeMagicState, curseVisible, identityVisible, publicItemName, bonusDamageComponents, itemAttackBonus
+  computeMagicState, curseVisible, identityVisible, publicItemName, bonusDamageComponents, itemAttackBonus, magicArmourPen
 } from '../src/utils/magic-items.js';
 
 const magic = (over = {}) => ({
@@ -152,5 +152,21 @@ describe('itemAttackBonus', () => {
     ] }))).toBe(-5);
     expect(itemAttackBonus(magic())).toBe(0);
     expect(itemAttackBonus(undefined)).toBe(0);
+  });
+});
+
+describe('magicArmourPen', () => {
+  it('returns the magic block AP', () => {
+    expect(magicArmourPen({ armourPenetration: 3 })).toBe(3);
+  });
+
+  it('treats missing, null and negative values as 0', () => {
+    expect(magicArmourPen(undefined)).toBe(0);
+    expect(magicArmourPen({ armourPenetration: null })).toBe(0);
+    expect(magicArmourPen({ armourPenetration: -2 })).toBe(0);
+  });
+
+  it('counts as a magic effect', () => {
+    expect(hasMagicEffects(magic({ armourPenetration: 2 }))).toBe(true);
   });
 });
