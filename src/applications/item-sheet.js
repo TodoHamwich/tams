@@ -1,6 +1,6 @@
 import { getAbilityIssues } from '../utils/ability-validation.js';
 import { PROFESSION_TYPES, PROFESSION_MAX_RANK, PROFESSION_RANK_STEP } from '../utils/profession.js';
-import { MAGIC_ITEM_TYPES, REQUIREMENT_TYPES, curseVisible } from '../utils/magic-items.js';
+import { MAGIC_ITEM_TYPES, REQUIREMENT_TYPES, curseVisible, canEditMagic } from '../utils/magic-items.js';
 
 const LIMB_KEYS = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
 const LIMB_I18N = {
@@ -456,7 +456,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
   async _onDrop(event) {
     const isMagic = MAGIC_ITEM_TYPES.includes(this.document.type);
     if (this.document.type !== 'race' && !isMagic) return;
-    if (isMagic && !game.user.isGM) return;
+    if (isMagic && !this._canEditMagic()) return;
     const data = TextEditor.getDragEventData(event);
     if (data.type !== 'Item') return;
 
@@ -478,9 +478,20 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
   }
 
   /**
-   * Build the context for the Magic Effects section. Only the GM can edit it; players see it
-   * read-only, without curse-flagged entries until the curse is revealed, and not at all while
-   * the item is unidentified.
+   * Whether the current user may edit this item's magic effects: the GM always, an owner once
+   * the item is identified. Identification and curse controls stay GM-only.
+   * @returns {boolean}
+   * @protected
+   */
+  _canEditMagic() {
+    return this.isEditable && canEditMagic(this.document.system.magic,
+      { isGM: game.user.isGM, isOwner: this.document.isOwner });
+  }
+
+  /**
+   * Build the context for the Magic Effects section. The GM can always edit it; owners can once
+   * the item is identified. Players never see curse-flagged entries until the curse is revealed,
+   * nor the section at all while the item is unidentified.
    * @param {object} context
    * @protected
    */
@@ -493,7 +504,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
 
     context.isMagicType = true;
     context.isGM = isGM;
-    context.magicEditable = isGM && this.isEditable;
+    context.magicEditable = this._canEditMagic();
     context.showMagicIdentity = this.document.isIdentityVisible;
     context.showCurse = showCurse;
     context.magicDisabled = context.magicEditable ? "" : "disabled";
@@ -546,7 +557,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
    */
   async _onMagicAdd(event, target) {
     const list = target.dataset.list;
-    if (!MAGIC_LIST_DEFAULTS[list] || !game.user.isGM) return;
+    if (!MAGIC_LIST_DEFAULTS[list] || !this._canEditMagic()) return;
     const entries = foundry.utils.duplicate(this.document.system.magic?.[list] ?? []);
     entries.push(MAGIC_LIST_DEFAULTS[list]());
     await this.document.update({ [`system.magic.${list}`]: entries });
@@ -561,7 +572,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
   async _onMagicDelete(event, target) {
     const list = target.dataset.list;
     const index = parseInt(target.dataset.index ?? target.closest("[data-index]")?.dataset.index);
-    if (!game.user.isGM || Number.isNaN(index)) return;
+    if (!this._canEditMagic() || Number.isNaN(index)) return;
     const entries = foundry.utils.duplicate(this.document.system.magic?.[list] ?? []);
     if (index < 0 || index >= entries.length) return;
     entries.splice(index, 1);
@@ -575,7 +586,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
    * @protected
    */
   async _onMagicLimbToggle(event, target) {
-    if (!game.user.isGM) return;
+    if (!this._canEditMagic()) return;
     const index = parseInt(target.closest("[data-index]").dataset.index);
     const limbKey = target.dataset.limbKey;
     const entries = foundry.utils.duplicate(this.document.system.magic?.resistances ?? []);
@@ -595,7 +606,9 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
    * @protected
    */
   async _onUpdateMagicEntry(event, target) {
-    if (!game.user.isGM) return;
+    if (!this._canEditMagic()) return;
+    // Curse flags are a GM control even when the owner can edit the rest.
+    if (target.dataset.field === "curse" && !game.user.isGM) return;
     const list = target.dataset.list;
     const index = parseInt(target.dataset.index);
     const field = target.dataset.field;

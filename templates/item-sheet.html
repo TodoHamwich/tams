@@ -312,6 +312,10 @@
                     </a>
                 </div>
                 {{#if enrichedDamageComponents.length}}
+                <div class="flexrow" style="align-items: center; margin-top: 4px;" title="{{localize 'TAMS.SplitFromBaseHint'}}">
+                    <label style="flex: 1; font-size: 0.85em;">{{localize 'TAMS.SplitFromBase'}}</label>
+                    <input type="checkbox" name="system.splitFromBase" {{checked system.splitFromBase}} style="flex: 0 0 20px;"/>
+                </div>
                 <div class="flexcol" style="gap: 4px; margin-top: 4px;">
                     {{#each enrichedDamageComponents as |comp|}}
                     <div class="flexrow" style="align-items: center; gap: 5px;" data-index="{{comp.index}}">
@@ -916,6 +920,10 @@
                             </a>
                         </div>
                         {{#if enrichedDamageComponents.length}}
+                        <div class="flexrow" style="align-items: center; margin-top: 4px;" title="{{localize 'TAMS.SplitFromBaseHint'}}">
+                            <label style="flex: 1; font-size: 0.85em;">{{localize 'TAMS.SplitFromBase'}}</label>
+                            <input type="checkbox" name="system.splitFromBase" {{checked system.splitFromBase}} style="flex: 0 0 20px;"/>
+                        </div>
                         <div class="flexcol" style="gap: 4px;">
                             {{#each enrichedDamageComponents as |comp|}}
                             <div class="flexrow" style="align-items: center; gap: 5px;" data-index="{{comp.index}}">
@@ -1213,7 +1221,7 @@
                 {{#if (and system.magic.cursed showCurse)}}
                 <div class="flexcol magic-curse">
                     <label><b>{{localize 'TAMS.Magic.CurseDescription'}}</b></label>
-                    <textarea name="system.magic.curseDescription" rows="2" {{magicDisabled}}>{{system.magic.curseDescription}}</textarea>
+                    <textarea name="system.magic.curseDescription" rows="2" {{#unless isGM}}disabled{{/unless}}>{{system.magic.curseDescription}}</textarea>
                 </div>
                 {{/if}}
 

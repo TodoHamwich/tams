@@ -11,12 +11,19 @@ export function abilityTags(system) {
   return system?.tags ? system.tags.split(",").map(t => t.trim().toLowerCase()) : [];
 }
 
-/** Number of effects the Mishap Check counts for a calculator-enabled ability. */
+/**
+ * Number of effects the Mishap Check counts for a calculator-enabled ability.
+ * Stat damage counts one effect per 0.25× of the stat (dealing damage is an effect, and each
+ * +0.25× increase is another), matching how the calculator prices it. A stun of either kind
+ * counts as one effect.
+ */
 export function mishapEffectCount(calculator) {
   const c = calculator ?? {};
   return (c.effects || 0)
     + Math.floor((c.rollBonus || 0) / 5)
-    + (c.ignoreArmor || 0);
+    + (c.ignoreArmor || 0)
+    + Math.round((parseFloat(c.damageStatFraction) || 0) / 0.25)
+    + (c.stun && c.stun !== "none" ? 1 : 0);
 }
 
 /**

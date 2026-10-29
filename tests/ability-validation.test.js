@@ -124,4 +124,17 @@ describe('mishapEffectCount', () => {
     expect(mishapEffectCount({ effects: 2, rollBonus: 12, ignoreArmor: 1 })).toBe(5);
     expect(mishapEffectCount(undefined)).toBe(0);
   });
+
+  it('counts stat damage as one effect per 0.25x', () => {
+    expect(mishapEffectCount({ damageStatFraction: "0.25" })).toBe(1);
+    expect(mishapEffectCount({ damageStatFraction: "0.5" })).toBe(2);
+    expect(mishapEffectCount({ effects: 1, damageStatFraction: "1" })).toBe(5);
+    expect(mishapEffectCount({ damageStatFraction: "0" })).toBe(0);
+  });
+
+  it('counts a stun as one effect', () => {
+    expect(mishapEffectCount({ stun: "crit" })).toBe(1);
+    expect(mishapEffectCount({ stun: "guaranteed", damageStatFraction: "0.5" })).toBe(3);
+    expect(mishapEffectCount({ stun: "none" })).toBe(0);
+  });
 });

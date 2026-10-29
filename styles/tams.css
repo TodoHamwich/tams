@@ -781,6 +781,12 @@ details.limb-filter[open] summary .limb-arrow-down {
 .tams .limb-row.crit-injured {
   background: rgba(231, 76, 60, 0.1);
 }
+.tams .limb-row.limb-missing {
+  opacity: 0.4;
+}
+.tams .limb-row.limb-missing .limb-label span {
+  text-decoration: line-through;
+}
 
 .tams .special-skill label {
   font-size: 13px;
@@ -2048,11 +2054,26 @@ details.limb-filter[open] summary .limb-arrow-down {
   top: 50%;
   transform: translateY(-50%);
 }
+.honor-tree .honor-tier-slot .honor-node .honor-node-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 110px;
+}
 .honor-tree .honor-tier-slot .honor-node.honor-endpoint:nth-child(1) {
-  transform: translate(-22px, -50%);
+  transform: translate(-28px, -50%);
 }
 .honor-tree .honor-tier-slot .honor-node.honor-endpoint:nth-child(2) {
-  transform: translate(22px, -50%);
+  transform: translate(28px, -50%);
+}
+.honor-tree .honor-tier-slot .honor-node.honor-endpoint .honor-node-label {
+  width: 52px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.honor-tree .honor-tier-slot .honor-node.honor-muted {
+  pointer-events: none;
 }
 .honor-tree .honor-node {
   display: flex;
@@ -2089,7 +2110,6 @@ details.limb-filter[open] summary .limb-arrow-down {
 }
 .honor-tree .honor-node.honor-endpoint .honor-node-label {
   opacity: 0.42;
-  max-width: 42px;
 }
 .honor-tree .honor-node.honor-active .honor-dot {
   border-color: #e0bb5c;

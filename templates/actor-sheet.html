@@ -165,7 +165,7 @@
                         <div class="header-status" title="{{localize 'TAMS.StatusLabel'}}"><i class="fas fa-notes-medical"></i></div>
                     </div>
                     {{#each system.limbs as |limb id|}}
-                    <div class="limb-row {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}}" data-limb="{{id}}">
+                    <div class="limb-row {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}} {{#if limb.missing}}limb-missing{{/if}}" data-limb="{{id}}" {{#if limb.missing}}title="{{localize 'TAMS.LimbMissingTitle'}}"{{/if}}>
                         <div class="limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}{{#if (and limb.injured (not limb.criticallyInjured))}}INJURED{{/if}}">
                             {{#if limb.criticallyInjured}}<i class="fas fa-skull crit-icon"></i>{{else if limb.injured}}<i class="fas fa-exclamation-triangle injured-icon"></i>{{/if}}
                             <span>{{limb.label}}</span>
@@ -855,6 +855,17 @@
                         {{/each}}
                     </div>
                 </details>
+                <details class="tams-missing-limbs" data-details-id="missing-limbs" style="margin-top: 6px;">
+                    <summary class="small-header" title="{{localize 'TAMS.MissingLimbsHint'}}"><i class="fas fa-user-slash"></i> {{localize 'TAMS.MissingLimbs'}}</summary>
+                    <div class="grid grid-2col" style="margin-top: 4px;">
+                        {{#each system.limbs as |limb id|}}
+                        <div class="flexrow" style="align-items: center;">
+                            <label style="font-size: 13px;">{{limb.label}}</label>
+                            <input type="checkbox" name="system.limbs.{{id}}.missing" {{checked limb.missing}} title="{{localize 'TAMS.MissingLimbToggle'}}" style="flex: 0 0 auto;"/>
+                        </div>
+                        {{/each}}
+                    </div>
+                </details>
                 <hr>
                 <div class="flexrow" style="margin-bottom: 5px;">
                     <h3 style="flex: 1; margin: 0; border: none;">{{localize 'TAMS.ResourceModifiers'}}</h3>
@@ -960,8 +971,8 @@
                      and reverts to fully hidden-until-reached, same as every other tier. --}}
                 <div class="honor-row honor-tier-row">
                     {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-tier-slot">
-                        <div class="honor-node {{#if path.ht0.showEndpoint}}honor-endpoint{{/if}} {{#if path.ht0.active}}honor-active{{/if}} {{#if path.ht0.current}}honor-current{{/if}}" title="{{localize path.ht0.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht0.labelKey}}</span></div>
-                        <div class="honor-node {{#if path.dt3.showEndpoint}}honor-endpoint{{/if}} {{#if path.dt3.active}}dishonor-active{{/if}} {{#if path.dt3.current}}honor-current{{/if}}" title="{{localize path.dt3.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt3.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.ht0.showEndpoint}}honor-endpoint{{/if}} {{#if path.ht0.muted}}honor-muted{{/if}} {{#if path.ht0.active}}honor-active{{/if}} {{#if path.ht0.current}}honor-current{{/if}}" title="{{localize path.ht0.labelKey}} — {{localize path.ht0.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht0.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.dt3.showEndpoint}}honor-endpoint{{/if}} {{#if path.dt3.muted}}honor-muted{{/if}} {{#if path.dt3.active}}dishonor-active{{/if}} {{#if path.dt3.current}}honor-current{{/if}}" title="{{localize path.dt3.labelKey}} — {{localize path.dt3.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt3.labelKey}}</span></div>
                     </div></div>{{/each}}
                 </div>
                 <div class="honor-row honor-seg-row">
@@ -971,8 +982,8 @@
                 {{!-- Slot 1: Valiant/Righteous/Devoted/Renowned  OR  Dastard/Unjust/Heretic/Villainous --}}
                 <div class="honor-row honor-tier-row">
                     {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-tier-slot">
-                        <div class="honor-node {{#if path.ht1.active}}honor-active{{/if}} {{#if path.ht1.current}}honor-current{{/if}}" title="{{localize path.ht1.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht1.labelKey}}</span></div>
-                        <div class="honor-node {{#if path.dt2.active}}dishonor-active{{/if}} {{#if path.dt2.current}}honor-current{{/if}}" title="{{localize path.dt2.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt2.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.ht1.muted}}honor-muted{{/if}} {{#if path.ht1.active}}honor-active{{/if}} {{#if path.ht1.current}}honor-current{{/if}}" title="{{localize path.ht1.labelKey}} — {{localize path.ht1.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht1.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.dt2.muted}}honor-muted{{/if}} {{#if path.dt2.active}}dishonor-active{{/if}} {{#if path.dt2.current}}honor-current{{/if}}" title="{{localize path.dt2.labelKey}} — {{localize path.dt2.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt2.labelKey}}</span></div>
                     </div></div>{{/each}}
                 </div>
                 <div class="honor-row honor-seg-row">
@@ -982,8 +993,8 @@
                 {{!-- Slot 2: Brave/Just/Pious/Honored  OR  Craven/Corrupt/Faithless/Infamous --}}
                 <div class="honor-row honor-tier-row">
                     {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-tier-slot">
-                        <div class="honor-node {{#if path.ht2.active}}honor-active{{/if}} {{#if path.ht2.current}}honor-current{{/if}}" title="{{localize path.ht2.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht2.labelKey}}</span></div>
-                        <div class="honor-node {{#if path.dt1.active}}dishonor-active{{/if}} {{#if path.dt1.current}}honor-current{{/if}}" title="{{localize path.dt1.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt1.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.ht2.muted}}honor-muted{{/if}} {{#if path.ht2.active}}honor-active{{/if}} {{#if path.ht2.current}}honor-current{{/if}}" title="{{localize path.ht2.labelKey}} — {{localize path.ht2.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht2.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.dt1.muted}}honor-muted{{/if}} {{#if path.dt1.active}}dishonor-active{{/if}} {{#if path.dt1.current}}honor-current{{/if}}" title="{{localize path.dt1.labelKey}} — {{localize path.dt1.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt1.labelKey}}</span></div>
                     </div></div>{{/each}}
                 </div>
                 <div class="honor-row honor-seg-row">
@@ -993,8 +1004,8 @@
                 {{!-- Slot 3 (closest to Common): Steadfast/Upright/Faithful/Worthy  OR  Timid/Suspect/Lapsed/Disgraced --}}
                 <div class="honor-row honor-tier-row">
                     {{#each honorPaths as |path|}}<div class="honor-col"><div class="honor-tier-slot">
-                        <div class="honor-node {{#if path.ht3.active}}honor-active{{/if}} {{#if path.ht3.current}}honor-current{{/if}}" title="{{localize path.ht3.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht3.labelKey}}</span></div>
-                        <div class="honor-node {{#if path.dt0.active}}dishonor-active{{/if}} {{#if path.dt0.current}}honor-current{{/if}}" title="{{localize path.dt0.labelKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt0.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.ht3.muted}}honor-muted{{/if}} {{#if path.ht3.active}}honor-active{{/if}} {{#if path.ht3.current}}honor-current{{/if}}" title="{{localize path.ht3.labelKey}} — {{localize path.ht3.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.ht3.labelKey}}</span></div>
+                        <div class="honor-node {{#if path.dt0.muted}}honor-muted{{/if}} {{#if path.dt0.active}}dishonor-active{{/if}} {{#if path.dt0.current}}honor-current{{/if}}" title="{{localize path.dt0.labelKey}} — {{localize path.dt0.glossKey}}"><div class="honor-dot"></div><span class="honor-node-label">{{localize path.dt0.labelKey}}</span></div>
                     </div></div>{{/each}}
                 </div>
                 <div class="honor-row honor-seg-row">

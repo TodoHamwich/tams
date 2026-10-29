@@ -142,7 +142,7 @@
                     <div class="header-status" title="{{localize 'TAMS.StatusLabel'}}"><i class="fas fa-notes-medical"></i></div>
                 </div>
                 {{#each system.limbs as |limb id|}}
-                <div class="limb-row {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}}" data-limb="{{id}}">
+                <div class="limb-row {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}} {{#if limb.missing}}limb-missing{{/if}}" data-limb="{{id}}" {{#if limb.missing}}title="{{localize 'TAMS.LimbMissingTitle'}}"{{/if}}>
                     <div class="limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}{{#if (and limb.injured (not limb.criticallyInjured))}}INJURED{{/if}}">
                         {{#if limb.criticallyInjured}}<i class="fas fa-skull crit-icon"></i>{{else if limb.injured}}<i class="fas fa-exclamation-triangle injured-icon"></i>{{/if}}
                         <span>{{limb.label}}</span>
@@ -182,6 +182,17 @@
                             <label style="font-size: 13px;">{{limb.label}}</label>
                             <input type="checkbox" name="system.limbs.{{id}}.lethal" {{checked limb.lethal}} title="{{localize 'TAMS.LethalTitle'}}" style="flex: 0 0 auto;"/>
                             <input type="number" name="system.limbs.{{id}}.lethalThreshold" value="{{limb.lethalThreshold}}" step="0.5" min="0.5" class="small-input" title="{{localize 'TAMS.LethalThreshold'}}"/>
+                        </div>
+                        {{/each}}
+                    </div>
+                </details>
+                <details class="tams-missing-limbs" data-details-id="missing-limbs" style="margin-top: 6px;">
+                    <summary class="small-header" title="{{localize 'TAMS.MissingLimbsHint'}}"><i class="fas fa-user-slash"></i> {{localize 'TAMS.MissingLimbs'}}</summary>
+                    <div class="grid grid-2col" style="margin-top: 4px;">
+                        {{#each system.limbs as |limb id|}}
+                        <div class="flexrow" style="align-items: center;">
+                            <label style="font-size: 13px;">{{limb.label}}</label>
+                            <input type="checkbox" name="system.limbs.{{id}}.missing" {{checked limb.missing}} title="{{localize 'TAMS.MissingLimbToggle'}}" style="flex: 0 0 auto;"/>
                         </div>
                         {{/each}}
                     </div>

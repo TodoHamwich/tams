@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   hasMagicEffects, isItemEquipped, buildRequirementContext, requirementMet, unmetRequirements,
-  computeMagicState, curseVisible, identityVisible, publicItemName, bonusDamageComponents, itemAttackBonus, magicArmourPen
+  computeMagicState, curseVisible, identityVisible, publicItemName, bonusDamageComponents, itemAttackBonus, canEditMagic, magicArmourPen
 } from '../src/utils/magic-items.js';
 
 const magic = (over = {}) => ({
@@ -152,6 +152,24 @@ describe('itemAttackBonus', () => {
     ] }))).toBe(-5);
     expect(itemAttackBonus(magic())).toBe(0);
     expect(itemAttackBonus(undefined)).toBe(0);
+  });
+});
+
+describe('canEditMagic', () => {
+  it('lets the GM edit any item', () => {
+    expect(canEditMagic({ identified: false }, { isGM: true, isOwner: false })).toBe(true);
+  });
+
+  it('lets an owner edit an identified item', () => {
+    expect(canEditMagic({ identified: true }, { isGM: false, isOwner: true })).toBe(true);
+  });
+
+  it('blocks an owner while the item is unidentified', () => {
+    expect(canEditMagic({ identified: false }, { isGM: false, isOwner: true })).toBe(false);
+  });
+
+  it('blocks non-owners', () => {
+    expect(canEditMagic({ identified: true }, { isGM: false, isOwner: false })).toBe(false);
   });
 });
 

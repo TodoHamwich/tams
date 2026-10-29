@@ -1,6 +1,8 @@
 import { getMishapEntry, getMishapTable, calculateMishapChance, getMishapModifier, MISHAP_TABLE } from "./mishap.js";
 import { isLethal, memberLethalUnit, rescaledLimbValue } from "./lethality.js";
+import { locationFromRoll, locationIsMissing, presentHitWeight, isLimbMissing } from "./limbs.js";
 import { itemAttackBonus, magicArmourPen } from "./magic-items.js";
+import { stackedReactionCost, reactionCount, recordReaction, resetReactions, isMeleeOption } from "./reactions.js";
 
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
 
@@ -30,17 +32,41 @@ export async function tamsUpdateMessage(message, updateData) {
 /**
  * Helper: Roll hit location.
  * @param {number|null} rollValue Optional roll value (1-100).
+ * @param {Record<string, object>|null} limbs The target's limbs; a roll on a missing one is rerolled.
  * @returns {Promise<string>} The hit location name.
  */
-export async function getHitLocation(rollValue = null) {
+export async function getHitLocation(rollValue = null, limbs = null) {
     const raw = rollValue ?? (await new Roll("1d100").evaluate()).total;
-    if (raw >= 96) return "Head";
-    if (raw >= 56) return "Thorax";
-    if (raw >= 41) return "Stomach";
-    if (raw >= 31) return "Left Arm";
-    if (raw >= 21) return "Right Arm";
-    if (raw >= 11) return "Left Leg";
-    return "Right Leg";
+    const location = locationFromRoll(raw);
+    if (!locationIsMissing(location, limbs)) return location;
+    return (await rerollPresentLocation(limbs)) ?? location;
+}
+
+/**
+ * Roll a location among the limbs that exist (same odds as rerolling the d100 until it lands on
+ * one). Null when every limb is missing.
+ * @param {Record<string, object>} limbs
+ * @returns {Promise<string|null>}
+ */
+export async function rerollPresentLocation(limbs) {
+    const weight = presentHitWeight(limbs);
+    if (!weight) return null;
+    return locationFromRoll((await new Roll(`1d${weight}`).evaluate()).total, limbs);
+}
+
+/**
+ * A hit location on this actor: keeps `location` (an earlier roll or a called shot) unless the
+ * actor is missing that limb, in which case it becomes a random hit on a limb that exists.
+ * Rolls fresh when no location is given.
+ * @param {Actor|null} actor
+ * @param {string|null} [location]
+ * @returns {Promise<string>}
+ */
+export async function hitLocationOn(actor, location = null) {
+    const limbs = actor?.system?.limbs;
+    if (!location) return getHitLocation(null, limbs);
+    if (!locationIsMissing(location, limbs)) return location;
+    return (await rerollPresentLocation(limbs)) ?? location;
 }
 
 /**
@@ -502,10 +528,12 @@ const DOT_GROUPS = [
             { id: "severe-acid-burn", damage: 5, msgKey: "TAMS.TurnStart.SevereAcidDamage" },
             { id: "acid-burn",        damage: 2, msgKey: "TAMS.TurnStart.AcidDamage" },
         ],
-        // Target the arm with lower current HP (most exposed)
+        // Target the arm with lower current HP (most exposed); a missing arm is skipped, and with
+        // no arms the burn lands on the thorax.
         getLimb: (limbs) => {
-            const la = limbs.leftArm?.value ?? Infinity;
-            const ra = limbs.rightArm?.value ?? Infinity;
+            const la = isLimbMissing(limbs.leftArm) ? Infinity : (limbs.leftArm?.value ?? Infinity);
+            const ra = isLimbMissing(limbs.rightArm) ? Infinity : (limbs.rightArm?.value ?? Infinity);
+            if (la === Infinity && ra === Infinity) return "thorax";
             return la <= ra ? "leftArm" : "rightArm";
         },
         outKey: "TAMS.TurnStart.AcidOut",
@@ -545,11 +573,8 @@ export async function tamsOnTurnStart(actor) {
         }
     }
 
-    // Reset reaction use counts at start of actor's own turn
-    const reactionUses = actor.getFlag('tams', 'reactionUses') ?? {};
-    if (Object.keys(reactionUses).length > 0) {
-        await actor.setFlag('tams', 'reactionUses', {});
-    }
+    // Reset the reaction counter at start of actor's own turn
+    await resetReactions(actor);
 
     const statuses = actor.statuses ?? new Set();
     const allPendingChecks = [];
@@ -574,7 +599,7 @@ export async function tamsOnTurnStart(actor) {
             Object.entries(limbDamage).map(([k, dmg]) => [k, (actor.system.limbs[k]?.value ?? 0) - dmg])
         );
         const newTotalHp = LIMB_KEYS.reduce(
-            (sum, k) => sum + (limbNewValues[k] ?? actor.system.limbs[k]?.value ?? 0), 0
+            (sum, k) => isLimbMissing(actor.system.limbs[k]) ? sum : sum + (limbNewValues[k] ?? actor.system.limbs[k]?.value ?? 0), 0
         );
 
         await actor.update(
@@ -601,7 +626,7 @@ export async function tamsOnTurnStart(actor) {
             await actor.toggleStatusEffect("unconscious", { active: true });
 
             // Attribute the knockout to the DoT type that pushed total HP to 0
-            let runningHp = LIMB_KEYS.reduce((sum, k) => sum + (actor.system.limbs[k]?.value ?? 0) + (limbDamage[k] ?? 0), 0);
+            let runningHp = LIMB_KEYS.reduce((sum, k) => isLimbMissing(actor.system.limbs[k]) ? sum : sum + (actor.system.limbs[k]?.value ?? 0) + (limbDamage[k] ?? 0), 0);
             let outKey = activeDotTiers[0].outKey;
             for (const tier of activeDotTiers) {
                 runningHp -= tier.damage;
@@ -648,6 +673,7 @@ export async function tamsOnTurnStart(actor) {
         const bleedMessages = [];
 
         for (const [key, limb] of Object.entries(actor.system.limbs)) {
+            if (isLimbMissing(limb)) continue;
             if (limb.criticallyInjured) {
                 bleedDamage[key] = (bleedDamage[key] ?? 0) + 1;
                 bleedMessages.push(game.i18n.format("TAMS.TurnStart.CritWoundBleed", { name: e(actor.name), limb: limb.label }));
@@ -671,7 +697,7 @@ export async function tamsOnTurnStart(actor) {
                 });
             }
 
-            const bleedTotalHp = LIMB_KEYS.reduce((sum, k) => sum + (bleedUpdates[`system.limbs.${k}.value`] ?? actor.system.limbs[k]?.value ?? 0), 0);
+            const bleedTotalHp = LIMB_KEYS.reduce((sum, k) => isLimbMissing(actor.system.limbs[k]) ? sum : sum + (bleedUpdates[`system.limbs.${k}.value`] ?? actor.system.limbs[k]?.value ?? 0), 0);
             if (bleedTotalHp <= 0) {
                 await actor.toggleStatusEffect("unconscious", { active: true });
                 allPendingChecks.push({
@@ -743,10 +769,9 @@ export async function tamsOnCombatEnd(combat) {
 
         // Clear per-combat flags
         if (actor.getFlag('tams', 'dyingCountdown')) await actor.setFlag('tams', 'dyingCountdown', null);
-        const reactionUses = actor.getFlag('tams', 'reactionUses') ?? {};
-        if (Object.keys(reactionUses).length > 0) await actor.setFlag('tams', 'reactionUses', {});
+        await resetReactions(actor);
 
-        const totalHp = LIMB_KEYS.reduce((sum, k) => sum + (actor.system.limbs[k]?.value ?? 0), 0);
+        const totalHp = LIMB_KEYS.reduce((sum, k) => sum + (isLimbMissing(actor.system.limbs[k]) ? 0 : (actor.system.limbs[k]?.value ?? 0)), 0);
         const persistentStatuses = [...(actor.statuses ?? [])]
             .filter(s => !TEMP_COMBAT_STATUSES.has(s) && s !== "encumbered")
             .map(s => {
@@ -989,7 +1014,7 @@ async function openTAMSDamageDialog(target, {
                     remainingDmg -= incoming;
                     if (incoming <= 0 && m > 0) continue;
 
-                    const loc = (isAoEHit && isSquadOrHorde && (m > 0 || i > 0)) ? await getHitLocation() : locations[i];
+                    const loc = (isAoEHit && isSquadOrHorde && (m > 0 || i > 0)) ? await getHitLocation(null, target.system.limbs) : locations[i];
                     // Sub-hits split the manually-set per-type values proportionally; a single
                     // hit per location uses them as-is.
                     const hitComponents = subHits === 1 ? perType : distributeDamageComponents(incoming, perType);
@@ -1218,9 +1243,12 @@ export async function tamsRenderChatMessage(message, html, data) {
         ev.preventDefault();
         const currentFlags = message.flags?.tams;
 
-        // Resolve the contesting actor
-        let currentActor;
-        if (game.user.isGM) {
+        // Resolve the contesting actor. A selected token wins for everyone; the GM's picker is only the fallback.
+        let currentActor = canvas.tokens?.controlled[0]?.actor ?? null;
+        if (currentActor && currentActor.id === currentFlags?.initiatorId) {
+          return ui.notifications.warn(game.i18n.format("TAMS.ContestedCheck.CannotContestOwn", { name: currentActor.name }));
+        }
+        if (!currentActor && game.user.isGM) {
           const contested = new Set((currentFlags?.contests ?? []).map(c => c.actorId));
           const eligible = game.actors.filter(a => a.type === "character" && a.id !== currentFlags?.initiatorId && !contested.has(a.id));
           if (!eligible.length) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
@@ -1237,9 +1265,8 @@ export async function tamsRenderChatMessage(message, html, data) {
               { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
             ]
           });
-        } else {
+        } else if (!currentActor) {
           currentActor =
-            canvas.tokens?.controlled[0]?.actor ??
             game.user.character ??
             game.actors.find(a => a.isOwner && a.type === "character");
         }
@@ -1727,6 +1754,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (!actor) actor = canvas.tokens.controlled[0]?.actor ?? null;
 
       if (!actor) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetDodge"));
+      await recordReaction(actor);
 
       const dex = actor.system.stats.dexterity;
       let cap = dex.total;
@@ -1760,7 +1788,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           const locations = [];
           const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
           for (let i = 0; i < hitsScored; i++) {
-              locations.push(attackerLocations[i] || (targetLimb && targetLimb !== 'none' ? limbOptions[targetLimb] : await getHitLocation()));
+              locations.push(await hitLocationOn(actor, attackerLocations[i] || (targetLimb && targetLimb !== 'none' ? limbOptions[targetLimb] : null)));
           }
           const autoCritNote = pendingAutoCrit
               ? `<div class="roll-row"><small style="color:#c0392b;font-weight:bold;">${game.i18n.localize("TAMS.Combat.UnreliableAutoCrit")}</small></div>`
@@ -1896,7 +1924,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           const locations = [];
           const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
           for (let i = 0; i < hitsScored; i++) {
-              locations.push(attackerLocations[i] || (targetLimb && targetLimb !== 'none' ? limbOptions[targetLimb] : await getHitLocation()));
+              locations.push(await hitLocationOn(actor, attackerLocations[i] || (targetLimb && targetLimb !== 'none' ? limbOptions[targetLimb] : null)));
           }
           damageInfo = `
             <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.HitsTaken")} ${hitsScored} / ${attackerMulti}</b></div>
@@ -1955,8 +1983,11 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (!actor) actor = canvas.tokens.controlled[0]?.actor ?? null;
 
       if (!actor) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetRetaliate"));
-      const weapons = actor.items.filter(i => (i.type === 'weapon') || (i.type === 'ability' && i.system.isReaction && i.system.isAttack));
-      if (!weapons.length) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoValidWeapons"));
+      // A ranged AoE can only be answered in melee (the GM judges whether they're in reach).
+      const meleeOnly = isAoEFromData && isRanged;
+      const weapons = actor.items.filter(i => ((i.type === 'weapon') || (i.type === 'ability' && i.system.isReaction && i.system.isAttack))
+        && (!meleeOnly || isMeleeOption(i)));
+      if (!weapons.length) return ui.notifications.warn(game.i18n.localize(meleeOnly ? "TAMS.Combat.RetaliateNoAoE" : "TAMS.Checks.Notifications.NoValidWeapons"));
 
       const options = weapons.map(w => `<option value="${w.id}">${e(w.displayName)} (${w.type === 'ability' ? 'Ability' : 'Weapon'}, Fam ${w.system.familiarity||0})</option>`).join('');
       let chosenId = await foundry.applications.api.DialogV2.wait({
@@ -1972,7 +2003,9 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (!weapon) return;
 
       if (weapon.type === 'ability') {
-        const cost = parseInt(weapon.system.cost) || 0;
+        const baseCost = parseInt(weapon.system.cost) || 0;
+        const isLimited = (parseInt(weapon.system.uses?.max) || 0) > 0;
+        const cost = isLimited ? baseCost : stackedReactionCost(baseCost, reactionCount(actor));
         if (!weapon.system.isApex && cost > 0) {
             const resourceKey = weapon.system.resource;
             if (resourceKey === 'stamina') {
@@ -1991,6 +2024,8 @@ export async function tamsRenderChatMessage(message, html, data) {
             }
         }
       }
+      // One reaction, whether retaliating with a weapon or a reaction ability.
+      await recordReaction(actor);
 
       let cap = 0;
       let balancedBonus = 0;
@@ -2070,10 +2105,8 @@ export async function tamsRenderChatMessage(message, html, data) {
 
       const capped = Math.min(raw, cap);
       const total = capped + fam + profBonus + retSquadBonus;
-      const threshold = isRanged ? 20 : 10;
+      const threshold = isRanged && !meleeOnly ? 20 : 10;
       const isMutual = Math.abs(attackerTotal - total) <= threshold;
-
-      if (isAoEFromData && isRanged) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
 
       let critInfo = "";
       if (raw >= (attackerRaw * 2)) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalRetaliation", {name: e(actor.name)})}</div>`;
@@ -2101,7 +2134,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (isMutual || attackerTotal > total) {
           const hitsTaken = Math.min(1 + Math.floor(Math.max(0, attackerTotal - total) / 5), attackerMulti);
           for (let i = 0; i < hitsTaken; i++) {
-              defenseLocations.push(attackerLocations[i] || (attackerTargetLimb && attackerTargetLimb !== 'none' ? limbOptions[attackerTargetLimb] : await getHitLocation()));
+              defenseLocations.push(await hitLocationOn(actor, attackerLocations[i] || (attackerTargetLimb && attackerTargetLimb !== 'none' ? limbOptions[attackerTargetLimb] : null)));
           }
           defenseDamageInfo = `
             <div class="roll-row"><b style="color:${isMutual ? 'orange' : 'red'};">${isMutual ? game.i18n.format("TAMS.Combat.MutualHit", {threshold}) : game.i18n.localize("TAMS.Combat.FailedToBeatAttack")}</b></div>
@@ -2122,8 +2155,8 @@ export async function tamsRenderChatMessage(message, html, data) {
       const applyToAttackerLabel = attackerName ? `Apply Hits to ${e(attackerName)}` : game.i18n.localize("TAMS.Checks.ApplyAllHits");
       const retButtons = (hitsScored > 0 && !isMutual) ? `
           <button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? '1' : '0'}">${applyToAttackerLabel}</button>
-          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">${game.i18n.localize("TAMS.Dodge")}</button>
-          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${e(actor.name)}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
+          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged && !meleeOnly ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}">${game.i18n.localize("TAMS.Dodge")}</button>
+          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged && !meleeOnly ? '1' : '0'}" data-is-aoe="${isRetAoE ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${e(actor.name)}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
           <button class="tams-behind-toggle" style="background: #444; color: white;">B</button>
           <button class="tams-unaware-toggle" style="background: #444; color: white;">U</button>
       ` : (isMutual ? `<button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? '1' : '0'}">${applyToAttackerLabel}</button>` : "");
@@ -2132,7 +2165,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           ? `<div class="roll-description">${await TextEditor.enrichHTML(weapon.system.description, {secrets: false})}</div>`
           : "";
       const msg = `
-        <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-attacker-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? '1' : '0'}">
+        <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-attacker-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged && !meleeOnly ? '1' : '0'}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? '1' : '0'}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.RetaliationWith", {name: e(actor.name), weapon: e(weapon.name)})} ${isBehind ? '(Behind)' : ''} ${isUnaware ? '(Unaware)' : ''}</h3>
           ${retAbilityDescHtml}
           ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">

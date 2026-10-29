@@ -117,12 +117,24 @@ function splitComponents(system) {
 }
 
 /**
+ * The stat damage left to deal as `damageType`. With `splitFromBase` the split components are
+ * carved out of it (floored at 0) instead of added on top, so the total stays the same.
+ * @returns {number}
+ */
+function splitStatDamage(system, statDamage) {
+  if (!system.splitFromBase) return statDamage;
+  const carved = splitComponents(system).reduce((sum, c) => sum + c.damage, 0);
+  return Math.max(0, statDamage - carved);
+}
+
+/**
  * Damage breakdown: the stat-derived damage as `damageType`, plus each split component on top.
  * A zero stat part is dropped when components carry the damage, so it never shows as an empty type.
  * @returns {{damageType: string, damage: number}[]}
  */
 function withSplitComponents(system, statDamage) {
   const extras = splitComponents(system);
+  statDamage = splitStatDamage(system, statDamage);
   const base = {damageType: system.damageType || "", damage: statDamage};
   return (statDamage > 0 || !extras.length) ? [base, ...extras] : extras;
 }
@@ -173,6 +185,8 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
         damageType: new fields.StringField({initial: ""}),
         amount: new fields.NumberField({initial: 0, nullable: true}),
       }), {initial: []}),
+      // When true, damageComponents are taken out of the stat damage instead of added on top.
+      splitFromBase: new fields.BooleanField({initial: false}),
       inflictsStatusId: new fields.StringField({initial: ""}),
       ...magicFields(fields),
       ...sharedFields(fields),
@@ -186,7 +200,7 @@ export class TAMSWeaponData extends foundry.abstract.TypeDataModel {
 
   /** Weapon damage without magic bonus damage: stat damage plus any split components. */
   get baseDamage() {
-    return this.statDamage + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
+    return splitStatDamage(this, this.statDamage) + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
   }
 
   /** The weapon's own stat-derived (or ranged) damage, dealt as `damageType`. */
@@ -411,6 +425,8 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         damageType: new fields.StringField({initial: ""}),
         amount: new fields.NumberField({initial: 0, nullable: true}),
       }), {initial: []}),
+      // When true, damageComponents are taken out of the stat damage instead of added on top.
+      splitFromBase: new fields.BooleanField({initial: false}),
       inflictsStatusId: new fields.StringField({initial: ""}),
       hasSave: new fields.BooleanField({initial: false}),
       saveAgainst: new fields.StringField({initial: "dexterity"}),
@@ -467,7 +483,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
 
   get calculatedDamage() {
     if ( !this.isAttack ) return 0;
-    return this.statDamage + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
+    return splitStatDamage(this, this.statDamage) + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
   }
 
   /** The ability's own formula damage, dealt as `damageType`. */
@@ -497,7 +513,8 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
    */
   weaponDamageBreakdown(weapon) {
     const w = weapon.system;
-    const main = Math.max(0, Math.floor((w.statDamage || 0) * (this.weaponDamageMult ?? 1)) + (this.damageBonus || 0));
+    const scaled = Math.max(0, Math.floor(splitStatDamage(w, w.statDamage || 0) * (this.weaponDamageMult ?? 1)) + (this.damageBonus || 0));
+    const main = splitStatDamage(this, scaled);
     const extras = [...splitComponents(w), ...activeBonusDamage(w), ...splitComponents(this)];
     const base = {damageType: w.damageType || "", damage: main};
     return (main > 0 || !extras.length) ? [base, ...extras] : extras;

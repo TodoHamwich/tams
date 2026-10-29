@@ -1,7 +1,9 @@
-import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, showCombinedInjuryDialog, computeSquadAttackBonus, tamsApplyRollMode, moveInOrder, HAZARD_TIERS } from '../utils/helpers.js';
+import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, hitLocationOn, showCombinedInjuryDialog, computeSquadAttackBonus, tamsApplyRollMode, moveInOrder, HAZARD_TIERS } from '../utils/helpers.js';
+import { presentHitTable } from '../utils/limbs.js';
 import { MAGIC_ITEM_TYPES, hasMagicEffects, isItemEquipped, curseVisible, bonusDamageComponents, itemAttackBonus, magicArmourPen } from '../utils/magic-items.js';
 import { computeArmorRepair } from '../utils/inventory.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
+import { stackedReactionCost, reactionCount, recordReaction } from '../utils/reactions.js';
 import { HONOR_PATHS, HONOR_STYLES, getHonorTier, getHonorTierLabelKeys, isHonorEnabled } from '../utils/honor.js';
 import {
   SHAPE_CELLS, INVENTORY_TYPES, GRID_CELL, MAIN_GRID_COLS, MAIN_GRID_ROWS,
@@ -211,17 +213,17 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         const healPool = Math.ceil(familiarity / 2);
         if (healPool <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoPool"));
 
-        // Check once-per-day flag (keyed on world time day)
-        const lastAidTime = healer.getFlag('tams', 'medicalAidGiven') ?? 0;
-        const currentTime = game.time?.worldTime ?? 0;
-        const daySeconds = 86400;
-        if (currentTime - lastAidTime < daySeconds) {
-          return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidAlreadyGiven"));
-        }
-
         const targets = [...game.user.targets];
         const targetActor = targets.length > 0 ? targets[0].actor : null;
         if (!targetActor) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoTarget"));
+
+        // Each patient can receive medical aid once per day (world time); healers have no cap.
+        const lastAidTime = targetActor.getFlag('tams', 'medicalAidReceived') ?? null;
+        const currentTime = game.time?.worldTime ?? 0;
+        const daySeconds = 86400;
+        if (lastAidTime !== null && currentTime - lastAidTime < daySeconds) {
+          return ui.notifications.warn(game.i18n.format("TAMS.MedicalAidAlreadyReceived", { name: targetActor.name }));
+        }
 
         const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
         const limbRows = limbKeys.map(key => {
@@ -278,8 +280,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
         if (totalHealed > healPool) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidOverPool"));
         if (totalHealed > 0) {
+          updates['flags.tams.medicalAidReceived'] = currentTime;
           await targetActor.update(updates);
-          await healer.setFlag('tams', 'medicalAidGiven', currentTime);
           ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor: healer }),
             content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.MedicalAidMessage", { healer: healer.name, target: targetActor.name, amount: totalHealed })}</div></div>`
@@ -826,7 +828,11 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         // Endpoint preview (see the template's honor-endpoint usage): once a path has committed
         // to a direction, the opposite extreme stops being shown as a dim preview — only the
         // side actually still in play (or both, while still at Common) gets it.
-        showEndpoint: (i === 0 && score >= 0) || (i === 8 && score <= 0)
+        showEndpoint: (i === 0 && score >= 0) || (i === 8 && score <= 0),
+        // Each middle slot stacks an honor and a dishonor node on the same spot. Only the side the
+        // score is on takes the hover, or the node on top would always win the tooltip. The top
+        // slot (T0/T8) is never muted: its nodes are offset whenever both could overlap.
+        muted: i !== 0 && i !== 8 && i !== 4 && ((i < 4) !== (score >= 0))
       });
 
       const honorTiers    = [0, 1, 2, 3].map(i => mkTier(i));
@@ -1550,13 +1556,15 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     const tier = HAZARD_TIERS[choice.tier];
     if (!tier) return;
-    const limbCount = 1 + (choice.spreads ? tier.spread : 0);
     // Spread limbs are other limbs: re-roll duplicates (bounded, then take any unhit limb).
-    const allLocations = ["Head", "Thorax", "Stomach", "Left Arm", "Right Arm", "Left Leg", "Right Leg"];
+    // Missing limbs are never picked.
+    const limbs = this.document.system.limbs;
+    const allLocations = presentHitTable(limbs).map(r => r.label);
+    const limbCount = Math.min(1 + (choice.spreads ? tier.spread : 0), allLocations.length);
     const rollLimbs = async () => {
       const locations = [];
       for (let tries = 0; locations.length < limbCount && tries < 50; tries++) {
-        const loc = await getHitLocation();
+        const loc = await getHitLocation(null, limbs);
         if (!locations.includes(loc)) locations.push(loc);
       }
       for (const loc of allLocations) {
@@ -2325,13 +2333,10 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             return;
         }
 
-        // Reactions stack cost each use until actor's turn resets the counter
+        // Reaction costs stack with every reaction taken since the actor's last turn
         let effectiveCost = cost;
         if (item.system.isReaction && cost > 0 && !isLimited) {
-            const reactionUses = this.document.getFlag('tams', 'reactionUses') ?? {};
-            const useCount = (reactionUses[item.id] ?? 0) + 1;
-            effectiveCost = cost * useCount;
-            await this.document.setFlag('tams', 'reactionUses', { ...reactionUses, [item.id]: useCount });
+            effectiveCost = stackedReactionCost(cost, reactionCount(this.document));
         }
 
         if (isLimited) {
@@ -2355,6 +2360,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 }
             }
         }
+        if (item.system.isReaction) await recordReaction(this.document);
     }
 
     let difficulty = 0;
@@ -2703,7 +2709,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
                 const tHits = [];
                 for (let i = 0; i < multiVal; i++) {
-                    tHits.push((i === 0 && !isAoE) ? hitLocation : await getHitLocation());
+                    // A hit (or called shot) on a limb this target is missing becomes a random hit.
+                    tHits.push(await hitLocationOn(targetActor, (i === 0 && !isAoE) ? hitLocation : null));
                 }
 
                 let targetDamage = damage;
@@ -2803,7 +2810,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
             const tHits = [];
             for (let i = 0; i < multiVal; i++) {
-                tHits.push((i === 0 && !isAoE) ? hitLocation : await getHitLocation());
+                tHits.push(await hitLocationOn(targetActor, (i === 0 && !isAoE) ? hitLocation : null));
             }
 
             let targetDamage = damage;

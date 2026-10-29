@@ -1,6 +1,6 @@
 
-import { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage, tamsApplyRollMode } from './combat.js';
-export { showCombinedInjuryDialog, getHitLocation, tamsUpdateMessage, tamsApplyRollMode };
+import { showCombinedInjuryDialog, getHitLocation, hitLocationOn, tamsUpdateMessage, tamsApplyRollMode } from './combat.js';
+export { showCombinedInjuryDialog, getHitLocation, hitLocationOn, tamsUpdateMessage, tamsApplyRollMode };
 
 /**
  * Move one item up or down within a displayed list and renumber the list's sort values.

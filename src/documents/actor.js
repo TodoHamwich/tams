@@ -1,4 +1,5 @@
-import { getHitLocation } from '../utils/combat.js';
+import { getHitLocation, rerollPresentLocation } from '../utils/combat.js';
+import { locationIsMissing } from '../utils/limbs.js';
 import {
   computeRawStaminaMax, computeRawResourceMax, computeFatiguedMax,
   computeShortRestFatigueGain, computeLongRestFatigueHeal
@@ -8,6 +9,18 @@ import {
 } from '../utils/lethality.js';
 
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
+
+/** Sum damage components that share a damage type, keeping first-seen order. */
+function mergeSameTypeComponents(components) {
+  const byType = new Map();
+  for (const c of components) {
+    const type = c.damageType || "";
+    const prev = byType.get(type);
+    if (prev) prev.damage += c.damage || 0;
+    else byType.set(type, { ...c, damageType: type, damage: c.damage || 0 });
+  }
+  return [...byType.values()];
+}
 
 /**
  * The TAMS Actor document class.
@@ -60,6 +73,16 @@ export class TAMSActor extends Actor {
     const currentSquadSize = this.system.settings.squadSize || 1;
     const limbLosses = {};
 
+    // A hit on a missing limb is rerolled onto one that exists (called shots included). Every
+    // limb missing leaves nothing to hit, so the hit is dropped.
+    const resolvedHits = [];
+    for (const hit of hits) {
+        if (!locationIsMissing(hit.location, this.system.limbs)) { resolvedHits.push(hit); continue; }
+        const location = await rerollPresentLocation(this.system.limbs);
+        if (location) resolvedHits.push({ ...hit, location, rerolledFrom: hit.location });
+    }
+    hits = resolvedHits;
+
     for (let i = 0; i < hits.length; i++) {
         const hit = hits[i];
         const incoming = Math.floor(hit.damage || 0);
@@ -106,9 +129,11 @@ export class TAMSActor extends Actor {
         // to resistances/immunities/vulnerabilities). Old-shape hits (a single damageType string)
         // are wrapped into a one-element array, so the loop below reproduces prior behavior
         // exactly when there's nothing to split.
-        const damageComponents = hit.damageComponents?.length
+        // Same-type components (e.g. a blunt weapon + a blunt enchantment) are merged first so a
+        // resistance/vulnerability applies once per type, not once per component.
+        const damageComponents = mergeSameTypeComponents(hit.damageComponents?.length
             ? hit.damageComponents
-            : [{damageType: hit.damageType || "", damage: hit.damage}];
+            : [{damageType: hit.damageType || "", damage: hit.damage}]);
         const totalComponentDamage = damageComponents.reduce((sum, c) => sum + Math.max(0, Math.floor(c.damage || 0)), 0);
 
         if (this.system.effectiveResistances?.length && totalComponentDamage > 0) {
@@ -216,7 +241,10 @@ export class TAMSActor extends Actor {
         limbDamageReceived[limbKey] += effective;
 
         let lossLabel = "";
-        if (!hit.ignoreArmor && armorValue > 0 && (effective + overflow) < adjustedIncoming) {
+        // Squads and hordes don't lose armour when hit: their limb armour is every member's
+        // armour, so per-hit wear (one point per member caught in an AoE) would drain it at once.
+        // Attacks that specifically damage armour will be the exception once those rules exist.
+        if (!hit.ignoreArmor && !isSquadOrHorde && armorValue > 0 && (effective + overflow) < adjustedIncoming) {
             const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
             const pending = updates[key];
             const currentVal = pending !== undefined ? pending : (isAltArmor ? limb.armorMax : limb.armor);
@@ -229,6 +257,7 @@ export class TAMSActor extends Actor {
         const overflowLabel = overflow > 0 ? game.i18n.format("TAMS.Checks.OverflowCapped", {overflow}) : "";
         const lossMsg = lossLabel ? `, ${lossLabel}` : "";
         report += `• ${game.i18n.format("TAMS.Checks.DamageReport", {loc, effective, blocked, penLabel, lossLabel: lossMsg, overflowLabel})}<br>`;
+        if (hit.rerolledFrom) report += `  ↳ ${game.i18n.format("TAMS.Checks.MissingLimbRerolled", {from: hit.rerolledFrom})}<br>`;
         if (hit.ignoreArmor) report += `  ↳ ${game.i18n.localize("TAMS.Checks.ArmorBypassed")}<br>`;
         if (barrierLabel) report += `  ↳ ${barrierLabel}<br>`;
         if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
@@ -636,6 +665,39 @@ export class TAMSActor extends Actor {
    * Called after trait items are added or removed.
    * @param {number} endDelta - The change in endurance total (positive = added, negative = removed)
    */
+  /** @override */
+  _onUpdate(changed, options, userId) {
+    super._onUpdate(changed, options, userId);
+    if (userId === game.user?.id) this._mirrorLimbArmorToItems(changed);
+  }
+
+  /**
+   * Write limb armour edits (sheet inputs, armour damage) back to the armour item
+   * selected on that limb, so the item keeps its current values. Limbs whose
+   * selected item changed in this update are skipped: their values were just
+   * copied from the new item, or reset to 0 by choosing "None".
+   */
+  _mirrorLimbArmorToItems(changed) {
+    const changedLimbs = changed.system?.limbs;
+    if (!changedLimbs) return;
+    const itemUpdates = new Map();
+    for (const [key, limbChange] of Object.entries(changedLimbs)) {
+      if (!limbChange || "equippedArmorId" in limbChange) continue;
+      if (!("armor" in limbChange) && !("armorMax" in limbChange)) continue;
+      const limb = this.system.limbs[key];
+      const item = this.items.get(limb?.equippedArmorId);
+      if (item?.type !== "armor") continue;
+      const zone = item.system.limbs?.[key];
+      if (!zone) continue;
+      const update = itemUpdates.get(item.id) ?? { _id: item.id };
+      if ("armor" in limbChange && zone.value !== limb.armor) update[`system.limbs.${key}.value`] = limb.armor;
+      if ("armorMax" in limbChange && zone.max !== limb.armorMax) update[`system.limbs.${key}.max`] = limb.armorMax;
+      itemUpdates.set(item.id, update);
+    }
+    const updates = [...itemUpdates.values()].filter(u => Object.keys(u).length > 1);
+    if (updates.length) this.updateEmbeddedDocuments("Item", updates);
+  }
+
   async _adjustLimbHPForEnduranceDelta(endDelta) {
     if (endDelta === 0) return;
     const currentTotal = this.system.stats.endurance.total;

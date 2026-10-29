@@ -159,6 +159,10 @@
     &:nth-child(even) { background: rgba(0,0,0,0.02); }
     &.injured-limb { background: rgba(241, 196, 15, 0.1); }
     &.crit-injured { background: rgba(231, 76, 60, 0.1); }
+    &.limb-missing {
+        opacity: 0.4;
+        .limb-label span { text-decoration: line-through; }
+    }
 }
 
 .tams .special-skill label {

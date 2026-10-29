@@ -159,6 +159,17 @@ export function identityVisible(magic, isGM) {
 }
 
 /**
+ * Whether a user may edit an item's magic effects. The GM always can; an owner can once the
+ * item is identified. Identification and curse controls stay GM-only regardless.
+ * @param {object} magic
+ * @param {{isGM: boolean, isOwner: boolean}} user
+ * @returns {boolean}
+ */
+export function canEditMagic(magic, { isGM, isOwner }) {
+  return !!isGM || (!!isOwner && magic?.identified !== false);
+}
+
+/**
  * Name to show players (viewer-independent: what a chat card everyone sees should use).
  * @param {object} item
  * @param {string} fallback Localized "Unidentified Item" text.

@@ -34,6 +34,23 @@ describe('TAMSActor applyDamage', () => {
     };
   });
 
+  describe('missing limbs', () => {
+    it('rerolls a hit on a missing limb onto one that exists', async () => {
+      actor.system.limbs.leftArm.missing = true;
+      // Roll mock gives 50 on 1d90 (left arm's range removed) → Thorax
+      const result = await actor.applyTAMSDamage([{ damage: 3, location: "Left Arm", armourPen: 0 }]);
+      expect(actor.system.limbs.leftArm.value).toBe(7);
+      expect(actor.system.limbs.thorax.value).toBe(7);
+      expect(result.report).toContain('TAMS.Checks.MissingLimbRerolled');
+    });
+
+    it('drops the hit when every limb is missing', async () => {
+      for (const limb of Object.values(actor.system.limbs)) limb.missing = true;
+      await actor.applyTAMSDamage([{ damage: 3, location: "Thorax", armourPen: 0 }]);
+      expect(actor.system.limbs.thorax.value).toBe(10);
+    });
+  });
+
   describe('ignoreArmor hits (hazard bypass)', () => {
     beforeEach(() => {
       actor.system.limbs.thorax.armor = 4;
@@ -105,6 +122,23 @@ describe('TAMSActor applyDamage', () => {
         limb.value = limb.max;
         limb.label = "Test Limb";
       }
+    });
+
+    it('does not wear down squad armour, even across many AoE sub-hits', async () => {
+      actor.system.limbs.thorax.armor = 4;
+      actor.system.settings.alternateArmour = false;
+      const hits = Array.from({ length: 5 }, () => ({ damage: 9, location: "Thorax", armourPen: 0 }));
+      await actor.applyTAMSDamage(hits, { isAoE: true });
+      expect(actor.system.limbs.thorax.armor).toBe(4);
+      expect(actor.system.limbs.thorax.value).toBe(25); // 50 - 5 × (9 - 4)
+    });
+
+    it('does not wear down squad alternate-armour HP', async () => {
+      actor.system.settings.alternateArmour = true;
+      actor.system.limbs.thorax.armor = 4;
+      actor.system.limbs.thorax.armorMax = 6;
+      await actor.applyTAMSDamage([{ damage: 9, location: "Thorax", armourPen: 0 }]);
+      expect(actor.system.limbs.thorax.armorMax).toBe(6);
     });
 
     it('caps damage per hit for squads (non-AoE)', async () => {
@@ -239,6 +273,37 @@ describe('TAMSActor applyDamage', () => {
       }];
       await actor.applyTAMSDamage(hits);
       expect(actor.system.limbs.thorax.value).toBe(4); // 10 - 6
+    });
+
+    it('applies a vulnerability once when two components share its type (weapon + same-type enchant)', async () => {
+      actor.system.limbs.thorax.value = 50;
+      actor.system.limbs.thorax.max = 50;
+      actor.system.effectiveResistances = [{ damageType: "blunt", category: "vulnerability", value: 15, limbs: [] }];
+      // 10 blunt from the weapon + 15 blunt bonus = 25 blunt, +15 vulnerability once = 40.
+      const hits = [{
+        damage: 25, location: "Thorax", armourPen: 0,
+        damageComponents: [
+          { damageType: "blunt", damage: 10 },
+          { damageType: "blunt", damage: 15 },
+        ],
+      }];
+      await actor.applyTAMSDamage(hits);
+      expect(actor.system.limbs.thorax.value).toBe(10); // 50 - 40
+    });
+
+    it('applies a resistance once when two components share its type', async () => {
+      actor.system.limbs.thorax.value = 50;
+      actor.system.limbs.thorax.max = 50;
+      actor.system.effectiveResistances = [{ damageType: "blunt", category: "resistance", value: 5, limbs: [] }];
+      const hits = [{
+        damage: 25, location: "Thorax", armourPen: 0,
+        damageComponents: [
+          { damageType: "blunt", damage: 10 },
+          { damageType: "blunt", damage: 15 },
+        ],
+      }];
+      await actor.applyTAMSDamage(hits);
+      expect(actor.system.limbs.thorax.value).toBe(30); // 50 - (25 - 5)
     });
 
     it('falls back to legacy single damageType hits unchanged when damageComponents is absent', async () => {

@@ -180,6 +180,16 @@ $seg-h:            24px;
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
+
+      // Label hangs below the dot, out of flow, so every dot in a row sits at the same height
+      // whatever its label's length (or whether it's hidden).
+      .honor-node-label {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: 110px;
+      }
     }
 
     // The score endpoints (T0/T8) are shown even when unreached (see .honor-endpoint below),
@@ -193,12 +203,23 @@ $seg-h:            24px;
     // side of its own center) — measured live via the tester rig. An earlier ±34px offset with a
     // 58px label width reached ~63px from center, which doesn't just fail to clear its own
     // column, it runs into the *neighboring* column's endpoint too (confirmed live: Valor's
-    // right-side label was touching Justice's left-side label with zero gap). ±22px / 42px stays
-    // safely inside each column's own ~58px half-width with room to spare.
+    // right-side label was touching Justice's left-side label with zero gap). ±28px with a 52px
+    // label reaches ~54px, still inside each column's ~58px half-width. The label wraps onto a
+    // second line instead of truncating.
     .honor-node.honor-endpoint {
-      &:nth-child(1) { transform: translate(-22px, -50%); } // honor-direction (e.g. Lionheart)
-      &:nth-child(2) { transform: translate(22px, -50%); }  // dishonor-direction (e.g. Runagate)
+      &:nth-child(1) { transform: translate(-28px, -50%); } // honor-direction (e.g. Lionheart)
+      &:nth-child(2) { transform: translate(28px, -50%); }  // dishonor-direction (e.g. Runagate)
+
+      .honor-node-label {
+        width: 52px;
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
     }
+
+    // The covered node of a stacked pair (the side the score isn't on): no hover, so the
+    // tooltip comes from the node that's actually in play.
+    .honor-node.honor-muted { pointer-events: none; }
   }
 
   // Tier nodes: centered dot + label. Unreached tiers stay dimly visible (not invisible) so the
@@ -251,7 +272,6 @@ $seg-h:            24px;
     // default — see the ±22px offset comment above for the column-width math this pairs with.
     &.honor-endpoint .honor-node-label {
       opacity: 0.42;
-      max-width: 42px;
     }
 
     // Honor path reached: gold dot + label fades in

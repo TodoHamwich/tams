@@ -227,6 +227,9 @@ function curseVisible(magic, isGM) {
 function identityVisible(magic, isGM) {
   return isGM || (magic == null ? void 0 : magic.identified) !== false;
 }
+function canEditMagic(magic, { isGM, isOwner }) {
+  return !!isGM || !!isOwner && (magic == null ? void 0 : magic.identified) !== false;
+}
 function publicItemName(item, fallback = "Unidentified Item") {
   var _a, _b;
   const magic = (_a = item == null ? void 0 : item.system) == null ? void 0 : _a.magic;
@@ -242,6 +245,46 @@ function magicArmourPen(magic) {
 }
 function bonusDamageComponents(magic) {
   return ((magic == null ? void 0 : magic.bonusDamage) ?? []).map((c) => ({ damageType: c.damageType || "", damage: Math.floor(Number(c.amount) || 0) })).filter((c) => c.damage > 0);
+}
+const HIT_TABLE = [
+  { key: "rightLeg", label: "Right Leg", weight: 10 },
+  // 1-10
+  { key: "leftLeg", label: "Left Leg", weight: 10 },
+  // 11-20
+  { key: "rightArm", label: "Right Arm", weight: 10 },
+  // 21-30
+  { key: "leftArm", label: "Left Arm", weight: 10 },
+  // 31-40
+  { key: "stomach", label: "Stomach", weight: 15 },
+  // 41-55
+  { key: "thorax", label: "Thorax", weight: 40 },
+  // 56-95
+  { key: "head", label: "Head", weight: 5 }
+  // 96-100
+];
+const LABEL_TO_KEY = Object.fromEntries(HIT_TABLE.map((r) => [r.label, r.key]));
+function isLimbMissing(limb) {
+  return (limb == null ? void 0 : limb.missing) === true;
+}
+function locationIsMissing(location, limbs) {
+  const key = LABEL_TO_KEY[location];
+  return !!key && isLimbMissing(limbs == null ? void 0 : limbs[key]);
+}
+function presentHitTable(limbs) {
+  return HIT_TABLE.filter((r) => !isLimbMissing(limbs == null ? void 0 : limbs[r.key]));
+}
+function presentHitWeight(limbs) {
+  return presentHitTable(limbs).reduce((sum, r) => sum + r.weight, 0);
+}
+function locationFromRoll(roll, limbs) {
+  var _a;
+  const table = presentHitTable(limbs);
+  let upper = 0;
+  for (const row of table) {
+    upper += row.weight;
+    if (roll <= upper) return row.label;
+  }
+  return ((_a = table.at(-1)) == null ? void 0 : _a.label) ?? null;
 }
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1, large: 1.5, huge: 2, giant: 2.5 };
 const SIZE_ORDER = ["tiny", "small", "normal", "large", "huge", "giant"];
@@ -297,13 +340,13 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         bravery: new fields.EmbeddedDataField(StatModifier, { initial: { label: "TAMS.StatBravery" } })
       }),
       limbs: new fields.SchemaField({
-        head: new fields.SchemaField({ value: new fields.NumberField({ initial: 5 }), max: new fields.NumberField({ initial: 5 }), mult: new fields.NumberField({ initial: 0.5 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Head" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        thorax: new fields.SchemaField({ value: new fields.NumberField({ initial: 10 }), max: new fields.NumberField({ initial: 10 }), mult: new fields.NumberField({ initial: 1 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Thorax" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        stomach: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Stomach" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        leftArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        rightArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        leftLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) }),
-        rightLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), equippedArmorId: new fields.StringField({ initial: "" }) })
+        head: new fields.SchemaField({ value: new fields.NumberField({ initial: 5 }), max: new fields.NumberField({ initial: 5 }), mult: new fields.NumberField({ initial: 0.5 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Head" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), missing: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        thorax: new fields.SchemaField({ value: new fields.NumberField({ initial: 10 }), max: new fields.NumberField({ initial: 10 }), mult: new fields.NumberField({ initial: 1 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Thorax" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), missing: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        stomach: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Stomach" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), missing: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        leftArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), missing: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        rightArm: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Arm" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), missing: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        leftLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Left Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), missing: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) }),
+        rightLeg: new fields.SchemaField({ value: new fields.NumberField({ initial: 7 }), max: new fields.NumberField({ initial: 7 }), mult: new fields.NumberField({ initial: 0.75 }), armor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), armorMax: new fields.NumberField({ initial: 0, min: 0, max: 40 }), otherArmor: new fields.NumberField({ initial: 0, min: 0, max: 40 }), label: new fields.StringField({ initial: "Right Leg" }), injured: new fields.BooleanField({ initial: false }), criticallyInjured: new fields.BooleanField({ initial: false }), lethal: new fields.BooleanField({ initial: true }), lethalThreshold: new fields.NumberField({ initial: 1, min: 0.5 }), missing: new fields.BooleanField({ initial: false }), equippedArmorId: new fields.StringField({ initial: "" }) })
       }),
       inventory: new fields.SchemaField({
         usedCapacity: new fields.NumberField({ initial: 0 }),
@@ -594,7 +637,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
     for (const key of limbKeys) {
       const limb = this.limbs[key];
-      if (!limb) continue;
+      if (!limb || isLimbMissing(limb)) continue;
       totalHp += Number(limb.value) || 0;
       totalMaxHp += Number(limb.max) || 0;
     }
@@ -785,8 +828,14 @@ function activeBonusDamage(system) {
 function splitComponents(system) {
   return (system.damageComponents ?? []).map((c) => ({ damageType: c.damageType || "", damage: Math.floor(c.amount || 0) }));
 }
+function splitStatDamage(system, statDamage) {
+  if (!system.splitFromBase) return statDamage;
+  const carved = splitComponents(system).reduce((sum, c) => sum + c.damage, 0);
+  return Math.max(0, statDamage - carved);
+}
 function withSplitComponents(system, statDamage) {
   const extras = splitComponents(system);
+  statDamage = splitStatDamage(system, statDamage);
   const base = { damageType: system.damageType || "", damage: statDamage };
   return statDamage > 0 || !extras.length ? [base, ...extras] : extras;
 }
@@ -831,6 +880,8 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
         damageType: new fields.StringField({ initial: "" }),
         amount: new fields.NumberField({ initial: 0, nullable: true })
       }), { initial: [] }),
+      // When true, damageComponents are taken out of the stat damage instead of added on top.
+      splitFromBase: new fields.BooleanField({ initial: false }),
       inflictsStatusId: new fields.StringField({ initial: "" }),
       ...magicFields(fields),
       ...sharedFields(fields)
@@ -842,7 +893,7 @@ class TAMSWeaponData extends foundry.abstract.TypeDataModel {
   }
   /** Weapon damage without magic bonus damage: stat damage plus any split components. */
   get baseDamage() {
-    return this.statDamage + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
+    return splitStatDamage(this, this.statDamage) + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
   }
   /** The weapon's own stat-derived (or ranged) damage, dealt as `damageType`. */
   get statDamage() {
@@ -1024,6 +1075,8 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         damageType: new fields.StringField({ initial: "" }),
         amount: new fields.NumberField({ initial: 0, nullable: true })
       }), { initial: [] }),
+      // When true, damageComponents are taken out of the stat damage instead of added on top.
+      splitFromBase: new fields.BooleanField({ initial: false }),
       inflictsStatusId: new fields.StringField({ initial: "" }),
       hasSave: new fields.BooleanField({ initial: false }),
       saveAgainst: new fields.StringField({ initial: "dexterity" }),
@@ -1079,7 +1132,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
   }
   get calculatedDamage() {
     if (!this.isAttack) return 0;
-    return this.statDamage + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
+    return splitStatDamage(this, this.statDamage) + splitComponents(this).reduce((sum, c) => sum + c.damage, 0);
   }
   /** The ability's own formula damage, dealt as `damageType`. */
   get statDamage() {
@@ -1105,7 +1158,8 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
    */
   weaponDamageBreakdown(weapon) {
     const w = weapon.system;
-    const main = Math.max(0, Math.floor((w.statDamage || 0) * (this.weaponDamageMult ?? 1)) + (this.damageBonus || 0));
+    const scaled = Math.max(0, Math.floor(splitStatDamage(w, w.statDamage || 0) * (this.weaponDamageMult ?? 1)) + (this.damageBonus || 0));
+    const main = splitStatDamage(this, scaled);
     const extras = [...splitComponents(w), ...activeBonusDamage(w), ...splitComponents(this)];
     const base = { damageType: w.damageType || "", damage: main };
     return main > 0 || !extras.length ? [base, ...extras] : extras;
@@ -1270,21 +1324,21 @@ const MISHAP_TABLE = [
   { min: 96, max: 100, tier: 1, name: "Everyone's Looking", effect: "Every creature within earshot turns to stare after an unmistakably awkward spectacle." },
   // Tier 2: Real Effects (101–200) — alternating positive/negative every 10
   { min: 101, max: 110, tier: 2, positive: true, name: "Echoing Surge", effect: "Spell fires at full effect, and fires again at half effect at the caster's next turn, retargeted by the caster." },
-  { min: 111, max: 120, tier: 2, positive: false, name: "Catastrophic Backlash", effect: "Spell fails entirely. Caster takes (cost × 10) to the Thorax, bypassing all armour and damage resistances. The caster may spend resource — each resource spent reduces this damage by 10." },
+  { min: 111, max: 120, tier: 2, positive: false, name: "Catastrophic Backlash", effect: "Spell fails entirely. Caster takes (cost × 10) to the Thorax, bypassing all armour and damage resistances. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10." },
   { min: 121, max: 130, tier: 2, positive: true, name: "Overwhelming Surge", effect: "Spell fires at double all numerical values. No downside." },
   { min: 131, max: 140, tier: 2, positive: false, name: "Magical Reversal", effect: "Spell fails to reach its intended target and strikes the caster instead at full effect, as if they were the original target." },
   { min: 141, max: 150, tier: 2, positive: true, name: "Temporal Boost", effect: "Spell fires normally. Caster gains an additional activation this round." },
-  { min: 151, max: 160, tier: 2, positive: false, name: "Reality Rupture", effect: "Spell detonates at the caster's position. All creatures within 5m (including the caster) take (cost × 10) damage. Each resource spent reduces this damage by 10 for all affected. Spell's original effect fails." },
+  { min: 151, max: 160, tier: 2, positive: false, name: "Reality Rupture", effect: "Spell detonates at the caster's position. All creatures within 5m (including the caster) take (cost × 10) Magic damage to one random limb. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected. Spell's original effect fails." },
   { min: 161, max: 170, tier: 2, positive: true, name: "Arcane Mastery", effect: "Spell fires normally. Caster's next 2 spell rolls automatically succeed at maximum effect." },
   { min: 171, max: 180, tier: 2, positive: false, name: "Planar Bleed", effect: "A rift tears open at the point of casting. A hostile creature from another plane emerges (GM scales to party threat level). Rift seals after 1 round. Spell fails." },
   { min: 181, max: 190, tier: 2, positive: true, name: "Wild Boon", effect: "Spell fires normally and is duplicated in full at a second valid target/location of the caster's choosing." },
   { min: 191, max: 200, tier: 2, positive: false, name: "Cascade Failure", effect: "Roll twice more on this 101–200 band (re-roll results of 191+). Apply both results simultaneously. Original spell fails." },
   // Tier 3: Extreme (201–250)
-  { min: 201, max: 210, tier: 3, name: "Mana Cataclysm", effect: "All creatures within 10m take (cost × 20) damage bypassing armour. Caster takes double this amount. Each resource spent reduces damage by 10 for all affected (caster's doubled portion reduced by 20). Make a Survival Check if brought to 0 HP. Spell fails." },
+  { min: 201, max: 210, tier: 3, name: "Mana Cataclysm", effect: "All creatures within 10m take (cost × 20) Magic damage to one random limb, bypassing armour. Caster takes double this amount. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected (the caster's doubled portion is reduced by 20 per resource spent). Make a Survival Check if brought to 0 HP. Spell fails." },
   { min: 211, max: 220, tier: 3, name: "Temporal Fracture", effect: "All creatures in the encounter revert to their positions at the start of the previous round. HP, Stamina, and Mana remain at their values at the moment of the mishap. Spell fails. Can only trigger once per combat." },
-  { min: 221, max: 230, tier: 3, name: "Anti-Magic Pulse", effect: "A 20m radius anti-magic zone erupts from the caster for 1d4+1 rounds. All ongoing magical effects are suppressed. Caster takes damage equal to all Stamina/Mana spent this combat, bypassing armour. Each resource spent reduces this damage by 10." },
-  { min: 231, max: 240, tier: 3, name: "The Rending", effect: "The spell detonates in a 30m radius. All creatures within take (cost × 30) damage bypassing armour. Each resource spent reduces damage by 10 for all affected. Terrain is permanently altered. Spell fails." },
-  { min: 241, max: 250, tier: 3, name: "Apotheosis Failed", effect: "Every limb takes (cost × 15) damage, bypassing all armour. Each resource spent reduces damage by 10. Make a Survival Check for each limb brought to 0 HP." },
+  { min: 221, max: 230, tier: 3, name: "Anti-Magic Pulse", effect: "A 20m radius anti-magic zone erupts from the caster for 1d4+1 rounds. All ongoing magical effects are suppressed. Caster takes Magic damage equal to all Stamina/Mana spent this combat to a rolled hit location, bypassing armour. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10." },
+  { min: 231, max: 240, tier: 3, name: "The Rending", effect: "The spell detonates in a 30m radius. All creatures within take (cost × 30) Magic damage to one random limb, bypassing armour. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected. Terrain is permanently altered. Spell fails." },
+  { min: 241, max: 250, tier: 3, name: "Apotheosis Failed", effect: "Every limb takes (cost × 15) damage, bypassing all armour. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10. Make a Survival Check for each limb brought to 0 HP." },
   // Tier 4: Gone From Existence (250+) — fates worse than death
   { min: 250, max: 250, tier: 4, name: "Annihilation", effect: "The caster is erased from existence entirely — body, soul, and all traces. Those who knew them retain the memory of a person but cannot explain why. Possessions scatter. By the standards of this tier, this is the fortunate result." },
   { min: 251, max: 265, tier: 4, name: "Soul Shatter", effect: "The soul is fragmented across multiple planes. The body remains alive but empty. Each fragment experiences its host plane, typically in perpetuity. Recovery requires a separate quest to each plane to retrieve and reunite the pieces; no known single ritual can achieve this." },
@@ -1328,14 +1382,14 @@ const DIVINE_MISHAP_TABLE = {
     { min: 121, max: 130, tier: 2, positive: true, name: "Surging Conviction", effect: "Ability fires at double all numerical values. No downside." },
     { min: 131, max: 140, tier: 2, positive: false, name: "Misaligned", effect: "Ability fires at full effect but strikes the caster instead of the intended target, as if they were the original target." },
     { min: 141, max: 150, tier: 2, positive: true, name: "Granted Action", effect: "Ability fires normally. Caster gains an additional activation this round." },
-    { min: 151, max: 160, tier: 2, positive: false, name: "Holy Discharge", effect: "The ability detonates at the caster's position. All creatures within 5m (including the caster) take (cost × 10) damage. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected. Ability fails." },
+    { min: 151, max: 160, tier: 2, positive: false, name: "Holy Discharge", effect: "The ability detonates at the caster's position. All creatures within 5m (including the caster) take (cost × 10) Divine damage to one random limb. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected. Ability fails." },
     { min: 161, max: 170, tier: 2, positive: true, name: "Unwavering Faith", effect: "Ability fires normally. Caster's next 2 divine ability rolls automatically succeed at maximum effect." },
     { min: 171, max: 180, tier: 2, positive: false, name: "The Wrong Ear", effect: "The invocation is heard by something that opposes what the caster serves. A hostile entity arrives, drawn by the prayer (GM scales to party threat level). Ability fails." },
     { min: 181, max: 190, tier: 2, positive: true, name: "Overflowing Grace", effect: "Ability fires normally and is duplicated in full at a second valid target of the caster's choosing." },
     { min: 191, max: 200, tier: 2, positive: false, name: "Cascading Doubt", effect: "Roll twice more on this 101–200 band (re-roll 191+). Apply both simultaneously. Original ability fails." },
     // Tier 3: Extreme (201–250)
-    { min: 201, max: 210, tier: 3, name: "Righteous Detonation", effect: "The divine energy discharges in a 10m radius. All creatures within take (cost × 20) damage. Caster takes double. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected (the caster's doubled portion is reduced by 20 per resource spent). Make a Survival Check if brought to 0 HP. Ability fails." },
-    { min: 211, max: 220, tier: 3, name: "Weight of Judgement", effect: "Every creature within 20m is compelled for 1d4 rounds to act in accordance with their own stated values. Creatures who act against their professed nature during this time take (cost × 10) damage. Ability fires normally." },
+    { min: 201, max: 210, tier: 3, name: "Righteous Detonation", effect: "The divine energy discharges in a 10m radius. All creatures within take (cost × 20) Divine damage to one random limb. Caster takes double. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected (the caster's doubled portion is reduced by 20 per resource spent). Make a Survival Check if brought to 0 HP. Ability fails." },
+    { min: 211, max: 220, tier: 3, name: "Weight of Judgement", effect: "Every creature within 20m is compelled for 1d4 rounds to act in accordance with their own stated values. Creatures who act against their professed nature during this time take (cost × 10) Divine damage to the Thorax. Ability fires normally." },
     { min: 221, max: 230, tier: 3, name: "Silence of the Faithful", effect: "A 15m radius zone erupts from the caster — no divine abilities may be channelled within it for 1d4+1 rounds, all ongoing divine effects suspended. Caster takes (cost × 10) to the Thorax. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10." },
     { min: 231, max: 240, tier: 3, name: "Crisis of Conviction", effect: "The caster is overtaken by complete involuntary doubt. For 1d4 rounds they cannot use any divine ability and must pass a Bravery check to take any action that invokes their code or deity." },
     { min: 241, max: 250, tier: 3, name: "Marked for Attention", effect: "The ability fails. The power discharges inward — every limb takes (cost × 10) damage bypassing armour. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10. Make a Survival Check for each limb brought to 0 HP or below." },
@@ -1379,19 +1433,19 @@ const ALCHEMY_MISHAP_TABLE = {
     { min: 96, max: 100, tier: 1, name: "Wrong Form", effect: "Produced in an unexpected physical form — solid instead of liquid, gas instead of gel. Full potency, awkward delivery." },
     // Tier 2: Real Effects (101–200) — alternating positive/negative every 10
     { min: 101, max: 110, tier: 2, positive: true, name: "Exceptional Yield", effect: "Brew succeeds at full potency and produces 3 doses instead of 1." },
-    { min: 111, max: 120, tier: 2, positive: false, name: "Contaminated", effect: "Brew works as intended but is also harmful to handle. The user takes (effects × 5) Acid damage on application, bypassing armour." },
+    { min: 111, max: 120, tier: 2, positive: false, name: "Contaminated", effect: "Brew works as intended but is also harmful to handle. The user takes (effects × 5) Acid damage to a rolled hit location on application, bypassing armour." },
     { min: 121, max: 130, tier: 2, positive: true, name: "Doubled Potency", effect: "Brew succeeds at double strength and double duration. No extra cost." },
     { min: 131, max: 140, tier: 2, positive: false, name: "Reversed", effect: "Brew is produced and looks correct but does the exact opposite of its intended function in every respect." },
     { min: 141, max: 150, tier: 2, positive: true, name: "Accidental Discovery", effect: "Brew produces its intended effect plus a second minor beneficial effect equivalent to a 1-effect ability. GM determines what." },
-    { min: 151, max: 160, tier: 2, positive: false, name: "Unstable Compound", effect: "Brew is produced but detonates if significantly disturbed — dropped, struck in combat, or roughly handled. Explosion deals (effects × 5) Fire damage to everything within 3m. The carrier is not exempt." },
+    { min: 151, max: 160, tier: 2, positive: false, name: "Unstable Compound", effect: "Brew is produced but detonates if significantly disturbed — dropped, struck in combat, or roughly handled. Explosion deals (effects × 5) Fire damage to one random limb of everything within 3m. The carrier is not exempt." },
     { min: 161, max: 170, tier: 2, positive: true, name: "Perfect Formula", effect: "Brew succeeds at full potency. The alchemist fully internalises the recipe — all future brews of this type have no mishap chance." },
     { min: 171, max: 180, tier: 2, positive: false, name: "Contagion", effect: "Brew works as intended but becomes transmissible through touch for its duration. Anyone touching the target must pass an Endurance check or contract a half-potency version of the effect." },
     { min: 181, max: 190, tier: 2, positive: true, name: "Sympathetic Batch", effect: "Brew succeeds at full potency and automatically produces one additional dose that takes effect on a willing target of the alchemist's choice within sight, at half potency." },
     { min: 191, max: 200, tier: 2, positive: false, name: "Chain Reaction", effect: "Roll twice more on this 101–200 band (re-roll 191+). Apply both simultaneously." },
     // Tier 3: Brew Fails — Dangerous (201–250)
-    { min: 201, max: 210, tier: 3, name: "Detonation", effect: "The mixture ignites violently. Everything within 5m takes (effects × 10) Fire damage; everything within 10m takes half. The workspace is destroyed." },
+    { min: 201, max: 210, tier: 3, name: "Detonation", effect: "The mixture ignites violently. Everything within 5m takes (effects × 10) Fire damage to one random limb; everything within 10m takes half. The workspace is destroyed." },
     { min: 211, max: 220, tier: 3, name: "Plague Brew", effect: "The brew mutates into an airborne contagion. All creatures within 20m must pass an Endurance check or contract a debilitating illness — GM determines symptoms, 1d4 days of rest to recover." },
-    { min: 221, max: 230, tier: 3, name: "Corrosive Burst", effect: "The brew dissolves outward in a 5m radius Acid wave dealing (effects × 8) damage to all within. Surfaces and equipment in the area are permanently corroded." },
+    { min: 221, max: 230, tier: 3, name: "Corrosive Burst", effect: "The brew dissolves outward in a 5m radius Acid wave dealing (effects × 8) Acid damage to one random limb of everything within. Surfaces and equipment in the area are permanently corroded." },
     { min: 231, max: 240, tier: 3, name: "Marked", effect: "The fumes permanently alter the alchemist's biology in a minor but irreversible way. GM determines the nature of the change. The alchemist is otherwise unharmed." },
     { min: 241, max: 250, tier: 3, name: "Internal Reaction", effect: "The brew reacts with the alchemist's own biology on contact. Every limb takes (effects × 8) damage bypassing all armour. Make a Survival Check for each limb brought to 0 HP or below." },
     // Tier 4: Not Everything Can Be Neutralised (250+)
@@ -1438,7 +1492,7 @@ const PSYCHIC_MISHAP_TABLE = {
     { min: 121, max: 130, tier: 2, positive: true, name: "Amplified Signal", effect: "Ability fires at double all numerical values. No downside." },
     { min: 131, max: 140, tier: 2, positive: false, name: "Involuntary Reversal", effect: "Ability fires at full effect but strikes the caster instead of the intended target, as if they were the original target." },
     { min: 141, max: 150, tier: 2, positive: true, name: "Mental Clarity", effect: "Ability fires normally. Caster gains an additional activation this round." },
-    { min: 151, max: 160, tier: 2, positive: false, name: "Neural Overload", effect: "The ability detonates at the caster's position. All creatures within 5m (including the caster) take (cost × 10) Psychic damage. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected. Ability fails." },
+    { min: 151, max: 160, tier: 2, positive: false, name: "Neural Overload", effect: "The ability detonates at the caster's position. All creatures within 5m (including the caster) take (cost × 10) Psychic damage to one random limb. The caster may spend resource after the mishap roll — each resource spent reduces this damage by 10 for all affected. Ability fails." },
     { min: 161, max: 170, tier: 2, positive: true, name: "Psionic Mastery", effect: "Ability fires normally. Caster's next 2 psychic ability rolls automatically succeed at maximum effect." },
     { min: 171, max: 180, tier: 2, positive: false, name: "Broadcast", effect: "The caster involuntarily transmits everything they are currently experiencing — sensory and emotional — to every creature within 20m for 1d4 rounds. They cannot filter or stop it. Ability fails." },
     { min: 181, max: 190, tier: 2, positive: true, name: "Expanded Reach", effect: "Ability fires normally and is duplicated in full at a second valid target of the caster's choosing." },
@@ -1511,6 +1565,26 @@ function rescaledLimbValue(limb, value, newSize, oldSize) {
 function dyingThreshold(limb) {
   return -(lethalThreshold(limb) * (limb.max || 0));
 }
+const FLAG = "reactionCount";
+function stackedReactionCost(baseCost, priorReactions) {
+  return baseCost * (Math.max(0, priorReactions || 0) + 1);
+}
+function reactionCount(actor) {
+  var _a;
+  return ((_a = actor == null ? void 0 : actor.getFlag) == null ? void 0 : _a.call(actor, "tams", FLAG)) ?? 0;
+}
+async function recordReaction(actor) {
+  if (!(actor == null ? void 0 : actor.inCombat) || actor.isOwner === false) return;
+  await actor.setFlag("tams", FLAG, reactionCount(actor) + 1);
+}
+async function resetReactions(actor) {
+  if (reactionCount(actor) > 0) await actor.setFlag("tams", FLAG, 0);
+}
+function isMeleeOption(item) {
+  var _a, _b, _c;
+  if (item.type === "weapon") return !((_a = item.system) == null ? void 0 : _a.isRanged);
+  return !((((_c = (_b = item.system) == null ? void 0 : _b.calculator) == null ? void 0 : _c.range) ?? 0) > 10);
+}
 const e$3 = (s) => foundry.utils.escapeHTML(String(s ?? ""));
 async function tamsUpdateMessage(message, updateData) {
   if (game.user.isGM || message.isAuthor) {
@@ -1527,15 +1601,23 @@ async function tamsUpdateMessage(message, updateData) {
     updateData
   });
 }
-async function getHitLocation(rollValue = null) {
+async function getHitLocation(rollValue = null, limbs = null) {
   const raw = rollValue ?? (await new Roll("1d100").evaluate()).total;
-  if (raw >= 96) return "Head";
-  if (raw >= 56) return "Thorax";
-  if (raw >= 41) return "Stomach";
-  if (raw >= 31) return "Left Arm";
-  if (raw >= 21) return "Right Arm";
-  if (raw >= 11) return "Left Leg";
-  return "Right Leg";
+  const location = locationFromRoll(raw);
+  if (!locationIsMissing(location, limbs)) return location;
+  return await rerollPresentLocation(limbs) ?? location;
+}
+async function rerollPresentLocation(limbs) {
+  const weight = presentHitWeight(limbs);
+  if (!weight) return null;
+  return locationFromRoll((await new Roll(`1d${weight}`).evaluate()).total, limbs);
+}
+async function hitLocationOn(actor, location = null) {
+  var _a;
+  const limbs = (_a = actor == null ? void 0 : actor.system) == null ? void 0 : _a.limbs;
+  if (!location) return getHitLocation(null, limbs);
+  if (!locationIsMissing(location, limbs)) return location;
+  return await rerollPresentLocation(limbs) ?? location;
 }
 async function showCombinedInjuryDialog(target, pendingChecks) {
   let content = `<div class="tams-injury-dialog">
@@ -1935,11 +2017,13 @@ const DOT_GROUPS = [
       { id: "severe-acid-burn", damage: 5, msgKey: "TAMS.TurnStart.SevereAcidDamage" },
       { id: "acid-burn", damage: 2, msgKey: "TAMS.TurnStart.AcidDamage" }
     ],
-    // Target the arm with lower current HP (most exposed)
+    // Target the arm with lower current HP (most exposed); a missing arm is skipped, and with
+    // no arms the burn lands on the thorax.
     getLimb: (limbs) => {
       var _a, _b;
-      const la = ((_a = limbs.leftArm) == null ? void 0 : _a.value) ?? Infinity;
-      const ra = ((_b = limbs.rightArm) == null ? void 0 : _b.value) ?? Infinity;
+      const la = isLimbMissing(limbs.leftArm) ? Infinity : ((_a = limbs.leftArm) == null ? void 0 : _a.value) ?? Infinity;
+      const ra = isLimbMissing(limbs.rightArm) ? Infinity : ((_b = limbs.rightArm) == null ? void 0 : _b.value) ?? Infinity;
+      if (la === Infinity && ra === Infinity) return "thorax";
       return la <= ra ? "leftArm" : "rightArm";
     },
     outKey: "TAMS.TurnStart.AcidOut"
@@ -1973,10 +2057,7 @@ async function tamsOnTurnStart(actor) {
       });
     }
   }
-  const reactionUses = actor.getFlag("tams", "reactionUses") ?? {};
-  if (Object.keys(reactionUses).length > 0) {
-    await actor.setFlag("tams", "reactionUses", {});
-  }
+  await resetReactions(actor);
   const statuses = actor.statuses ?? /* @__PURE__ */ new Set();
   const allPendingChecks = [];
   const activeDotTiers = [];
@@ -1999,7 +2080,7 @@ async function tamsOnTurnStart(actor) {
     const newTotalHp = LIMB_KEYS$1.reduce(
       (sum, k) => {
         var _a2;
-        return sum + (limbNewValues[k] ?? ((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0);
+        return isLimbMissing(actor.system.limbs[k]) ? sum : sum + (limbNewValues[k] ?? ((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0);
       },
       0
     );
@@ -2023,7 +2104,7 @@ async function tamsOnTurnStart(actor) {
       await actor.toggleStatusEffect("unconscious", { active: true });
       let runningHp = LIMB_KEYS$1.reduce((sum, k) => {
         var _a2;
-        return sum + (((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0) + (limbDamage[k] ?? 0);
+        return isLimbMissing(actor.system.limbs[k]) ? sum : sum + (((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0) + (limbDamage[k] ?? 0);
       }, 0);
       let outKey = activeDotTiers[0].outKey;
       for (const tier of activeDotTiers) {
@@ -2068,6 +2149,7 @@ async function tamsOnTurnStart(actor) {
     const bleedDamage = {};
     const bleedMessages = [];
     for (const [key, limb] of Object.entries(actor.system.limbs)) {
+      if (isLimbMissing(limb)) continue;
       if (limb.criticallyInjured) {
         bleedDamage[key] = (bleedDamage[key] ?? 0) + 1;
         bleedMessages.push(game.i18n.format("TAMS.TurnStart.CritWoundBleed", { name: e$3(actor.name), limb: limb.label }));
@@ -2093,7 +2175,7 @@ async function tamsOnTurnStart(actor) {
       }
       const bleedTotalHp = LIMB_KEYS$1.reduce((sum, k) => {
         var _a2;
-        return sum + (bleedUpdates[`system.limbs.${k}.value`] ?? ((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0);
+        return isLimbMissing(actor.system.limbs[k]) ? sum : sum + (bleedUpdates[`system.limbs.${k}.value`] ?? ((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0);
       }, 0);
       if (bleedTotalHp <= 0) {
         await actor.toggleStatusEffect("unconscious", { active: true });
@@ -2151,11 +2233,10 @@ async function tamsOnCombatEnd(combat) {
       }
     }
     if (actor.getFlag("tams", "dyingCountdown")) await actor.setFlag("tams", "dyingCountdown", null);
-    const reactionUses = actor.getFlag("tams", "reactionUses") ?? {};
-    if (Object.keys(reactionUses).length > 0) await actor.setFlag("tams", "reactionUses", {});
+    await resetReactions(actor);
     const totalHp = LIMB_KEYS$1.reduce((sum, k) => {
       var _a2;
-      return sum + (((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0);
+      return sum + (isLimbMissing(actor.system.limbs[k]) ? 0 : ((_a2 = actor.system.limbs[k]) == null ? void 0 : _a2.value) ?? 0);
     }, 0);
     const persistentStatuses = [...actor.statuses ?? []].filter((s) => !TEMP_COMBAT_STATUSES.has(s) && s !== "encumbered").map((s) => {
       var _a2;
@@ -2366,7 +2447,7 @@ async function openTAMSDamageDialog(target, {
               const incoming = Math.floor(remainingDmg / (subHits - m));
               remainingDmg -= incoming;
               if (incoming <= 0 && m > 0) continue;
-              const loc = isAoEHit && isSquadOrHorde && (m > 0 || i > 0) ? await getHitLocation() : locations[i];
+              const loc = isAoEHit && isSquadOrHorde && (m > 0 || i > 0) ? await getHitLocation(null, target.system.limbs) : locations[i];
               const hitComponents = subHits === 1 ? perType : distributeDamageComponents(incoming, perType);
               hits.push({ location: loc, damage: incoming, armourPen, damageComponents: hitComponents, forceCrit: forceCrit ? "1" : "0" });
             }
@@ -2554,8 +2635,11 @@ async function tamsRenderChatMessage(message, html, data) {
       var _a2, _b2, _c2, _d2;
       ev.preventDefault();
       const currentFlags = (_a2 = message.flags) == null ? void 0 : _a2.tams;
-      let currentActor;
-      if (game.user.isGM) {
+      let currentActor = ((_c2 = (_b2 = canvas.tokens) == null ? void 0 : _b2.controlled[0]) == null ? void 0 : _c2.actor) ?? null;
+      if (currentActor && currentActor.id === (currentFlags == null ? void 0 : currentFlags.initiatorId)) {
+        return ui.notifications.warn(game.i18n.format("TAMS.ContestedCheck.CannotContestOwn", { name: currentActor.name }));
+      }
+      if (!currentActor && game.user.isGM) {
         const contested = new Set(((currentFlags == null ? void 0 : currentFlags.contests) ?? []).map((c) => c.actorId));
         const eligible = game.actors.filter((a) => a.type === "character" && a.id !== (currentFlags == null ? void 0 : currentFlags.initiatorId) && !contested.has(a.id));
         if (!eligible.length) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
@@ -2572,8 +2656,8 @@ async function tamsRenderChatMessage(message, html, data) {
             { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => false }
           ]
         });
-      } else {
-        currentActor = ((_c2 = (_b2 = canvas.tokens) == null ? void 0 : _b2.controlled[0]) == null ? void 0 : _c2.actor) ?? game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
+      } else if (!currentActor) {
+        currentActor = game.user.character ?? game.actors.find((a) => a.isOwner && a.type === "character");
       }
       if (!currentActor) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
       if ((_d2 = currentFlags == null ? void 0 : currentFlags.contests) == null ? void 0 : _d2.some((c) => c.actorId === currentActor.id)) {
@@ -2978,6 +3062,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (!actor && targetActorId) actor = game.actors.get(targetActorId);
     if (!actor) actor = ((_a = canvas.tokens.controlled[0]) == null ? void 0 : _a.actor) ?? null;
     if (!actor) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetDodge"));
+    await recordReaction(actor);
     const dex = actor.system.stats.dexterity;
     let cap = dex.total;
     if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
@@ -3005,7 +3090,7 @@ async function tamsRenderChatMessage(message, html, data) {
       const locations = [];
       const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
       for (let i = 0; i < hitsScored; i++) {
-        locations.push(attackerLocations[i] || (targetLimb && targetLimb !== "none" ? limbOptions[targetLimb] : await getHitLocation()));
+        locations.push(await hitLocationOn(actor, attackerLocations[i] || (targetLimb && targetLimb !== "none" ? limbOptions[targetLimb] : null)));
       }
       const autoCritNote = pendingAutoCrit ? `<div class="roll-row"><small style="color:#c0392b;font-weight:bold;">${game.i18n.localize("TAMS.Combat.UnreliableAutoCrit")}</small></div>` : "";
       damageInfo = `
@@ -3126,7 +3211,7 @@ async function tamsRenderChatMessage(message, html, data) {
       const locations = [];
       const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
       for (let i = 0; i < hitsScored; i++) {
-        locations.push(attackerLocations[i] || (targetLimb && targetLimb !== "none" ? limbOptions[targetLimb] : await getHitLocation()));
+        locations.push(await hitLocationOn(actor, attackerLocations[i] || (targetLimb && targetLimb !== "none" ? limbOptions[targetLimb] : null)));
       }
       damageInfo = `
             <div class="roll-row"><b>${game.i18n.localize("TAMS.Combat.HitsTaken")} ${hitsScored} / ${attackerMulti}</b></div>
@@ -3156,7 +3241,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (message2) await tamsUpdateMessage(message2, { content: container.outerHTML });
   }));
   root.querySelectorAll(".tams-retaliate").forEach((el) => el.addEventListener("click", async (ev) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
     ev.preventDefault();
     const btn = ev.currentTarget;
     const attackerRaw = parseInt(btn.dataset.raw);
@@ -3184,8 +3269,9 @@ async function tamsRenderChatMessage(message, html, data) {
     if (!actor && targetActorId) actor = game.actors.get(targetActorId);
     if (!actor) actor = ((_a = canvas.tokens.controlled[0]) == null ? void 0 : _a.actor) ?? null;
     if (!actor) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTargetRetaliate"));
-    const weapons = actor.items.filter((i) => i.type === "weapon" || i.type === "ability" && i.system.isReaction && i.system.isAttack);
-    if (!weapons.length) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoValidWeapons"));
+    const meleeOnly = isAoEFromData && isRanged;
+    const weapons = actor.items.filter((i) => (i.type === "weapon" || i.type === "ability" && i.system.isReaction && i.system.isAttack) && (!meleeOnly || isMeleeOption(i)));
+    if (!weapons.length) return ui.notifications.warn(game.i18n.localize(meleeOnly ? "TAMS.Combat.RetaliateNoAoE" : "TAMS.Checks.Notifications.NoValidWeapons"));
     const options = weapons.map((w) => `<option value="${w.id}">${e$3(w.displayName)} (${w.type === "ability" ? "Ability" : "Weapon"}, Fam ${w.system.familiarity || 0})</option>`).join("");
     let chosenId = await foundry.applications.api.DialogV2.wait({
       window: { title: game.i18n.localize("TAMS.Combat.ChooseWeaponRetaliate") },
@@ -3199,7 +3285,9 @@ async function tamsRenderChatMessage(message, html, data) {
     const weapon = actor.items.get(chosenId);
     if (!weapon) return;
     if (weapon.type === "ability") {
-      const cost = parseInt(weapon.system.cost) || 0;
+      const baseCost = parseInt(weapon.system.cost) || 0;
+      const isLimited = (parseInt((_b = weapon.system.uses) == null ? void 0 : _b.max) || 0) > 0;
+      const cost = isLimited ? baseCost : stackedReactionCost(baseCost, reactionCount(actor));
       if (!weapon.system.isApex && cost > 0) {
         const resourceKey = weapon.system.resource;
         if (resourceKey === "stamina") {
@@ -3218,6 +3306,7 @@ async function tamsRenderChatMessage(message, html, data) {
         }
       }
     }
+    await recordReaction(actor);
     let cap = 0;
     let balancedBonus = 0;
     if (weapon.type === "weapon") {
@@ -3225,13 +3314,13 @@ async function tamsRenderChatMessage(message, html, data) {
       if (statId === "default" || !statId) {
         statId = weapon.system.isRanged && !weapon.system.isThrown || weapon.system.isLight ? "dexterity" : "strength";
       }
-      cap = ((_b = actor.system.stats[statId]) == null ? void 0 : _b.total) || 0;
+      cap = ((_c = actor.system.stats[statId]) == null ? void 0 : _c.total) || 0;
       if (weapon.system.tags.toLowerCase().includes("balanced") && !weapon.system.isRanged) {
         balancedBonus = 10;
       }
     } else {
       const capStat = weapon.system.capStat || weapon.system.attackStat;
-      cap = ((_c = actor.system.stats[capStat]) == null ? void 0 : _c.total) || 0;
+      cap = ((_d = actor.system.stats[capStat]) == null ? void 0 : _d.total) || 0;
     }
     if (isBehind) cap = Math.floor(cap * (actor.system.behindMult ?? 0.5));
     if (isUnaware) cap = Math.floor(cap * 0.5);
@@ -3269,7 +3358,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (abilityTypeBonus.all) profBonus += abilityTypeBonus.all;
     if (weapon.type !== "all" && abilityTypeBonus[weapon.type]) profBonus += abilityTypeBonus[weapon.type];
     if (tags.includes("accurate")) profBonus += 5;
-    if (weapon.type === "weapon" && ((_e = (_d = actor.system.magicState) == null ? void 0 : _d[weapon.id]) == null ? void 0 : _e.onUse)) {
+    if (weapon.type === "weapon" && ((_f = (_e = actor.system.magicState) == null ? void 0 : _e[weapon.id]) == null ? void 0 : _f.onUse)) {
       profBonus += itemAttackBonus(weapon.system.magic);
     }
     if (weapon.type === "weapon") {
@@ -3289,19 +3378,18 @@ async function tamsRenderChatMessage(message, html, data) {
     }
     const capped = Math.min(raw, cap);
     const total = capped + fam + profBonus + retSquadBonus;
-    const threshold = isRanged ? 20 : 10;
+    const threshold = isRanged && !meleeOnly ? 20 : 10;
     const isMutual = Math.abs(attackerTotal - total) <= threshold;
-    if (isAoEFromData && isRanged) return ui.notifications.warn(game.i18n.localize("TAMS.Combat.RetaliateNoAoE"));
     let critInfo = "";
     if (raw >= attackerRaw * 2) critInfo = `<div class="tams-crit success">${game.i18n.format("TAMS.Combat.CriticalRetaliation", { name: e$3(actor.name) })}</div>`;
     else if (attackerRaw >= raw * 2) critInfo = `<div class="tams-crit failure">${game.i18n.format("TAMS.Combat.CriticalHitTaken", { name: e$3(actor.name) })}</div>`;
     let multiVal = weapon.type === "weapon" ? weapon.system.fireRate === "3" ? 3 : weapon.system.fireRate === "auto" ? 10 : weapon.system.fireRate === "custom" ? weapon.system.fireRateCustom : 1 : weapon.system.multiAttack || 1;
     const damage = weapon.system.calculatedDamage;
     let armourPen = weapon.type === "weapon" ? weapon.system.hasArmourPen ? weapon.system.armourPenetration || 0 : 0 : weapon.system.armourPenetration || 0;
-    if (weapon.type === "weapon" && ((_g = (_f = actor.system.magicState) == null ? void 0 : _f[weapon.id]) == null ? void 0 : _g.onUse)) {
+    if (weapon.type === "weapon" && ((_h = (_g = actor.system.magicState) == null ? void 0 : _g[weapon.id]) == null ? void 0 : _h.onUse)) {
       armourPen += magicArmourPen(weapon.system.magic);
     }
-    const defenderTargetLimb = weapon.type === "ability" && ((_h = weapon.system.calculator) == null ? void 0 : _h.enabled) ? weapon.system.calculator.targetLimb : "none";
+    const defenderTargetLimb = weapon.type === "ability" && ((_i = weapon.system.calculator) == null ? void 0 : _i.enabled) ? weapon.system.calculator.targetLimb : "none";
     let hitsScored = total >= attackerTotal || isMutual ? Math.min(1 + Math.floor(Math.max(0, total - attackerTotal) / 5), multiVal) : 0;
     let retLocations = [];
     const limbOptions = { "head": "Head", "thorax": "Thorax", "stomach": "Stomach", "leftArm": "Left Arm", "rightArm": "Right Arm", "leftLeg": "Left Leg", "rightLeg": "Right Leg" };
@@ -3313,7 +3401,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (isMutual || attackerTotal > total) {
       const hitsTaken = Math.min(1 + Math.floor(Math.max(0, attackerTotal - total) / 5), attackerMulti);
       for (let i = 0; i < hitsTaken; i++) {
-        defenseLocations.push(attackerLocations[i] || (attackerTargetLimb && attackerTargetLimb !== "none" ? limbOptions[attackerTargetLimb] : await getHitLocation()));
+        defenseLocations.push(await hitLocationOn(actor, attackerLocations[i] || (attackerTargetLimb && attackerTargetLimb !== "none" ? limbOptions[attackerTargetLimb] : null)));
       }
       defenseDamageInfo = `
             <div class="roll-row"><b style="color:${isMutual ? "orange" : "red"};">${isMutual ? game.i18n.format("TAMS.Combat.MutualHit", { threshold }) : game.i18n.localize("TAMS.Combat.FailedToBeatAttack")}</b></div>
@@ -3333,14 +3421,14 @@ async function tamsRenderChatMessage(message, html, data) {
     const applyToAttackerLabel = attackerName ? `Apply Hits to ${e$3(attackerName)}` : game.i18n.localize("TAMS.Checks.ApplyAllHits");
     const retButtons = hitsScored > 0 && !isMutual ? `
           <button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? "1" : "0"}">${applyToAttackerLabel}</button>
-          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}">${game.i18n.localize("TAMS.Dodge")}</button>
-          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${e$3(actor.name)}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
+          <button class="tams-dodge" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged && !meleeOnly ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}">${game.i18n.localize("TAMS.Dodge")}</button>
+          <button class="tams-retaliate" data-raw="${raw}" data-total="${total}" data-multi="${multiVal}" data-location="${retLocations[0]}" data-locations='${JSON.stringify(retLocations)}' data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged && !meleeOnly ? "1" : "0"}" data-is-aoe="${isRetAoE ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-attacker-name="${e$3(actor.name)}">${game.i18n.localize("TAMS.Combat.RetaliateButton")}</button>
           <button class="tams-behind-toggle" style="background: #444; color: white;">B</button>
           <button class="tams-unaware-toggle" style="background: #444; color: white;">U</button>
       ` : isMutual ? `<button class="tams-take-damage" data-damage="${damage}" data-armour-pen="${armourPen}" data-damage-types='${retDamageTypesJson}' data-locations='${JSON.stringify(retLocations)}' data-is-aoe="${isRetAoE ? "1" : "0"}">${applyToAttackerLabel}</button>` : "";
     const retAbilityDescHtml = weapon.type === "ability" && weapon.system.description ? `<div class="roll-description">${await TextEditor.enrichHTML(weapon.system.description, { secrets: false })}</div>` : "";
     const msg = `
-        <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-attacker-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? "1" : "0"}">
+        <div class="tams-roll" data-attacker-raw="${raw}" data-attacker-total="${total}" data-attacker-multi="${multiVal}" data-armour-pen="${armourPen}" data-attacker-damage-types='${retDamageTypesJson}' data-is-ranged="${isRanged && !meleeOnly ? "1" : "0"}" data-target-limb="${defenderTargetLimb}" data-orig-attacker-raw="${attackerRaw}" data-orig-attacker-total="${attackerTotal}" data-orig-attacker-multi="${attackerMulti}" data-orig-attacker-damage="${attackerDamage}" data-orig-attacker-armour-pen="${attackerArmourPen}" data-orig-first-location="${firstLocation}" data-orig-target-limb="${attackerTargetLimb}" data-is-aoe="${isRetAoE ? "1" : "0"}">
           <h3 class="roll-label">${game.i18n.format("TAMS.Combat.RetaliationWith", { name: e$3(actor.name), weapon: e$3(weapon.name) })} ${isBehind ? "(Behind)" : ""} ${isUnaware ? "(Unaware)" : ""}</h3>
           ${retAbilityDescHtml}
           ${rerolled ? `<div class="roll-row reliable-reroll" style="color: #2c3e50; font-style: italic; font-size: 0.9em; margin-bottom: 4px;">
@@ -3667,6 +3755,16 @@ async function tamsRenderChatMessage(message, html, data) {
   }));
 }
 const e$2 = (s) => foundry.utils.escapeHTML(String(s ?? ""));
+function mergeSameTypeComponents(components) {
+  const byType = /* @__PURE__ */ new Map();
+  for (const c of components) {
+    const type = c.damageType || "";
+    const prev = byType.get(type);
+    if (prev) prev.damage += c.damage || 0;
+    else byType.set(type, { ...c, damageType: type, damage: c.damage || 0 });
+  }
+  return [...byType.values()];
+}
 function effStaminaMult(sys, manualMult = ((_b) => (_b = sys == null ? void 0 : sys.stamina) == null ? void 0 : _b.mult)()) {
   return typeof (sys == null ? void 0 : sys.staminaEffectiveMult) === "function" ? sys.staminaEffectiveMult(manualMult) : manualMult ?? 1;
 }
@@ -3713,6 +3811,16 @@ class TAMSActor extends Actor {
     const isSquadOrHorde = ((_a = this.system.settings) == null ? void 0 : _a.isNPC) && (this.system.settings.npcType === "squad" || this.system.settings.npcType === "horde");
     const currentSquadSize = this.system.settings.squadSize || 1;
     const limbLosses = {};
+    const resolvedHits = [];
+    for (const hit of hits) {
+      if (!locationIsMissing(hit.location, this.system.limbs)) {
+        resolvedHits.push(hit);
+        continue;
+      }
+      const location = await rerollPresentLocation(this.system.limbs);
+      if (location) resolvedHits.push({ ...hit, location, rerolledFrom: hit.location });
+    }
+    hits = resolvedHits;
     for (let i = 0; i < hits.length; i++) {
       const hit = hits[i];
       const incoming = Math.floor(hit.damage || 0);
@@ -3748,7 +3856,7 @@ class TAMSActor extends Actor {
       const blocked = Math.min(adjustedIncoming, effectiveArmor);
       let overflow = 0;
       let resistanceLabel = "";
-      const damageComponents = ((_c = hit.damageComponents) == null ? void 0 : _c.length) ? hit.damageComponents : [{ damageType: hit.damageType || "", damage: hit.damage }];
+      const damageComponents = mergeSameTypeComponents(((_c = hit.damageComponents) == null ? void 0 : _c.length) ? hit.damageComponents : [{ damageType: hit.damageType || "", damage: hit.damage }]);
       const totalComponentDamage = damageComponents.reduce((sum, c) => sum + Math.max(0, Math.floor(c.damage || 0)), 0);
       if (((_d = this.system.effectiveResistances) == null ? void 0 : _d.length) && totalComponentDamage > 0) {
         const resistanceLabels = [];
@@ -3829,7 +3937,7 @@ class TAMSActor extends Actor {
       updates[`system.limbs.${limbKey}.value`] = newHp;
       limbDamageReceived[limbKey] += effective;
       let lossLabel = "";
-      if (!hit.ignoreArmor && armorValue > 0 && effective + overflow < adjustedIncoming) {
+      if (!hit.ignoreArmor && !isSquadOrHorde && armorValue > 0 && effective + overflow < adjustedIncoming) {
         const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
         const pending = updates[key];
         const currentVal = pending !== void 0 ? pending : isAltArmor ? limb.armorMax : limb.armor;
@@ -3841,6 +3949,7 @@ class TAMSActor extends Actor {
       const overflowLabel = overflow > 0 ? game.i18n.format("TAMS.Checks.OverflowCapped", { overflow }) : "";
       const lossMsg = lossLabel ? `, ${lossLabel}` : "";
       report += `• ${game.i18n.format("TAMS.Checks.DamageReport", { loc, effective, blocked, penLabel, lossLabel: lossMsg, overflowLabel })}<br>`;
+      if (hit.rerolledFrom) report += `  ↳ ${game.i18n.format("TAMS.Checks.MissingLimbRerolled", { from: hit.rerolledFrom })}<br>`;
       if (hit.ignoreArmor) report += `  ↳ ${game.i18n.localize("TAMS.Checks.ArmorBypassed")}<br>`;
       if (barrierLabel) report += `  ↳ ${barrierLabel}<br>`;
       if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
@@ -4158,6 +4267,39 @@ class TAMSActor extends Actor {
    * Called after trait items are added or removed.
    * @param {number} endDelta - The change in endurance total (positive = added, negative = removed)
    */
+  /** @override */
+  _onUpdate(changed, options, userId) {
+    var _a;
+    super._onUpdate(changed, options, userId);
+    if (userId === ((_a = game.user) == null ? void 0 : _a.id)) this._mirrorLimbArmorToItems(changed);
+  }
+  /**
+   * Write limb armour edits (sheet inputs, armour damage) back to the armour item
+   * selected on that limb, so the item keeps its current values. Limbs whose
+   * selected item changed in this update are skipped: their values were just
+   * copied from the new item, or reset to 0 by choosing "None".
+   */
+  _mirrorLimbArmorToItems(changed) {
+    var _a, _b;
+    const changedLimbs = (_a = changed.system) == null ? void 0 : _a.limbs;
+    if (!changedLimbs) return;
+    const itemUpdates = /* @__PURE__ */ new Map();
+    for (const [key, limbChange] of Object.entries(changedLimbs)) {
+      if (!limbChange || "equippedArmorId" in limbChange) continue;
+      if (!("armor" in limbChange) && !("armorMax" in limbChange)) continue;
+      const limb = this.system.limbs[key];
+      const item = this.items.get(limb == null ? void 0 : limb.equippedArmorId);
+      if ((item == null ? void 0 : item.type) !== "armor") continue;
+      const zone = (_b = item.system.limbs) == null ? void 0 : _b[key];
+      if (!zone) continue;
+      const update = itemUpdates.get(item.id) ?? { _id: item.id };
+      if ("armor" in limbChange && zone.value !== limb.armor) update[`system.limbs.${key}.value`] = limb.armor;
+      if ("armorMax" in limbChange && zone.max !== limb.armorMax) update[`system.limbs.${key}.max`] = limb.armorMax;
+      itemUpdates.set(item.id, update);
+    }
+    const updates = [...itemUpdates.values()].filter((u) => Object.keys(u).length > 1);
+    if (updates.length) this.updateEmbeddedDocuments("Item", updates);
+  }
   async _adjustLimbHPForEnduranceDelta(endDelta) {
     var _a, _b;
     if (endDelta === 0) return;
@@ -5149,7 +5291,7 @@ function abilityTags(system) {
 }
 function mishapEffectCount(calculator) {
   const c = calculator ?? {};
-  return (c.effects || 0) + Math.floor((c.rollBonus || 0) / 5) + (c.ignoreArmor || 0);
+  return (c.effects || 0) + Math.floor((c.rollBonus || 0) / 5) + (c.ignoreArmor || 0) + Math.round((parseFloat(c.damageStatFraction) || 0) / 0.25) + (c.stun && c.stun !== "none" ? 1 : 0);
 }
 function getAbilityIssues(system, { onActor = false, customResources = [], statusIds = null } = {}) {
   var _a;
@@ -5350,15 +5492,15 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         const familiarity = parseInt(medicineSkill.system.familiarity) || 0;
         const healPool = Math.ceil(familiarity / 2);
         if (healPool <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoPool"));
-        const lastAidTime = healer.getFlag("tams", "medicalAidGiven") ?? 0;
-        const currentTime = ((_a2 = game.time) == null ? void 0 : _a2.worldTime) ?? 0;
-        const daySeconds = 86400;
-        if (currentTime - lastAidTime < daySeconds) {
-          return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidAlreadyGiven"));
-        }
         const targets = [...game.user.targets];
         const targetActor = targets.length > 0 ? targets[0].actor : null;
         if (!targetActor) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoTarget"));
+        const lastAidTime = targetActor.getFlag("tams", "medicalAidReceived") ?? null;
+        const currentTime = ((_a2 = game.time) == null ? void 0 : _a2.worldTime) ?? 0;
+        const daySeconds = 86400;
+        if (lastAidTime !== null && currentTime - lastAidTime < daySeconds) {
+          return ui.notifications.warn(game.i18n.format("TAMS.MedicalAidAlreadyReceived", { name: targetActor.name }));
+        }
         const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
         const limbRows = limbKeys.map((key) => {
           const limb = targetActor.system.limbs[key];
@@ -5410,8 +5552,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
         if (totalHealed > healPool) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidOverPool"));
         if (totalHealed > 0) {
+          updates["flags.tams.medicalAidReceived"] = currentTime;
           await targetActor.update(updates);
-          await healer.setFlag("tams", "medicalAidGiven", currentTime);
           ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor: healer }),
             content: `<div class="tams-roll"><div class="roll-row">${game.i18n.format("TAMS.MedicalAidMessage", { healer: healer.name, target: targetActor.name, amount: totalHealed })}</div></div>`
@@ -5920,7 +6062,11 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         // Endpoint preview (see the template's honor-endpoint usage): once a path has committed
         // to a direction, the opposite extreme stops being shown as a dim preview — only the
         // side actually still in play (or both, while still at Common) gets it.
-        showEndpoint: i === 0 && score >= 0 || i === 8 && score <= 0
+        showEndpoint: i === 0 && score >= 0 || i === 8 && score <= 0,
+        // Each middle slot stacks an honor and a dishonor node on the same spot. Only the side the
+        // score is on takes the hover, or the node on top would always win the tooltip. The top
+        // slot (T0/T8) is never muted: its nodes are offset whenever both could overlap.
+        muted: i !== 0 && i !== 8 && i !== 4 && i < 4 !== score >= 0
       });
       const honorTiers = [0, 1, 2, 3].map((i) => mkTier(i));
       const dishonorTiers = [5, 6, 7, 8].map((i) => mkTier(i));
@@ -6600,12 +6746,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (!choice) return;
     const tier = HAZARD_TIERS[choice.tier];
     if (!tier) return;
-    const limbCount = 1 + (choice.spreads ? tier.spread : 0);
-    const allLocations = ["Head", "Thorax", "Stomach", "Left Arm", "Right Arm", "Left Leg", "Right Leg"];
+    const limbs = this.document.system.limbs;
+    const allLocations = presentHitTable(limbs).map((r) => r.label);
+    const limbCount = Math.min(1 + (choice.spreads ? tier.spread : 0), allLocations.length);
     const rollLimbs = async () => {
       const locations = [];
       for (let tries = 0; locations.length < limbCount && tries < 50; tries++) {
-        const loc = await getHitLocation();
+        const loc = await getHitLocation(null, limbs);
         if (!locations.includes(loc)) locations.push(loc);
       }
       for (const loc of allLocations) {
@@ -7301,10 +7448,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
       let effectiveCost = cost;
       if (item.system.isReaction && cost > 0 && !isLimited) {
-        const reactionUses = this.document.getFlag("tams", "reactionUses") ?? {};
-        const useCount = (reactionUses[item.id] ?? 0) + 1;
-        effectiveCost = cost * useCount;
-        await this.document.setFlag("tams", "reactionUses", { ...reactionUses, [item.id]: useCount });
+        effectiveCost = stackedReactionCost(cost, reactionCount(this.document));
       }
       if (isLimited) {
         if (usesVal <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoUsesLeft"));
@@ -7327,6 +7471,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           }
         }
       }
+      if (item.system.isReaction) await recordReaction(this.document);
     }
     let difficulty = 0;
     if (event.shiftKey) {
@@ -7635,7 +7780,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           const targetActorId = targetActor == null ? void 0 : targetActor.id;
           const tHits = [];
           for (let i = 0; i < multiVal; i++) {
-            tHits.push(i === 0 && !isAoE ? hitLocation : await getHitLocation());
+            tHits.push(await hitLocationOn(targetActor, i === 0 && !isAoE ? hitLocation : null));
           }
           let targetDamage = damage;
           let rangeInfo = "";
@@ -7730,7 +7875,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             const targetActorId = targetActor == null ? void 0 : targetActor.id;
             const tHits = [];
             for (let i = 0; i < multiVal; i++) {
-              tHits.push(i === 0 && !isAoE ? hitLocation : await getHitLocation());
+              tHits.push(await hitLocationOn(targetActor, i === 0 && !isAoE ? hitLocation : null));
             }
             let targetDamage = damage;
             let rangeInfo = "";
@@ -8671,7 +8816,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     var _a;
     const isMagic = MAGIC_ITEM_TYPES.includes(this.document.type);
     if (this.document.type !== "race" && !isMagic) return;
-    if (isMagic && !game.user.isGM) return;
+    if (isMagic && !this._canEditMagic()) return;
     const data = TextEditor.getDragEventData(event);
     if (data.type !== "Item") return;
     let item;
@@ -8694,9 +8839,21 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     await this.document.update({ "system.grantedAbilities": abilities });
   }
   /**
-   * Build the context for the Magic Effects section. Only the GM can edit it; players see it
-   * read-only, without curse-flagged entries until the curse is revealed, and not at all while
-   * the item is unidentified.
+   * Whether the current user may edit this item's magic effects: the GM always, an owner once
+   * the item is identified. Identification and curse controls stay GM-only.
+   * @returns {boolean}
+   * @protected
+   */
+  _canEditMagic() {
+    return this.isEditable && canEditMagic(
+      this.document.system.magic,
+      { isGM: game.user.isGM, isOwner: this.document.isOwner }
+    );
+  }
+  /**
+   * Build the context for the Magic Effects section. The GM can always edit it; owners can once
+   * the item is identified. Players never see curse-flagged entries until the curse is revealed,
+   * nor the section at all while the item is unidentified.
    * @param {object} context
    * @protected
    */
@@ -8708,7 +8865,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     const indexed = (list) => (list ?? []).map((entry, index) => ({ entry, index }));
     context.isMagicType = true;
     context.isGM = isGM;
-    context.magicEditable = isGM && this.isEditable;
+    context.magicEditable = this._canEditMagic();
     context.showMagicIdentity = this.document.isIdentityVisible;
     context.showCurse = showCurse;
     context.magicDisabled = context.magicEditable ? "" : "disabled";
@@ -8767,7 +8924,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
   async _onMagicAdd(event, target) {
     var _a;
     const list = target.dataset.list;
-    if (!MAGIC_LIST_DEFAULTS[list] || !game.user.isGM) return;
+    if (!MAGIC_LIST_DEFAULTS[list] || !this._canEditMagic()) return;
     const entries = foundry.utils.duplicate(((_a = this.document.system.magic) == null ? void 0 : _a[list]) ?? []);
     entries.push(MAGIC_LIST_DEFAULTS[list]());
     await this.document.update({ [`system.magic.${list}`]: entries });
@@ -8782,7 +8939,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     var _a, _b;
     const list = target.dataset.list;
     const index = parseInt(target.dataset.index ?? ((_a = target.closest("[data-index]")) == null ? void 0 : _a.dataset.index));
-    if (!game.user.isGM || Number.isNaN(index)) return;
+    if (!this._canEditMagic() || Number.isNaN(index)) return;
     const entries = foundry.utils.duplicate(((_b = this.document.system.magic) == null ? void 0 : _b[list]) ?? []);
     if (index < 0 || index >= entries.length) return;
     entries.splice(index, 1);
@@ -8796,7 +8953,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
    */
   async _onMagicLimbToggle(event, target) {
     var _a;
-    if (!game.user.isGM) return;
+    if (!this._canEditMagic()) return;
     const index = parseInt(target.closest("[data-index]").dataset.index);
     const limbKey = target.dataset.limbKey;
     const entries = foundry.utils.duplicate(((_a = this.document.system.magic) == null ? void 0 : _a.resistances) ?? []);
@@ -8817,7 +8974,8 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
    */
   async _onUpdateMagicEntry(event, target) {
     var _a;
-    if (!game.user.isGM) return;
+    if (!this._canEditMagic()) return;
+    if (target.dataset.field === "curse" && !game.user.isGM) return;
     const list = target.dataset.list;
     const index = parseInt(target.dataset.index);
     const field = target.dataset.field;

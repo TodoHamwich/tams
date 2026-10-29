@@ -62,6 +62,17 @@ describe('TAMSCharacterData', () => {
       expect(charData.hp.value).toBe(11);
       expect(charData.hp.max).toBe(15);
     });
+
+    it('leaves missing limbs out of total HP', () => {
+      charData.limbs.head.value = 3;
+      charData.limbs.head.max = 5;
+      charData.limbs.thorax.value = 8;
+      charData.limbs.thorax.max = 10;
+      charData.limbs.head.missing = true;
+      charData._prepareTotalHP();
+      expect(charData.hp.value).toBe(8);
+      expect(charData.hp.max).toBe(10);
+    });
   });
 
   describe('_prepareStamina', () => {

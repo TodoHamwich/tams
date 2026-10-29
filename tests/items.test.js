@@ -133,6 +133,29 @@ describe('TAMSWeaponData', () => {
       weaponData.damageComponents = [{ damageType: "fire", amount: 6 }];
       expect(weaponData.damageBreakdown).toEqual([{ damageType: "fire", damage: 6 }]);
     });
+
+    it('takes components out of the stat damage when splitFromBase is on', () => {
+      weaponData.isRanged = true;
+      weaponData.rangedDamage = 25;
+      weaponData.damageType = "piercing";
+      weaponData.damageComponents = [{ damageType: "fire", amount: 6 }];
+      weaponData.splitFromBase = true;
+      expect(weaponData.damageBreakdown).toEqual([
+        { damageType: "piercing", damage: 19 },
+        { damageType: "fire", damage: 6 },
+      ]);
+      expect(weaponData.calculatedDamage).toBe(25);
+    });
+
+    it('floors the stat part at 0 when splitFromBase components exceed it', () => {
+      weaponData.isRanged = true;
+      weaponData.rangedDamage = 5;
+      weaponData.damageType = "piercing";
+      weaponData.damageComponents = [{ damageType: "fire", amount: 8 }];
+      weaponData.splitFromBase = true;
+      expect(weaponData.damageBreakdown).toEqual([{ damageType: "fire", damage: 8 }]);
+      expect(weaponData.calculatedDamage).toBe(8);
+    });
   });
 
   describe('magic bonus damage', () => {
@@ -276,6 +299,22 @@ describe('TAMSAbilityData', () => {
         { damageType: "necrotic", damage: 4 },
       ]);
     });
+
+    it('takes components out of the formula damage when splitFromBase is on', () => {
+      abilityData.isAttack = true;
+      abilityData.damageStat = 'custom';
+      abilityData.damage = 10;
+      abilityData.damageBonus = 0;
+      abilityData.damageType = "fire";
+      abilityData.damageComponents = [{ damageType: "necrotic", amount: 4 }];
+      abilityData.splitFromBase = true;
+      abilityData.parent = { actor: {} };
+      expect(abilityData.damageBreakdown).toEqual([
+        { damageType: "fire", damage: 6 },
+        { damageType: "necrotic", damage: 4 },
+      ]);
+      expect(abilityData.calculatedDamage).toBe(10);
+    });
   });
 
   describe('weaponDamageBreakdown (useWeaponDamage)', () => {
@@ -305,6 +344,18 @@ describe('TAMSAbilityData', () => {
       abilityData.damageComponents = [{ damageType: "radiant", amount: 8 }];
       expect(abilityData.weaponDamageBreakdown(sword)).toEqual([
         { damageType: "slashing", damage: 20 },
+        { damageType: "fire", damage: 5 },
+        { damageType: "radiant", damage: 8 },
+      ]);
+    });
+
+    it("carves the weapon's and the ability's splitFromBase components out of the main type", () => {
+      const splitSword = { system: { ...sword.system, splitFromBase: true } }; // 20 - 5 fire = 15
+      abilityData.weaponDamageMult = 2; // 15 × 2 = 30
+      abilityData.damageComponents = [{ damageType: "radiant", amount: 8 }];
+      abilityData.splitFromBase = true; // 30 - 8 = 22
+      expect(abilityData.weaponDamageBreakdown(splitSword)).toEqual([
+        { damageType: "slashing", damage: 22 },
         { damageType: "fire", damage: 5 },
         { damageType: "radiant", damage: 8 },
       ]);
