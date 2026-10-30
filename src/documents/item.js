@@ -1,4 +1,5 @@
 import { publicItemName, identityVisible } from '../utils/magic-items.js';
+import { professionRank, stampRanksReached } from '../utils/profession.js';
 
 /**
  * The TAMS Item document class.
@@ -13,6 +14,27 @@ export class TAMSItem extends Item {
     return foundry.utils.mergeObject(super.metadata, {
       types: ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect", "ammo", "race"]
     }, {inplace: false});
+  }
+
+  /** @override Profession traits remember when each rank was first reached (see profession.js). */
+  async _preCreate(data, options, user) {
+    const allowed = await super._preCreate(data, options, user);
+    if (allowed === false) return false;
+    if (this.type === "trait" && !this.system.rankReachedAt?.length) {
+      const stamps = stampRanksReached([], 0, professionRank(this.system.modifiers), Date.now());
+      if (stamps) this.updateSource({ "system.rankReachedAt": stamps });
+    }
+  }
+
+  /** @override */
+  async _preUpdate(changed, options, user) {
+    const allowed = await super._preUpdate(changed, options, user);
+    if (allowed === false) return false;
+    const modifiers = foundry.utils.getProperty(changed, "system.modifiers");
+    if (this.type !== "trait" || !modifiers) return;
+    const stamps = stampRanksReached(this.system.rankReachedAt,
+      professionRank(this.system.modifiers), professionRank(Object.values(modifiers)), Date.now());
+    if (stamps) foundry.utils.setProperty(changed, "system.rankReachedAt", stamps);
   }
 
   /** Whether the current user may see this item's true name, description and magic effects. */

@@ -210,12 +210,15 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         const medicineSkill = healer.items.find(i => i.type === 'skill' && i.name.toLowerCase().includes('medicine'));
         if (!medicineSkill) return;
         const familiarity = parseInt(medicineSkill.system.familiarity) || 0;
-        const healPool = Math.ceil(familiarity / 2);
-        if (healPool <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoPool"));
-
         const targets = [...game.user.targets];
         const targetActor = targets.length > 0 ? targets[0].actor : null;
         if (!targetActor) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoTarget"));
+
+        // Constructs (Puppets) only take half from Medicine.
+        const isConstruct = targetActor.system.lifeState === "construct";
+        const fullPool = Math.ceil(familiarity / 2);
+        const healPool = isConstruct ? Math.floor(fullPool / 2) : fullPool;
+        if (healPool <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoPool"));
 
         // Each patient can receive medical aid once per day (world time); healers have no cap.
         const lastAidTime = targetActor.getFlag('tams', 'medicalAidReceived') ?? null;
@@ -237,7 +240,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }).join('');
 
         const content = `<div>
-          <p>${game.i18n.format("TAMS.MedicalAidPool", { pool: healPool })}</p>
+          <p>${game.i18n.format(isConstruct ? "TAMS.MedicalAidPoolConstruct" : "TAMS.MedicalAidPool", { pool: healPool })}</p>
           ${limbRows}
           <p id="heal-remaining" style="font-size:0.85em;color:#666;">${game.i18n.format("TAMS.MedicalAidRemaining", { remaining: healPool })}</p>
         </div>`;
@@ -686,7 +689,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
       "custom": "TAMS.StatCustom"
     };
     context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical" };
-    context.lifeStateOptions = { "living": "TAMS.LifeState.living", "dead": "TAMS.LifeState.dead", "undead": "TAMS.LifeState.undead" };
+    context.lifeStateOptions = { "living": "TAMS.LifeState.living", "dead": "TAMS.LifeState.dead", "undead": "TAMS.LifeState.undead", "construct": "TAMS.LifeState.construct" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
     context.creatureSizeOptions = { "tiny": "TAMS.CreatureSizeOptions.Tiny", "small": "TAMS.CreatureSizeOptions.Small", "normal": "TAMS.CreatureSizeOptions.Normal", "large": "TAMS.CreatureSizeOptions.Large", "huge": "TAMS.CreatureSizeOptions.Huge", "giant": "TAMS.CreatureSizeOptions.Giant" };

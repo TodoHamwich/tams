@@ -1,6 +1,6 @@
 import { computeEncumbrance } from '../utils/inventory.js';
 import { computeRawStaminaMax, computeRawResourceMax, computeFatiguedMax } from '../utils/fatigue.js';
-import { professionRank, professionStaminaMultBonus, professionResourceMultBonus } from '../utils/profession.js';
+import { professionRank, distributeProfessionRewards } from '../utils/profession.js';
 import { buildRequirementContext, computeMagicState } from '../utils/magic-items.js';
 import { isLimbMissing } from '../utils/limbs.js';
 
@@ -105,7 +105,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({initial: 0}),
         color: new fields.StringField({initial: "#e74c3c"})
       }),
-      // "living" | "dead" | "undead" — a simple toggle, not a state machine.
+      // "living" | "dead" | "undead" | "construct" — a simple toggle, not a state machine.
       // Set to "dead" when the dying countdown expires (see tamsOnTurnStart()
       // in src/utils/combat.js); a resurrection ability sets it back to
       // "living" manually.
@@ -227,6 +227,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.traitProfessionBonuses = {};
     this.traitStaminaMultBonus = 0;
     this.professionResourceMultBonuses = {};
+    this.professionRankOwners = {};
     this.abilityPassiveBonuses = {};
     // "dodge" only takes Dodge-type passives; "all" passives never apply to Dodge.
     this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0, dodge: 0 };
@@ -258,18 +259,22 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
 
     const traits = this.parent.items.filter(i => i.type === "trait" || i.type === "race");
     for (const trait of traits) {
-      const system = trait.system;
-      for (const mod of system.modifiers) applyModifier(mod, trait);
-      // Profession rank (from the All Profession Rolls modifier) boosts Stamina and,
-      // for casters, the custom resource linked to this trait. See src/utils/profession.js.
-      if (trait.type === "trait" && system.isProfession) {
-        const type = system.professionType || "basic";
-        const rank = professionRank(system.modifiers);
-        this.traitStaminaMultBonus += professionStaminaMultBonus(type, rank);
-        const resBonus = professionResourceMultBonus(type, rank);
-        if (resBonus) this.professionResourceMultBonuses[trait.id] = resBonus;
-      }
+      for (const mod of trait.system.modifiers) applyModifier(mod, trait);
     }
+    // Profession ranks (from the All Profession Rolls modifier) boost Stamina and, for
+    // casters, the custom resource linked to the trait. Each rank's reward comes from
+    // the profession that reached it first. See src/utils/profession.js.
+    const professions = traits
+      .filter(t => t.type === "trait" && t.system.isProfession)
+      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+      .map(t => ({
+        id: t.id, type: t.system.professionType || "basic", rank: professionRank(t.system.modifiers),
+        reachedAt: t.system.rankReachedAt, picks: t.system.professionPicks
+      }));
+    const rewards = distributeProfessionRewards(professions);
+    this.traitStaminaMultBonus = rewards.staminaMult;
+    this.professionResourceMultBonuses = rewards.resourceMult;
+    this.professionRankOwners = rewards.owners;
 
     // Magic items: requirements are checked against stats BEFORE magic modifiers, so an
     // item can't meet its own requirement. See src/utils/magic-items.js.

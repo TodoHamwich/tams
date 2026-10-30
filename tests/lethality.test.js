@@ -163,5 +163,11 @@ describe('applyTAMSDamage with zombie lethality', () => {
       await actor.applyTAMSDamage([{ damage: 11, location: "Thorax" }]); // -41
       expect(actor.getFlag('tams', 'dyingCountdown')).toMatchObject({ limbKey: 'thorax' });
     });
+
+    it('a construct goes inert instead of starting a countdown', async () => {
+      actor.system.lifeState = "construct";
+      await actor.applyTAMSDamage([{ damage: 21, location: "Head" }]);
+      expect(actor.getFlag('tams', 'dyingCountdown')).toEqual({ inert: true, limbKey: 'head' });
+    });
   });
 });

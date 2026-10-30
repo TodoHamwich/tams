@@ -380,16 +380,18 @@ export class TAMSActor extends Actor {
             const limb = this.system.limbs[key];
             if (limb.value < dyingThreshold(limb) && !existingCountdown && !dyingStarted) {
                 dyingStarted = true;
+                // Constructs don't die from damage: they go inert until the limb is repaired.
+                const inert = this.system.lifeState === "construct";
                 const turnsLeft = Math.max(1, Math.floor(this.system.stats.endurance.total / 10));
                 await this.toggleStatusEffect("unconscious", { active: true });
-                await this.setFlag('tams', 'dyingCountdown', { turnsLeft, limbKey: key });
+                await this.setFlag('tams', 'dyingCountdown', inert ? { inert, limbKey: key } : { turnsLeft, limbKey: key });
                 const ownerIds = Object.entries(this.ownership ?? {})
                     .filter(([id, lvl]) => lvl >= 3 && id !== "default")
                     .map(([id]) => id);
                 const whisperIds = [...new Set([...ownerIds, ...game.users.filter(u => u.isGM).map(u => u.id)])];
                 await ChatMessage.create({
                     speaker: ChatMessage.getSpeaker({ actor: this }),
-                    content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Started", { name: e(this.name), limb: e(limb.label), turns: turnsLeft })}</div></div>`,
+                    content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format(inert ? "TAMS.Dying.Inert" : "TAMS.Dying.Started", { name: e(this.name), limb: e(limb.label), turns: turnsLeft })}</div></div>`,
                     whisper: whisperIds
                 });
             }
@@ -433,8 +435,8 @@ export class TAMSActor extends Actor {
     }
     // ----------------------------
 
-    // Dying countdown: if the limb that triggered it gets healed back above
-    // the -max threshold, clear the stale countdown — otherwise tamsOnTurnStart
+    // Dying countdown (or a construct's inert state): if the limb that triggered it gets
+    // healed back above the -max threshold, clear the stale countdown — otherwise tamsOnTurnStart
     // keeps ticking it down and posting "is dying" messages after recovery.
     {
       const dyingCountdown = this.getFlag('tams', 'dyingCountdown');

@@ -658,8 +658,12 @@ export class TAMSTraitData extends foundry.abstract.TypeDataModel {
     return {
       isProfession: new fields.BooleanField({initial: false}),
       profession: new fields.StringField({initial: ""}),
-      // "basic" | "full" | "half" | "threeQuarter" — see src/utils/profession.js
+      // "basic" | "full" | "threeQuarter" | "half" | "quarter" — see src/utils/profession.js
       professionType: new fields.StringField({initial: "basic"}),
+      // Caster ranks past the forced-resource ranks: rank → "stamina" | "resource"
+      professionPicks: new fields.ObjectField({initial: {}}),
+      // When each rank was first reached (index = rank − 1; 0 = before tracking). Set by TAMSItem.
+      rankReachedAt: new fields.ArrayField(new fields.NumberField({initial: 0}), {initial: []}),
       modifiers: new fields.ArrayField(new fields.SchemaField({
         target: new fields.StringField({initial: "stats.strength.value"}),
         value: new fields.NumberField({initial: 0}),

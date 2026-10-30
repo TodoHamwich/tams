@@ -540,6 +540,9 @@ const DOT_GROUPS = [
     },
 ];
 
+// Construct life state: these DoTs don't affect it (no blood, no metabolism).
+const CONSTRUCT_IMMUNE_DOTS = new Set(["severe-bleeding", "bleeding", "severely-poisoned", "poisoned"]);
+
 function getWhisperIds(actor) {
     const ownerIds = Object.entries(actor.ownership ?? {})
         .filter(([id, lvl]) => lvl >= 3 && id !== "default")
@@ -553,7 +556,7 @@ export async function tamsOnTurnStart(actor) {
 
     // Dying countdown
     const dyingCountdown = actor.getFlag('tams', 'dyingCountdown');
-    if (dyingCountdown) {
+    if (dyingCountdown && !dyingCountdown.inert) {
         const turnsLeft = dyingCountdown.turnsLeft - 1;
         if (turnsLeft <= 0) {
             await actor.setFlag('tams', 'dyingCountdown', null);
@@ -578,11 +581,12 @@ export async function tamsOnTurnStart(actor) {
 
     const statuses = actor.statuses ?? new Set();
     const allPendingChecks = [];
+    const isConstruct = actor.system.lifeState === "construct";
 
     // --- DoT damage ---
     const activeDotTiers = [];
     for (const group of DOT_GROUPS) {
-        const tier = group.tiers.find(t => statuses.has(t.id));
+        const tier = group.tiers.find(t => statuses.has(t.id) && !(isConstruct && CONSTRUCT_IMMUNE_DOTS.has(t.id)));
         if (!tier) continue;
         activeDotTiers.push({ ...tier, limbKey: group.getLimb(actor.system.limbs), outKey: group.outKey });
     }
@@ -666,8 +670,8 @@ export async function tamsOnTurnStart(actor) {
         });
     }
 
-    // --- Injured / crit-wound bleed ---
-    {
+    // --- Injured / crit-wound bleed (constructs don't bleed) ---
+    if (!isConstruct) {
         const combatRound = game.combat?.round ?? 0;
         const bleedDamage = {};
         const bleedMessages = [];
@@ -768,7 +772,9 @@ export async function tamsOnCombatEnd(combat) {
         }
 
         // Clear per-combat flags
-        if (actor.getFlag('tams', 'dyingCountdown')) await actor.setFlag('tams', 'dyingCountdown', null);
+        // An inert construct stays inert until repaired, not until combat ends.
+        const dying = actor.getFlag('tams', 'dyingCountdown');
+        if (dying && !dying.inert) await actor.setFlag('tams', 'dyingCountdown', null);
         await resetReactions(actor);
 
         const totalHp = LIMB_KEYS.reduce((sum, k) => sum + (isLimbMissing(actor.system.limbs[k]) ? 0 : (actor.system.limbs[k]?.value ?? 0)), 0);

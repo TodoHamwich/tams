@@ -1,5 +1,5 @@
 import { getAbilityIssues } from '../utils/ability-validation.js';
-import { PROFESSION_TYPES, PROFESSION_MAX_RANK, PROFESSION_RANK_STEP } from '../utils/profession.js';
+import { PROFESSION_TYPES, PROFESSION_MAX_RANK, PROFESSION_RANK_STEP, CASTER_PICK_START, professionRank, rankRewardTarget } from '../utils/profession.js';
 import { MAGIC_ITEM_TYPES, REQUIREMENT_TYPES, curseVisible, canEditMagic } from '../utils/magic-items.js';
 
 const LIMB_KEYS = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
@@ -210,6 +210,28 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
           if (m.target !== "allProfessionRolls") continue;
           if (!context.professionRankOptions.some(o => o.value === m.value))
             context.professionRankOptions.push({ value: m.value, label: `+${m.value}` });
+        }
+        // What each rank gives, and which ranks another profession reached first.
+        if (this.document.system.isProfession) {
+          const type = this.document.system.professionType || "basic";
+          const picks = this.document.system.professionPicks ?? {};
+          const owners = this.document.actor?.system.professionRankOwners ?? {};
+          context.professionRankRewards = Array.from(
+            { length: professionRank(this.document.system.modifiers) }, (_, i) => {
+              const rank = i + 1;
+              const ownerId = owners[rank];
+              const owner = ownerId && ownerId !== this.document.id ? this.document.actor.items.get(ownerId) : null;
+              const target = rankRewardTarget(type, rank, picks);
+              return {
+                rank,
+                givenBy: owner ? (owner.system.profession || owner.name) : null,
+                canPick: rank >= (CASTER_PICK_START[type] ?? Infinity),
+                pick: target,
+                label: game.i18n.localize(target ? `TAMS.ProfessionReward.${target}` : "TAMS.ProfessionReward.bar")
+              };
+            });
+          context.professionPickOptions = {
+            resource: "TAMS.ProfessionReward.resource", stamina: "TAMS.ProfessionReward.stamina" };
         }
     }
 

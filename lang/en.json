@@ -290,6 +290,7 @@
     "MedicalAid": "Provide Medical Aid",
     "MedicalAidTitle": "Medical Aid — {name}",
     "MedicalAidPool": "Heal Pool: {pool} HP (half Medicine familiarity). Distribute across limbs.",
+    "MedicalAidPoolConstruct": "Heal Pool: {pool} HP (half Medicine familiarity, halved again for a construct). Distribute across limbs.",
     "MedicalAidRemaining": "Remaining: {remaining} HP",
     "MedicalAidApply": "Apply Healing",
     "MedicalAidNoPool": "No healing pool available (Medicine familiarity too low).",
@@ -432,13 +433,22 @@
     "IsProfessionQ": "Is Profession?",
     "Profession": "Profession",
     "ProfessionTypeLabel": "Profession Type",
-    "ProfessionTypeHint": "Basic: +0.25 Stamina multiplier per rank. Casters: +0.25 to their linked resource bar's multiplier per rank after the first; Stamina boosts start at rank 4 (Full) or rank 3 (Half / Three-Quarter).",
+    "ProfessionTypeHint": "Basic: +0.25 Stamina multiplier per rank. Casters: rank 1 is the resource bar (Full 1×, Three-Quarter 0.75×, Half 0.5×, Quarter 0.25× — set on the bar itself); each later rank adds +0.25 to the linked bar, and from rank 5 (Full) / 4 (Three-Quarter) / 3 (Half) / 2 (Quarter) you pick Stamina or the bar for each rank. Each rank's reward comes only from the profession that reached it first.",
     "ProfessionType": {
       "basic": "Basic",
       "full": "Full Caster",
+      "threeQuarter": "Three-Quarter Caster",
       "half": "Half Caster",
-      "threeQuarter": "Three-Quarter Caster"
+      "quarter": "Quarter Caster"
     },
+    "ProfessionRewardsLabel": "Rank Rewards",
+    "ProfessionRewardsHint": "What each rank gives. A rank another profession reached first gives nothing here.",
+    "ProfessionReward": {
+      "bar": "Resource bar",
+      "resource": "+0.25 resource",
+      "stamina": "+0.25 Stamina"
+    },
+    "ProfessionRewardGivenBy": "Given by {name}",
     "ProfessionRankOption": "{rank}. {name} (+{bonus})",
     "ProfessionRankHint": "Profession rank — sets the profession roll bonus (+5 per rank) and drives the Stamina / resource multiplier boosts.",
     "ProfessionRank": {
@@ -773,13 +783,15 @@
     "Dying": {
       "Started": "{name} is dying! {limb} was destroyed. {turns} turn(s) until death.",
       "Countdown": "{name} is dying — {turns} turn(s) remaining!",
-      "Death": "{name} has died from their wounds."
+      "Death": "{name} has died from their wounds.",
+      "Inert": "{name} collapses, inert! {limb} was destroyed. They stay inert until it is repaired above its negative max."
     },
     "LifeState": {
       "Label": "Life State",
       "living": "Living",
       "dead": "Dead",
-      "undead": "Undead"
+      "undead": "Undead",
+      "construct": "Construct"
     },
     "HPPayment": {
       "Title": "Insufficient Stamina",

@@ -135,23 +135,47 @@ function computeLongRestTickHeal(governingStatValue) {
 function computeLongRestFatigueHeal(governingStatValue) {
   return computeLongRestTickHeal(governingStatValue) * 2;
 }
-const PROFESSION_TYPES = ["basic", "full", "half", "threeQuarter"];
+const PROFESSION_TYPES = ["basic", "full", "threeQuarter", "half", "quarter"];
 const PROFESSION_RANK_STEP = 5;
 const PROFESSION_MAX_RANK = 10;
 const MULT_STEP = 0.25;
-const CASTER_STAMINA_START = { full: 4, half: 3, threeQuarter: 3 };
+const CASTER_PICK_START = { full: 5, threeQuarter: 4, half: 3, quarter: 2 };
+const isCasterType = (type) => type in CASTER_PICK_START;
 function professionRank(modifiers = []) {
   const bonus = modifiers.filter((m) => m.target === "allProfessionRolls").reduce((sum, m) => sum + (Number(m.value) || 0), 0);
   return Math.max(0, Math.min(PROFESSION_MAX_RANK, Math.floor(bonus / PROFESSION_RANK_STEP)));
 }
-function professionStaminaMultBonus(type, rank) {
-  if (!rank || rank <= 0) return 0;
-  if (type === "basic" || !CASTER_STAMINA_START[type]) return MULT_STEP * rank;
-  return MULT_STEP * Math.max(0, rank - CASTER_STAMINA_START[type] + 1);
+function rankRewardTarget(type, rank, picks = {}) {
+  if (!isCasterType(type)) return "stamina";
+  if (rank <= 1) return null;
+  if (rank < CASTER_PICK_START[type]) return "resource";
+  return (picks == null ? void 0 : picks[rank]) === "stamina" ? "stamina" : "resource";
 }
-function professionResourceMultBonus(type, rank) {
-  if (!CASTER_STAMINA_START[type] || !rank || rank <= 0) return 0;
-  return MULT_STEP * (rank - 1);
+function distributeProfessionRewards(professions = []) {
+  var _a;
+  const result = { staminaMult: 0, resourceMult: {}, owners: {} };
+  const maxRank = Math.max(0, ...professions.map((p) => p.rank || 0));
+  for (let r = 1; r <= maxRank; r++) {
+    let owner = null, ownerTime = Infinity;
+    for (const p of professions) {
+      if ((p.rank || 0) < r) continue;
+      const t = Number((_a = p.reachedAt) == null ? void 0 : _a[r - 1]) || 0;
+      if (owner === null || t < ownerTime) {
+        owner = p;
+        ownerTime = t;
+      }
+    }
+    result.owners[r] = owner.id;
+    const target = rankRewardTarget(owner.type || "basic", r, owner.picks);
+    if (target === "stamina") result.staminaMult += MULT_STEP;
+    else if (target === "resource")
+      result.resourceMult[owner.id] = (result.resourceMult[owner.id] || 0) + MULT_STEP;
+  }
+  return result;
+}
+function stampRanksReached(reachedAt = [], oldRank, newRank, now) {
+  if (oldRank === newRank) return null;
+  return Array.from({ length: newRank }, (_, i) => (reachedAt == null ? void 0 : reachedAt[i]) ?? (i + 1 > oldRank ? now : 0));
 }
 const MAGIC_ITEM_TYPES = ["weapon", "armor", "shield", "equipment", "tool", "backpack", "questItem", "ammo"];
 const EQUIPPED_FLAG_TYPES = ["armor", "shield", "backpack", "equipment", "tool", "questItem"];
@@ -363,7 +387,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         max: new fields.NumberField({ initial: 0 }),
         color: new fields.StringField({ initial: "#e74c3c" })
       }),
-      // "living" | "dead" | "undead" — a simple toggle, not a state machine.
+      // "living" | "dead" | "undead" | "construct" — a simple toggle, not a state machine.
       // Set to "dead" when the dying countdown expires (see tamsOnTurnStart()
       // in src/utils/combat.js); a resurrection ability sets it back to
       // "living" manually.
@@ -483,6 +507,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.traitProfessionBonuses = {};
     this.traitStaminaMultBonus = 0;
     this.professionResourceMultBonuses = {};
+    this.professionRankOwners = {};
     this.abilityPassiveBonuses = {};
     this.abilityTypeBonus = { all: 0, weapon: 0, skill: 0, ability: 0, dodge: 0 };
     this.modifierSources = [];
@@ -509,16 +534,19 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     };
     const traits = this.parent.items.filter((i) => i.type === "trait" || i.type === "race");
     for (const trait of traits) {
-      const system = trait.system;
-      for (const mod of system.modifiers) applyModifier(mod, trait);
-      if (trait.type === "trait" && system.isProfession) {
-        const type = system.professionType || "basic";
-        const rank = professionRank(system.modifiers);
-        this.traitStaminaMultBonus += professionStaminaMultBonus(type, rank);
-        const resBonus = professionResourceMultBonus(type, rank);
-        if (resBonus) this.professionResourceMultBonuses[trait.id] = resBonus;
-      }
+      for (const mod of trait.system.modifiers) applyModifier(mod, trait);
     }
+    const professions = traits.filter((t) => t.type === "trait" && t.system.isProfession).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)).map((t) => ({
+      id: t.id,
+      type: t.system.professionType || "basic",
+      rank: professionRank(t.system.modifiers),
+      reachedAt: t.system.rankReachedAt,
+      picks: t.system.professionPicks
+    }));
+    const rewards = distributeProfessionRewards(professions);
+    this.traitStaminaMultBonus = rewards.staminaMult;
+    this.professionResourceMultBonuses = rewards.resourceMult;
+    this.professionRankOwners = rewards.owners;
     const statTotals = Object.fromEntries(statKeys.map((k) => {
       var _a2;
       return [k, ((_a2 = this.stats[k]) == null ? void 0 : _a2.total) ?? 0];
@@ -1289,8 +1317,12 @@ class TAMSTraitData extends foundry.abstract.TypeDataModel {
     return {
       isProfession: new fields.BooleanField({ initial: false }),
       profession: new fields.StringField({ initial: "" }),
-      // "basic" | "full" | "half" | "threeQuarter" — see src/utils/profession.js
+      // "basic" | "full" | "threeQuarter" | "half" | "quarter" — see src/utils/profession.js
       professionType: new fields.StringField({ initial: "basic" }),
+      // Caster ranks past the forced-resource ranks: rank → "stamina" | "resource"
+      professionPicks: new fields.ObjectField({ initial: {} }),
+      // When each rank was first reached (index = rank − 1; 0 = before tracking). Set by TAMSItem.
+      rankReachedAt: new fields.ArrayField(new fields.NumberField({ initial: 0 }), { initial: [] }),
       modifiers: new fields.ArrayField(new fields.SchemaField({
         target: new fields.StringField({ initial: "stats.strength.value" }),
         value: new fields.NumberField({ initial: 0 }),
@@ -2029,6 +2061,7 @@ const DOT_GROUPS = [
     outKey: "TAMS.TurnStart.AcidOut"
   }
 ];
+const CONSTRUCT_IMMUNE_DOTS = /* @__PURE__ */ new Set(["severe-bleeding", "bleeding", "severely-poisoned", "poisoned"]);
 function getWhisperIds(actor) {
   const ownerIds = Object.entries(actor.ownership ?? {}).filter(([id, lvl]) => lvl >= 3 && id !== "default").map(([id]) => id);
   const gmIds = game.users.filter((u) => u.isGM).map((u) => u.id);
@@ -2038,7 +2071,7 @@ async function tamsOnTurnStart(actor) {
   var _a, _b, _c;
   if (!actor || actor.type !== "character") return;
   const dyingCountdown = actor.getFlag("tams", "dyingCountdown");
-  if (dyingCountdown) {
+  if (dyingCountdown && !dyingCountdown.inert) {
     const turnsLeft = dyingCountdown.turnsLeft - 1;
     if (turnsLeft <= 0) {
       await actor.setFlag("tams", "dyingCountdown", null);
@@ -2060,9 +2093,10 @@ async function tamsOnTurnStart(actor) {
   await resetReactions(actor);
   const statuses = actor.statuses ?? /* @__PURE__ */ new Set();
   const allPendingChecks = [];
+  const isConstruct = actor.system.lifeState === "construct";
   const activeDotTiers = [];
   for (const group of DOT_GROUPS) {
-    const tier = group.tiers.find((t) => statuses.has(t.id));
+    const tier = group.tiers.find((t) => statuses.has(t.id) && !(isConstruct && CONSTRUCT_IMMUNE_DOTS.has(t.id)));
     if (!tier) continue;
     activeDotTiers.push({ ...tier, limbKey: group.getLimb(actor.system.limbs), outKey: group.outKey });
   }
@@ -2144,7 +2178,7 @@ async function tamsOnTurnStart(actor) {
       dc: 20
     });
   }
-  {
+  if (!isConstruct) {
     const combatRound = ((_c = game.combat) == null ? void 0 : _c.round) ?? 0;
     const bleedDamage = {};
     const bleedMessages = [];
@@ -2232,7 +2266,8 @@ async function tamsOnCombatEnd(combat) {
         cleared.push(id);
       }
     }
-    if (actor.getFlag("tams", "dyingCountdown")) await actor.setFlag("tams", "dyingCountdown", null);
+    const dying = actor.getFlag("tams", "dyingCountdown");
+    if (dying && !dying.inert) await actor.setFlag("tams", "dyingCountdown", null);
     await resetReactions(actor);
     const totalHp = LIMB_KEYS$1.reduce((sum, k) => {
       var _a2;
@@ -4048,14 +4083,15 @@ class TAMSActor extends Actor {
         const limb = this.system.limbs[key];
         if (limb.value < dyingThreshold(limb) && !existingCountdown && !dyingStarted) {
           dyingStarted = true;
+          const inert = this.system.lifeState === "construct";
           const turnsLeft = Math.max(1, Math.floor(this.system.stats.endurance.total / 10));
           await this.toggleStatusEffect("unconscious", { active: true });
-          await this.setFlag("tams", "dyingCountdown", { turnsLeft, limbKey: key });
+          await this.setFlag("tams", "dyingCountdown", inert ? { inert, limbKey: key } : { turnsLeft, limbKey: key });
           const ownerIds = Object.entries(this.ownership ?? {}).filter(([id, lvl]) => lvl >= 3 && id !== "default").map(([id]) => id);
           const whisperIds = [.../* @__PURE__ */ new Set([...ownerIds, ...game.users.filter((u) => u.isGM).map((u) => u.id)])];
           await ChatMessage.create({
             speaker: ChatMessage.getSpeaker({ actor: this }),
-            content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format("TAMS.Dying.Started", { name: e$2(this.name), limb: e$2(limb.label), turns: turnsLeft })}</div></div>`,
+            content: `<div class="tams-roll"><div class="tams-crit failure" style="font-size:1.1em;font-weight:bold;">${game.i18n.format(inert ? "TAMS.Dying.Inert" : "TAMS.Dying.Started", { name: e$2(this.name), limb: e$2(limb.label), turns: turnsLeft })}</div></div>`,
             whisper: whisperIds
           });
         }
@@ -4618,6 +4654,30 @@ class TAMSItem extends Item {
     return foundry.utils.mergeObject(super.metadata, {
       types: ["weapon", "skill", "ability", "equipment", "armor", "consumable", "tool", "shield", "questItem", "backpack", "trait", "statusEffect", "ammo", "race"]
     }, { inplace: false });
+  }
+  /** @override Profession traits remember when each rank was first reached (see profession.js). */
+  async _preCreate(data, options, user) {
+    var _a;
+    const allowed = await super._preCreate(data, options, user);
+    if (allowed === false) return false;
+    if (this.type === "trait" && !((_a = this.system.rankReachedAt) == null ? void 0 : _a.length)) {
+      const stamps = stampRanksReached([], 0, professionRank(this.system.modifiers), Date.now());
+      if (stamps) this.updateSource({ "system.rankReachedAt": stamps });
+    }
+  }
+  /** @override */
+  async _preUpdate(changed, options, user) {
+    const allowed = await super._preUpdate(changed, options, user);
+    if (allowed === false) return false;
+    const modifiers = foundry.utils.getProperty(changed, "system.modifiers");
+    if (this.type !== "trait" || !modifiers) return;
+    const stamps = stampRanksReached(
+      this.system.rankReachedAt,
+      professionRank(this.system.modifiers),
+      professionRank(Object.values(modifiers)),
+      Date.now()
+    );
+    if (stamps) foundry.utils.setProperty(changed, "system.rankReachedAt", stamps);
   }
   /** Whether the current user may see this item's true name, description and magic effects. */
   get isIdentityVisible() {
@@ -5490,11 +5550,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         const medicineSkill = healer.items.find((i) => i.type === "skill" && i.name.toLowerCase().includes("medicine"));
         if (!medicineSkill) return;
         const familiarity = parseInt(medicineSkill.system.familiarity) || 0;
-        const healPool = Math.ceil(familiarity / 2);
-        if (healPool <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoPool"));
         const targets = [...game.user.targets];
         const targetActor = targets.length > 0 ? targets[0].actor : null;
         if (!targetActor) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoTarget"));
+        const isConstruct = targetActor.system.lifeState === "construct";
+        const fullPool = Math.ceil(familiarity / 2);
+        const healPool = isConstruct ? Math.floor(fullPool / 2) : fullPool;
+        if (healPool <= 0) return ui.notifications.warn(game.i18n.localize("TAMS.MedicalAidNoPool"));
         const lastAidTime = targetActor.getFlag("tams", "medicalAidReceived") ?? null;
         const currentTime = ((_a2 = game.time) == null ? void 0 : _a2.worldTime) ?? 0;
         const daySeconds = 86400;
@@ -5512,7 +5574,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           </div>`;
         }).join("");
         const content = `<div>
-          <p>${game.i18n.format("TAMS.MedicalAidPool", { pool: healPool })}</p>
+          <p>${game.i18n.format(isConstruct ? "TAMS.MedicalAidPoolConstruct" : "TAMS.MedicalAidPool", { pool: healPool })}</p>
           ${limbRows}
           <p id="heal-remaining" style="font-size:0.85em;color:#666;">${game.i18n.format("TAMS.MedicalAidRemaining", { remaining: healPool })}</p>
         </div>`;
@@ -5910,7 +5972,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       "custom": "TAMS.StatCustom"
     };
     context.themeOptions = { "default": "TAMS.ThemeDefault", "dark": "TAMS.ThemeDark", "parchment": "TAMS.ThemeParchment", "grimdark": "TAMS.ThemeGrimdark", "cyberpunk": "TAMS.ThemeCyberpunk", "gothic": "TAMS.ThemeGothic", "tactical": "TAMS.ThemeTactical" };
-    context.lifeStateOptions = { "living": "TAMS.LifeState.living", "dead": "TAMS.LifeState.dead", "undead": "TAMS.LifeState.undead" };
+    context.lifeStateOptions = { "living": "TAMS.LifeState.living", "dead": "TAMS.LifeState.dead", "undead": "TAMS.LifeState.undead", "construct": "TAMS.LifeState.construct" };
     context.npcTypeOptions = { "individual": "TAMS.NPCTypeIndividual", "squad": "TAMS.NPCTypeSquad", "horde": "TAMS.NPCTypeHorde" };
     context.npcRankOptions = { "mook": "TAMS.NPCRankMook", "elite": "TAMS.NPCRankElite", "boss": "TAMS.NPCRankBoss" };
     context.creatureSizeOptions = { "tiny": "TAMS.CreatureSizeOptions.Tiny", "small": "TAMS.CreatureSizeOptions.Small", "normal": "TAMS.CreatureSizeOptions.Normal", "large": "TAMS.CreatureSizeOptions.Large", "huge": "TAMS.CreatureSizeOptions.Huge", "giant": "TAMS.CreatureSizeOptions.Giant" };
@@ -8454,7 +8516,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
   }
   /** @override */
   async _prepareContext(options) {
-    var _a, _b;
+    var _a, _b, _c;
     const context = await super._prepareContext(options);
     context.item = this.document;
     context.document = this.document;
@@ -8588,6 +8650,31 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
         if (!context.professionRankOptions.some((o) => o.value === m.value))
           context.professionRankOptions.push({ value: m.value, label: `+${m.value}` });
       }
+      if (this.document.system.isProfession) {
+        const type = this.document.system.professionType || "basic";
+        const picks = this.document.system.professionPicks ?? {};
+        const owners = ((_a = this.document.actor) == null ? void 0 : _a.system.professionRankOwners) ?? {};
+        context.professionRankRewards = Array.from(
+          { length: professionRank(this.document.system.modifiers) },
+          (_, i) => {
+            const rank = i + 1;
+            const ownerId = owners[rank];
+            const owner = ownerId && ownerId !== this.document.id ? this.document.actor.items.get(ownerId) : null;
+            const target = rankRewardTarget(type, rank, picks);
+            return {
+              rank,
+              givenBy: owner ? owner.system.profession || owner.name : null,
+              canPick: rank >= (CASTER_PICK_START[type] ?? Infinity),
+              pick: target,
+              label: game.i18n.localize(target ? `TAMS.ProfessionReward.${target}` : "TAMS.ProfessionReward.bar")
+            };
+          }
+        );
+        context.professionPickOptions = {
+          resource: "TAMS.ProfessionReward.resource",
+          stamina: "TAMS.ProfessionReward.stamina"
+        };
+      }
     }
     if (this.document.type === "weapon") {
       const tags = ["accurate", "reliable", "unreliable", "vicious", "brutal", "balanced", "compact", "reach", "silent"];
@@ -8640,7 +8727,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       context.resourceOptions = resources;
       context.abilityIssues = getAbilityIssues(this.document.system, {
         onActor: !!this.document.actor,
-        customResources: ((_a = this.document.actor) == null ? void 0 : _a.system.customResources) ?? [],
+        customResources: ((_b = this.document.actor) == null ? void 0 : _b.system.customResources) ?? [],
         statusIds: (CONFIG.statusEffects ?? []).map((se) => se.id)
       }).map((iss) => ({ ...iss, text: game.i18n.localize(`TAMS.AbilityIssues.${iss.key}`) }));
       context.selectedTargetingMode = selectedTargetingMode;
@@ -8730,7 +8817,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       const sys = this.document.system;
       if (this._sectionOpen === void 0) {
         this._sectionOpen = {
-          uses: ((_b = sys.uses) == null ? void 0 : _b.max) > 0,
+          uses: ((_c = sys.uses) == null ? void 0 : _c.max) > 0,
           conditionalCost: !!sys.ifStatement,
           sizeGrants: !!(sys.sizeGrantHP || sys.sizeGrantStealth || sys.sizeGrantCombat)
         };
