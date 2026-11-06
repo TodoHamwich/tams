@@ -1,0 +1,23 @@
+{
+  "name": ".44 Magnum (Standard)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 6,
+      "max": 6
+    },
+    "tags": "Ammunition, .44 Magnum, Revolver",
+    "misfireRisk": false,
+    "description": "Standard ammunition."
+  },
+  "flags": {},
+  "_id": "p8Uhw4YPTTbz7jry",
+  "effects": [],
+  "_key": "!items!p8Uhw4YPTTbz7jry",
+  "folder": "hh6n3d4o9s1y8czg"
+}

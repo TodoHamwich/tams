@@ -1,0 +1,23 @@
+{
+  "name": "9\u00d719mm Parabellum (Standard)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 30,
+      "max": 30
+    },
+    "tags": "Ammunition, 9mm, Pistol",
+    "misfireRisk": false,
+    "description": "Standard ammunition."
+  },
+  "flags": {},
+  "_id": "nbPfIcNdzErclP9F",
+  "effects": [],
+  "_key": "!items!nbPfIcNdzErclP9F",
+  "folder": "hh6n3d4o9s1y8czg"
+}

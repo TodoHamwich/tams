@@ -2,7 +2,7 @@
   "id": "tams",
   "title": "Todo's Advanced Modular System",
   "description": "A custom system for Foundry VTT",
-  "version": "1.9.40",
+  "version": "1.9.41",
   "manifest": "https://raw.githubusercontent.com/TodoHamwich/tams/main/system.json",
   "download": "https://github.com/TodoHamwich/tams/archive/refs/heads/main.zip",
   "authors": [
@@ -72,6 +72,28 @@
       "path": "lang/en.json"
     }
   ],
+  "documentTypes": {
+    "Actor": {
+      "character": {},
+      "downtime": {}
+    },
+    "Item": {
+      "weapon": {},
+      "skill": {},
+      "ability": {},
+      "equipment": {},
+      "armor": {},
+      "ammo": {},
+      "consumable": {},
+      "tool": {},
+      "shield": {},
+      "questItem": {},
+      "backpack": {},
+      "trait": {},
+      "statusEffect": {},
+      "race": {}
+    }
+  },
   "grid": 50,
   "compatibility": {
     "minimum": "12",

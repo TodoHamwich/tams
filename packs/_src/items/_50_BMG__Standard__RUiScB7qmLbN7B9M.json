@@ -1,0 +1,23 @@
+{
+  "name": ".50 BMG (Standard)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 10,
+      "max": 10
+    },
+    "tags": "Ammunition, .50 BMG, Heavy",
+    "misfireRisk": false,
+    "description": "Standard ammunition."
+  },
+  "flags": {},
+  "_id": "RUiScB7qmLbN7B9M",
+  "effects": [],
+  "_key": "!items!RUiScB7qmLbN7B9M",
+  "folder": "hh6n3d4o9s1y8czg"
+}

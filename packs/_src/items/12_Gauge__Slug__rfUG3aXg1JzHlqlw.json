@@ -1,0 +1,24 @@
+{
+  "name": "12 Gauge (Slug)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 8,
+      "max": 8
+    },
+    "tags": "Ammunition, 12 Gauge, Shotgun",
+    "misfireRisk": false,
+    "description": "Slug round \u2014 single solid projectile. No range falloff; full damage at any distance.",
+    "isSlug": true
+  },
+  "flags": {},
+  "_id": "rfUG3aXg1JzHlqlw",
+  "effects": [],
+  "_key": "!items!rfUG3aXg1JzHlqlw",
+  "folder": "hh6n3d4o9s1y8czg"
+}

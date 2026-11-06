@@ -1,7 +1,6 @@
 {
   "name": "Travel Pace Calculator",
   "type": "script",
-  "author": "tams-system",
   "img": "icons/svg/walk.svg",
   "command": "game.tams.travelPace();",
   "folder": null,

@@ -1,0 +1,19 @@
+{
+  "name": "Heavy Steel Shield",
+  "type": "shield",
+  "img": "icons/equipment/shield/steel-shield.svg",
+  "system": {
+    "armorValue": 12,
+    "equipped": false,
+    "quantity": 1,
+    "size": "medium",
+    "location": "hand",
+    "slots": 2,
+    "tags": "Shield",
+    "description": "AHP: 18."
+  },
+  "flags": {},
+  "_id": "7U6f64MFrxexgaKJ",
+  "effects": [],
+  "_key": "!items!7U6f64MFrxexgaKJ"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Powder Horn",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "small",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 20,
+      "max": 20
+    },
+    "tags": "Equipment, Firearm",
+    "description": "Holds ~20 charges of black powder."
+  },
+  "flags": {},
+  "_id": "Gp4AYQ2xTCGXLLxc",
+  "effects": [],
+  "_key": "!items!Gp4AYQ2xTCGXLLxc"
+}

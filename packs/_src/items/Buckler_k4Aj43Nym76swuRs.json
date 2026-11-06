@@ -1,0 +1,19 @@
+{
+  "name": "Buckler",
+  "type": "shield",
+  "img": "icons/equipment/shield/wooden-shield.svg",
+  "system": {
+    "armorValue": 5,
+    "equipped": false,
+    "quantity": 1,
+    "size": "small",
+    "location": "hand",
+    "slots": 1,
+    "tags": "Shield",
+    "description": "AHP: 6."
+  },
+  "flags": {},
+  "_id": "k4Aj43Nym76swuRs",
+  "effects": [],
+  "_key": "!items!k4Aj43Nym76swuRs"
+}

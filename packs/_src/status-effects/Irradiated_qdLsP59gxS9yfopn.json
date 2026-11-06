@@ -1,0 +1,15 @@
+{
+  "name": "Irradiated",
+  "type": "statusEffect",
+  "img": "icons/svg/skull.svg",
+  "system": {
+    "statusId": "irradiated",
+    "mechanicalSummary": "1 radiation damage/turn to Thorax",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "qdLsP59gxS9yfopn",
+  "effects": [],
+  "_key": "!items!qdLsP59gxS9yfopn"
+}

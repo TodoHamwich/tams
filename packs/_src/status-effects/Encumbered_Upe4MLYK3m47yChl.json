@@ -1,0 +1,15 @@
+{
+  "name": "Encumbered",
+  "type": "statusEffect",
+  "img": "icons/svg/anchor.svg",
+  "system": {
+    "statusId": "encumbered",
+    "mechanicalSummary": "Carrying too much. Speed halved.",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "Upe4MLYK3m47yChl",
+  "effects": [],
+  "_key": "!items!Upe4MLYK3m47yChl"
+}

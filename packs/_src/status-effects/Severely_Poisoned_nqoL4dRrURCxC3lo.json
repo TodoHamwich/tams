@@ -1,0 +1,15 @@
+{
+  "name": "Severely Poisoned",
+  "type": "statusEffect",
+  "img": "icons/svg/poison.svg",
+  "system": {
+    "statusId": "severely-poisoned",
+    "mechanicalSummary": "5 poison damage/turn to Thorax",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "nqoL4dRrURCxC3lo",
+  "effects": [],
+  "_key": "!items!nqoL4dRrURCxC3lo"
+}

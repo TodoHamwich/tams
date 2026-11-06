@@ -1,0 +1,19 @@
+{
+  "name": "Light Wooden Shield",
+  "type": "shield",
+  "img": "icons/equipment/shield/wooden-shield.svg",
+  "system": {
+    "armorValue": 6,
+    "equipped": false,
+    "quantity": 1,
+    "size": "small",
+    "location": "hand",
+    "slots": 1,
+    "tags": "Shield",
+    "description": "AHP: 8."
+  },
+  "flags": {},
+  "_id": "V5B27EmdbjTXyc8S",
+  "effects": [],
+  "_key": "!items!V5B27EmdbjTXyc8S"
+}

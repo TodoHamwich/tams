@@ -1,7 +1,6 @@
 {
   "name": "Group Check",
   "type": "script",
-  "author": "tams-system",
   "img": "icons/svg/d20-highlight.svg",
   "command": "game.tams.groupCheck();",
   "folder": null,

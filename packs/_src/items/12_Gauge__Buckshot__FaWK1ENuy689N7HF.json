@@ -1,0 +1,24 @@
+{
+  "name": "12 Gauge (Buckshot)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 8,
+      "max": 8
+    },
+    "tags": "Ammunition, 12 Gauge, Shotgun",
+    "misfireRisk": false,
+    "description": "Standard buckshot load \u2014 multiple pellets. Damage falls off significantly with range.",
+    "isSlug": false
+  },
+  "flags": {},
+  "_id": "FaWK1ENuy689N7HF",
+  "effects": [],
+  "_key": "!items!FaWK1ENuy689N7HF",
+  "folder": "hh6n3d4o9s1y8czg"
+}

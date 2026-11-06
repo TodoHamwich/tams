@@ -1,3 +1,17 @@
-2026/09/16-13:19:32.740471 7f6b333ff6c0 Recovering log #193
-2026/09/16-13:19:32.756324 7f6b333ff6c0 Delete type=3 #189
-2026/09/16-13:19:32.756349 7f6b333ff6c0 Delete type=0 #193
+2026/11/06-20:38:06.912858 7f8ad23fc6c0 Recovering log #239
+2026/11/06-20:38:06.912912 7f8ad23fc6c0 Level-0 table #241: started
+2026/11/06-20:38:06.919096 7f8ad23fc6c0 Level-0 table #241: 765 bytes OK
+2026/11/06-20:38:06.934323 7f8ad23fc6c0 Delete type=0 #239
+2026/11/06-20:38:06.934344 7f8ad23fc6c0 Delete type=3 #238
+2026/11/06-20:38:06.935903 7f8ad1bfb6c0 Level-0 table #244: started
+2026/11/06-20:38:06.940372 7f8ad1bfb6c0 Level-0 table #244: 589 bytes OK
+2026/11/06-20:38:06.950342 7f8ad1bfb6c0 Delete type=0 #242
+2026/11/06-20:38:06.950410 7f8ad1bfb6c0 Manual compaction at level-0 from '!macros!ACI7R3mrD2K6ysM7' @ 72057594037927935 : 1 .. '!macros!tamsTravelPace01' @ 0 : 0; will stop at '!macros!tamsTravelPace01' @ 126 : 1
+2026/11/06-20:38:06.950414 7f8ad1bfb6c0 Compacting 2@0 + 1@1 files
+2026/11/06-20:38:06.955770 7f8ad1bfb6c0 Generated table #245@0: 6 keys, 634 bytes
+2026/11/06-20:38:06.955781 7f8ad1bfb6c0 Compacted 2@0 + 1@1 files => 634 bytes
+2026/11/06-20:38:06.965719 7f8ad1bfb6c0 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/11/06-20:38:06.965762 7f8ad1bfb6c0 Delete type=2 #237
+2026/11/06-20:38:06.965817 7f8ad1bfb6c0 Delete type=2 #241
+2026/11/06-20:38:06.965832 7f8ad1bfb6c0 Delete type=2 #244
+2026/11/06-20:38:06.965853 7f8ad1bfb6c0 Manual compaction at level-0 from '!macros!tamsTravelPace01' @ 126 : 1 .. '!macros!tamsTravelPace01' @ 0 : 0; will stop at (end)

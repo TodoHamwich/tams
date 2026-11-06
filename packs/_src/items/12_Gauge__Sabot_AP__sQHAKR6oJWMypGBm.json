@@ -1,0 +1,24 @@
+{
+  "name": "12 Gauge (Sabot AP)",
+  "type": "ammo",
+  "img": "icons/svg/item-bag.svg",
+  "system": {
+    "quantity": 1,
+    "size": "tiny",
+    "location": "stowed",
+    "slots": 1,
+    "uses": {
+      "value": 8,
+      "max": 8
+    },
+    "tags": "Ammunition, 12 Gauge, Shotgun",
+    "misfireRisk": false,
+    "description": "Armour-Piercing sabot slug. No range falloff. Hardened core \u2014 reduced raw damage, increased armour penetration.",
+    "isSlug": true
+  },
+  "flags": {},
+  "_id": "sQHAKR6oJWMypGBm",
+  "effects": [],
+  "_key": "!items!sQHAKR6oJWMypGBm",
+  "folder": "hh6n3d4o9s1y8czg"
+}

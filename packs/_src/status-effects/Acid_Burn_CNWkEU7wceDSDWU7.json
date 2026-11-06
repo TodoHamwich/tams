@@ -1,0 +1,15 @@
+{
+  "name": "Acid Burn",
+  "type": "statusEffect",
+  "img": "icons/svg/blood.svg",
+  "system": {
+    "statusId": "acid-burn",
+    "mechanicalSummary": "2 acid damage/turn to lowest HP arm",
+    "durationRounds": 0,
+    "description": ""
+  },
+  "flags": {},
+  "_id": "CNWkEU7wceDSDWU7",
+  "effects": [],
+  "_key": "!items!CNWkEU7wceDSDWU7"
+}
