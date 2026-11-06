@@ -10,7 +10,8 @@ import { TAMSItemSheet } from './applications/item-sheet.js';
 import { TAMSTravelPaceApp } from './applications/travel-pace.js';
 import { TAMSItemMaker } from './applications/item-maker.js';
 import { TAMSPartyHonorApp } from './applications/party-honor-dialog.js';
-import { tamsUpdateMessage, tamsHandleItemTransfer, tamsHandleLootDrop } from './utils/helpers.js';
+import { tamsHandleSocket } from './utils/socket.js';
+import { claimOnce } from './utils/gm-claim.js';
 import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending, tamsHandleContestedCheckPending, tamsOnTurnStart, tamsOnCombatEnd } from './utils/combat.js';
 
 Hooks.once("init", async function() {
@@ -23,18 +24,7 @@ Hooks.once("init", async function() {
   ]);
 
   // Register Socket
-  game.socket.on("system.tams", data => {
-    if (data.type === "updateMessage" && game.user.isGM) {
-      const message = game.messages.get(data.messageId);
-      // Only update messages authored by the user who emitted the socket request
-      if (message && message.author?.id === data.userId) message.update(data.updateData);
-    } else if (data.type === "createLoot" && game.user.isGM) {
-        tamsHandleLootDrop(data.lootData, data.x, data.y);
-    } else if (data.type === "transferItem" && game.user.isGM) {
-        const sender = game.users.get(data.userId);
-        if (sender) tamsHandleItemTransfer(data, sender);
-    }
-  });
+  game.socket.on("system.tams", tamsHandleSocket);
 
   // Register System Settings
   game.settings.register("tams", "currencies", {
@@ -360,12 +350,16 @@ Hooks.once("init", async function() {
   });
 });
 
+Hooks.on("updateCombat", (combat, changed) => {
+});
+
 // --- Turn-start automation ---
 Hooks.on("updateCombat", async (combat, changed) => {
   if (!game.user.isGM) return;
   if (!("turn" in changed)) return;
   const combatant = combat.combatant;
   if (!combatant?.actor) return;
+  if (!await claimOnce(`turnStart:${combat.id}:${combat.round}:${combat.turn}`)) return;
   await tamsOnTurnStart(combatant.actor);
 });
 

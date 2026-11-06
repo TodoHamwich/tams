@@ -1,5 +1,6 @@
 
 import { showCombinedInjuryDialog, getHitLocation, hitLocationOn, tamsUpdateMessage, tamsApplyRollMode } from './combat.js';
+import { canTransferItem, canDropLoot } from './socket-auth.js';
 export { showCombinedInjuryDialog, getHitLocation, hitLocationOn, tamsUpdateMessage, tamsApplyRollMode };
 
 /**
@@ -43,15 +44,36 @@ export function computeSquadAttackBonus(squadSize, isRanged, numTargets) {
 }
 
 /**
+ * Take items off an actor before copying them elsewhere. A GM logged in on two clients handles
+ * every socket request twice, and both copies pass the active-GM check because they are the same
+ * user. The server only lets one of them delete an item, so whoever deletes it gets to copy it.
+ * @param {Actor} actor The source actor.
+ * @param {Item[]} items The items to take.
+ * @returns {Promise<Set<string>>} Ids of the items this client deleted.
+ */
+async function claimItems(actor, items) {
+  if (!items.length) return new Set();
+  try {
+    const deleted = await actor.deleteEmbeddedDocuments("Item", items.map(i => i.id));
+    return new Set(deleted.map(i => i.id));
+  } catch (err) {
+    console.warn("TAMS | Items were already taken, probably by another client of this GM.", err);
+    return new Set();
+  }
+}
+
+/**
  * Handle item transfer between actors.
  * @param {object} params
- * @param {object} params.itemData The item data to transfer.
+ * @param {object} [params.itemData] The item data to transfer (local calls only).
+ * @param {string} [params.itemId] The source item's id (socket calls, where client item data is never trusted).
  * @param {string} params.sourceActorUuid Source actor UUID.
  * @param {string} params.targetActorUuid Target actor UUID.
  * @param {string} [params.newLocation="stowed"] New location for the item.
+ * @param {User|null} [sender] The authenticated requesting user, when called from the socket handler.
  * @returns {Promise<Item|void>}
  */
-export async function tamsHandleItemTransfer({itemData, sourceActorUuid, targetActorUuid, newLocation}, sender = null) {
+export async function tamsHandleItemTransfer({itemData, itemId, sourceActorUuid, targetActorUuid, newLocation}, sender = null) {
   let target = await fromUuid(targetActorUuid);
   if (!target) return;
   const targetActor = (target instanceof foundry.documents.BaseActor) ? target : target.actor;
@@ -61,6 +83,17 @@ export async function tamsHandleItemTransfer({itemData, sourceActorUuid, targetA
   const sourceActor = _sourceFull ? ((_sourceFull instanceof foundry.documents.BaseActor) ? _sourceFull : _sourceFull.actor) : null;
   const itemsToCreate = [];
   const itemsToDelete = [];
+
+  // Socket request: the sender must own the source actor, and the item comes from the source
+  // actor itself, never from the request.
+  if (sender) {
+      const requested = sourceActor?.items.get(itemId);
+      if (!canTransferItem(sender, sourceActor, requested)) {
+          console.warn(`TAMS | transferItem rejected for ${sender.name}`);
+          return;
+      }
+      itemData = requested.toObject();
+  }
 
   // Main item
   const mainItemData = foundry.utils.duplicate(itemData);
@@ -82,22 +115,6 @@ export async function tamsHandleItemTransfer({itemData, sourceActorUuid, targetA
       if (sourceItem) itemsToDelete.push(sourceItem);
   }
 
-  // When called via socket: verify the claiming user owns the source actor,
-  // then replace the client-supplied itemData with the canonical server-side item.
-  if (sender) {
-      if (sourceActor && !sourceActor.testUserPermission(sender, "OWNER")) {
-          console.warn(`TAMS | transferItem rejected: ${sender.name} does not own source actor`);
-          return;
-      }
-      if (sourceItem) {
-          const canonical = sourceItem.toObject();
-          delete canonical._id;
-          canonical.system.location = newLocation;
-          if (canonical.system.equipped !== undefined) canonical.system.equipped = false;
-          itemsToCreate[0] = canonical;
-      }
-  }
-
   // Backpack contents: If it's an EQUIPPED backpack, move all items in it too
   if (sourceItem && sourceItem.type === "backpack" && sourceItem.system.equipped) {
       const contents = sourceActor.items.filter(i => i.system.location === "backpack" || i.system.location === sourceItem.id);
@@ -107,6 +124,20 @@ export async function tamsHandleItemTransfer({itemData, sourceActorUuid, targetA
           contentData.system.location = "stowed"; // Reset to stowed on target
           itemsToCreate.push(contentData);
           itemsToDelete.push(i);
+      }
+  }
+
+  // Socket request: delete first, so a second client of the same GM can't copy it too.
+  if (sender) {
+      const originals = itemsToDelete.map(i => i.toObject());
+      const claimed = await claimItems(sourceActor, itemsToDelete);
+      if (!claimed.has(originalId)) return;
+      const toCreate = itemsToCreate.filter((_, i) => claimed.has(itemsToDelete[i].id));
+      try {
+          return await targetActor.createEmbeddedDocuments("Item", toCreate);
+      } catch (err) {
+          await sourceActor.createEmbeddedDocuments("Item", originals.filter(o => claimed.has(o._id)), { keepId: true });
+          throw err;
       }
   }
 
@@ -134,6 +165,39 @@ export async function tamsHandleLootDrop(data, x, y) {
   else if (data.data) item = data.data;
   
   if (!item) return;
+
+  // Items to move
+  const itemsToCreate = [];
+  const itemsToDelete = [];
+
+  // Add the main item
+  const mainItemData = (typeof item.toObject === 'function') ? item.toObject() : item;
+  itemsToCreate.push(mainItemData);
+  
+  // If it's a Document, we might want to delete it from its parent
+  if (item instanceof Item && item.actor) itemsToDelete.push(item);
+
+  // If it's an EQUIPPED backpack, move all items in it too
+  if (item instanceof Item && item.type === "backpack" && item.actor && item.system.equipped) {
+    const sourceActor = item.actor;
+    // Find items in legacy "backpack" location OR items pointing to this specific backpack ID
+    const backpackContents = sourceActor.items.filter(i => i.system.location === "backpack" || i.system.location === item.id);
+    for (let i of backpackContents) {
+      const contentData = i.toObject();
+      // Reset location to legacy "backpack" or stowed so they appear correctly on the new loot actor
+      // (Since IDs will change on the new actor, we can't easily preserve the specific container link without multiple steps)
+      contentData.system.location = "stowed"; 
+      itemsToCreate.push(contentData);
+      itemsToDelete.push(i);
+    }
+  }
+
+  // Delete first, so a second client of the same GM can't drop it too.
+  const sourceActor = item instanceof Item ? item.actor : null;
+  const originals = itemsToDelete.map(i => i.toObject());
+  const claimed = await claimItems(sourceActor, itemsToDelete);
+  if (itemsToDelete.length && !claimed.has(item.id)) return;
+  const toCreate = itemsToDelete.length ? itemsToCreate.filter((_, i) => claimed.has(itemsToDelete[i].id)) : itemsToCreate;
 
   // Create a new actor for the loot
   const actorData = {
@@ -163,44 +227,16 @@ export async function tamsHandleLootDrop(data, x, y) {
     }
   };
 
-  const actor = await Actor.create(actorData);
-  if ( !actor ) return console.error("TAMS | Failed to create loot actor.");
-  
-  // Items to move
-  const itemsToCreate = [];
-  const itemsToDelete = [];
-
-  // Add the main item
-  const mainItemData = (typeof item.toObject === 'function') ? item.toObject() : item;
-  itemsToCreate.push(mainItemData);
-  
-  // If it's a Document, we might want to delete it from its parent
-  if (item instanceof Item && item.actor) itemsToDelete.push(item);
-
-  // If it's an EQUIPPED backpack, move all items in it too
-  if (item instanceof Item && item.type === "backpack" && item.actor && item.system.equipped) {
-    const sourceActor = item.actor;
-    // Find items in legacy "backpack" location OR items pointing to this specific backpack ID
-    const backpackContents = sourceActor.items.filter(i => i.system.location === "backpack" || i.system.location === item.id);
-    for (let i of backpackContents) {
-      const contentData = i.toObject();
-      // Reset location to legacy "backpack" or stowed so they appear correctly on the new loot actor
-      // (Since IDs will change on the new actor, we can't easily preserve the specific container link without multiple steps)
-      contentData.system.location = "stowed"; 
-      itemsToCreate.push(contentData);
-      itemsToDelete.push(i);
-    }
-  }
-
-  await actor.createEmbeddedDocuments("Item", itemsToCreate);
-  
-  // Delete from source
-  for (let i of itemsToDelete) {
-    try {
-        await i.delete();
-    } catch (err) {
-        console.warn(`TAMS | Failed to delete source item ${i.name} after drop on map.`, err);
-    }
+  let actor;
+  try {
+    actor = await Actor.create(actorData);
+    if ( !actor ) throw new Error("Failed to create loot actor.");
+    await actor.createEmbeddedDocuments("Item", toCreate);
+  } catch (err) {
+    console.error("TAMS | Failed to create loot.", err);
+    await actor?.delete();
+    if (sourceActor) await sourceActor.createEmbeddedDocuments("Item", originals.filter(o => claimed.has(o._id)), { keepId: true });
+    return;
   }
 
   // Create token
@@ -215,8 +251,7 @@ Hooks.on("dropCanvasData", async (canvas, data) => {
   if (!item) return;
 
   // Find if dropped on a token
-  const tokens = canvas.tokens.getObjectsAt({x: data.x, y: data.y});
-  const targetToken = tokens.find(t => t.actor && t.actor.uuid !== item.parent?.uuid);
+  const targetToken = canvas.tokens.placeables.find(t => t.actor && t.actor.uuid !== item.parent?.uuid && t.bounds.contains(data.x, data.y));
 
   if (targetToken) {
     if (targetToken.actor.isOwner) {
@@ -227,13 +262,16 @@ Hooks.on("dropCanvasData", async (canvas, data) => {
             newLocation: "stowed"
         });
     } else {
+        if (!game.user.isGM && !canTransferItem(game.user, item.parent, item)) {
+            ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.TransferNotAllowed"));
+            return false;
+        }
         game.socket.emit("system.tams", {
             type: "transferItem",
-            itemData: item.toObject(),
+            itemId: item.id,
             sourceActorUuid: item.parent?.uuid,
             targetActorUuid: targetToken.actor.uuid,
-            newLocation: "stowed",
-            userId: game.user.id
+            newLocation: "stowed"
         });
         ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.GivingItem", {item: item.name, target: targetToken.name}));
         return false;
@@ -241,10 +279,14 @@ Hooks.on("dropCanvasData", async (canvas, data) => {
   }
 
   if (!game.user.isGM) {
+      if (!canDropLoot(game.user, item)) {
+          ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.TransferNotAllowed"));
+          return;
+      }
       // Send to GM via socket
       game.socket.emit("system.tams", {
           type: "createLoot",
-          lootData: data,
+          lootData: { uuid: item.uuid },
           x: data.x,
           y: data.y
       });

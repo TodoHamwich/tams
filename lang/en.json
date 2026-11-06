@@ -1162,6 +1162,7 @@
         "NotEnoughResourceRecharge": "Not enough {resource} to recharge {item}. Needs {cost}, has {current}.",
         "ActorFullyHealed": "{name} fully healed.",
         "RequestTransfer": "Requesting transfer of {item} to {name}...",
+        "TransferNotAllowed": "You can only hand over or drop items that you own.",
         "RefilledUses": "Refilled {amount} uses for {item}.",
         "NoUsesLeft": "No uses left! Shift-click to refill.",
         "NotEnoughToBoost": "Not enough resource to boost!",

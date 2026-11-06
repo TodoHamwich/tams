@@ -1629,7 +1629,6 @@ async function tamsUpdateMessage(message, updateData) {
   game.socket.emit("system.tams", {
     type: "updateMessage",
     messageId: message.id,
-    userId: game.user.id,
     updateData
   });
 }
@@ -2678,7 +2677,7 @@ async function tamsRenderChatMessage(message, html, data) {
         const contested = new Set(((currentFlags == null ? void 0 : currentFlags.contests) ?? []).map((c) => c.actorId));
         const eligible = game.actors.filter((a) => a.type === "character" && a.id !== (currentFlags == null ? void 0 : currentFlags.initiatorId) && !contested.has(a.id));
         if (!eligible.length) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
-        const actorOptions = eligible.map((a) => `<option value="${a.id}">${a.name}</option>`).join("");
+        const actorOptions = eligible.map((a) => `<option value="${a.id}">${e$3(a.name)}</option>`).join("");
         currentActor = await foundry.applications.api.DialogV2.wait({
           window: { title: game.i18n.localize("TAMS.ContestedCheck.DialogTitle") },
           content: `<div class="form-group">
@@ -2711,7 +2710,7 @@ async function tamsRenderChatMessage(message, html, data) {
         ([id, lbl]) => `<option value="stat:${id}" ${suggestedStatId === id ? "selected" : ""}>${lbl}</option>`
       ).join("");
       const actorSkills = currentActor.items.filter((i) => i.type === "skill").sort((a, b) => a.name.localeCompare(b.name));
-      const skillOptions = actorSkills.map((s) => `<option value="skill:${s.name}">${s.name}</option>`).join("");
+      const skillOptions = actorSkills.map((s) => `<option value="skill:${e$3(s.name)}">${e$3(s.name)}</option>`).join("");
       const skillGroup = skillOptions ? `<optgroup label="${game.i18n.localize("TAMS.Skills")}">${skillOptions}</optgroup>` : "";
       const chosenRollChoice = await foundry.applications.api.DialogV2.wait({
         window: { title: game.i18n.localize("TAMS.ContestedCheck.DialogTitle") },
@@ -3183,7 +3182,7 @@ async function tamsRenderChatMessage(message, html, data) {
     actor.system.customResources.forEach((res, idx) => {
       resources.push({ id: idx.toString(), name: res.name, value: res.value });
     });
-    const options = resources.map((r) => `<option value="${r.id}">${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
+    const options = resources.map((r) => `<option value="${r.id}">${e$3(r.name)} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join("");
     const spending = await foundry.applications.api.DialogV2.wait({
       window: { title: game.i18n.localize("TAMS.Combat.BoostDodgeTitle") },
       content: `
@@ -3670,9 +3669,9 @@ async function tamsRenderChatMessage(message, html, data) {
     if (!shield) return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoShield"));
     const locations = JSON.parse(btn.dataset.locations);
     const content = `
-            <p>${game.i18n.format("TAMS.Combat.ChooseLimbToBlock", { name: shield.name, armor: shield.system.armorValue })}</p>
+            <p>${game.i18n.format("TAMS.Combat.ChooseLimbToBlock", { name: e$3(shield.name), armor: shield.system.armorValue })}</p>
             <select id="block-loc">
-                ${locations.map((loc, i) => `<option value="${i}">${loc}</option>`).join("")}
+                ${locations.map((loc, i) => `<option value="${i}">${e$3(loc)}</option>`).join("")}
             </select>`;
     foundry.applications.api.DialogV2.wait({
       window: { title: game.i18n.localize("TAMS.Combat.ShieldBlock") },
@@ -4711,6 +4710,17 @@ class TAMSItem extends Item {
     return this.actor.items.get(key.split(":")[0]) ?? null;
   }
 }
+function canTransferItem(sender, sourceActor, item) {
+  return !!sourceActor && !!item && sourceActor.testUserPermission(sender, "OWNER");
+}
+function canDropLoot(sender, item) {
+  return (item == null ? void 0 : item.documentName) === "Item" && !item.pack && item.testUserPermission(sender, "OWNER");
+}
+function allowedMessageUpdate(sender, message, updateData) {
+  var _a;
+  if (!message || ((_a = message.author) == null ? void 0 : _a.id) !== sender.id) return null;
+  return typeof (updateData == null ? void 0 : updateData.content) === "string" ? { content: updateData.content } : null;
+}
 function moveInOrder(ids, id, dir) {
   const from = ids.indexOf(id);
   const to = from + dir;
@@ -4729,7 +4739,17 @@ function computeSquadAttackBonus(squadSize, isRanged, numTargets) {
   const bonus = Math.max(0, maxTargets - numTargets) * 5;
   return { maxTargets, bonus };
 }
-async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUuid, newLocation }, sender = null) {
+async function claimItems(actor, items) {
+  if (!items.length) return /* @__PURE__ */ new Set();
+  try {
+    const deleted = await actor.deleteEmbeddedDocuments("Item", items.map((i) => i.id));
+    return new Set(deleted.map((i) => i.id));
+  } catch (err) {
+    console.warn("TAMS | Items were already taken, probably by another client of this GM.", err);
+    return /* @__PURE__ */ new Set();
+  }
+}
+async function tamsHandleItemTransfer({ itemData, itemId, sourceActorUuid, targetActorUuid, newLocation }, sender = null) {
   let target = await fromUuid(targetActorUuid);
   if (!target) return;
   const targetActor = target instanceof foundry.documents.BaseActor ? target : target.actor;
@@ -4738,6 +4758,14 @@ async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUu
   const sourceActor = _sourceFull ? _sourceFull instanceof foundry.documents.BaseActor ? _sourceFull : _sourceFull.actor : null;
   const itemsToCreate = [];
   const itemsToDelete = [];
+  if (sender) {
+    const requested = sourceActor == null ? void 0 : sourceActor.items.get(itemId);
+    if (!canTransferItem(sender, sourceActor, requested)) {
+      console.warn(`TAMS | transferItem rejected for ${sender.name}`);
+      return;
+    }
+    itemData = requested.toObject();
+  }
   const mainItemData = foundry.utils.duplicate(itemData);
   mainItemData.system.location = newLocation;
   if (mainItemData.system.equipped !== void 0) mainItemData.system.equipped = false;
@@ -4749,19 +4777,6 @@ async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUu
     sourceItem = sourceActor.items.get(originalId);
     if (sourceItem) itemsToDelete.push(sourceItem);
   }
-  if (sender) {
-    if (sourceActor && !sourceActor.testUserPermission(sender, "OWNER")) {
-      console.warn(`TAMS | transferItem rejected: ${sender.name} does not own source actor`);
-      return;
-    }
-    if (sourceItem) {
-      const canonical = sourceItem.toObject();
-      delete canonical._id;
-      canonical.system.location = newLocation;
-      if (canonical.system.equipped !== void 0) canonical.system.equipped = false;
-      itemsToCreate[0] = canonical;
-    }
-  }
   if (sourceItem && sourceItem.type === "backpack" && sourceItem.system.equipped) {
     const contents = sourceActor.items.filter((i) => i.system.location === "backpack" || i.system.location === sourceItem.id);
     for (let i of contents) {
@@ -4770,6 +4785,18 @@ async function tamsHandleItemTransfer({ itemData, sourceActorUuid, targetActorUu
       contentData.system.location = "stowed";
       itemsToCreate.push(contentData);
       itemsToDelete.push(i);
+    }
+  }
+  if (sender) {
+    const originals = itemsToDelete.map((i) => i.toObject());
+    const claimed = await claimItems(sourceActor, itemsToDelete);
+    if (!claimed.has(originalId)) return;
+    const toCreate = itemsToCreate.filter((_, i) => claimed.has(itemsToDelete[i].id));
+    try {
+      return await targetActor.createEmbeddedDocuments("Item", toCreate);
+    } catch (err) {
+      await sourceActor.createEmbeddedDocuments("Item", originals.filter((o) => claimed.has(o._id)), { keepId: true });
+      throw err;
     }
   }
   const created = await targetActor.createEmbeddedDocuments("Item", itemsToCreate);
@@ -4787,6 +4814,26 @@ async function tamsHandleLootDrop(data, x, y) {
   if (data.uuid) item = await fromUuid(data.uuid);
   else if (data.data) item = data.data;
   if (!item) return;
+  const itemsToCreate = [];
+  const itemsToDelete = [];
+  const mainItemData = typeof item.toObject === "function" ? item.toObject() : item;
+  itemsToCreate.push(mainItemData);
+  if (item instanceof Item && item.actor) itemsToDelete.push(item);
+  if (item instanceof Item && item.type === "backpack" && item.actor && item.system.equipped) {
+    const sourceActor2 = item.actor;
+    const backpackContents = sourceActor2.items.filter((i) => i.system.location === "backpack" || i.system.location === item.id);
+    for (let i of backpackContents) {
+      const contentData = i.toObject();
+      contentData.system.location = "stowed";
+      itemsToCreate.push(contentData);
+      itemsToDelete.push(i);
+    }
+  }
+  const sourceActor = item instanceof Item ? item.actor : null;
+  const originals = itemsToDelete.map((i) => i.toObject());
+  const claimed = await claimItems(sourceActor, itemsToDelete);
+  if (itemsToDelete.length && !claimed.has(item.id)) return;
+  const toCreate = itemsToDelete.length ? itemsToCreate.filter((_, i) => claimed.has(itemsToDelete[i].id)) : itemsToCreate;
   const actorData = {
     name: `${game.i18n.localize("TAMS.Loot")}: ${item.name || ((_a = item.data) == null ? void 0 : _a.name)}`,
     type: "character",
@@ -4813,30 +4860,16 @@ async function tamsHandleLootDrop(data, x, y) {
       default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER
     }
   };
-  const actor = await Actor.create(actorData);
-  if (!actor) return console.error("TAMS | Failed to create loot actor.");
-  const itemsToCreate = [];
-  const itemsToDelete = [];
-  const mainItemData = typeof item.toObject === "function" ? item.toObject() : item;
-  itemsToCreate.push(mainItemData);
-  if (item instanceof Item && item.actor) itemsToDelete.push(item);
-  if (item instanceof Item && item.type === "backpack" && item.actor && item.system.equipped) {
-    const sourceActor = item.actor;
-    const backpackContents = sourceActor.items.filter((i) => i.system.location === "backpack" || i.system.location === item.id);
-    for (let i of backpackContents) {
-      const contentData = i.toObject();
-      contentData.system.location = "stowed";
-      itemsToCreate.push(contentData);
-      itemsToDelete.push(i);
-    }
-  }
-  await actor.createEmbeddedDocuments("Item", itemsToCreate);
-  for (let i of itemsToDelete) {
-    try {
-      await i.delete();
-    } catch (err) {
-      console.warn(`TAMS | Failed to delete source item ${i.name} after drop on map.`, err);
-    }
+  let actor;
+  try {
+    actor = await Actor.create(actorData);
+    if (!actor) throw new Error("Failed to create loot actor.");
+    await actor.createEmbeddedDocuments("Item", toCreate);
+  } catch (err) {
+    console.error("TAMS | Failed to create loot.", err);
+    await (actor == null ? void 0 : actor.delete());
+    if (sourceActor) await sourceActor.createEmbeddedDocuments("Item", originals.filter((o) => claimed.has(o._id)), { keepId: true });
+    return;
   }
   const tokenDocument = await actor.getTokenDocument({ x, y });
   return canvas.scene.createEmbeddedDocuments("Token", [tokenDocument.toObject()]);
@@ -4846,10 +4879,9 @@ Hooks.on("dropCanvasData", async (canvas2, data) => {
   if (data.type !== "Item") return;
   const item = await Item.fromDropData(data);
   if (!item) return;
-  const tokens = canvas2.tokens.getObjectsAt({ x: data.x, y: data.y });
-  const targetToken = tokens.find((t) => {
+  const targetToken = canvas2.tokens.placeables.find((t) => {
     var _a2;
-    return t.actor && t.actor.uuid !== ((_a2 = item.parent) == null ? void 0 : _a2.uuid);
+    return t.actor && t.actor.uuid !== ((_a2 = item.parent) == null ? void 0 : _a2.uuid) && t.bounds.contains(data.x, data.y);
   });
   if (targetToken) {
     if (targetToken.actor.isOwner) {
@@ -4860,22 +4892,29 @@ Hooks.on("dropCanvasData", async (canvas2, data) => {
         newLocation: "stowed"
       });
     } else {
+      if (!game.user.isGM && !canTransferItem(game.user, item.parent, item)) {
+        ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.TransferNotAllowed"));
+        return false;
+      }
       game.socket.emit("system.tams", {
         type: "transferItem",
-        itemData: item.toObject(),
+        itemId: item.id,
         sourceActorUuid: (_b = item.parent) == null ? void 0 : _b.uuid,
         targetActorUuid: targetToken.actor.uuid,
-        newLocation: "stowed",
-        userId: game.user.id
+        newLocation: "stowed"
       });
       ui.notifications.info(game.i18n.format("TAMS.Checks.Notifications.GivingItem", { item: item.name, target: targetToken.name }));
       return false;
     }
   }
   if (!game.user.isGM) {
+    if (!canDropLoot(game.user, item)) {
+      ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.TransferNotAllowed"));
+      return;
+    }
     game.socket.emit("system.tams", {
       type: "createLoot",
-      lootData: data,
+      lootData: { uuid: item.uuid },
       x: data.x,
       y: data.y
     });
@@ -6314,7 +6353,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             } else {
               game.socket.emit("system.tams", {
                 type: "transferItem",
-                itemData: item.toObject(),
+                itemId: item.id,
                 sourceActorUuid: this.document.uuid,
                 targetActorUuid: recipientUuid,
                 newLocation: "stowed"
@@ -6641,7 +6680,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (!item || item.type !== "armor") return;
     const skills = this.document.items.filter((i) => i.type === "skill");
     let optionsHtml = `<option value="int">${game.i18n.localize("TAMS.StatIntelligence")}</option>`;
-    for (const s of skills) optionsHtml += `<option value="${s.id}">${s.name}</option>`;
+    for (const s of skills) optionsHtml += `<option value="${s.id}">${e$1(s.name)}</option>`;
     const choice = await foundry.applications.api.DialogV2.wait({
       window: { title: game.i18n.format("TAMS.Repair.Title", { name: item.displayName }) },
       content: `<div class="form-group"><label>${game.i18n.localize("TAMS.Repair.SelectSkill")}</label><select name="skill" style="width:100%">${optionsHtml}</select></div>`,
@@ -6955,10 +6994,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       return;
     }
     if (!this.document.isOwner) {
+      if (!canTransferItem(game.user, item.parent, item)) {
+        ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.TransferNotAllowed"));
+        return;
+      }
       game.socket.emit("system.tams", {
         type: "transferItem",
-        userId: game.user.id,
-        itemData: item.toObject(),
+        itemId: item.id,
         sourceActorUuid: (_e = item.parent) == null ? void 0 : _e.uuid,
         targetActorUuid: this.document.uuid,
         newLocation
@@ -9974,6 +10016,53 @@ __publicField(_TAMSPartyHonorApp, "PARTS", {
   form: { template: "systems/tams/templates/party-honor.html" }
 });
 let TAMSPartyHonorApp = _TAMSPartyHonorApp;
+const CLAIM_WAIT_MS = 300;
+const CLAIM_EXPIRY_MS = 5e3;
+const claims = /* @__PURE__ */ new Map();
+function noteClaim(key, clientId) {
+  if (!claims.has(key)) {
+    claims.set(key, /* @__PURE__ */ new Set());
+    setTimeout(() => claims.delete(key), CLAIM_EXPIRY_MS);
+  }
+  claims.get(key).add(clientId);
+}
+async function claimOnce(key) {
+  var _a, _b;
+  if (!game.user.isGM || ((_a = game.users.activeGM) == null ? void 0 : _a.id) !== game.user.id) return false;
+  if ((_b = claims.get(key)) == null ? void 0 : _b.size) return false;
+  const me = game.socket.id;
+  noteClaim(key, me);
+  game.socket.emit("system.tams", { type: "gmClaim", key, clientId: me });
+  await new Promise((resolve) => setTimeout(resolve, CLAIM_WAIT_MS));
+  const won = [...claims.get(key)].every((id) => id >= me);
+  claims.delete(key);
+  return won;
+}
+async function tamsHandleSocket(data, senderId) {
+  var _a;
+  if (!game.user.isGM) return;
+  const primaryGM = game.users.activeGM;
+  if (primaryGM && primaryGM.id !== game.user.id) return;
+  const sender = game.users.get(senderId);
+  if (!sender) return;
+  if ((data == null ? void 0 : data.type) === "gmClaim") {
+    if (sender.id === game.user.id && typeof data.key === "string" && typeof data.clientId === "string") {
+      noteClaim(data.key, data.clientId);
+    }
+    return;
+  }
+  if ((data == null ? void 0 : data.type) === "updateMessage") {
+    const message = game.messages.get(data.messageId);
+    const update = allowedMessageUpdate(sender, message, data.updateData);
+    if (update) return message.update(update);
+  } else if ((data == null ? void 0 : data.type) === "createLoot") {
+    const uuid = (_a = data.lootData) == null ? void 0 : _a.uuid;
+    if (typeof uuid !== "string" || !Number.isFinite(data.x) || !Number.isFinite(data.y)) return;
+    if (canDropLoot(sender, await fromUuid(uuid))) return tamsHandleLootDrop({ uuid }, data.x, data.y);
+  } else if ((data == null ? void 0 : data.type) === "transferItem") {
+    return tamsHandleItemTransfer(data, sender);
+  }
+}
 Hooks.once("init", async function() {
   var _a, _b, _c, _d;
   console.log("TAMS | Initializing Todo's Advanced Modular System");
@@ -9981,18 +10070,7 @@ Hooks.once("init", async function() {
     "systems/tams/templates/inventory-grid.html",
     "systems/tams/templates/inventory-container.html"
   ]);
-  game.socket.on("system.tams", (data) => {
-    var _a2;
-    if (data.type === "updateMessage" && game.user.isGM) {
-      const message = game.messages.get(data.messageId);
-      if (message && ((_a2 = message.author) == null ? void 0 : _a2.id) === data.userId) message.update(data.updateData);
-    } else if (data.type === "createLoot" && game.user.isGM) {
-      tamsHandleLootDrop(data.lootData, data.x, data.y);
-    } else if (data.type === "transferItem" && game.user.isGM) {
-      const sender = game.users.get(data.userId);
-      if (sender) tamsHandleItemTransfer(data, sender);
-    }
-  });
+  game.socket.on("system.tams", tamsHandleSocket);
   game.settings.register("tams", "currencies", {
     name: "TAMS.Currencies",
     hint: "TAMS.SettingsCurrenciesHint",
@@ -10254,11 +10332,14 @@ Hooks.once("init", async function() {
     for (const actor of game.actors) tamsSyncEncumbrance(actor);
   });
 });
+Hooks.on("updateCombat", (combat, changed) => {
+});
 Hooks.on("updateCombat", async (combat, changed) => {
   if (!game.user.isGM) return;
   if (!("turn" in changed)) return;
   const combatant = combat.combatant;
   if (!(combatant == null ? void 0 : combatant.actor)) return;
+  if (!await claimOnce(`turnStart:${combat.id}:${combat.round}:${combat.turn}`)) return;
   await tamsOnTurnStart(combatant.actor);
 });
 Hooks.on("deleteCombat", async (combat) => {

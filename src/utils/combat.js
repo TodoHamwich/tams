@@ -24,7 +24,6 @@ export async function tamsUpdateMessage(message, updateData) {
   game.socket.emit("system.tams", {
     type: "updateMessage",
     messageId: message.id,
-    userId: game.user.id,
     updateData: updateData
   });
 }
@@ -1258,7 +1257,7 @@ export async function tamsRenderChatMessage(message, html, data) {
           const contested = new Set((currentFlags?.contests ?? []).map(c => c.actorId));
           const eligible = game.actors.filter(a => a.type === "character" && a.id !== currentFlags?.initiatorId && !contested.has(a.id));
           if (!eligible.length) return ui.notifications.warn(game.i18n.localize("TAMS.ContestedCheck.NoCharacter"));
-          const actorOptions = eligible.map(a => `<option value="${a.id}">${a.name}</option>`).join("");
+          const actorOptions = eligible.map(a => `<option value="${a.id}">${e(a.name)}</option>`).join("");
           currentActor = await foundry.applications.api.DialogV2.wait({
             window: { title: game.i18n.localize("TAMS.ContestedCheck.DialogTitle") },
             content: `<div class="form-group">
@@ -1298,7 +1297,7 @@ export async function tamsRenderChatMessage(message, html, data) {
         const actorSkills = currentActor.items
           .filter(i => i.type === "skill")
           .sort((a, b) => a.name.localeCompare(b.name));
-        const skillOptions = actorSkills.map(s => `<option value="skill:${s.name}">${s.name}</option>`).join("");
+        const skillOptions = actorSkills.map(s => `<option value="skill:${e(s.name)}">${e(s.name)}</option>`).join("");
         const skillGroup = skillOptions
           ? `<optgroup label="${game.i18n.localize("TAMS.Skills")}">${skillOptions}</optgroup>`
           : "";
@@ -1860,7 +1859,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       actor.system.customResources.forEach((res, idx) => {
           resources.push({id: idx.toString(), name: res.name, value: res.value});
       });
-      const options = resources.map(r => `<option value="${r.id}">${r.name} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join('');
+      const options = resources.map(r => `<option value="${r.id}">${e(r.name)} (${r.value} ${game.i18n.localize("TAMS.AvailableShort")})</option>`).join('');
 
       const spending = await foundry.applications.api.DialogV2.wait({
         window: { title: game.i18n.localize("TAMS.Combat.BoostDodgeTitle") },
@@ -2404,9 +2403,9 @@ export async function tamsRenderChatMessage(message, html, data) {
 
         const locations = JSON.parse(btn.dataset.locations);
         const content = `
-            <p>${game.i18n.format("TAMS.Combat.ChooseLimbToBlock", {name: shield.name, armor: shield.system.armorValue})}</p>
+            <p>${game.i18n.format("TAMS.Combat.ChooseLimbToBlock", {name: e(shield.name), armor: shield.system.armorValue})}</p>
             <select id="block-loc">
-                ${locations.map((loc, i) => `<option value="${i}">${loc}</option>`).join('')}
+                ${locations.map((loc, i) => `<option value="${i}">${e(loc)}</option>`).join('')}
             </select>`;
 
         foundry.applications.api.DialogV2.wait({

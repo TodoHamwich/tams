@@ -2,6 +2,7 @@ import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, hitLocationO
 import { presentHitTable } from '../utils/limbs.js';
 import { MAGIC_ITEM_TYPES, hasMagicEffects, isItemEquipped, curseVisible, bonusDamageComponents, itemAttackBonus, magicArmourPen } from '../utils/magic-items.js';
 import { computeArmorRepair } from '../utils/inventory.js';
+import { canTransferItem } from '../utils/socket-auth.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
 import { stackedReactionCost, reactionCount, recordReaction } from '../utils/reactions.js';
 import { HONOR_PATHS, HONOR_STYLES, getHonorTier, getHonorTierLabelKeys, isHonorEnabled } from '../utils/honor.js';
@@ -1017,7 +1018,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
                 } else {
                     game.socket.emit("system.tams", {
                         type: "transferItem",
-                        itemData: item.toObject(),
+                        itemId: item.id,
                         sourceActorUuid: this.document.uuid,
                         targetActorUuid: recipientUuid,
                         newLocation: "stowed"
@@ -1369,7 +1370,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     const skills = this.document.items.filter(i => i.type === "skill");
     let optionsHtml = `<option value="int">${game.i18n.localize("TAMS.StatIntelligence")}</option>`;
-    for (const s of skills) optionsHtml += `<option value="${s.id}">${s.name}</option>`;
+    for (const s of skills) optionsHtml += `<option value="${s.id}">${e(s.name)}</option>`;
 
     const choice = await foundry.applications.api.DialogV2.wait({
       window: { title: game.i18n.format("TAMS.Repair.Title", { name: item.displayName }) },
@@ -1731,10 +1732,13 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
 
     // 3. Create the item on the target actor (cross-actor or sidebar drop)
     if ( !this.document.isOwner ) {
+        if ( !canTransferItem(game.user, item.parent, item) ) {
+            ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.TransferNotAllowed"));
+            return;
+        }
         game.socket.emit("system.tams", {
             type: "transferItem",
-            userId: game.user.id,
-            itemData: item.toObject(),
+            itemId: item.id,
             sourceActorUuid: item.parent?.uuid,
             targetActorUuid: this.document.uuid,
             newLocation: newLocation
