@@ -483,6 +483,27 @@
                 <span> / </span>
                 <input type="number" name="system.uses.max" value="{{system.uses.max}}"/>
             </div>
+            <div class="flexrow">
+                <label title="{{localize 'TAMS.Prosthetic.Hint'}}">{{localize 'TAMS.Prosthetic.Toggle'}}</label>
+                <input type="checkbox" name="system.prosthetic.enabled" {{checked system.prosthetic.enabled}}/>
+            </div>
+            {{#if system.prosthetic.enabled}}
+            <p class="hint"><small>{{localize 'TAMS.Prosthetic.Hint'}}</small></p>
+            <div class="flexrow">
+                <label>{{localize 'TAMS.Prosthetic.Limb'}}</label>
+                <select name="system.prosthetic.limb">
+                    {{selectOptions prostheticLimbOptions selected=system.prosthetic.limb localize=true}}
+                </select>
+            </div>
+            <div class="flexrow">
+                <label>{{localize 'TAMS.Prosthetic.HP'}}</label>
+                <input type="number" name="system.prosthetic.hp.value" value="{{system.prosthetic.hp.value}}"/>
+                <span> / </span>
+                <input type="number" name="system.prosthetic.hp.max" value="{{system.prosthetic.hp.max}}" min="0"/>
+            </div>
+            {{#if prostheticCondition}}<p class="hint"><b>{{prostheticCondition}}</b></p>{{/if}}
+            {{#if prostheticWarning}}<p class="hint"><i class="fas fa-exclamation-triangle"></i> {{prostheticWarning}}</p>{{/if}}
+            {{/if}}
             {{/if}}
 
             {{#if (or (eq item.type "equipment") (eq item.type "tool") (eq item.type "shield") (eq item.type "questItem") (eq item.type "consumable") (eq item.type "armor") (eq item.type "backpack"))}}

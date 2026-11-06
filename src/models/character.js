@@ -5,6 +5,7 @@ import { computeRawStaminaMax, computeRawResourceMax, computeFatiguedMax } from 
 import { professionRank, distributeProfessionRewards } from '../utils/profession.js';
 import { buildRequirementContext, computeMagicState } from '../utils/magic-items.js';
 import { isLimbMissing } from '../utils/limbs.js';
+import { fitProsthetics, isProsthetic } from '../utils/prosthetics.js';
 
 const SIZE_HP_MULT = { tiny: 0.5, small: 0.75, normal: 1.0, large: 1.5, huge: 2.0, giant: 2.5 };
 const SIZE_ORDER = ['tiny', 'small', 'normal', 'large', 'huge', 'giant'];
@@ -282,15 +283,17 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     // Magic items: requirements are checked against stats BEFORE magic modifiers, so an
     // item can't meet its own requirement. See src/utils/magic-items.js.
     const statTotals = Object.fromEntries(statKeys.map(k => [k, this.stats[k]?.total ?? 0]));
+    this._prepareProsthetics();
     this.magicState = computeMagicState(
-      this.parent.items, buildRequirementContext(this.parent.items, statTotals), this.parent.items);
+      this.parent.items, buildRequirementContext(this.parent.items, statTotals), this.parent.items, this.prosthetics);
     const activeMagicItems = this.parent.items.filter(i => this.magicState[i.id]?.passive);
     for (const item of activeMagicItems) {
       for (const mod of item.system.magic.modifiers) applyModifier(mod, item, {});
     }
 
     // Temporary buffs on the actor and on its equipped items. See src/utils/buffs.js.
-    const activeBuffs = activeBuffEntries(this.buffs, this.parent.items, this.parent.items);
+    const buffItems = this.parent.items.filter(i => !isProsthetic(i) || this.prosthetics.byItem[i.id]?.active);
+    const activeBuffs = activeBuffEntries(this.buffs, buffItems, this.parent.items);
     for (const buff of activeBuffs) {
       for (const mod of buff.modifiers) applyModifier(mod, { id: `buff:${buff.id}`, label: buff.name }, {});
     }
@@ -358,6 +361,20 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         const rollType = item.system.passiveRollType || 'all';
         if (rollType in this.abilityTypeBonus) this.abilityTypeBonus[rollType] += val;
       }
+    }
+  }
+
+  /**
+   * Work out which prosthetics are fitted and put them on `limb.prosthetic`.
+   * Squads and hordes don't use them: their limbs are every member's limbs.
+   * @protected
+   */
+  _prepareProsthetics() {
+    const npcType = this.settings?.isNPC ? this.settings.npcType : null;
+    const isSquadOrHorde = npcType === "squad" || npcType === "horde";
+    this.prosthetics = fitProsthetics(isSquadOrHorde ? [] : this.parent.items, this.limbs, this.parent.items);
+    for (const [key, limb] of Object.entries(this.limbs ?? {})) {
+      if (limb) limb.prosthetic = this.prosthetics.byLimb[key] ?? null;
     }
   }
 

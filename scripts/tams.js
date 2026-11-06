@@ -157,6 +157,64 @@ function stampRanksReached(reachedAt = [], oldRank, newRank, now) {
   if (oldRank === newRank) return null;
   return Array.from({ length: newRank }, (_, i) => (reachedAt == null ? void 0 : reachedAt[i]) ?? (i + 1 > oldRank ? now : 0));
 }
+function isProsthetic(item) {
+  var _a, _b;
+  return (item == null ? void 0 : item.type) === "equipment" && ((_b = (_a = item.system) == null ? void 0 : _a.prosthetic) == null ? void 0 : _b.enabled) === true;
+}
+function prostheticCondition(hp) {
+  const value = Number(hp == null ? void 0 : hp.value) || 0;
+  const max = Number(hp == null ? void 0 : hp.max) || 0;
+  return { broken: value <= 0, destroyed: max > 0 && value <= -max };
+}
+function prostheticAfterDamage(hp, damage) {
+  const max = Number(hp == null ? void 0 : hp.max) || 0;
+  const value = Math.max(-max, Math.floor(Number(hp == null ? void 0 : hp.value) || 0) - Math.max(0, Math.floor(Number(damage) || 0)));
+  return { value, ...prostheticCondition({ value, max }) };
+}
+function fitProsthetics(items, limbs, itemsById) {
+  const byLimb = {}, byItem = {};
+  const prosthetics = [...items ?? []].filter(isProsthetic);
+  const withDestroyedLast = [
+    ...prosthetics.filter((i) => !prostheticCondition(i.system.prosthetic.hp).destroyed),
+    ...prosthetics.filter((i) => prostheticCondition(i.system.prosthetic.hp).destroyed)
+  ];
+  for (const item of withDestroyedLast) {
+    const { limb: limbKey, hp } = item.system.prosthetic;
+    const unfitted = (reason) => {
+      byItem[item.id] = { fitted: false, active: false, reason };
+    };
+    if (!item.system.equipped || !resolveCarryChain(item, itemsById).carried) {
+      unfitted(null);
+      continue;
+    }
+    if (!limbKey || !(limbs == null ? void 0 : limbs[limbKey])) {
+      unfitted("noLimb");
+      continue;
+    }
+    if (!((Number(hp == null ? void 0 : hp.max) || 0) > 0)) {
+      unfitted("noHp");
+      continue;
+    }
+    if (limbs[limbKey].missing !== true) {
+      unfitted("limbPresent");
+      continue;
+    }
+    if (byLimb[limbKey]) {
+      unfitted("limbTaken");
+      continue;
+    }
+    const condition = prostheticCondition(hp);
+    byLimb[limbKey] = {
+      itemId: item.id,
+      name: item.displayName ?? item.name,
+      value: Number(hp.value) || 0,
+      max: Number(hp.max) || 0,
+      ...condition
+    };
+    byItem[item.id] = { fitted: true, active: !condition.broken, reason: null };
+  }
+  return { byLimb, byItem };
+}
 const MAGIC_ITEM_TYPES = ["weapon", "armor", "shield", "equipment", "tool", "backpack", "questItem", "ammo"];
 const EQUIPPED_FLAG_TYPES = ["armor", "shield", "backpack", "equipment", "tool", "questItem"];
 const REQUIREMENT_TYPES = ["stat", "profession", "race", "skill"];
@@ -207,8 +265,8 @@ function requirementMet(req, ctx) {
 function unmetRequirements(magic, ctx) {
   return ((magic == null ? void 0 : magic.requirements) ?? []).filter((r) => !requirementMet(r, ctx));
 }
-function computeMagicState(items, ctx, itemsById) {
-  var _a;
+function computeMagicState(items, ctx, itemsById, prosthetics = null) {
+  var _a, _b, _c;
   const state = {};
   for (const item of items ?? []) {
     if (!MAGIC_ITEM_TYPES.includes(item.type)) continue;
@@ -217,10 +275,11 @@ function computeMagicState(items, ctx, itemsById) {
     const requirementsMet = unmetRequirements(magic, ctx).length === 0;
     const carried = resolveCarryChain(item, itemsById).carried;
     const equippedOk = !magic.requiresEquipped || item.type === "ammo" || isItemEquipped(item);
+    const prostheticOk = !isProsthetic(item) || ((_c = (_b = prosthetics == null ? void 0 : prosthetics.byItem) == null ? void 0 : _b[item.id]) == null ? void 0 : _c.active) === true;
     state[item.id] = {
       requirementsMet,
-      passive: requirementsMet && carried && equippedOk,
-      onUse: requirementsMet
+      passive: requirementsMet && carried && equippedOk && prostheticOk,
+      onUse: requirementsMet && prostheticOk
     };
   }
   return state;
@@ -507,12 +566,16 @@ const LABEL_TO_KEY = Object.fromEntries(HIT_TABLE.map((r) => [r.label, r.key]));
 function isLimbMissing(limb) {
   return (limb == null ? void 0 : limb.missing) === true;
 }
+function isLimbHittable(limb) {
+  if (!isLimbMissing(limb)) return true;
+  return !!limb.prosthetic && !limb.prosthetic.destroyed;
+}
 function locationIsMissing(location, limbs) {
   const key = LABEL_TO_KEY[location];
-  return !!key && isLimbMissing(limbs == null ? void 0 : limbs[key]);
+  return !!key && !isLimbHittable(limbs == null ? void 0 : limbs[key]);
 }
 function presentHitTable(limbs) {
-  return HIT_TABLE.filter((r) => !isLimbMissing(limbs == null ? void 0 : limbs[r.key]));
+  return HIT_TABLE.filter((r) => isLimbHittable(limbs == null ? void 0 : limbs[r.key]));
 }
 function presentHitWeight(limbs) {
   return presentHitTable(limbs).reduce((sum, r) => sum + r.weight, 0);
@@ -769,10 +832,12 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       var _a2;
       return [k, ((_a2 = this.stats[k]) == null ? void 0 : _a2.total) ?? 0];
     }));
+    this._prepareProsthetics();
     this.magicState = computeMagicState(
       this.parent.items,
       buildRequirementContext(this.parent.items, statTotals),
-      this.parent.items
+      this.parent.items,
+      this.prosthetics
     );
     const activeMagicItems = this.parent.items.filter((i) => {
       var _a2;
@@ -781,7 +846,11 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     for (const item of activeMagicItems) {
       for (const mod of item.system.magic.modifiers) applyModifier(mod, item, {});
     }
-    const activeBuffs = activeBuffEntries(this.buffs, this.parent.items, this.parent.items);
+    const buffItems = this.parent.items.filter((i) => {
+      var _a2;
+      return !isProsthetic(i) || ((_a2 = this.prosthetics.byItem[i.id]) == null ? void 0 : _a2.active);
+    });
+    const activeBuffs = activeBuffEntries(this.buffs, buffItems, this.parent.items);
     for (const buff of activeBuffs) {
       for (const mod of buff.modifiers) applyModifier(mod, { id: `buff:${buff.id}`, label: buff.name }, {});
     }
@@ -839,6 +908,20 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
         const rollType = item.system.passiveRollType || "all";
         if (rollType in this.abilityTypeBonus) this.abilityTypeBonus[rollType] += val;
       }
+    }
+  }
+  /**
+   * Work out which prosthetics are fitted and put them on `limb.prosthetic`.
+   * Squads and hordes don't use them: their limbs are every member's limbs.
+   * @protected
+   */
+  _prepareProsthetics() {
+    var _a;
+    const npcType = ((_a = this.settings) == null ? void 0 : _a.isNPC) ? this.settings.npcType : null;
+    const isSquadOrHorde = npcType === "squad" || npcType === "horde";
+    this.prosthetics = fitProsthetics(isSquadOrHorde ? [] : this.parent.items, this.limbs, this.parent.items);
+    for (const [key, limb] of Object.entries(this.limbs ?? {})) {
+      if (limb) limb.prosthetic = this.prosthetics.byLimb[key] ?? null;
     }
   }
   /**
@@ -1190,6 +1273,14 @@ class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
       ...inventoryFields(fields),
       ...usesFields(fields),
       equipped: new fields.BooleanField({ initial: false }),
+      prosthetic: new fields.SchemaField({
+        enabled: new fields.BooleanField({ initial: false }),
+        limb: new fields.StringField({ initial: "" }),
+        hp: new fields.SchemaField({
+          value: new fields.NumberField({ initial: 0, integer: true }),
+          max: new fields.NumberField({ initial: 0, integer: true, min: 0 })
+        })
+      }),
       ...magicFields(fields),
       ...sharedFields(fields)
     };
@@ -4281,7 +4372,7 @@ class TAMSActor extends Actor {
    * @returns {Promise<object>} Result including updates, itemUpdates, pendingChecks, and report.
    */
   async applyTAMSDamage(hits, { isAoE = false, multiplier = 1 } = {}) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f;
     const updates = {};
     const itemUpdates = {};
     const pendingChecks = [];
@@ -4302,7 +4393,8 @@ class TAMSActor extends Actor {
         value: this.system.limbs[key].value,
         injured: this.system.limbs[key].injured,
         criticallyInjured: this.system.limbs[key].criticallyInjured,
-        max: this.system.limbs[key].max
+        max: this.system.limbs[key].max,
+        prosthetic: !!this.system.limbs[key].prosthetic
       };
       limbDamageReceived[key] = 0;
     }
@@ -4320,15 +4412,26 @@ class TAMSActor extends Actor {
       if (location) resolvedHits.push({ ...hit, location, rerolledFrom: hit.location });
     }
     hits = resolvedHits;
+    const prostheticHits = {};
+    const limbsAfterDestroyed = () => Object.fromEntries(limbKeys.map((k) => {
+      var _a2;
+      return [k, ((_a2 = prostheticHits[k]) == null ? void 0 : _a2.destroyed) ? { ...this.system.limbs[k], prosthetic: { ...this.system.limbs[k].prosthetic, destroyed: true } } : this.system.limbs[k]];
+    }));
     for (let i = 0; i < hits.length; i++) {
-      const hit = hits[i];
+      let hit = hits[i];
+      if ((_b = prostheticHits[locationMap[hit.location]]) == null ? void 0 : _b.destroyed) {
+        const location = await rerollPresentLocation(limbsAfterDestroyed());
+        if (!location) continue;
+        hit = hits[i] = { ...hit, location, rerolledFrom: hit.location };
+      }
       const incoming = Math.floor(hit.damage || 0);
       const armourPen = hit.armourPen || 0;
       const loc = hit.location;
       const limbKey = locationMap[loc];
       if (!limbKey) continue;
       const limb = this.system.limbs[limbKey];
-      const isAltArmor = (_b = this.system.settings) == null ? void 0 : _b.alternateArmour;
+      const prosthetic = limb.prosthetic && !limb.prosthetic.destroyed ? limb.prosthetic : null;
+      const isAltArmor = (_c = this.system.settings) == null ? void 0 : _c.alternateArmour;
       const pendingArmor = updates[`system.limbs.${limbKey}.armor`];
       let armorValue = pendingArmor !== void 0 ? pendingArmor : limb.armor || 0;
       if (isAltArmor) {
@@ -4355,9 +4458,9 @@ class TAMSActor extends Actor {
       const blocked = Math.min(adjustedIncoming, effectiveArmor);
       let overflow = 0;
       let resistanceLabel = "";
-      const damageComponents = mergeSameTypeComponents(((_c = hit.damageComponents) == null ? void 0 : _c.length) ? hit.damageComponents : [{ damageType: hit.damageType || "", damage: hit.damage }]);
+      const damageComponents = mergeSameTypeComponents(((_d = hit.damageComponents) == null ? void 0 : _d.length) ? hit.damageComponents : [{ damageType: hit.damageType || "", damage: hit.damage }]);
       const totalComponentDamage = damageComponents.reduce((sum, c) => sum + Math.max(0, Math.floor(c.damage || 0)), 0);
-      if (((_d = this.system.effectiveResistances) == null ? void 0 : _d.length) && totalComponentDamage > 0) {
+      if (((_e = this.system.effectiveResistances) == null ? void 0 : _e.length) && totalComponentDamage > 0) {
         const resistanceLabels = [];
         let healedThisHit = false;
         let adjustedEffective = 0;
@@ -4390,11 +4493,13 @@ class TAMSActor extends Actor {
               } else if (match.category === "vulnerability") {
                 compEffective = compEffective + match.value;
                 resistanceLabels.push(game.i18n.format("TAMS.Combat.Vulnerable", { value: match.value, type: typeName }));
+              } else if (match.category === "healing" && prosthetic) {
+                compEffective = 0;
               } else if (match.category === "healing") {
                 const healAmount = compEffective + (match.value || 0);
                 const healLabel = game.i18n.format("TAMS.Combat.HealedFrom", { value: healAmount, type: typeName });
-                const currentHp2 = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
-                updates[`system.limbs.${limbKey}.value`] = Math.min(limb.max, currentHp2 + healAmount);
+                const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
+                updates[`system.limbs.${limbKey}.value`] = Math.min(limb.max, currentHp + healAmount);
                 report += `• ${game.i18n.format("TAMS.Checks.HealReport", { loc, amount: healAmount })}<br>`;
                 report += `  ↳ ${healLabel}<br>`;
                 healedThisHit = true;
@@ -4430,11 +4535,19 @@ class TAMSActor extends Actor {
           }
         }
       }
-      const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
-      let newHp = Math.floor(currentHp) - effective;
-      if (isSquadOrHorde && !isLethal(limb)) newHp = Math.max(newHp, -limb.max);
-      updates[`system.limbs.${limbKey}.value`] = newHp;
-      limbDamageReceived[limbKey] += effective;
+      let newHp = 0;
+      let prostheticAfter = null;
+      if (prosthetic) {
+        const value = ((_f = prostheticHits[limbKey]) == null ? void 0 : _f.value) ?? prosthetic.value;
+        prostheticAfter = prostheticAfterDamage({ value, max: prosthetic.max }, effective);
+        prostheticHits[limbKey] = { ...prostheticAfter, itemId: prosthetic.itemId, wasBroken: value <= 0 };
+      } else {
+        const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
+        newHp = Math.floor(currentHp) - effective;
+        if (isSquadOrHorde && !isLethal(limb)) newHp = Math.max(newHp, -limb.max);
+        updates[`system.limbs.${limbKey}.value`] = newHp;
+        limbDamageReceived[limbKey] += effective;
+      }
       let lossLabel = "";
       if (!hit.ignoreArmor && !isSquadOrHorde && armorValue > 0 && effective + overflow < adjustedIncoming) {
         const key = isAltArmor ? `system.limbs.${limbKey}.armorMax` : `system.limbs.${limbKey}.armor`;
@@ -4452,6 +4565,12 @@ class TAMSActor extends Actor {
       if (hit.ignoreArmor) report += `  ↳ ${game.i18n.localize("TAMS.Checks.ArmorBypassed")}<br>`;
       if (barrierLabel) report += `  ↳ ${barrierLabel}<br>`;
       if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
+      if (prostheticAfter) {
+        report += `  ↳ ${game.i18n.format("TAMS.Prosthetic.DamageReport", { value: prostheticAfter.value, max: prosthetic.max })}<br>`;
+        if (prostheticAfter.destroyed) report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Prosthetic.DestroyedReport", { limb: e$2(limb.label) })} !!!</b><br>`;
+        else if (prostheticAfter.broken && !prostheticHits[limbKey].wasBroken) report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Prosthetic.BrokenReport", { limb: e$2(limb.label) })} !!!</b><br>`;
+        continue;
+      }
       originalLimbStatus[limbKey].max;
       if (newHp <= 0 && !originalLimbStatus[limbKey].injured && !updates[`system.limbs.${limbKey}.injured`]) {
         report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Checks.LimbInjuredAuto", { limb: e$2(limb.label) })} !!!</b><br>`;
@@ -4506,12 +4625,14 @@ class TAMSActor extends Actor {
       finalUpdates.items = Object.values(itemUpdates);
     }
     await this.update(finalUpdates);
+    const prostheticUpdates = Object.values(prostheticHits).map((p) => ({ _id: p.itemId, "system.prosthetic.hp.value": p.value }));
+    if (prostheticUpdates.length > 0) await this.updateEmbeddedDocuments("Item", prostheticUpdates);
     for (let [limbKey, damage] of Object.entries(limbDamageReceived)) {
       if (damage === 0 && !hits.some((h) => locationMap[h.location] === limbKey && h.forceCrit)) continue;
       const original = originalLimbStatus[limbKey];
       const limb = this.system.limbs[limbKey];
       limb.value;
-      if (isSquadOrHorde) continue;
+      if (isSquadOrHorde || original.prosthetic) continue;
       const autoInjuredThisHit = updates[`system.limbs.${limbKey}.injured`] === true && !original.injured;
       this.system.limbs[limbKey].value;
       if (original.injured && damage > 0 && !original.criticallyInjured) {
@@ -4545,6 +4666,7 @@ class TAMSActor extends Actor {
       const dyingLimbKeys = customLethality ? limbKeys.filter((k) => isLethal(this.system.limbs[k])) : ["head", "thorax"];
       for (const key of dyingLimbKeys) {
         const limb = this.system.limbs[key];
+        if (isLimbMissing(limb)) continue;
         if (limb.value < dyingThreshold(limb) && !existingCountdown && !dyingStarted) {
           dyingStarted = true;
           const inert = this.system.lifeState === "construct";
@@ -7143,9 +7265,21 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
    * @protected
    */
   async _onItemRepair(event, target) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
     const item = this.document.items.get(this._resolveItemId(target));
-    if (!item || item.type !== "armor") return;
+    const prosthetic = isProsthetic(item);
+    if (!item || item.type !== "armor" && !prosthetic) return;
+    if (prosthetic) {
+      const { value, max } = item.system.prosthetic.hp;
+      if (prostheticCondition({ value, max }).destroyed) {
+        (_a = ui.notifications) == null ? void 0 : _a.warn(game.i18n.localize("TAMS.Prosthetic.CannotRepairDestroyed"));
+        return;
+      }
+      if (value >= max) {
+        (_b = ui.notifications) == null ? void 0 : _b.info(game.i18n.localize("TAMS.Prosthetic.NothingToRepair"));
+        return;
+      }
+    }
     const skills = this.document.items.filter((i) => i.type === "skill");
     let optionsHtml = `<option value="int">${game.i18n.localize("TAMS.StatIntelligence")}</option>`;
     for (const s of skills) optionsHtml += `<option value="${s.id}">${e$1(s.name)}</option>`;
@@ -7163,14 +7297,15 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let checkValue;
     if (choice === "int") {
       checkLabel = game.i18n.localize("TAMS.StatIntelligence");
-      checkValue = ((_a = this.document.system.stats.intelligence) == null ? void 0 : _a.total) || 0;
+      checkValue = ((_c = this.document.system.stats.intelligence) == null ? void 0 : _c.total) || 0;
     } else {
       const skill = this.document.items.get(choice);
       checkLabel = (skill == null ? void 0 : skill.name) || game.i18n.localize("TAMS.Skill");
-      const statKey = ((_b = skill == null ? void 0 : skill.system) == null ? void 0 : _b.stat) || "intelligence";
-      checkValue = (((_c = this.document.system.stats[statKey]) == null ? void 0 : _c.total) || 0) + (((_d = skill == null ? void 0 : skill.system) == null ? void 0 : _d.familiarity) || 0) + (((_e = skill == null ? void 0 : skill.system) == null ? void 0 : _e.bonus) || 0);
+      const statKey = ((_d = skill == null ? void 0 : skill.system) == null ? void 0 : _d.stat) || "intelligence";
+      checkValue = (((_e = this.document.system.stats[statKey]) == null ? void 0 : _e.total) || 0) + (((_f = skill == null ? void 0 : skill.system) == null ? void 0 : _f.familiarity) || 0) + (((_g = skill == null ? void 0 : skill.system) == null ? void 0 : _g.bonus) || 0);
     }
-    const alternate = !!((_f = this.document.system.settings) == null ? void 0 : _f.alternateArmour);
+    const alternate = !!((_h = this.document.system.settings) == null ? void 0 : _h.alternateArmour);
+    if (prosthetic) return this._repairProsthetic(item, { checkLabel, checkValue, alternate });
     const limbKeys = ["head", "thorax", "stomach", "leftArm", "rightArm", "leftLeg", "rightLeg"];
     const itemUpdates = {};
     const actorUpdates = {};
@@ -7178,7 +7313,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     report += `<div class="roll-row"><small>${game.i18n.localize("TAMS.Repair.Using")}:</small><span>${checkLabel} (${checkValue})</span></div>`;
     let repaired = false;
     for (const key of limbKeys) {
-      const zone = (_g = item.system.limbs) == null ? void 0 : _g[key];
+      const zone = (_i = item.system.limbs) == null ? void 0 : _i[key];
       if (!zone || (zone.max || 0) <= 0) continue;
       const missing = Math.max(0, (zone.max || 0) - (zone.value || 0));
       if (missing <= 0) continue;
@@ -7188,22 +7323,37 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const result = computeArmorRepair({ value: zone.value, max: zone.max, rollTotal: capped, alternate });
       itemUpdates[`system.limbs.${key}.value`] = result.newValue;
       itemUpdates[`system.limbs.${key}.max`] = result.newMax;
-      if (((_h = this.document.system.limbs[key]) == null ? void 0 : _h.equippedArmorId) === item.id) {
+      if (((_j = this.document.system.limbs[key]) == null ? void 0 : _j.equippedArmorId) === item.id) {
         actorUpdates[`system.limbs.${key}.armor`] = result.newValue;
         actorUpdates[`system.limbs.${key}.armorMax`] = result.newMax;
       }
-      const label = ((_i = this.document.system.limbs[key]) == null ? void 0 : _i.label) || key;
+      const label = ((_k = this.document.system.limbs[key]) == null ? void 0 : _k.label) || key;
       report += `<div class="roll-row"><b>${label}</b><span>${game.i18n.format("TAMS.Repair.ZoneResult", { roll: capped, difficulty: result.difficulty })}</span></div>`;
       report += `<div class="roll-row-detail"><small>${result.success ? game.i18n.localize("TAMS.Repair.FullyRepaired") : game.i18n.format("TAMS.Repair.MaxLost", { lost: result.maxLost, newMax: result.newMax })}</small></div>`;
     }
     if (!repaired) {
-      (_j = ui.notifications) == null ? void 0 : _j.info(game.i18n.localize("TAMS.Repair.NothingToRepair"));
+      (_l = ui.notifications) == null ? void 0 : _l.info(game.i18n.localize("TAMS.Repair.NothingToRepair"));
       return;
     }
     report += `</div>`;
     await item.update(itemUpdates);
     if (Object.keys(actorUpdates).length > 0) await this.document.update(actorUpdates);
     await ChatMessage.create(tamsApplyRollMode({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content: report }));
+  }
+  /**
+   * Roll the armour repair check for a prosthetic. Falling short lowers its max HP.
+   * @param {Item} item The prosthetic.
+   * @param {{checkLabel: string, checkValue: number, alternate: boolean}} check
+   * @protected
+   */
+  async _repairProsthetic(item, { checkLabel, checkValue, alternate }) {
+    const { value, max } = item.system.prosthetic.hp;
+    const roll = await new Roll("1d100").evaluate();
+    const capped = Math.min(roll.total, checkValue);
+    const result = computeArmorRepair({ value, max, rollTotal: capped, alternate });
+    await item.update({ "system.prosthetic.hp.value": result.newValue, "system.prosthetic.hp.max": result.newMax });
+    const content = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Repair.Title", { name: e$1(item.publicName) })}</h3><div class="roll-row"><small>${game.i18n.localize("TAMS.Repair.Using")}:</small><span>${e$1(checkLabel)} (${checkValue})</span></div><div class="roll-row"><span>${game.i18n.format("TAMS.Repair.ZoneResult", { roll: capped, difficulty: result.difficulty })}</span></div><div class="roll-row-detail"><small>${result.success ? game.i18n.localize("TAMS.Repair.FullyRepaired") : game.i18n.format("TAMS.Prosthetic.MaxLost", { lost: result.maxLost, newMax: result.newMax })}</small></div></div>`;
+    await ChatMessage.create(tamsApplyRollMode({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content }));
   }
   /**
    * Handle changing the actor or item image.
@@ -9074,6 +9224,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       ...context.statOptions
     };
     delete context.weaponStatOptions["custom"];
+    if (this.document.type === "equipment") this._prepareProstheticContext(context);
     context.limbOptions = {
       "none": "TAMS.CalculatorOptions.None",
       "head": "TAMS.HitLocations.Head",
@@ -9471,6 +9622,32 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       this.document.system.magic,
       { isGM: game.user.isGM, isOwner: this.document.isOwner }
     );
+  }
+  /**
+   * Build the context for the Prosthetic section: limb choices and why it isn't working, if so.
+   * @param {object} context
+   * @protected
+   */
+  _prepareProstheticContext(context) {
+    var _a, _b, _c, _d;
+    context.prostheticLimbOptions = {
+      "": "TAMS.Prosthetic.ChooseLimb",
+      "head": "TAMS.HitLocations.Head",
+      "thorax": "TAMS.HitLocations.Thorax",
+      "stomach": "TAMS.HitLocations.Stomach",
+      "leftArm": "TAMS.HitLocations.LeftArm",
+      "rightArm": "TAMS.HitLocations.RightArm",
+      "leftLeg": "TAMS.HitLocations.LeftLeg",
+      "rightLeg": "TAMS.HitLocations.RightLeg"
+    };
+    const prosthetic = this.document.system.prosthetic;
+    if (!(prosthetic == null ? void 0 : prosthetic.enabled)) return;
+    const { broken, destroyed } = prostheticCondition(prosthetic.hp);
+    const fit = (_d = (_c = (_b = (_a = this.document.parent) == null ? void 0 : _a.system) == null ? void 0 : _b.prosthetics) == null ? void 0 : _c.byItem) == null ? void 0 : _d[this.document.id];
+    const key = destroyed ? "Destroyed" : broken ? "Broken" : null;
+    context.prostheticCondition = key && game.i18n.localize(`TAMS.Prosthetic.${key}`);
+    const reasons = { noLimb: "NoLimb", noHp: "NoHp", limbPresent: "LimbPresent", limbTaken: "LimbTaken" };
+    context.prostheticWarning = (fit == null ? void 0 : fit.reason) && game.i18n.localize(`TAMS.Prosthetic.Reason.${reasons[fit.reason]}`);
   }
   /**
    * Build the context for the Magic Effects section. The GM can always edit it; owners can once

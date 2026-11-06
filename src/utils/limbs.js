@@ -1,7 +1,8 @@
 /**
  * Hit-location table and missing-limb handling (pure — no Foundry globals).
  *
- * A limb with `missing: true` (an amputation, or a creature without that limb) can never be hit.
+ * A limb with `missing: true` (an amputation, or a creature without that limb) can never be hit,
+ * unless a working prosthetic is fitted to it (`limb.prosthetic`, see prosthetics.js).
  * A location roll that lands on one is rerolled; rolling straight on the remaining limbs' table
  * ranges gives the same odds as rerolling the d100 until it hits a limb that exists.
  */
@@ -25,13 +26,23 @@ export function isLimbMissing(limb) {
 }
 
 /**
- * Whether a hit-location label ("Left Arm") names a limb this actor is missing.
+ * Whether hits can land on this limb. `isLimbMissing` stays true with a prosthetic fitted, because
+ * the flesh limb is still gone: it doesn't bleed or count toward total HP.
+ * @returns {boolean}
+ */
+export function isLimbHittable(limb) {
+  if (!isLimbMissing(limb)) return true;
+  return !!limb.prosthetic && !limb.prosthetic.destroyed;
+}
+
+/**
+ * Whether a hit-location label ("Left Arm") names a limb hits can't land on.
  * @param {string} location
  * @param {Record<string, object>} [limbs] `actor.system.limbs`
  */
 export function locationIsMissing(location, limbs) {
   const key = LABEL_TO_KEY[location];
-  return !!key && isLimbMissing(limbs?.[key]);
+  return !!key && !isLimbHittable(limbs?.[key]);
 }
 
 /**
@@ -39,7 +50,7 @@ export function locationIsMissing(location, limbs) {
  * @param {Record<string, object>} [limbs]
  */
 export function presentHitTable(limbs) {
-  return HIT_TABLE.filter(r => !isLimbMissing(limbs?.[r.key]));
+  return HIT_TABLE.filter(r => isLimbHittable(limbs?.[r.key]));
 }
 
 /** @returns {number} Sum of the remaining limbs' table ranges (0 if every limb is missing). */

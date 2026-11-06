@@ -163,6 +163,7 @@
         opacity: 0.4;
         .limb-label span { text-decoration: line-through; }
     }
+    &.prosthetic-broken .prosthetic-hp { color: #f39c12; font-weight: bold; }
 }
 
 .tams .special-skill label {

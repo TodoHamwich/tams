@@ -14,6 +14,7 @@
 
 import { resolveCarryChain } from './inventory.js';
 import { professionRank } from './profession.js';
+import { isProsthetic } from './prosthetics.js';
 
 /** Item types that carry a `system.magic` block. */
 export const MAGIC_ITEM_TYPES = ["weapon", "armor", "shield", "equipment", "tool", "backpack", "questItem", "ammo"];
@@ -118,9 +119,10 @@ export function unmetRequirements(magic, ctx) {
  * @param {Iterable<object>} items Actor items.
  * @param {ReturnType<typeof buildRequirementContext>} ctx
  * @param {{get: Function}} itemsById Lookup for the carry chain.
+ * @param {ReturnType<import('./prosthetics.js').fitProsthetics>} [prosthetics] A prosthetic's effects need it fitted and unbroken.
  * @returns {Record<string, {passive: boolean, onUse: boolean, requirementsMet: boolean}>} keyed by item id
  */
-export function computeMagicState(items, ctx, itemsById) {
+export function computeMagicState(items, ctx, itemsById, prosthetics = null) {
   const state = {};
   for (const item of items ?? []) {
     if (!MAGIC_ITEM_TYPES.includes(item.type)) continue;
@@ -129,10 +131,11 @@ export function computeMagicState(items, ctx, itemsById) {
     const requirementsMet = unmetRequirements(magic, ctx).length === 0;
     const carried = resolveCarryChain(item, itemsById).carried;
     const equippedOk = !magic.requiresEquipped || item.type === "ammo" || isItemEquipped(item);
+    const prostheticOk = !isProsthetic(item) || prosthetics?.byItem?.[item.id]?.active === true;
     state[item.id] = {
       requirementsMet,
-      passive: requirementsMet && carried && equippedOk,
-      onUse: requirementsMet,
+      passive: requirementsMet && carried && equippedOk && prostheticOk,
+      onUse: requirementsMet && prostheticOk,
     };
   }
   return state;

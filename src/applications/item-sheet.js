@@ -2,6 +2,7 @@ import { BUFF_ATTACH_TARGETS, BUFF_DURATIONS } from '../utils/buffs.js';
 import { getAbilityIssues } from '../utils/ability-validation.js';
 import { PROFESSION_TYPES, PROFESSION_MAX_RANK, PROFESSION_RANK_STEP, CASTER_PICK_START, professionRank, rankRewardTarget } from '../utils/profession.js';
 import { MAGIC_ITEM_TYPES, REQUIREMENT_TYPES, curseVisible, canEditMagic } from '../utils/magic-items.js';
+import { prostheticCondition } from '../utils/prosthetics.js';
 
 const LIMB_KEYS = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
 const LIMB_I18N = {
@@ -100,6 +101,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     };
     delete context.weaponStatOptions["custom"];
 
+    if (this.document.type === "equipment") this._prepareProstheticContext(context);
     context.limbOptions = {
       "none": "TAMS.CalculatorOptions.None",
       "head": "TAMS.HitLocations.Head",
@@ -510,6 +512,33 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
   _canEditMagic() {
     return this.isEditable && canEditMagic(this.document.system.magic,
       { isGM: game.user.isGM, isOwner: this.document.isOwner });
+  }
+
+  /**
+   * Build the context for the Prosthetic section: limb choices and why it isn't working, if so.
+   * @param {object} context
+   * @protected
+   */
+  _prepareProstheticContext(context) {
+    context.prostheticLimbOptions = {
+      "": "TAMS.Prosthetic.ChooseLimb",
+      "head": "TAMS.HitLocations.Head",
+      "thorax": "TAMS.HitLocations.Thorax",
+      "stomach": "TAMS.HitLocations.Stomach",
+      "leftArm": "TAMS.HitLocations.LeftArm",
+      "rightArm": "TAMS.HitLocations.RightArm",
+      "leftLeg": "TAMS.HitLocations.LeftLeg",
+      "rightLeg": "TAMS.HitLocations.RightLeg"
+    };
+    const prosthetic = this.document.system.prosthetic;
+    if (!prosthetic?.enabled) return;
+
+    const { broken, destroyed } = prostheticCondition(prosthetic.hp);
+    const fit = this.document.parent?.system?.prosthetics?.byItem?.[this.document.id];
+    const key = destroyed ? "Destroyed" : broken ? "Broken" : null;
+    context.prostheticCondition = key && game.i18n.localize(`TAMS.Prosthetic.${key}`);
+    const reasons = { noLimb: "NoLimb", noHp: "NoHp", limbPresent: "LimbPresent", limbTaken: "LimbTaken" };
+    context.prostheticWarning = fit?.reason && game.i18n.localize(`TAMS.Prosthetic.Reason.${reasons[fit.reason]}`);
   }
 
   /**

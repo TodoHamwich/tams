@@ -1,5 +1,6 @@
 import { getHitLocation, rerollPresentLocation } from '../utils/combat.js';
-import { locationIsMissing } from '../utils/limbs.js';
+import { isLimbMissing, locationIsMissing } from '../utils/limbs.js';
+import { prostheticAfterDamage } from '../utils/prosthetics.js';
 import {
   computeRawStaminaMax, computeRawResourceMax, computeFatiguedMax,
   computeShortRestFatigueGain, computeLongRestFatigueHeal
@@ -63,7 +64,8 @@ export class TAMSActor extends Actor {
             value: this.system.limbs[key].value,
             injured: this.system.limbs[key].injured,
             criticallyInjured: this.system.limbs[key].criticallyInjured,
-            max: this.system.limbs[key].max
+            max: this.system.limbs[key].max,
+            prosthetic: !!this.system.limbs[key].prosthetic
         };
         limbDamageReceived[key] = 0;
     }
@@ -83,14 +85,27 @@ export class TAMSActor extends Actor {
     }
     hits = resolvedHits;
 
+    // Prosthetic HP as this batch of hits changes it, keyed by limb. A prosthetic destroyed by an
+    // earlier hit can't be hit again, so later hits on it reroll.
+    const prostheticHits = {};
+    const limbsAfterDestroyed = () => Object.fromEntries(limbKeys.map(k => [k, prostheticHits[k]?.destroyed
+        ? { ...this.system.limbs[k], prosthetic: { ...this.system.limbs[k].prosthetic, destroyed: true } }
+        : this.system.limbs[k]]));
+
     for (let i = 0; i < hits.length; i++) {
-        const hit = hits[i];
+        let hit = hits[i];
+        if (prostheticHits[locationMap[hit.location]]?.destroyed) {
+            const location = await rerollPresentLocation(limbsAfterDestroyed());
+            if (!location) continue;
+            hit = hits[i] = { ...hit, location, rerolledFrom: hit.location };
+        }
         const incoming = Math.floor(hit.damage || 0);
         const armourPen = hit.armourPen || 0;
         const loc = hit.location;
         const limbKey = locationMap[loc];
         if (!limbKey) continue;
         const limb = this.system.limbs[limbKey];
+        const prosthetic = limb.prosthetic && !limb.prosthetic.destroyed ? limb.prosthetic : null;
         
         const isAltArmor = this.system.settings?.alternateArmour;
         const pendingArmor = updates[`system.limbs.${limbKey}.armor`];
@@ -175,6 +190,9 @@ export class TAMSActor extends Actor {
                         } else if (match.category === "vulnerability") {
                             compEffective = compEffective + match.value;
                             resistanceLabels.push(game.i18n.format("TAMS.Combat.Vulnerable", {value: match.value, type: typeName}));
+                        } else if (match.category === "healing" && prosthetic) {
+                            // Prosthetics are repaired, not healed, so this just does no damage.
+                            compEffective = 0;
                         } else if (match.category === "healing") {
                             const healAmount = compEffective + (match.value || 0);
                             const healLabel = game.i18n.format("TAMS.Combat.HealedFrom", {value: healAmount, type: typeName});
@@ -232,13 +250,20 @@ export class TAMSActor extends Actor {
             }
         }
         
-        const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
-        let newHp = Math.floor(currentHp) - effective;
-        // Non-lethal squad/horde limbs keep tracking damage but bottom out at -max.
-        if (isSquadOrHorde && !isLethal(limb)) newHp = Math.max(newHp, -limb.max);
-        updates[`system.limbs.${limbKey}.value`] = newHp;
-        
-        limbDamageReceived[limbKey] += effective;
+        let newHp = 0;
+        let prostheticAfter = null;
+        if (prosthetic) {
+            const value = prostheticHits[limbKey]?.value ?? prosthetic.value;
+            prostheticAfter = prostheticAfterDamage({ value, max: prosthetic.max }, effective);
+            prostheticHits[limbKey] = { ...prostheticAfter, itemId: prosthetic.itemId, wasBroken: value <= 0 };
+        } else {
+            const currentHp = updates[`system.limbs.${limbKey}.value`] ?? limb.value;
+            newHp = Math.floor(currentHp) - effective;
+            // Non-lethal squad/horde limbs keep tracking damage but bottom out at -max.
+            if (isSquadOrHorde && !isLethal(limb)) newHp = Math.max(newHp, -limb.max);
+            updates[`system.limbs.${limbKey}.value`] = newHp;
+            limbDamageReceived[limbKey] += effective;
+        }
 
         let lossLabel = "";
         // Squads and hordes don't lose armour when hit: their limb armour is every member's
@@ -261,6 +286,13 @@ export class TAMSActor extends Actor {
         if (hit.ignoreArmor) report += `  ↳ ${game.i18n.localize("TAMS.Checks.ArmorBypassed")}<br>`;
         if (barrierLabel) report += `  ↳ ${barrierLabel}<br>`;
         if (resistanceLabel) report += `  ↳ ${resistanceLabel}<br>`;
+
+        if (prostheticAfter) {
+            report += `  ↳ ${game.i18n.format("TAMS.Prosthetic.DamageReport", {value: prostheticAfter.value, max: prosthetic.max})}<br>`;
+            if (prostheticAfter.destroyed) report += `<b style="color:#c0392b;">!!! ${game.i18n.format("TAMS.Prosthetic.DestroyedReport", {limb: e(limb.label)})} !!!</b><br>`;
+            else if (prostheticAfter.broken && !prostheticHits[limbKey].wasBroken) report += `<b style="color:#f39c12;">!!! ${game.i18n.format("TAMS.Prosthetic.BrokenReport", {limb: e(limb.label)})} !!!</b><br>`;
+            continue;
+        }
 
         const limbMax = originalLimbStatus[limbKey].max;
         if (newHp <= 0 && !originalLimbStatus[limbKey].injured && !updates[`system.limbs.${limbKey}.injured`]) {
@@ -324,13 +356,17 @@ export class TAMSActor extends Actor {
     }
     await this.update(finalUpdates);
 
+    const prostheticUpdates = Object.values(prostheticHits)
+        .map(p => ({ _id: p.itemId, "system.prosthetic.hp.value": p.value }));
+    if (prostheticUpdates.length > 0) await this.updateEmbeddedDocuments("Item", prostheticUpdates);
+
     // Calculate pending checks
     for (let [limbKey, damage] of Object.entries(limbDamageReceived)) {
         if (damage === 0 && !hits.some(h => locationMap[h.location] === limbKey && h.forceCrit)) continue;
         const original = originalLimbStatus[limbKey];
         const limb = this.system.limbs[limbKey];
         const currentVal = limb.value;
-        if (isSquadOrHorde) continue;
+        if (isSquadOrHorde || original.prosthetic) continue;
         
         const autoInjuredThisHit = updates[`system.limbs.${limbKey}.injured`] === true && !original.injured;
         const limbHpAfterHit = this.system.limbs[limbKey].value;
@@ -378,6 +414,7 @@ export class TAMSActor extends Actor {
             : ['head', 'thorax'];
         for (const key of dyingLimbKeys) {
             const limb = this.system.limbs[key];
+            if (isLimbMissing(limb)) continue; // A limb that's gone (or a prosthetic) can't kill.
             if (limb.value < dyingThreshold(limb) && !existingCountdown && !dyingStarted) {
                 dyingStarted = true;
                 // Constructs don't die from damage: they go inert until the limb is repaired.

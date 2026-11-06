@@ -787,6 +787,10 @@ details.limb-filter[open] summary .limb-arrow-down {
 .tams .limb-row.limb-missing .limb-label span {
   text-decoration: line-through;
 }
+.tams .limb-row.prosthetic-broken .prosthetic-hp {
+  color: #f39c12;
+  font-weight: bold;
+}
 
 .tams .special-skill label {
   font-size: 13px;

@@ -4,6 +4,7 @@ import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, hitLocationO
 import { presentHitTable } from '../utils/limbs.js';
 import { MAGIC_ITEM_TYPES, hasMagicEffects, isItemEquipped, curseVisible, bonusDamageComponents, itemAttackBonus, magicArmourPen } from '../utils/magic-items.js';
 import { computeArmorRepair } from '../utils/inventory.js';
+import { isProsthetic, prostheticCondition } from '../utils/prosthetics.js';
 import { canTransferItem } from '../utils/socket-auth.js';
 import { tamsCreateContestedCheck } from '../utils/combat.js';
 import { stackedReactionCost, reactionCount, recordReaction } from '../utils/reactions.js';
@@ -1370,7 +1371,19 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
    */
   async _onItemRepair(event, target) {
     const item = this.document.items.get(this._resolveItemId(target));
-    if (!item || item.type !== "armor") return;
+    const prosthetic = isProsthetic(item);
+    if (!item || (item.type !== "armor" && !prosthetic)) return;
+    if (prosthetic) {
+      const { value, max } = item.system.prosthetic.hp;
+      if (prostheticCondition({ value, max }).destroyed) {
+        ui.notifications?.warn(game.i18n.localize("TAMS.Prosthetic.CannotRepairDestroyed"));
+        return;
+      }
+      if (value >= max) {
+        ui.notifications?.info(game.i18n.localize("TAMS.Prosthetic.NothingToRepair"));
+        return;
+      }
+    }
 
     const skills = this.document.items.filter(i => i.type === "skill");
     let optionsHtml = `<option value="int">${game.i18n.localize("TAMS.StatIntelligence")}</option>`;
@@ -1400,6 +1413,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     }
 
     const alternate = !!this.document.system.settings?.alternateArmour;
+    if (prosthetic) return this._repairProsthetic(item, { checkLabel, checkValue, alternate });
     const limbKeys = ['head', 'thorax', 'stomach', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
 
     const itemUpdates = {};
@@ -1444,6 +1458,28 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     await item.update(itemUpdates);
     if (Object.keys(actorUpdates).length > 0) await this.document.update(actorUpdates);
     await ChatMessage.create(tamsApplyRollMode({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content: report }));
+  }
+
+  /**
+   * Roll the armour repair check for a prosthetic. Falling short lowers its max HP.
+   * @param {Item} item The prosthetic.
+   * @param {{checkLabel: string, checkValue: number, alternate: boolean}} check
+   * @protected
+   */
+  async _repairProsthetic(item, { checkLabel, checkValue, alternate }) {
+    const { value, max } = item.system.prosthetic.hp;
+    const roll = await new Roll("1d100").evaluate();
+    const capped = Math.min(roll.total, checkValue);
+    const result = computeArmorRepair({ value, max, rollTotal: capped, alternate });
+    await item.update({ "system.prosthetic.hp.value": result.newValue, "system.prosthetic.hp.max": result.newMax });
+
+    const content = `<div class="tams-roll"><h3 class="roll-label">${game.i18n.format("TAMS.Repair.Title", { name: e(item.publicName) })}</h3>`
+      + `<div class="roll-row"><small>${game.i18n.localize("TAMS.Repair.Using")}:</small><span>${e(checkLabel)} (${checkValue})</span></div>`
+      + `<div class="roll-row"><span>${game.i18n.format("TAMS.Repair.ZoneResult", { roll: capped, difficulty: result.difficulty })}</span></div>`
+      + `<div class="roll-row-detail"><small>${result.success
+        ? game.i18n.localize("TAMS.Repair.FullyRepaired")
+        : game.i18n.format("TAMS.Prosthetic.MaxLost", { lost: result.maxLost, newMax: result.newMax })}</small></div></div>`;
+    await ChatMessage.create(tamsApplyRollMode({ speaker: ChatMessage.getSpeaker({ actor: this.document }), content }));
   }
 
   /**

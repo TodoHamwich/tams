@@ -165,15 +165,22 @@
                         <div class="header-status" title="{{localize 'TAMS.StatusLabel'}}"><i class="fas fa-notes-medical"></i></div>
                     </div>
                     {{#each system.limbs as |limb id|}}
-                    <div class="limb-row {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}} {{#if limb.missing}}limb-missing{{/if}}" data-limb="{{id}}" {{#if limb.missing}}title="{{localize 'TAMS.LimbMissingTitle'}}"{{/if}}>
+                    <div class="limb-row {{#if limb.injured}}injured-limb{{/if}} {{#if limb.criticallyInjured}}crit-injured{{/if}} {{#if limb.prosthetic}}limb-prosthetic {{#if limb.prosthetic.broken}}prosthetic-broken{{/if}} {{#if limb.prosthetic.destroyed}}limb-missing{{/if}}{{else if limb.missing}}limb-missing{{/if}}" data-limb="{{id}}" {{#if limb.prosthetic}}title="{{limb.prosthetic.name}}"{{else if limb.missing}}title="{{localize 'TAMS.LimbMissingTitle'}}"{{/if}}>
                         <div class="limb-label" title="{{#if limb.criticallyInjured}}CRITICALLY INJURED{{/if}}{{#if (and limb.injured (not limb.criticallyInjured))}}INJURED{{/if}}">
                             {{#if limb.criticallyInjured}}<i class="fas fa-skull crit-icon"></i>{{else if limb.injured}}<i class="fas fa-exclamation-triangle injured-icon"></i>{{/if}}
                             <span>{{limb.label}}</span>
                         </div>
                         <div class="limb-hp">
+                            {{#if limb.prosthetic}}
+                            <span class="prosthetic-hp {{#if (lt limb.prosthetic.value 0)}}negative-hp{{/if}}" title="{{localize 'TAMS.Prosthetic.HP'}}"><i class="fas fa-gears"></i> {{limb.prosthetic.value}}</span>
+                            <span class="sep">/</span>
+                            <span class="max">{{limb.prosthetic.max}}</span>
+                            {{#unless limb.prosthetic.destroyed}}<a class="item-control" data-action="itemRepair" data-item-id="{{limb.prosthetic.itemId}}" title="{{localize 'TAMS.Repair.Action'}}"><i class="fas fa-hammer"></i></a>{{/unless}}
+                            {{else}}
                             <input type="number" name="system.limbs.{{id}}.value" value="{{limb.value}}" class="small-input {{#if (lt limb.value 0)}}negative-hp{{/if}}" title="{{localize 'TAMS.CurrentHP'}}"/>
                             <span class="sep">/</span>
                             <span class="max">{{limb.max}}</span>
+                            {{/if}}
                         </div>
                         <div class="limb-armor-group">
                             <div class="armor-selection">
@@ -191,8 +198,10 @@
                             </div>
                         </div>
                         <div class="limb-status-checks">
+                            {{#unless limb.prosthetic}}
                             <input type="checkbox" name="system.limbs.{{id}}.injured" {{checked limb.injured}} title="{{localize 'TAMS.InjuredQ'}}"/>
                             <input type="checkbox" name="system.limbs.{{id}}.criticallyInjured" {{checked limb.criticallyInjured}} title="{{localize 'TAMS.CriticallyInjuredQ'}}"/>
+                            {{/unless}}
                         </div>
                     </div>
                     {{/each}}

@@ -259,6 +259,14 @@ export class TAMSEquipmentData extends foundry.abstract.TypeDataModel {
       ...inventoryFields(fields),
       ...usesFields(fields),
       equipped: new fields.BooleanField({initial: false}),
+      prosthetic: new fields.SchemaField({
+        enabled: new fields.BooleanField({ initial: false }),
+        limb: new fields.StringField({ initial: "" }),
+        hp: new fields.SchemaField({
+          value: new fields.NumberField({ initial: 0, integer: true }),
+          max: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+        }),
+      }),
       ...magicFields(fields),
       ...sharedFields(fields),
     };

@@ -240,6 +240,27 @@
       "DropToEquip": "Drop here to equip",
       "NoneSelected": "No item selected"
     },
+    "Prosthetic": {
+      "Toggle": "Prosthetic",
+      "Hint": "Equip this to fit it to a limb marked Missing on the sheet. Its HP doesn't count toward total HP and it can't cause bleeding, injury checks or death. It breaks at 0 HP, which stops its effects until repaired, and is destroyed at negative its max HP.",
+      "Limb": "Replaces",
+      "ChooseLimb": "Choose a limb",
+      "HP": "Prosthetic HP",
+      "Broken": "Broken: its effects don't apply until it is repaired.",
+      "Destroyed": "Destroyed: it can't be hit or repaired.",
+      "DamageReport": "Prosthetic HP: {value} / {max}",
+      "BrokenReport": "{limb} prosthetic is broken",
+      "DestroyedReport": "{limb} prosthetic is destroyed",
+      "CannotRepairDestroyed": "This prosthetic is destroyed and can't be repaired.",
+      "NothingToRepair": "This prosthetic has no damage to repair.",
+      "MaxLost": "Lost {lost} max HP (new max {newMax}).",
+      "Reason": {
+        "NoLimb": "Not fitted: choose which limb it replaces.",
+        "NoHp": "Not fitted: give it a max HP above 0.",
+        "LimbPresent": "Not fitted: mark that limb as Missing on the character sheet first.",
+        "LimbTaken": "Not fitted: another prosthetic is already on that limb."
+      }
+    },
     "Repair": {
       "Title": "Repair: {name}",
       "Action": "Repair",
@@ -537,7 +558,7 @@
     "LethalTitle": "Damage to this limb can kill",
     "LethalThreshold": "Lethal threshold (× max)",
     "MissingLimbs": "Missing Limbs",
-    "MissingLimbsHint": "Limbs this character doesn't have (amputated, or a creature without one). Hits that land on a missing limb are rerolled, called shots on one become random hits, and its HP doesn't count toward total HP.",
+    "MissingLimbsHint": "Limbs this character doesn't have (amputated, or a creature without one). Hits that land on a missing limb are rerolled unless a prosthetic is fitted, called shots on one become random hits, and its HP doesn't count toward total HP.",
     "MissingLimbToggle": "This limb is missing",
     "LimbMissingTitle": "Missing: can't be hit and doesn't count toward total HP",
     "ResourceModifiers": "Resource Modifiers",
