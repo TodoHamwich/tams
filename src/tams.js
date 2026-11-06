@@ -12,6 +12,7 @@ import { TAMSItemMaker } from './applications/item-maker.js';
 import { TAMSPartyHonorApp } from './applications/party-honor-dialog.js';
 import { tamsHandleSocket } from './utils/socket.js';
 import { claimOnce } from './utils/gm-claim.js';
+import { tamsBuffsOnClock, tamsBuffsOnCombatEnd, tamsBuffsOnTurn } from './utils/buff-lifecycle.js';
 import { tamsRenderChatMessage, tamsCallGroupCheck, tamsHandleGroupCheckPending, tamsHandleContestedCheckPending, tamsOnTurnStart, tamsOnCombatEnd } from './utils/combat.js';
 
 Hooks.once("init", async function() {
@@ -21,6 +22,7 @@ Hooks.once("init", async function() {
   await loadTemplates([
     "systems/tams/templates/inventory-grid.html",
     "systems/tams/templates/inventory-container.html",
+    "systems/tams/templates/buff-list.html",
   ]);
 
   // Register Socket
@@ -350,8 +352,13 @@ Hooks.once("init", async function() {
   });
 });
 
+// --- Temporary buff countdowns ---
 Hooks.on("updateCombat", (combat, changed) => {
+  if ("turn" in changed || "round" in changed) tamsBuffsOnTurn(combat);
 });
+Hooks.on("deleteCombat", (combat) => tamsBuffsOnCombatEnd(combat));
+Hooks.on("updateWorldTime", () => tamsBuffsOnClock());
+Hooks.once("ready", () => tamsBuffsOnClock());
 
 // --- Turn-start automation ---
 Hooks.on("updateCombat", async (combat, changed) => {

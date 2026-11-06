@@ -1,3 +1,4 @@
+import { BUFF_ATTACH_TARGETS, BUFF_DURATIONS } from '../utils/buffs.js';
 import { getAbilityIssues } from '../utils/ability-validation.js';
 import { PROFESSION_TYPES, PROFESSION_MAX_RANK, PROFESSION_RANK_STEP, CASTER_PICK_START, professionRank, rankRewardTarget } from '../utils/profession.js';
 import { MAGIC_ITEM_TYPES, REQUIREMENT_TYPES, curseVisible, canEditMagic } from '../utils/magic-items.js';
@@ -270,6 +271,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     }
 
     if (MAGIC_ITEM_TYPES.includes(this.document.type)) this._prepareMagicContext(context);
+    if (this.document.type === "ability") this._prepareBuffContext(context);
 
     context.rechargeTypeOptions = {
       "combat": "TAMS.Ability.RechargeOnCombat",
@@ -572,6 +574,60 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
   }
 
   /**
+   * Which effect block a control edits: an ability's `buff`, or an item's `magic`.
+   * @param {HTMLElement} target Carries data-root for buff controls.
+   * @returns {"buff"|"magic"}
+   * @protected
+   */
+  _effectRoot(target) {
+    return target.dataset.root === "buff" ? "buff" : "magic";
+  }
+
+  /**
+   * Whether the user can edit an effect block.
+   * @param {"buff"|"magic"} root
+   * @returns {boolean}
+   * @protected
+   */
+  _canEditEffects(root) {
+    return root === "buff" ? this.isEditable : this._canEditMagic();
+  }
+
+  /**
+   * Build the context for an ability's Temporary Buff section.
+   * @param {object} context
+   * @protected
+   */
+  _prepareBuffContext(context) {
+    const buff = this.document.system.buff ?? {};
+    const indexed = (list) => (list ?? []).map((entry, index) => ({ ...entry, index }));
+    const { allProfessionRolls, ...modifierTargets } = context.modifierTargetOptions;
+    const onItem = buff.attachTo !== "character";
+
+    context.buffAppliesToItem = onItem;
+    context.buffDisabled = this.isEditable ? "" : "disabled";
+    context.buffEditable = this.isEditable;
+    context.buffModifierTargetOptions = onItem ? { ...modifierTargets, itemAttacks: "TAMS.Magic.ItemAttacks" } : modifierTargets;
+    context.buffAttachOptions = Object.fromEntries(BUFF_ATTACH_TARGETS.map(k => [k, `TAMS.Buff.AttachTo.${k}`]));
+    context.buffDurationOptions = Object.fromEntries(Object.keys(BUFF_DURATIONS).map(k => [k, `TAMS.Buff.Duration.${k}`]));
+    context.buffModifiers = indexed(buff.modifiers);
+    context.buffBonusDamage = indexed(buff.bonusDamage);
+    context.buffStatuses = (buff.onHitStatusIds ?? []).map((id, index) => ({ id, index }));
+    context.buffResistances = indexed(buff.resistances).map(entry => {
+      const active = new Set(entry.limbs ?? []);
+      return {
+        ...entry,
+        limbButtons: LIMB_KEYS.map(key => ({
+          key, active: active.has(key), i18nKey: LIMB_I18N[key], abbrevKey: LIMB_ABBREV[key]
+        }))
+      };
+    });
+    context.buffStatusIdOptions = (CONFIG.statusEffects ?? []).filter(se => se.tams)
+      .map(se => ({ id: se.id, label: game.i18n.localize(se.name ?? se.label ?? se.id) }));
+    context.buffSectionOpen = !!buff.enabled;
+  }
+
+  /**
    * Add a blank entry to one of the magic-effect lists.
    * @param {Event} event
    * @param {HTMLElement} target Carries data-list.
@@ -579,10 +635,11 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
    */
   async _onMagicAdd(event, target) {
     const list = target.dataset.list;
-    if (!MAGIC_LIST_DEFAULTS[list] || !this._canEditMagic()) return;
-    const entries = foundry.utils.duplicate(this.document.system.magic?.[list] ?? []);
+    const root = this._effectRoot(target);
+    if (!MAGIC_LIST_DEFAULTS[list] || !this._canEditEffects(root)) return;
+    const entries = foundry.utils.duplicate(this.document.system[root]?.[list] ?? []);
     entries.push(MAGIC_LIST_DEFAULTS[list]());
-    await this.document.update({ [`system.magic.${list}`]: entries });
+    await this.document.update({ [`system.${root}.${list}`]: entries });
   }
 
   /**
@@ -594,11 +651,12 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
   async _onMagicDelete(event, target) {
     const list = target.dataset.list;
     const index = parseInt(target.dataset.index ?? target.closest("[data-index]")?.dataset.index);
-    if (!this._canEditMagic() || Number.isNaN(index)) return;
-    const entries = foundry.utils.duplicate(this.document.system.magic?.[list] ?? []);
+    const root = this._effectRoot(target);
+    if (!this._canEditEffects(root) || Number.isNaN(index)) return;
+    const entries = foundry.utils.duplicate(this.document.system[root]?.[list] ?? []);
     if (index < 0 || index >= entries.length) return;
     entries.splice(index, 1);
-    await this.document.update({ [`system.magic.${list}`]: entries });
+    await this.document.update({ [`system.${root}.${list}`]: entries });
   }
 
   /**
@@ -608,16 +666,17 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
    * @protected
    */
   async _onMagicLimbToggle(event, target) {
-    if (!this._canEditMagic()) return;
+    const root = this._effectRoot(target);
+    if (!this._canEditEffects(root)) return;
     const index = parseInt(target.closest("[data-index]").dataset.index);
     const limbKey = target.dataset.limbKey;
-    const entries = foundry.utils.duplicate(this.document.system.magic?.resistances ?? []);
+    const entries = foundry.utils.duplicate(this.document.system[root]?.resistances ?? []);
     const entry = entries[index];
     if (!entry) return;
     const limbs = new Set(entry.limbs ?? []);
     if (limbs.has(limbKey)) limbs.delete(limbKey); else limbs.add(limbKey);
     entry.limbs = [...limbs];
-    await this.document.update({ "system.magic.resistances": entries });
+    await this.document.update({ [`system.${root}.resistances`]: entries });
   }
 
   /**
@@ -628,14 +687,15 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
    * @protected
    */
   async _onUpdateMagicEntry(event, target) {
-    if (!this._canEditMagic()) return;
+    const root = this._effectRoot(target);
+    if (!this._canEditEffects(root)) return;
     // Curse flags are a GM control even when the owner can edit the rest.
     if (target.dataset.field === "curse" && !game.user.isGM) return;
     const list = target.dataset.list;
     const index = parseInt(target.dataset.index);
     const field = target.dataset.field;
     if (!MAGIC_LIST_DEFAULTS[list] || Number.isNaN(index)) return;
-    const entries = foundry.utils.duplicate(this.document.system.magic?.[list] ?? []);
+    const entries = foundry.utils.duplicate(this.document.system[root]?.[list] ?? []);
     if (index < 0 || index >= entries.length) return;
     const value = target.type === "checkbox" ? target.checked
       : target.type === "number" ? (parseFloat(target.value) || 0)
@@ -647,7 +707,7 @@ export class TAMSItemSheet extends foundry.applications.api.HandlebarsApplicatio
     } else {
       entries[index] = value;
     }
-    await this.document.update({ [`system.magic.${list}`]: entries });
+    await this.document.update({ [`system.${root}.${list}`]: entries });
   }
 
   /**

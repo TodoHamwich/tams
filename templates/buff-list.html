@@ -1,0 +1,17 @@
+{{#if activeBuffs.length}}
+<div class="tams-buff-list">
+    <h3 class="small-header">{{localize 'TAMS.Buff.ListTitle'}}</h3>
+    {{#each activeBuffs as |buff|}}
+    <div class="tams-buff-row {{#if buff.isCrash}}is-penalty{{/if}} {{#if buff.inactive}}is-inactive{{/if}}">
+        <div class="tams-buff-info">
+            <b>{{buff.name}}</b>{{#if buff.isCrash}} <small>({{localize 'TAMS.Buff.Penalty'}})</small>{{/if}}
+            {{#if buff.itemName}}<small>{{localize 'TAMS.Buff.OnItem'}} {{buff.itemName}}</small>{{/if}}
+            <small class="tams-buff-time">{{buff.remaining}}</small>
+            <div class="tams-buff-effects"><small>{{buff.effects}}</small></div>
+            {{#if buff.casterName}}<div><small>{{localize 'TAMS.Buff.From'}} {{buff.casterName}}</small></div>{{/if}}
+        </div>
+        {{#if buff.canRemove}}<a class="item-control" data-action="removeBuff" data-buff-id="{{buff.id}}" data-item-id="{{buff.itemId}}" title="{{localize 'TAMS.Buff.Remove'}}"><i class="fas fa-times"></i></a>{{/if}}
+    </div>
+    {{/each}}
+</div>
+{{/if}}

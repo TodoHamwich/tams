@@ -115,26 +115,6 @@ function computeArmorRepair({ value, max, rollTotal, alternate = false }) {
     success: shortfall === 0
   };
 }
-function computeRawStaminaMax(enduranceTotal, mult = 1, traitStaminaExtra = 0) {
-  const base = Math.max(1, enduranceTotal);
-  return Math.floor(base * (mult || 1)) + (traitStaminaExtra || 0);
-}
-function computeRawResourceMax(statValue, mult = 1, bonus = 0) {
-  return Math.floor((statValue || 0) * (mult || 1)) + (bonus || 0);
-}
-function computeFatiguedMax(rawMax, fatigue = 0) {
-  return Math.max(0, Math.floor(rawMax) - Math.max(0, fatigue || 0));
-}
-function computeShortRestFatigueGain(spentSinceRest = 0) {
-  if (!spentSinceRest || spentSinceRest <= 0) return 0;
-  return Math.max(1, Math.floor(spentSinceRest / 10));
-}
-function computeLongRestTickHeal(governingStatValue) {
-  return Math.floor((governingStatValue || 0) / 10);
-}
-function computeLongRestFatigueHeal(governingStatValue) {
-  return computeLongRestTickHeal(governingStatValue) * 2;
-}
 const PROFESSION_TYPES = ["basic", "full", "threeQuarter", "half", "quarter"];
 const PROFESSION_RANK_STEP = 5;
 const PROFESSION_MAX_RANK = 10;
@@ -159,10 +139,10 @@ function distributeProfessionRewards(professions = []) {
     let owner = null, ownerTime = Infinity;
     for (const p of professions) {
       if ((p.rank || 0) < r) continue;
-      const t = Number((_a = p.reachedAt) == null ? void 0 : _a[r - 1]) || 0;
-      if (owner === null || t < ownerTime) {
+      const t2 = Number((_a = p.reachedAt) == null ? void 0 : _a[r - 1]) || 0;
+      if (owner === null || t2 < ownerTime) {
         owner = p;
-        ownerTime = t;
+        ownerTime = t2;
       }
     }
     result.owners[r] = owner.id;
@@ -269,6 +249,243 @@ function magicArmourPen(magic) {
 }
 function bonusDamageComponents(magic) {
   return ((magic == null ? void 0 : magic.bonusDamage) ?? []).map((c) => ({ damageType: c.damageType || "", damage: Math.floor(Number(c.amount) || 0) })).filter((c) => c.damage > 0);
+}
+const BUFF_ATTACH_TARGETS = ["character", "weapon", "item"];
+const SECONDS_PER_ROUND_OUT_OF_COMBAT = 600;
+const BUFF_DURATIONS = {
+  "1round": { rounds: 1 },
+  "2rounds": { rounds: 2 },
+  "3rounds": { rounds: 3 },
+  "utility0": { seconds: 1800 },
+  "utility1": { seconds: 3600 },
+  "utility2": { seconds: 10800 },
+  "utility3": { seconds: 21600 },
+  "utility4": { seconds: 28800 }
+};
+const STAT_TARGET = /^stats\.(\w+)/;
+function hasBuffEffects(buff) {
+  if (!buff) return false;
+  const passive = (buff.modifiers ?? []).some((m) => m.value) || (buff.resistances ?? []).some((r) => r.damageType);
+  if (passive) return true;
+  if (buff.attachTo === "character") return false;
+  return bonusDamageComponents(buff).length > 0 || magicArmourPen(buff) > 0 || (buff.onHitStatusIds ?? []).some(Boolean);
+}
+function buffSnapshot(abilityName, buff, caster) {
+  if (!(buff == null ? void 0 : buff.enabled) || !hasBuffEffects(buff) || !BUFF_DURATIONS[buff.duration]) return null;
+  const onCharacter = buff.attachTo === "character";
+  return {
+    name: abilityName,
+    key: String(abilityName ?? "").trim().toLowerCase(),
+    attachTo: BUFF_ATTACH_TARGETS.includes(buff.attachTo) ? buff.attachTo : "character",
+    duration: buff.duration,
+    stackable: !!buff.stackable,
+    casterName: (caster == null ? void 0 : caster.name) ?? "",
+    casterUuid: (caster == null ? void 0 : caster.uuid) ?? "",
+    modifiers: (buff.modifiers ?? []).filter((m) => m.value && !(onCharacter && m.target === ITEM_ATTACK_TARGET)).map((m) => ({ target: m.target, value: m.value })),
+    resistances: (buff.resistances ?? []).filter((r) => r.damageType).map((r) => ({ damageType: r.damageType, category: r.category, value: r.value, limbs: [...r.limbs ?? []] })),
+    bonusDamage: onCharacter ? [] : bonusDamageComponents(buff).map((c) => ({ damageType: c.damageType, amount: c.damage })),
+    onHitStatusIds: onCharacter ? [] : (buff.onHitStatusIds ?? []).filter(Boolean),
+    armourPenetration: onCharacter ? 0 : magicArmourPen(buff)
+  };
+}
+function startCountdown({ rounds = null, seconds = null }, { combat = null, now = 0 }) {
+  const countdown = { roundsLeft: null, expiresAt: null, combatId: "", appliedRound: null, lastTickRound: null };
+  if (rounds !== null && combat) {
+    return { ...countdown, roundsLeft: rounds, combatId: combat.id, appliedRound: combat.round };
+  }
+  const clockSeconds = rounds !== null ? rounds * SECONDS_PER_ROUND_OUT_OF_COMBAT : seconds;
+  return { ...countdown, expiresAt: now + clockSeconds };
+}
+function createBuffEntry(snapshot, { id, combat = null, now = 0 }) {
+  const { rounds = null, seconds = null } = BUFF_DURATIONS[snapshot.duration] ?? {};
+  const { attachTo, duration, ...rest } = snapshot;
+  return {
+    ...rest,
+    id,
+    isCrash: false,
+    baseRounds: rounds,
+    baseSeconds: seconds,
+    ...startCountdown({ rounds, seconds }, { combat, now })
+  };
+}
+function statChanges(entry, sign) {
+  return (entry.modifiers ?? []).filter((m) => m.value * sign > 0).map((m) => {
+    var _a, _b;
+    return (_b = (_a = m.target) == null ? void 0 : _a.match(STAT_TARGET)) == null ? void 0 : _b[1];
+  }).filter(Boolean);
+}
+function planBuffApplication(snapshot, onTarget, onActor) {
+  const same = snapshot.stackable ? null : onTarget.find((b) => !b.isCrash && b.key === snapshot.key);
+  const blocked = /* @__PURE__ */ new Set();
+  for (const entry of onActor) {
+    if (same && entry.id === same.id) continue;
+    for (const stat of statChanges(entry, 1)) blocked.add(stat);
+    if (entry.isCrash) for (const stat of statChanges(entry, -1)) blocked.add(stat);
+  }
+  const stats = [...new Set(statChanges(snapshot, 1))].filter((stat) => blocked.has(stat));
+  if (stats.length) return { action: "refuse", stats };
+  return same ? { action: "refresh", replaceId: same.id } : { action: "add" };
+}
+function applyBuffPlan(list, entry, plan) {
+  if (plan.action === "refresh") return list.map((b) => b.id === plan.replaceId ? { ...entry, id: b.id } : b);
+  return [...list, entry];
+}
+function stepRounds(entry, { combatId, round, isCasterTurn, casterCanAct }) {
+  if (entry.roundsLeft === null || entry.roundsLeft === void 0 || entry.combatId !== combatId) return entry;
+  const last = entry.lastTickRound;
+  const due = casterCanAct ? isCasterTurn && last !== round : round > Math.max(last ?? -Infinity, entry.appliedRound ?? -Infinity);
+  if (!due) return entry;
+  const roundsLeft = entry.roundsLeft - 1;
+  return roundsLeft <= 0 ? null : { ...entry, roundsLeft, lastTickRound: round };
+}
+function stepClock(entry, now) {
+  return entry.expiresAt !== null && entry.expiresAt !== void 0 && entry.expiresAt <= now ? null : entry;
+}
+function carryToClock(entry, now) {
+  if (entry.roundsLeft === null || entry.roundsLeft === void 0) return entry;
+  return {
+    ...entry,
+    roundsLeft: null,
+    combatId: "",
+    appliedRound: null,
+    lastTickRound: null,
+    expiresAt: now + entry.roundsLeft * SECONDS_PER_ROUND_OUT_OF_COMBAT
+  };
+}
+function crashFor(entry, { id, combat = null, now = 0 }) {
+  if (entry.isCrash) return null;
+  const modifiers = (entry.modifiers ?? []).filter((m) => m.value > 0 && STAT_TARGET.test(m.target ?? "")).map((m) => ({ target: m.target, value: -Math.floor(m.value / 2) })).filter((m) => m.value < 0);
+  if (!modifiers.length) return null;
+  const rounds = entry.baseRounds === null || entry.baseRounds === void 0 ? null : entry.baseRounds * 2;
+  const seconds = entry.baseSeconds === null || entry.baseSeconds === void 0 ? null : entry.baseSeconds * 2;
+  return {
+    id,
+    key: `crash:${entry.key}`,
+    name: entry.name,
+    casterName: entry.casterName,
+    casterUuid: entry.casterUuid,
+    isCrash: true,
+    stackable: false,
+    baseRounds: rounds,
+    baseSeconds: seconds,
+    modifiers,
+    resistances: [],
+    bonusDamage: [],
+    onHitStatusIds: [],
+    armourPenetration: 0,
+    ...startCountdown({ rounds, seconds }, { combat, now })
+  };
+}
+function advanceBuffs(list, step) {
+  const kept = [], ended = [];
+  let changed = false;
+  for (const entry of list ?? []) {
+    const next = step(entry);
+    if (next === null) {
+      ended.push(entry);
+      changed = true;
+      continue;
+    }
+    if (next !== entry) changed = true;
+    kept.push(next);
+  }
+  return { kept, ended, changed };
+}
+function activeBuffEntries(actorBuffs, items, itemsById) {
+  var _a, _b;
+  const active = [...actorBuffs ?? []];
+  for (const item of items ?? []) {
+    if (!((_b = (_a = item.system) == null ? void 0 : _a.buffs) == null ? void 0 : _b.length)) continue;
+    if (!resolveCarryChain(item, itemsById).carried) continue;
+    if (item.type === "ammo" || isItemEquipped(item)) active.push(...item.system.buffs);
+  }
+  return active;
+}
+function itemBuffBonusDamage(system) {
+  return ((system == null ? void 0 : system.buffs) ?? []).flatMap((b) => bonusDamageComponents(b));
+}
+function itemBuffArmourPen(system) {
+  return ((system == null ? void 0 : system.buffs) ?? []).reduce((sum, b) => sum + magicArmourPen(b), 0);
+}
+function itemBuffOnHitStatuses(system) {
+  return ((system == null ? void 0 : system.buffs) ?? []).flatMap((b) => b.onHitStatusIds ?? []).filter(Boolean);
+}
+function itemBuffAttackBonus(system) {
+  return ((system == null ? void 0 : system.buffs) ?? []).reduce((sum, b) => sum + itemAttackBonus(b), 0);
+}
+function formatBuffTime(seconds) {
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  if (!h) return `${m}m`;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+function effectFields(fields) {
+  return {
+    modifiers: new fields.ArrayField(new fields.SchemaField({
+      target: new fields.StringField({ initial: "stats.strength.value" }),
+      value: new fields.NumberField({ initial: 0 })
+    }), { initial: [] }),
+    resistances: new fields.ArrayField(new fields.SchemaField({
+      damageType: new fields.StringField({ initial: "" }),
+      category: new fields.StringField({ initial: "resistance" }),
+      value: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
+      limbs: new fields.ArrayField(new fields.StringField({ initial: "" }), { initial: [] })
+    }), { initial: [] }),
+    bonusDamage: new fields.ArrayField(new fields.SchemaField({
+      damageType: new fields.StringField({ initial: "" }),
+      amount: new fields.NumberField({ initial: 0, nullable: true })
+    }), { initial: [] }),
+    onHitStatusIds: new fields.ArrayField(new fields.StringField({ initial: "" }), { initial: [] }),
+    armourPenetration: new fields.NumberField({ initial: 0, integer: true, min: 0, nullable: true })
+  };
+}
+function abilityBuffField(fields) {
+  return new fields.SchemaField({
+    enabled: new fields.BooleanField({ initial: false }),
+    attachTo: new fields.StringField({ initial: "character" }),
+    duration: new fields.StringField({ initial: "1round" }),
+    stackable: new fields.BooleanField({ initial: false }),
+    ...effectFields(fields)
+  });
+}
+function activeBuffsField(fields) {
+  return new fields.ArrayField(new fields.SchemaField({
+    id: new fields.StringField({ initial: "" }),
+    key: new fields.StringField({ initial: "" }),
+    name: new fields.StringField({ initial: "" }),
+    casterName: new fields.StringField({ initial: "" }),
+    casterUuid: new fields.StringField({ initial: "" }),
+    isCrash: new fields.BooleanField({ initial: false }),
+    stackable: new fields.BooleanField({ initial: false }),
+    baseRounds: new fields.NumberField({ initial: null, nullable: true, integer: true }),
+    baseSeconds: new fields.NumberField({ initial: null, nullable: true, integer: true }),
+    roundsLeft: new fields.NumberField({ initial: null, nullable: true, integer: true }),
+    expiresAt: new fields.NumberField({ initial: null, nullable: true }),
+    combatId: new fields.StringField({ initial: "" }),
+    appliedRound: new fields.NumberField({ initial: null, nullable: true, integer: true }),
+    lastTickRound: new fields.NumberField({ initial: null, nullable: true, integer: true }),
+    ...effectFields(fields)
+  }), { initial: [] });
+}
+function computeRawStaminaMax(enduranceTotal, mult = 1, traitStaminaExtra = 0) {
+  const base = Math.max(1, enduranceTotal);
+  return Math.floor(base * (mult || 1)) + (traitStaminaExtra || 0);
+}
+function computeRawResourceMax(statValue, mult = 1, bonus = 0) {
+  return Math.floor((statValue || 0) * (mult || 1)) + (bonus || 0);
+}
+function computeFatiguedMax(rawMax, fatigue = 0) {
+  return Math.max(0, Math.floor(rawMax) - Math.max(0, fatigue || 0));
+}
+function computeShortRestFatigueGain(spentSinceRest = 0) {
+  if (!spentSinceRest || spentSinceRest <= 0) return 0;
+  return Math.max(1, Math.floor(spentSinceRest / 10));
+}
+function computeLongRestTickHeal(governingStatValue) {
+  return Math.floor((governingStatValue || 0) / 10);
+}
+function computeLongRestFatigueHeal(governingStatValue) {
+  return computeLongRestTickHeal(governingStatValue) * 2;
 }
 const HIT_TABLE = [
   { key: "rightLeg", label: "Right Leg", weight: 10 },
@@ -392,6 +609,7 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       // in src/utils/combat.js); a resurrection ability sets it back to
       // "living" manually.
       lifeState: new fields.StringField({ initial: "living" }),
+      buffs: activeBuffsField(fields),
       tempDR: new fields.NumberField({ initial: 0, integer: true, min: 0 }),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({ initial: 10, min: 0 }),
@@ -530,18 +748,18 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
           this.traitProfessionBonuses[p] = (this.traitProfessionBonuses[p] || 0) + mod.value;
         }
       }
-      this.modifierSources.push({ itemId: sourceItem.id, target: mod.target, value: mod.value });
+      this.modifierSources.push({ itemId: sourceItem.id, label: sourceItem.label, target: mod.target, value: mod.value });
     };
     const traits = this.parent.items.filter((i) => i.type === "trait" || i.type === "race");
     for (const trait of traits) {
       for (const mod of trait.system.modifiers) applyModifier(mod, trait);
     }
-    const professions = traits.filter((t) => t.type === "trait" && t.system.isProfession).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)).map((t) => ({
-      id: t.id,
-      type: t.system.professionType || "basic",
-      rank: professionRank(t.system.modifiers),
-      reachedAt: t.system.rankReachedAt,
-      picks: t.system.professionPicks
+    const professions = traits.filter((t2) => t2.type === "trait" && t2.system.isProfession).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)).map((t2) => ({
+      id: t2.id,
+      type: t2.system.professionType || "basic",
+      rank: professionRank(t2.system.modifiers),
+      reachedAt: t2.system.rankReachedAt,
+      picks: t2.system.professionPicks
     }));
     const rewards = distributeProfessionRewards(professions);
     this.traitStaminaMultBonus = rewards.staminaMult;
@@ -562,6 +780,10 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     });
     for (const item of activeMagicItems) {
       for (const mod of item.system.magic.modifiers) applyModifier(mod, item, {});
+    }
+    const activeBuffs = activeBuffEntries(this.buffs, this.parent.items, this.parent.items);
+    for (const buff of activeBuffs) {
+      for (const mod of buff.modifiers) applyModifier(mod, { id: `buff:${buff.id}`, label: buff.name }, {});
     }
     const baseSize = this.settings.creatureSize || "normal";
     const bestSize = (a, b) => SIZE_ORDER.indexOf(a) >= SIZE_ORDER.indexOf(b) ? a : b;
@@ -588,7 +810,8 @@ class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.effectiveResistances = (this.resistances ?? []).map((r) => ({ ...r, limbs: [...r.limbs ?? []] }));
     const resistanceSources = [
       ...this.parent.items.filter((i) => i.type === "race").map((i) => i.system),
-      ...activeMagicItems.map((i) => i.system.magic)
+      ...activeMagicItems.map((i) => i.system.magic),
+      ...activeBuffs
     ];
     for (const source of resistanceSources) {
       this.injuryCheckBonus += source.injuryCheckBonus || 0;
@@ -808,6 +1031,7 @@ function sizeGrantFields(fields) {
 }
 function magicFields(fields) {
   return {
+    buffs: activeBuffsField(fields),
     magic: new fields.SchemaField({
       requiresEquipped: new fields.BooleanField({ initial: true }),
       modifiers: new fields.ArrayField(new fields.SchemaField({
@@ -850,8 +1074,9 @@ function activeBonusDamage(system) {
   const item = system.parent;
   const actor = item == null ? void 0 : item.actor;
   const state = (_b = (_a = actor == null ? void 0 : actor.system) == null ? void 0 : _a.magicState) == null ? void 0 : _b[item.id];
-  if (actor && !(state == null ? void 0 : state.onUse)) return [];
-  return bonusDamageComponents(system.magic);
+  const fromBuffs = itemBuffBonusDamage(system);
+  if (actor && !(state == null ? void 0 : state.onUse)) return fromBuffs;
+  return [...bonusDamageComponents(system.magic), ...fromBuffs];
 }
 function splitComponents(system) {
   return (system.damageComponents ?? []).map((c) => ({ damageType: c.damageType || "", damage: Math.floor(c.amount || 0) }));
@@ -1151,6 +1376,7 @@ class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         statIncrease: new fields.NumberField({ initial: 0, integer: true, nullable: true })
       }),
       rechargeType: new fields.StringField({ initial: "rest" }),
+      buff: abilityBuffField(fields),
       isPassive: new fields.BooleanField({ initial: false }),
       passiveEnabled: new fields.BooleanField({ initial: true }),
       passiveBonus: new fields.NumberField({ initial: 0, nullable: true }),
@@ -1566,8 +1792,8 @@ function isLethal(limb) {
   return (limb == null ? void 0 : limb.lethal) !== false;
 }
 function lethalThreshold(limb) {
-  const t = Number(limb == null ? void 0 : limb.lethalThreshold);
-  return t > 0 ? t : 1;
+  const t2 = Number(limb == null ? void 0 : limb.lethalThreshold);
+  return t2 > 0 ? t2 : 1;
 }
 function hasCustomLethality(limbs) {
   return Object.values(limbs ?? {}).some((l) => l && (!isLethal(l) || lethalThreshold(l) !== 1));
@@ -1596,6 +1822,239 @@ function rescaledLimbValue(limb, value, newSize, oldSize) {
 }
 function dyingThreshold(limb) {
   return -(lethalThreshold(limb) * (limb.max || 0));
+}
+const e$4 = (s) => foundry.utils.escapeHTML(String(s ?? ""));
+const t = (key, data) => data ? game.i18n.format(`TAMS.Buff.${key}`, data) : game.i18n.localize(`TAMS.Buff.${key}`);
+const copy = (list) => foundry.utils.duplicate(list ?? []);
+const isPrimaryGM = () => {
+  var _a;
+  return game.user.isGM && ((_a = game.users.activeGM) == null ? void 0 : _a.id) === game.user.id;
+};
+let advanceQueue = Promise.resolve();
+function ownerAndGmIds(actor) {
+  const owners = Object.entries(actor.ownership ?? {}).filter(([id, level]) => level >= 3 && id !== "default").map(([id]) => id);
+  return [.../* @__PURE__ */ new Set([...owners, ...game.users.filter((u) => u.isGM).map((u) => u.id)])];
+}
+function runningCombat(casterUuid, actor) {
+  const inIt = (combat2) => combat2.combatants.some((c) => {
+    var _a, _b;
+    return ((_a = c.actor) == null ? void 0 : _a.uuid) === casterUuid || ((_b = c.actor) == null ? void 0 : _b.uuid) === (actor == null ? void 0 : actor.uuid);
+  });
+  const combat = game.combats.find((c) => c.started && inIt(c));
+  return combat ? { id: combat.id, round: combat.round } : null;
+}
+function allBuffsOn(actor) {
+  return [...actor.system.buffs ?? [], ...actor.items.contents.flatMap((i) => i.system.buffs ?? [])];
+}
+async function chooseFrom({ title, label, options }) {
+  if (options.length === 1) return options[0].id;
+  const select = options.map((o) => `<option value="${e$4(o.id)}">${e$4(o.name)}</option>`).join("");
+  return foundry.applications.api.DialogV2.wait({
+    window: { title },
+    content: `<div class="form-group"><label>${e$4(label)}</label><select id="tams-buff-choice">${select}</select></div>`,
+    rejectClose: false,
+    buttons: [
+      { action: "ok", label: t("Apply"), default: true, callback: (event, button) => button.form.querySelector("#tams-buff-choice").value },
+      { action: "cancel", label: game.i18n.localize("TAMS.Cancel"), callback: () => null }
+    ]
+  });
+}
+async function chooseRecipient() {
+  var _a;
+  const owned = (actor) => (actor == null ? void 0 : actor.type) === "character" && actor.isOwner;
+  const selected = [...new Set((((_a = canvas == null ? void 0 : canvas.tokens) == null ? void 0 : _a.controlled) ?? []).map((token) => token.actor))].filter(owned);
+  const actors = selected.length ? selected : game.actors.filter(owned);
+  if (!actors.length) {
+    ui.notifications.warn(t("NoCharacter"));
+    return null;
+  }
+  const id = await chooseFrom({ title: t("ApplyTitle"), label: t("ChooseCharacter"), options: actors.map((a) => ({ id: a.uuid, name: a.name })) });
+  return actors.find((a) => a.uuid === id) ?? null;
+}
+async function chooseItem(actor, attachTo) {
+  const types = attachTo === "weapon" ? ["weapon"] : MAGIC_ITEM_TYPES;
+  const items = actor.items.filter((i) => types.includes(i.type));
+  if (!items.length) {
+    ui.notifications.warn(t(attachTo === "weapon" ? "NoWeapon" : "NoItem", { name: actor.name }));
+    return null;
+  }
+  const id = await chooseFrom({
+    title: t("ApplyTitle"),
+    label: t(attachTo === "weapon" ? "ChooseWeapon" : "ChooseItem"),
+    options: items.map((i) => ({ id: i.id, name: i.displayName ?? i.name }))
+  });
+  return actor.items.get(id) ?? null;
+}
+async function applyBuffFromMessage(message) {
+  const snapshot = message.getFlag("tams", "buff");
+  if (!snapshot) return;
+  const actor = await chooseRecipient();
+  if (!actor) return;
+  const onCharacter = snapshot.attachTo === "character";
+  const item = onCharacter ? null : await chooseItem(actor, snapshot.attachTo);
+  if (!onCharacter && !item) return;
+  const holder = item ?? actor;
+  const list = copy(holder.system.buffs);
+  const plan = planBuffApplication(snapshot, list, allBuffsOn(actor));
+  if (plan.action === "refuse") {
+    const stats = plan.stats.map((s) => game.i18n.localize(`TAMS.Stat${s.charAt(0).toUpperCase()}${s.slice(1)}`)).join(", ");
+    ui.notifications.warn(t("StatRefused", { name: actor.name, stats }));
+    return;
+  }
+  const entry = createBuffEntry(snapshot, {
+    id: foundry.utils.randomID(),
+    combat: runningCombat(snapshot.casterUuid, actor),
+    now: game.time.worldTime
+  });
+  await holder.update({ "system.buffs": applyBuffPlan(list, entry, plan) });
+  const key = plan.action === "refresh" ? "Refreshed" : "Applied";
+  const data = { buff: e$4(snapshot.name), name: e$4(actor.name), item: e$4((item == null ? void 0 : item.displayName) ?? (item == null ? void 0 : item.name) ?? "") };
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor }),
+    content: `<div class="tams-roll">${t(item ? `${key}Item` : key, data)}</div>`
+  });
+}
+async function removeBuff(actor, { buffId, itemId = null }) {
+  var _a;
+  const holder = itemId ? actor.items.get(itemId) : actor;
+  const entry = (_a = holder == null ? void 0 : holder.system.buffs) == null ? void 0 : _a.find((b) => b.id === buffId);
+  if (!entry || !actor.isOwner || entry.isCrash && !game.user.isGM) return;
+  await holder.update({ "system.buffs": copy(holder.system.buffs).filter((b) => b.id !== buffId) });
+  const crash = crashFor(entry, {
+    id: foundry.utils.randomID(),
+    combat: runningCombat(entry.casterUuid, actor),
+    now: game.time.worldTime
+  });
+  if (crash) await actor.update({ "system.buffs": [...copy(actor.system.buffs), crash] });
+  await announceEnded(actor, [entry], crash ? [crash] : []);
+}
+async function announceEnded(actor, ended, crashes) {
+  const lines = ended.map((b) => t(b.isCrash ? "PenaltyEnded" : "Ended", { buff: e$4(b.name), name: e$4(actor.name) }));
+  for (const crash of crashes) {
+    const amount = crash.modifiers.map((m) => m.value).join(", ");
+    lines.push(t("PenaltyStarted", { buff: e$4(crash.name), name: e$4(actor.name), amount }));
+  }
+  if (!lines.length) return;
+  await ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({ actor }),
+    content: `<div class="tams-roll">${lines.join("<br>")}</div>`,
+    whisper: ownerAndGmIds(actor)
+  });
+}
+function buffHolders() {
+  var _a, _b;
+  const actors = new Map(game.actors.map((a) => [a.uuid, a]));
+  const tokens = [...((_b = (_a = game.scenes) == null ? void 0 : _a.active) == null ? void 0 : _b.tokens) ?? [], ...game.combats.contents.flatMap((c) => c.combatants.contents.map((x) => x.token))];
+  for (const token of tokens) {
+    const actor = token == null ? void 0 : token.actor;
+    if (actor && !actors.has(actor.uuid)) actors.set(actor.uuid, actor);
+  }
+  return [...actors.values()].filter((a) => {
+    var _a2;
+    return (_a2 = a.system) == null ? void 0 : _a2.buffs;
+  });
+}
+function advanceAll(step) {
+  advanceQueue = advanceQueue.then(() => runAdvance(step)).catch((err) => console.error("TAMS | buff countdown failed", err));
+  return advanceQueue;
+}
+async function runAdvance(step) {
+  var _a, _b;
+  const now = game.time.worldTime;
+  for (const actor of buffHolders()) {
+    const ended = [];
+    for (const item of actor.items) {
+      if (!((_a = item.system.buffs) == null ? void 0 : _a.length)) continue;
+      const result = advanceBuffs(copy(item.system.buffs), step);
+      if (result.changed) await item.update({ "system.buffs": result.kept });
+      ended.push(...result.ended);
+    }
+    const own = advanceBuffs(copy(actor.system.buffs), step);
+    ended.push(...own.ended);
+    const crashes = ended.map((entry) => crashFor(entry, { id: foundry.utils.randomID(), combat: runningCombat(entry.casterUuid, actor), now })).filter(Boolean);
+    if (own.changed || crashes.length) await actor.update({ "system.buffs": [...own.kept, ...crashes] });
+    await announceEnded(actor, ended, crashes);
+  }
+  for (const item of game.items ?? []) {
+    if (!((_b = item.system.buffs) == null ? void 0 : _b.length)) continue;
+    const result = advanceBuffs(copy(item.system.buffs), step);
+    if (result.changed) await item.update({ "system.buffs": result.kept });
+  }
+}
+async function tamsBuffsOnTurn(combat) {
+  var _a, _b;
+  if (!isPrimaryGM() || !combat.started) return;
+  const activeUuid = (_b = (_a = combat.combatant) == null ? void 0 : _a.actor) == null ? void 0 : _b.uuid;
+  const canAct = (uuid) => combat.combatants.some((c) => {
+    var _a2, _b2;
+    return ((_a2 = c.actor) == null ? void 0 : _a2.uuid) === uuid && !c.isDefeated && ((_b2 = c.actor.system) == null ? void 0 : _b2.lifeState) !== "dead";
+  });
+  await advanceAll((entry) => stepRounds(entry, {
+    combatId: combat.id,
+    round: combat.round,
+    isCasterTurn: entry.casterUuid === activeUuid,
+    casterCanAct: canAct(entry.casterUuid)
+  }));
+}
+async function tamsBuffsOnCombatEnd(combat) {
+  if (!isPrimaryGM()) return;
+  const now = game.time.worldTime;
+  await advanceAll((entry) => entry.combatId === combat.id ? carryToClock(entry, now) : entry);
+}
+async function tamsBuffsOnClock() {
+  if (!isPrimaryGM()) return;
+  const now = game.time.worldTime;
+  await advanceAll((entry) => {
+    const stale = entry.roundsLeft !== null && !game.combats.has(entry.combatId);
+    return stepClock(stale ? carryToClock(entry, now) : entry, now);
+  });
+}
+function buffRowsFor(actor) {
+  const now = game.time.worldTime;
+  const active = new Set(activeBuffEntries(actor.system.buffs, actor.items, actor.items).map((b) => b.id));
+  const row = (entry, item = null) => ({
+    id: entry.id,
+    itemId: (item == null ? void 0 : item.id) ?? "",
+    name: entry.name,
+    itemName: (item == null ? void 0 : item.displayName) ?? (item == null ? void 0 : item.name) ?? "",
+    isCrash: entry.isCrash,
+    casterName: entry.casterName,
+    inactive: !active.has(entry.id),
+    canRemove: actor.isOwner && (!entry.isCrash || game.user.isGM),
+    remaining: entry.roundsLeft !== null ? t("RoundsLeft", { rounds: entry.roundsLeft }) : t("TimeLeft", { time: formatBuffTime((entry.expiresAt ?? now) - now) }),
+    effects: effectSummary(entry)
+  });
+  return [
+    ...(actor.system.buffs ?? []).map((b) => row(b)),
+    ...actor.items.contents.flatMap((i) => (i.system.buffs ?? []).map((b) => row(b, i)))
+  ];
+}
+const MODIFIER_LABELS = {
+  "stats.strength.value": "TAMS.StatStrength",
+  "stats.dexterity.value": "TAMS.StatDexterity",
+  "stats.endurance.value": "TAMS.StatEndurance",
+  "stats.wisdom.value": "TAMS.StatWisdom",
+  "stats.intelligence.value": "TAMS.StatIntelligence",
+  "stats.bravery.value": "TAMS.StatBravery",
+  "hp.max": "TAMS.TotalHPMax",
+  "stamina.max": "TAMS.StaminaMax",
+  "allRolls": "TAMS.ModifierAllRolls",
+  "itemAttacks": "TAMS.Magic.ItemAttacks"
+};
+function effectSummary(entry) {
+  const signed = (n) => `${n >= 0 ? "+" : ""}${n}`;
+  const damageType = (type) => game.i18n.localize(`TAMS.DamageType.${type}`);
+  const parts = [
+    ...entry.modifiers.map((m) => `${signed(m.value)} ${game.i18n.localize(MODIFIER_LABELS[m.target] ?? m.target)}`),
+    ...entry.resistances.map((r) => `${game.i18n.localize(`TAMS.${r.category.charAt(0).toUpperCase()}${r.category.slice(1)}`)} ${r.value ? `${r.value} ` : ""}${damageType(r.damageType)}`),
+    ...entry.bonusDamage.map((d) => `${signed(d.amount)} ${damageType(d.damageType)}`),
+    ...entry.armourPenetration ? [`${signed(entry.armourPenetration)} ${game.i18n.localize("TAMS.ArmourPenetration")}`] : [],
+    ...entry.onHitStatusIds.map((id) => {
+      var _a, _b;
+      return game.i18n.localize(((_b = (_a = CONFIG.statusEffects) == null ? void 0 : _a.find((s) => s.id === id)) == null ? void 0 : _b.name) ?? id);
+    })
+  ];
+  return parts.join(", ");
 }
 const FLAG = "reactionCount";
 function stackedReactionCost(baseCost, priorReactions) {
@@ -1877,7 +2336,7 @@ async function tamsHandleGroupCheckPending(msg) {
 async function tamsCallGroupCheck() {
   var _a, _b, _c, _d;
   if (!game.user.isGM) return;
-  const selectedTokens = (((_a = canvas == null ? void 0 : canvas.tokens) == null ? void 0 : _a.controlled) ?? []).filter((t) => t.actor);
+  const selectedTokens = (((_a = canvas == null ? void 0 : canvas.tokens) == null ? void 0 : _a.controlled) ?? []).filter((t2) => t2.actor);
   const skillNames = /* @__PURE__ */ new Set();
   for (const token of selectedTokens) {
     for (const item of token.actor.items) {
@@ -2095,7 +2554,7 @@ async function tamsOnTurnStart(actor) {
   const isConstruct = actor.system.lifeState === "construct";
   const activeDotTiers = [];
   for (const group of DOT_GROUPS) {
-    const tier = group.tiers.find((t) => statuses.has(t.id) && !(isConstruct && CONSTRUCT_IMMUNE_DOTS.has(t.id)));
+    const tier = group.tiers.find((t2) => statuses.has(t2.id) && !(isConstruct && CONSTRUCT_IMMUNE_DOTS.has(t2.id)));
     if (!tier) continue;
     activeDotTiers.push({ ...tier, limbKey: group.getLimb(actor.system.limbs), outKey: group.outKey });
   }
@@ -2126,7 +2585,7 @@ async function tamsOnTurnStart(actor) {
         content: `<div class="tams-roll"><div class="tams-crit failure">${game.i18n.format(tier.msgKey, { name: actor.name, damage: tier.damage })}</div></div>`
       });
     }
-    if (activeDotTiers.find((t) => t.id === "severely-irradiated") && newTotalHp > 0) {
+    if (activeDotTiers.find((t2) => t2.id === "severely-irradiated") && newTotalHp > 0) {
       allPendingChecks.push({
         type: "survival",
         dc: 30,
@@ -2850,6 +3309,10 @@ async function tamsRenderChatMessage(message, html, data) {
       await ChatMessage.create({ speaker: ChatMessage.getSpeaker({ actor }), content: report });
     });
   });
+  root.querySelectorAll(".tams-apply-buff").forEach((el) => el.addEventListener("click", async (ev) => {
+    ev.preventDefault();
+    await applyBuffFromMessage(message);
+  }));
   root.querySelectorAll(".tams-boost-save").forEach((el) => el.addEventListener("click", async (ev) => {
     var _a;
     ev.preventDefault();
@@ -3056,7 +3519,7 @@ async function tamsRenderChatMessage(message, html, data) {
     ev.preventDefault();
     const btn = ev.currentTarget;
     const days = parseInt(btn.dataset.days) || 0;
-    const actors = canvas.tokens.controlled.map((t) => t.actor).filter((a) => a);
+    const actors = canvas.tokens.controlled.map((t2) => t2.actor).filter((a) => a);
     if (actors.length === 0) {
       return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.SelectTokensDowntime"));
     }
@@ -3368,7 +3831,7 @@ async function tamsRenderChatMessage(message, html, data) {
     let raw = roll.total;
     const originalRaw = raw;
     let rerolled = false;
-    const tags = (weapon.system.tags || "").split(",").map((t) => t.trim().toLowerCase());
+    const tags = (weapon.system.tags || "").split(",").map((t2) => t2.trim().toLowerCase());
     if (tags.includes("reliable") && raw <= 4) {
       const reroll = await new Roll("1d100").evaluate();
       raw = reroll.total;
@@ -3395,6 +3858,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (weapon.type === "weapon" && ((_f = (_e = actor.system.magicState) == null ? void 0 : _e[weapon.id]) == null ? void 0 : _f.onUse)) {
       profBonus += itemAttackBonus(weapon.system.magic);
     }
+    if (weapon.type === "weapon") profBonus += itemBuffAttackBonus(weapon.system);
     if (weapon.type === "weapon") {
       const wNameLower = weapon.name.toLowerCase();
       const expectedBroad = weapon.system.isRanged ? "ranged weapon" : "melee weapon";
@@ -3423,6 +3887,7 @@ async function tamsRenderChatMessage(message, html, data) {
     if (weapon.type === "weapon" && ((_h = (_g = actor.system.magicState) == null ? void 0 : _g[weapon.id]) == null ? void 0 : _h.onUse)) {
       armourPen += magicArmourPen(weapon.system.magic);
     }
+    if (weapon.type === "weapon") armourPen += itemBuffArmourPen(weapon.system);
     const defenderTargetLimb = weapon.type === "ability" && ((_i = weapon.system.calculator) == null ? void 0 : _i.enabled) ? weapon.system.calculator.targetLimb : "none";
     let hitsScored = total >= attackerTotal || isMutual ? Math.min(1 + Math.floor(Math.max(0, total - attackerTotal) / 5), multiVal) : 0;
     let retLocations = [];
@@ -4879,9 +5344,9 @@ Hooks.on("dropCanvasData", async (canvas2, data) => {
   if (data.type !== "Item") return;
   const item = await Item.fromDropData(data);
   if (!item) return;
-  const targetToken = canvas2.tokens.placeables.find((t) => {
+  const targetToken = canvas2.tokens.placeables.find((t2) => {
     var _a2;
-    return t.actor && t.actor.uuid !== ((_a2 = item.parent) == null ? void 0 : _a2.uuid) && t.bounds.contains(data.x, data.y);
+    return t2.actor && t2.actor.uuid !== ((_a2 = item.parent) == null ? void 0 : _a2.uuid) && t2.bounds.contains(data.x, data.y);
   });
   if (targetToken) {
     if (targetToken.actor.isOwner) {
@@ -5386,14 +5851,14 @@ __publicField(TAMSContainerGridApp, "PARTS", {
 });
 const MISHAP_TAGS = ["magic", "spell", "psychic", "alchemy", "divine"];
 function abilityTags(system) {
-  return (system == null ? void 0 : system.tags) ? system.tags.split(",").map((t) => t.trim().toLowerCase()) : [];
+  return (system == null ? void 0 : system.tags) ? system.tags.split(",").map((t2) => t2.trim().toLowerCase()) : [];
 }
 function mishapEffectCount(calculator) {
   const c = calculator ?? {};
   return (c.effects || 0) + Math.floor((c.rollBonus || 0) / 5) + (c.ignoreArmor || 0) + Math.round((parseFloat(c.damageStatFraction) || 0) / 0.25) + (c.stun && c.stun !== "none" ? 1 : 0);
 }
 function getAbilityIssues(system, { onActor = false, customResources = [], statusIds = null } = {}) {
-  var _a;
+  var _a, _b;
   if (!system) return [];
   const issues = [];
   const error = (key) => issues.push({ level: "error", key });
@@ -5415,7 +5880,8 @@ function getAbilityIssues(system, { onActor = false, customResources = [], statu
     error("zeroCost");
   }
   if (system.isPassive && !system.passiveBonus) error("passiveNoBonus");
-  if (calc.enabled && abilityTags(system).some((t) => MISHAP_TAGS.includes(t)) && mishapEffectCount(calc) <= 0) {
+  if (((_b = system.buff) == null ? void 0 : _b.enabled) && !hasBuffEffects(system.buff)) warning("buffNoEffects");
+  if (calc.enabled && abilityTags(system).some((t2) => MISHAP_TAGS.includes(t2)) && mishapEffectCount(calc) <= 0) {
     warning("mishapNoEffects");
   }
   if (system.inflictsStatusId && Array.isArray(statusIds) && !statusIds.includes(system.inflictsStatusId)) {
@@ -5455,6 +5921,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         editImage: _TAMSActorSheet.prototype._onEditImage,
         fullHeal: _TAMSActorSheet.prototype._onFullHeal,
         hazardDamage: _TAMSActorSheet.prototype._onHazardDamage,
+        removeBuff: _TAMSActorSheet.prototype._onRemoveBuff,
         moveItemUp: _TAMSActorSheet.prototype._onMoveItemUp,
         moveItemDown: _TAMSActorSheet.prototype._onMoveItemDown,
         itemGive: _TAMSActorSheet.prototype._onItemGive,
@@ -5676,6 +6143,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   /** @override */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
+    context.activeBuffs = buffRowsFor(this.document);
     this._activeTab ?? (this._activeTab = "stats");
     context.actor = this.document;
     context.system = this.document.system;
@@ -5722,7 +6190,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const casterTraits = this.document.items.filter((i) => i.type === "trait" && i.system.isProfession && (i.system.professionType || "basic") !== "basic");
     context.casterProfessionOptions = casterTraits.length ? {
       "": game.i18n.localize("TAMS.ProfessionLinkNone"),
-      ...Object.fromEntries(casterTraits.map((t) => [t.id, t.system.profession || t.name]))
+      ...Object.fromEntries(casterTraits.map((t2) => [t2.id, t2.system.profession || t2.name]))
     } : null;
     context.customResourceData = system.customResources.map((res) => {
       return {
@@ -6304,13 +6772,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const itemId = target.dataset.itemId || ((_a = target.closest(".item")) == null ? void 0 : _a.dataset.itemId);
     const item = this.document.items.get(itemId);
     if (!item) return;
-    const tokens = canvas.tokens.placeables.filter((t) => t.actor && t.actor.id !== this.document.id && t.actor.type === "character");
+    const tokens = canvas.tokens.placeables.filter((t2) => t2.actor && t2.actor.id !== this.document.id && t2.actor.type === "character");
     if (tokens.length === 0) {
       return ui.notifications.warn(game.i18n.localize("TAMS.Checks.Notifications.NoCharactersFound"));
     }
-    const myToken = ((_b = this.document.token) == null ? void 0 : _b.object) || canvas.tokens.controlled.find((t) => {
+    const myToken = ((_b = this.document.token) == null ? void 0 : _b.object) || canvas.tokens.controlled.find((t2) => {
       var _a2;
-      return ((_a2 = t.actor) == null ? void 0 : _a2.id) === this.document.id;
+      return ((_a2 = t2.actor) == null ? void 0 : _a2.id) === this.document.id;
     });
     if (myToken) {
       tokens.sort((a, b) => {
@@ -6319,7 +6787,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         return distA - distB;
       });
     }
-    const options = tokens.map((t) => `<option value="${t.actor.uuid}">${e$1(t.name)}${t.actor.isToken ? ` (${game.i18n.localize("TAMS.Loot")})` : ""}</option>`).join("");
+    const options = tokens.map((t2) => `<option value="${t2.actor.uuid}">${e$1(t2.name)}${t2.actor.isToken ? ` (${game.i18n.localize("TAMS.Loot")})` : ""}</option>`).join("");
     const content = `
         <div class="form-group">
             <p>${game.i18n.localize("TAMS.GiveItem")}: <b>${e$1(item.displayName)}</b></p>
@@ -6809,7 +7277,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
   async _onHazardDamage(event, target) {
     var _a, _b;
     const actor = this.document;
-    const tierOptions = Object.entries(HAZARD_TIERS).map(([key, t]) => `<option value="${key}">${game.i18n.format(`TAMS.Hazard.Tier.${key}`, { damage: t.damage })}</option>`).join("");
+    const tierOptions = Object.entries(HAZARD_TIERS).map(([key, t2]) => `<option value="${key}">${game.i18n.format(`TAMS.Hazard.Tier.${key}`, { damage: t2.damage })}</option>`).join("");
     const typeKeys = Object.keys(((_b = (_a = game.i18n.translations) == null ? void 0 : _a.TAMS) == null ? void 0 : _b.DamageType) ?? {}).filter((k) => k !== "None");
     const typeOptions = [
       `<option value="">${game.i18n.localize("TAMS.DamageType.None")}</option>`,
@@ -7284,22 +7752,25 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     const traits = this.document.items.filter((i) => i.type === "trait");
     const modifierSourcesFor = (targets) => {
       const totals = /* @__PURE__ */ new Map();
+      const labels = /* @__PURE__ */ new Map();
       for (const src of this.document.system.modifierSources ?? []) {
         if (!targets.includes(src.target)) continue;
         totals.set(src.itemId, (totals.get(src.itemId) || 0) + src.value);
+        if (src.label) labels.set(src.itemId, src.label);
       }
       return [...totals].filter(([, value]) => value !== 0).map(([itemId, value]) => {
         var _a2;
         return {
-          label: ((_a2 = this.document.items.get(itemId)) == null ? void 0 : _a2.publicName) ?? "?",
+          label: labels.get(itemId) ?? ((_a2 = this.document.items.get(itemId)) == null ? void 0 : _a2.publicName) ?? "?",
           value
         };
       });
     };
     const addItemAttackBonus = (weapon) => {
       var _a2, _b2;
-      if (!weapon || !((_b2 = (_a2 = this.document.system.magicState) == null ? void 0 : _a2[weapon.id]) == null ? void 0 : _b2.onUse)) return;
-      const val = itemAttackBonus(weapon.system.magic);
+      if (!weapon) return;
+      const magicVal = ((_b2 = (_a2 = this.document.system.magicState) == null ? void 0 : _a2[weapon.id]) == null ? void 0 : _b2.onUse) ? itemAttackBonus(weapon.system.magic) : 0;
+      const val = magicVal + itemBuffAttackBonus(weapon.system);
       if (val === 0) return;
       bonus += val;
       bonusSources.push({ label: weapon.publicName, value: val });
@@ -7322,7 +7793,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       bonusSources.push(...modifierSourcesFor(["allRolls"]));
     }
     if (item && item.system.tags) {
-      const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+      const tags = item.system.tags.split(",").map((t2) => t2.trim().toLowerCase());
       for (const trait of traits) {
         if (trait.system.isProfession && trait.system.profession) {
           const prof = trait.system.profession.trim().toLowerCase();
@@ -7337,7 +7808,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
     }
     if ((_c = item == null ? void 0 : item.system) == null ? void 0 : _c.tags) {
-      const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+      const tags = item.system.tags.split(",").map((t2) => t2.trim().toLowerCase());
       const abilityPassiveBonuses = this.document.system.abilityPassiveBonuses || {};
       for (const [tag, val] of Object.entries(abilityPassiveBonuses)) {
         if (tags.includes(tag) && val !== 0) {
@@ -7359,7 +7830,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       }
     }
     if (item && item.system.tags) {
-      const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+      const tags = item.system.tags.split(",").map((t2) => t2.trim().toLowerCase());
       if (tags.includes("accurate")) {
         bonus += 5;
         bonusSources.push({ label: game.i18n.localize("TAMS.WeaponTags.Accurate"), value: 5 });
@@ -7391,7 +7862,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
       label = `Attacking with ${item.publicName}`;
       const wNameLower = item.name.toLowerCase();
-      const wTags = item.system.tags ? item.system.tags.split(",").map((t) => t.trim().toLowerCase()) : [];
+      const wTags = item.system.tags ? item.system.tags.split(",").map((t2) => t2.trim().toLowerCase()) : [];
       const expectedBroad = item.system.isRanged ? "ranged weapon" : "melee weapon";
       for (const skill of this.document.items.filter((i) => i.type === "skill")) {
         const broadPart = skill.name.split("(")[0].trim().toLowerCase();
@@ -7468,7 +7939,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         statValue = stat ? stat.value : 0;
         statMod = statModSources.reduce((acc, s) => acc + s.value, 0);
         label = game.i18n.format("TAMS.UsingAbilityLabel", { name: item.name });
-        const abilityTags2 = item.system.tags ? item.system.tags.split(",").map((t) => t.trim().toLowerCase()) : [];
+        const abilityTags2 = item.system.tags ? item.system.tags.split(",").map((t2) => t2.trim().toLowerCase()) : [];
         const isRangedAbility = abilityTags2.includes("ranged");
         const isMeleeAbility = abilityTags2.includes("melee");
         if (isRangedAbility || isMeleeAbility) {
@@ -7619,7 +8090,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       rawResult = roll.total;
       originalResult = rawResult;
       if (item && item.system.tags) {
-        const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+        const tags = item.system.tags.split(",").map((t2) => t2.trim().toLowerCase());
         if (tags.includes("reliable") && rawResult <= 4) {
           const reroll = await new Roll("1d100").evaluate();
           rawResult = reroll.total;
@@ -7753,7 +8224,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const isCrit = difficulty > 0 && dcTotal >= difficulty * 2;
       let forceCrit = false;
       if (item && item.system.tags) {
-        const tags = item.system.tags.split(",").map((t) => t.trim().toLowerCase());
+        const tags = item.system.tags.split(",").map((t2) => t2.trim().toLowerCase());
         if (isCrit && tags.includes("vicious")) {
           damage = Math.floor(damage * 1.5);
         }
@@ -7816,13 +8287,18 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
       const magicState = this.document.system.magicState ?? {};
       for (const source of [item.type === "weapon" ? item : weaponOverride, firedAmmo]) {
         if (source && ((_n = magicState[source.id]) == null ? void 0 : _n.onUse)) armourPen += magicArmourPen(source.system.magic);
+        if (source) armourPen += itemBuffArmourPen(source.system);
       }
-      const ammoBonus = firedAmmo && ((_o = magicState[firedAmmo.id]) == null ? void 0 : _o.onUse) ? bonusDamageComponents(firedAmmo.system.magic) : [];
+      const ammoBonus = [
+        ...firedAmmo && ((_o = magicState[firedAmmo.id]) == null ? void 0 : _o.onUse) ? bonusDamageComponents(firedAmmo.system.magic) : [],
+        ...firedAmmo ? itemBuffBonusDamage(firedAmmo.system) : []
+      ];
       if (ammoBonus.length) {
         damageBreakdown = [...damageBreakdown, ...ammoBonus];
         damage += ammoBonus.reduce((sum, c) => sum + c.damage, 0);
       }
       for (const source of [weaponOverride ?? item, firedAmmo]) {
+        if (source) magicStatusIds.push(...itemBuffOnHitStatuses(source.system));
         if (!source || !((_p = magicState[source.id]) == null ? void 0 : _p.onUse)) continue;
         magicStatusIds.push(...(((_q = source.system.magic) == null ? void 0 : _q.onHitStatusIds) ?? []).filter(Boolean));
       }
@@ -7850,13 +8326,13 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         } else {
           hitLocation = await getHitLocation(rawResult);
         }
-        const pcs = targets.filter((t) => {
+        const pcs = targets.filter((t2) => {
           var _a2, _b2, _c2;
-          return !((_c2 = (_b2 = (_a2 = t.actor) == null ? void 0 : _a2.system) == null ? void 0 : _b2.settings) == null ? void 0 : _c2.isNPC);
+          return !((_c2 = (_b2 = (_a2 = t2.actor) == null ? void 0 : _a2.system) == null ? void 0 : _b2.settings) == null ? void 0 : _c2.isNPC);
         });
-        const npcs = targets.filter((t) => {
+        const npcs = targets.filter((t2) => {
           var _a2, _b2, _c2;
-          return !!((_c2 = (_b2 = (_a2 = t.actor) == null ? void 0 : _a2.system) == null ? void 0 : _b2.settings) == null ? void 0 : _c2.isNPC);
+          return !!((_c2 = (_b2 = (_a2 = t2.actor) == null ? void 0 : _a2.system) == null ? void 0 : _b2.settings) == null ? void 0 : _c2.isNPC);
         });
         const RANGE_BANDS = {
           pistol: { close: 50, medium: 75 },
@@ -7867,9 +8343,9 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
           heavyRifle: { close: 500, medium: 800 }
         };
         const _rangedWeapon = isRanged && item.type === "weapon" && item.system.rangeCategory;
-        const attackerToken = _rangedWeapon ? ((_u = this.document.token) == null ? void 0 : _u.object) || canvas.tokens.controlled.find((t) => {
+        const attackerToken = _rangedWeapon ? ((_u = this.document.token) == null ? void 0 : _u.object) || canvas.tokens.controlled.find((t2) => {
           var _a2;
-          return ((_a2 = t.actor) == null ? void 0 : _a2.id) === this.document.id;
+          return ((_a2 = t2.actor) == null ? void 0 : _a2.id) === this.document.id;
         }) : null;
         const isShotgun = item.type === "weapon" && item.system.rangeCategory === "shotgun";
         const _linkedAmmoId = item.type === "weapon" ? item.system.ammoItemId ?? "custom" : "custom";
@@ -8088,7 +8564,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     let mishapButtonHtml = "";
     if (item && item.type === "ability") {
       const tags = abilityTags(item.system);
-      const isMagicAbility = tags.some((t) => MISHAP_TAGS.includes(t));
+      const isMagicAbility = tags.some((t2) => MISHAP_TAGS.includes(t2));
       if (isMagicAbility) {
         let totalEffects = -1;
         if ((_w = item.system.calculator) == null ? void 0 : _w.enabled) {
@@ -8096,7 +8572,7 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
         }
         const castTime = item.system.castTime || "immediate";
         const mishapTagPriority = ["divine", "psychic", "alchemy", "magic", "spell"];
-        const mishapTag = mishapTagPriority.find((t) => tags.includes(t)) ?? "magic";
+        const mishapTag = mishapTagPriority.find((t2) => tags.includes(t2)) ?? "magic";
         mishapButtonHtml = `
                 <div class="roll-row" style="margin-top: 5px;">
                     <button class="tams-mishap-check"
@@ -8110,10 +8586,16 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             `;
       }
     }
+    const buffPayload = (item == null ? void 0 : item.type) === "ability" ? buffSnapshot(item.name, item.system.buff, { name: this.document.name, uuid: this.document.uuid }) : null;
+    const buffButtonHtml = buffPayload ? `
+        <div class="roll-row" style="margin-top: 5px;">
+            <button class="tams-apply-buff">${game.i18n.format("TAMS.Buff.ApplyButton", { buff: e$1(buffPayload.name) })}</button>
+        </div>` : "";
     const messageContent = `
       <div class="tams-roll">
         <h3 class="roll-label">${foundry.utils.escapeHTML(label)}</h3>
         ${descriptionHtml}
+        ${buffButtonHtml}
         ${ifButtonHtml}
         ${mishapButtonHtml}
         ${saveButtonHtml}
@@ -8154,7 +8636,8 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
             attackerWeaponId: (item == null ? void 0 : item.id) || "",
             hasSave: ((_z = item == null ? void 0 : item.system) == null ? void 0 : _z.hasSave) ?? false,
             saveAgainst: ((_A = item == null ? void 0 : item.system) == null ? void 0 : _A.saveAgainst) ?? "",
-            saveDC: finalTotal
+            saveDC: finalTotal,
+            ...buffPayload ? { buff: buffPayload } : {}
           }
         }
       }));
@@ -8163,6 +8646,15 @@ const _TAMSActorSheet = class _TAMSActorSheet extends foundry.applications.api.H
     if (item && ["weapon", "skill", "ability"].includes(item.type)) {
       item.update({ "system.usedInScene": true });
     }
+  }
+  /**
+   * End a buff early from the sheet.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target Carries data-buff-id and data-item-id.
+   * @protected
+   */
+  async _onRemoveBuff(event, target) {
+    await removeBuff(this.document, { buffId: target.dataset.buffId, itemId: target.dataset.itemId || null });
   }
   /**
    * Handle toggling the limb multipliers section.
@@ -8671,7 +9163,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     };
     if (this.document.type === "trait") {
       context.professionTypeOptions = Object.fromEntries(
-        PROFESSION_TYPES.map((t) => [t, `TAMS.ProfessionType.${t}`])
+        PROFESSION_TYPES.map((t2) => [t2, `TAMS.ProfessionType.${t2}`])
       );
       context.professionRankOptions = [
         { value: 0, label: "—" },
@@ -8720,14 +9212,14 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     }
     if (this.document.type === "weapon") {
       const tags = ["accurate", "reliable", "unreliable", "vicious", "brutal", "balanced", "compact", "reach", "silent"];
-      const activeTags = (this.document.system.tags || "").split(",").map((t) => t.trim().toLowerCase());
-      context.weaponTags = tags.map((t) => {
-        const cap = t.charAt(0).toUpperCase() + t.slice(1);
+      const activeTags = (this.document.system.tags || "").split(",").map((t2) => t2.trim().toLowerCase());
+      context.weaponTags = tags.map((t2) => {
+        const cap = t2.charAt(0).toUpperCase() + t2.slice(1);
         return {
-          id: t,
+          id: t2,
           label: game.i18n.localize(`TAMS.WeaponTags.${cap}`),
           hint: game.i18n.localize(`TAMS.WeaponTags.${cap}Hint`),
-          active: activeTags.includes(t)
+          active: activeTags.includes(t2)
         };
       });
       const EARLY_TYPES = /* @__PURE__ */ new Set(["matchlock", "flintlock", "wheellock", "blunderbuss"]);
@@ -8752,6 +9244,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       });
     }
     if (MAGIC_ITEM_TYPES.includes(this.document.type)) this._prepareMagicContext(context);
+    if (this.document.type === "ability") this._prepareBuffContext(context);
     context.rechargeTypeOptions = {
       "combat": "TAMS.Ability.RechargeOnCombat",
       "rest": "TAMS.Ability.RechargeOnRest",
@@ -8915,9 +9408,9 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       el.addEventListener("change", async (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
-        const t = ev.currentTarget;
-        t.dataset.list = t.dataset.magicList;
-        await this._onUpdateMagicEntry(ev, t);
+        const t2 = ev.currentTarget;
+        t2.dataset.list = t2.dataset.magicList;
+        await this._onUpdateMagicEntry(ev, t2);
       });
     });
     (_a = this.element.querySelector(".magic-section-toggle")) == null ? void 0 : _a.addEventListener("toggle", (ev) => {
@@ -9038,11 +9531,63 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
       itemAttacks: "TAMS.Magic.ItemAttacks"
     };
     context.requirementTypeOptions = Object.fromEntries(
-      REQUIREMENT_TYPES.map((t) => [t, `TAMS.Magic.RequirementType.${t}`])
+      REQUIREMENT_TYPES.map((t2) => [t2, `TAMS.Magic.RequirementType.${t2}`])
     );
     context.statusIdOptions = (CONFIG.statusEffects ?? []).filter((se) => se.tams).map((se) => ({ id: se.id, label: game.i18n.localize(se.name ?? se.label ?? se.id) }));
     context.magicCanRequireEquip = this.document.type !== "ammo";
     context.magicStatusApplies = ["weapon", "ammo"].includes(this.document.type);
+  }
+  /**
+   * Which effect block a control edits: an ability's `buff`, or an item's `magic`.
+   * @param {HTMLElement} target Carries data-root for buff controls.
+   * @returns {"buff"|"magic"}
+   * @protected
+   */
+  _effectRoot(target) {
+    return target.dataset.root === "buff" ? "buff" : "magic";
+  }
+  /**
+   * Whether the user can edit an effect block.
+   * @param {"buff"|"magic"} root
+   * @returns {boolean}
+   * @protected
+   */
+  _canEditEffects(root) {
+    return root === "buff" ? this.isEditable : this._canEditMagic();
+  }
+  /**
+   * Build the context for an ability's Temporary Buff section.
+   * @param {object} context
+   * @protected
+   */
+  _prepareBuffContext(context) {
+    const buff = this.document.system.buff ?? {};
+    const indexed = (list) => (list ?? []).map((entry, index) => ({ ...entry, index }));
+    const { allProfessionRolls, ...modifierTargets } = context.modifierTargetOptions;
+    const onItem = buff.attachTo !== "character";
+    context.buffAppliesToItem = onItem;
+    context.buffDisabled = this.isEditable ? "" : "disabled";
+    context.buffEditable = this.isEditable;
+    context.buffModifierTargetOptions = onItem ? { ...modifierTargets, itemAttacks: "TAMS.Magic.ItemAttacks" } : modifierTargets;
+    context.buffAttachOptions = Object.fromEntries(BUFF_ATTACH_TARGETS.map((k) => [k, `TAMS.Buff.AttachTo.${k}`]));
+    context.buffDurationOptions = Object.fromEntries(Object.keys(BUFF_DURATIONS).map((k) => [k, `TAMS.Buff.Duration.${k}`]));
+    context.buffModifiers = indexed(buff.modifiers);
+    context.buffBonusDamage = indexed(buff.bonusDamage);
+    context.buffStatuses = (buff.onHitStatusIds ?? []).map((id, index) => ({ id, index }));
+    context.buffResistances = indexed(buff.resistances).map((entry) => {
+      const active = new Set(entry.limbs ?? []);
+      return {
+        ...entry,
+        limbButtons: LIMB_KEYS.map((key) => ({
+          key,
+          active: active.has(key),
+          i18nKey: LIMB_I18N[key],
+          abbrevKey: LIMB_ABBREV[key]
+        }))
+      };
+    });
+    context.buffStatusIdOptions = (CONFIG.statusEffects ?? []).filter((se) => se.tams).map((se) => ({ id: se.id, label: game.i18n.localize(se.name ?? se.label ?? se.id) }));
+    context.buffSectionOpen = !!buff.enabled;
   }
   /**
    * Add a blank entry to one of the magic-effect lists.
@@ -9053,10 +9598,11 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
   async _onMagicAdd(event, target) {
     var _a;
     const list = target.dataset.list;
-    if (!MAGIC_LIST_DEFAULTS[list] || !this._canEditMagic()) return;
-    const entries = foundry.utils.duplicate(((_a = this.document.system.magic) == null ? void 0 : _a[list]) ?? []);
+    const root = this._effectRoot(target);
+    if (!MAGIC_LIST_DEFAULTS[list] || !this._canEditEffects(root)) return;
+    const entries = foundry.utils.duplicate(((_a = this.document.system[root]) == null ? void 0 : _a[list]) ?? []);
     entries.push(MAGIC_LIST_DEFAULTS[list]());
-    await this.document.update({ [`system.magic.${list}`]: entries });
+    await this.document.update({ [`system.${root}.${list}`]: entries });
   }
   /**
    * Remove one entry from a magic-effect list (incl. grantedAbilities).
@@ -9068,11 +9614,12 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     var _a, _b;
     const list = target.dataset.list;
     const index = parseInt(target.dataset.index ?? ((_a = target.closest("[data-index]")) == null ? void 0 : _a.dataset.index));
-    if (!this._canEditMagic() || Number.isNaN(index)) return;
-    const entries = foundry.utils.duplicate(((_b = this.document.system.magic) == null ? void 0 : _b[list]) ?? []);
+    const root = this._effectRoot(target);
+    if (!this._canEditEffects(root) || Number.isNaN(index)) return;
+    const entries = foundry.utils.duplicate(((_b = this.document.system[root]) == null ? void 0 : _b[list]) ?? []);
     if (index < 0 || index >= entries.length) return;
     entries.splice(index, 1);
-    await this.document.update({ [`system.magic.${list}`]: entries });
+    await this.document.update({ [`system.${root}.${list}`]: entries });
   }
   /**
    * Toggle a limb on a magic resistance's limb scope.
@@ -9082,17 +9629,18 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
    */
   async _onMagicLimbToggle(event, target) {
     var _a;
-    if (!this._canEditMagic()) return;
+    const root = this._effectRoot(target);
+    if (!this._canEditEffects(root)) return;
     const index = parseInt(target.closest("[data-index]").dataset.index);
     const limbKey = target.dataset.limbKey;
-    const entries = foundry.utils.duplicate(((_a = this.document.system.magic) == null ? void 0 : _a.resistances) ?? []);
+    const entries = foundry.utils.duplicate(((_a = this.document.system[root]) == null ? void 0 : _a.resistances) ?? []);
     const entry = entries[index];
     if (!entry) return;
     const limbs = new Set(entry.limbs ?? []);
     if (limbs.has(limbKey)) limbs.delete(limbKey);
     else limbs.add(limbKey);
     entry.limbs = [...limbs];
-    await this.document.update({ "system.magic.resistances": entries });
+    await this.document.update({ [`system.${root}.resistances`]: entries });
   }
   /**
    * Persist an edit to one field of one magic-effect list entry. Same reason as
@@ -9103,13 +9651,14 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
    */
   async _onUpdateMagicEntry(event, target) {
     var _a;
-    if (!this._canEditMagic()) return;
+    const root = this._effectRoot(target);
+    if (!this._canEditEffects(root)) return;
     if (target.dataset.field === "curse" && !game.user.isGM) return;
     const list = target.dataset.list;
     const index = parseInt(target.dataset.index);
     const field = target.dataset.field;
     if (!MAGIC_LIST_DEFAULTS[list] || Number.isNaN(index)) return;
-    const entries = foundry.utils.duplicate(((_a = this.document.system.magic) == null ? void 0 : _a[list]) ?? []);
+    const entries = foundry.utils.duplicate(((_a = this.document.system[root]) == null ? void 0 : _a[list]) ?? []);
     if (index < 0 || index >= entries.length) return;
     const value = target.type === "checkbox" ? target.checked : target.type === "number" ? parseFloat(target.value) || 0 : target.value;
     if (field) {
@@ -9118,7 +9667,7 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
     } else {
       entries[index] = value;
     }
-    await this.document.update({ [`system.magic.${list}`]: entries });
+    await this.document.update({ [`system.${root}.${list}`]: entries });
   }
   /**
    * Handle editing an image in the item sheet.
@@ -9243,13 +9792,13 @@ const _TAMSItemSheet = class _TAMSItemSheet extends foundry.applications.api.Han
   async _onTagToggle(event, target) {
     const tag = target.dataset.tag;
     const currentTags = this.document.system.tags || "";
-    let tagsArray = currentTags ? currentTags.split(",").map((t) => t.trim().toLowerCase()) : [];
+    let tagsArray = currentTags ? currentTags.split(",").map((t2) => t2.trim().toLowerCase()) : [];
     if (tagsArray.includes(tag.toLowerCase())) {
-      tagsArray = tagsArray.filter((t) => t.toLowerCase() !== tag.toLowerCase());
+      tagsArray = tagsArray.filter((t2) => t2.toLowerCase() !== tag.toLowerCase());
     } else {
       tagsArray.push(tag.toLowerCase());
     }
-    await this.document.update({ "system.tags": tagsArray.filter((t) => t).join(", ") });
+    await this.document.update({ "system.tags": tagsArray.filter((t2) => t2).join(", ") });
   }
   /**
    * Handle toggling a collapsible ability section.
@@ -9515,10 +10064,10 @@ const _TAMSTravelPaceApp = class _TAMSTravelPaceApp extends foundry.applications
       return;
     }
     let added = false;
-    for (let t of tokens) {
-      if (t.actor && !this.members.includes(t.actor.uuid)) {
-        this.members.push(t.actor.uuid);
-        this.membersState[t.actor.uuid] = { speed: null, isMounted: false };
+    for (let t2 of tokens) {
+      if (t2.actor && !this.members.includes(t2.actor.uuid)) {
+        this.members.push(t2.actor.uuid);
+        this.membersState[t2.actor.uuid] = { speed: null, isMounted: false };
         added = true;
       }
     }
@@ -9565,7 +10114,7 @@ const _TAMSTravelPaceApp = class _TAMSTravelPaceApp extends foundry.applications
     const rollSummary = [];
     const skill = cookActor.items.find((i) => {
       if (i.type !== "skill") return false;
-      const tags = (i.system.tags || "").split(",").map((t) => t.trim().toLowerCase());
+      const tags = (i.system.tags || "").split(",").map((t2) => t2.trim().toLowerCase());
       return tags.includes("cooking");
     });
     const wisdom = cookActor.system.stats.wisdom;
@@ -9790,7 +10339,7 @@ const _TAMSItemMaker = class _TAMSItemMaker extends foundry.applications.api.Han
     for (const se of CONFIG.statusEffects ?? []) {
       sePresets[se.id] = se.label ?? se.id;
     }
-    context.professionTypeOptions = Object.fromEntries(PROFESSION_TYPES.map((t) => [t, `TAMS.ProfessionType.${t}`]));
+    context.professionTypeOptions = Object.fromEntries(PROFESSION_TYPES.map((t2) => [t2, `TAMS.ProfessionType.${t2}`]));
     context.statusEffectOptions = { "": "TAMS.None", ...sePresets, "custom": "TAMS.StatusEffect.Custom" };
     return context;
   }
@@ -10068,7 +10617,8 @@ Hooks.once("init", async function() {
   console.log("TAMS | Initializing Todo's Advanced Modular System");
   await loadTemplates([
     "systems/tams/templates/inventory-grid.html",
-    "systems/tams/templates/inventory-container.html"
+    "systems/tams/templates/inventory-container.html",
+    "systems/tams/templates/buff-list.html"
   ]);
   game.socket.on("system.tams", tamsHandleSocket);
   game.settings.register("tams", "currencies", {
@@ -10333,7 +10883,11 @@ Hooks.once("init", async function() {
   });
 });
 Hooks.on("updateCombat", (combat, changed) => {
+  if ("turn" in changed || "round" in changed) tamsBuffsOnTurn(combat);
 });
+Hooks.on("deleteCombat", (combat) => tamsBuffsOnCombatEnd(combat));
+Hooks.on("updateWorldTime", () => tamsBuffsOnClock());
+Hooks.once("ready", () => tamsBuffsOnClock());
 Hooks.on("updateCombat", async (combat, changed) => {
   if (!game.user.isGM) return;
   if (!("turn" in changed)) return;

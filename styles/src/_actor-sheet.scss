@@ -736,3 +736,36 @@
     color: #b71c1c;
     cursor: help;
 }
+
+// Temporary buffs list (scene tab and NPC sheet)
+.tams-buff-list {
+  margin-bottom: 8px;
+}
+
+.tams-buff-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 6px;
+  border-left: 3px solid #2e7d32;
+  margin-bottom: 3px;
+
+  &.is-penalty {
+    border-left-color: #b71c1c;
+  }
+
+  &.is-inactive {
+    opacity: 0.6;
+  }
+}
+
+.tams-buff-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tams-buff-time {
+  margin-left: 6px;
+  font-style: italic;
+}

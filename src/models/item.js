@@ -1,4 +1,6 @@
 import { bonusDamageComponents } from '../utils/magic-items.js';
+import { itemBuffBonusDamage } from '../utils/buffs.js';
+import { abilityBuffField, activeBuffsField } from './buff-fields.js';
 
 // ── Shared field helpers ──────────────────────────────────────────────────────
 
@@ -56,6 +58,7 @@ function sizeGrantFields(fields) {
 // `curse` on a modifier/resistance hides that entry from players until the curse is revealed.
 function magicFields(fields) {
   return {
+    buffs: activeBuffsField(fields),
     magic: new fields.SchemaField({
       requiresEquipped: new fields.BooleanField({ initial: true }),
       modifiers: new fields.ArrayField(new fields.SchemaField({
@@ -104,8 +107,9 @@ function activeBonusDamage(system) {
   const item = system.parent;
   const actor = item?.actor;
   const state = actor?.system?.magicState?.[item.id];
-  if (actor && !state?.onUse) return [];
-  return bonusDamageComponents(system.magic);
+  const fromBuffs = itemBuffBonusDamage(system);
+  if (actor && !state?.onUse) return fromBuffs;
+  return [...bonusDamageComponents(system.magic), ...fromBuffs];
 }
 
 /**
@@ -473,6 +477,7 @@ export class TAMSAbilityData extends foundry.abstract.TypeDataModel {
         statIncrease: new fields.NumberField({initial: 0, integer: true, nullable: true}),
       }),
       rechargeType: new fields.StringField({initial: "rest"}),
+      buff: abilityBuffField(fields),
       isPassive:       new fields.BooleanField({initial: false}),
       passiveEnabled:  new fields.BooleanField({initial: true}),
       passiveBonus:    new fields.NumberField({initial: 0, nullable: true}),

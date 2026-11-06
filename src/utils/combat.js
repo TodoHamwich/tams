@@ -2,6 +2,8 @@ import { getMishapEntry, getMishapTable, calculateMishapChance, getMishapModifie
 import { isLethal, memberLethalUnit, rescaledLimbValue } from "./lethality.js";
 import { locationFromRoll, locationIsMissing, presentHitWeight, isLimbMissing } from "./limbs.js";
 import { itemAttackBonus, magicArmourPen } from "./magic-items.js";
+import { itemBuffArmourPen, itemBuffAttackBonus } from "./buffs.js";
+import { applyBuffFromMessage } from "./buff-lifecycle.js";
 import { stackedReactionCost, reactionCount, recordReaction, resetReactions, isMeleeOption } from "./reactions.js";
 
 const e = s => foundry.utils.escapeHTML(String(s ?? ""));
@@ -1470,6 +1472,11 @@ export async function tamsRenderChatMessage(message, html, data) {
 
     // Save boost button (stamina only — no resource picker, per design: a designer wanting a
     // different push resource authors it as its own ability rather than a generic system option)
+    root.querySelectorAll('.tams-apply-buff').forEach(el => el.addEventListener("click", async ev => {
+        ev.preventDefault();
+        await applyBuffFromMessage(message);
+    }));
+
     root.querySelectorAll('.tams-boost-save').forEach(el => el.addEventListener("click", async ev => {
       ev.preventDefault();
       const btn = ev.currentTarget;
@@ -2092,6 +2099,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (weapon.type === 'weapon' && actor.system.magicState?.[weapon.id]?.onUse) {
           profBonus += itemAttackBonus(weapon.system.magic);
       }
+      if (weapon.type === 'weapon') profBonus += itemBuffAttackBonus(weapon.system);
       if (weapon.type === 'weapon') {
           const wNameLower = weapon.name.toLowerCase();
           const expectedBroad = weapon.system.isRanged ? "ranged weapon" : "melee weapon";
@@ -2125,6 +2133,7 @@ export async function tamsRenderChatMessage(message, html, data) {
       if (weapon.type === 'weapon' && actor.system.magicState?.[weapon.id]?.onUse) {
           armourPen += magicArmourPen(weapon.system.magic);
       }
+      if (weapon.type === 'weapon') armourPen += itemBuffArmourPen(weapon.system);
       const defenderTargetLimb = (weapon.type === 'ability' && weapon.system.calculator?.enabled) ? weapon.system.calculator.targetLimb : 'none';
 
       let hitsScored = total >= attackerTotal || isMutual ? Math.min(1 + Math.floor(Math.max(0, total - attackerTotal) / 5), multiVal) : 0;

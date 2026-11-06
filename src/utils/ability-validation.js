@@ -4,6 +4,7 @@
 // works but probably not the way the author intended.
 
 /** Ability tags that put an ability on a mishap table. */
+import { hasBuffEffects } from './buffs.js';
 export const MISHAP_TAGS = ["magic", "spell", "psychic", "alchemy", "divine"];
 
 /** Lower-cased, trimmed tag list from an ability's comma-separated `tags` string. */
@@ -63,6 +64,8 @@ export function getAbilityIssues(system, { onActor = false, customResources = []
   }
 
   if (system.isPassive && !system.passiveBonus) error("passiveNoBonus");
+
+  if (system.buff?.enabled && !hasBuffEffects(system.buff)) warning("buffNoEffects");
 
   if (calc.enabled && abilityTags(system).some(t => MISHAP_TAGS.includes(t))
       && mishapEffectCount(calc) <= 0) {

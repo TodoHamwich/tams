@@ -731,6 +731,7 @@
 
         {{!-- Scene Tab --}}
         <div class="tab scene {{#if (eq activeTab 'scene')}}active{{/if}}" data-group="primary" data-tab="scene" data-scrollable data-scroll-id="tab-scene">
+            {{> "systems/tams/templates/buff-list.html"}}
             <div class="scene-up-pools">
                 <h3 class="small-header">{{localize 'TAMS.SceneUPPools'}}</h3>
                 <div class="scene-pools-grid">

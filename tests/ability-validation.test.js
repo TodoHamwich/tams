@@ -138,3 +138,20 @@ describe('mishapEffectCount', () => {
     expect(mishapEffectCount({ stun: "none" })).toBe(0);
   });
 });
+
+describe('getAbilityIssues buff', () => {
+  const issueKeys = (buff) => getAbilityIssues({ buff, cost: 1, resource: "stamina", calculator: {} }).map(i => i.key);
+
+  it('warns when a buff has no effects', () => {
+    expect(issueKeys({ enabled: true, attachTo: "character", modifiers: [] })).toContain("buffNoEffects");
+  });
+
+  it('warns when only item-use effects are on a character buff', () => {
+    expect(issueKeys({ enabled: true, attachTo: "character", bonusDamage: [{ damageType: "fire", amount: 5 }] })).toContain("buffNoEffects");
+  });
+
+  it('accepts a buff with effects, and ignores a disabled one', () => {
+    expect(issueKeys({ enabled: true, attachTo: "character", modifiers: [{ target: "allRolls", value: 5 }] })).not.toContain("buffNoEffects");
+    expect(issueKeys({ enabled: false })).not.toContain("buffNoEffects");
+  });
+});

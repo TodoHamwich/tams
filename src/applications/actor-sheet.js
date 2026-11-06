@@ -1,3 +1,5 @@
+import { buffSnapshot, itemBuffArmourPen, itemBuffAttackBonus, itemBuffBonusDamage, itemBuffOnHitStatuses } from '../utils/buffs.js';
+import { buffRowsFor, removeBuff } from '../utils/buff-lifecycle.js';
 import { tamsUpdateMessage, tamsHandleItemTransfer, getHitLocation, hitLocationOn, showCombinedInjuryDialog, computeSquadAttackBonus, tamsApplyRollMode, moveInOrder, HAZARD_TIERS } from '../utils/helpers.js';
 import { presentHitTable } from '../utils/limbs.js';
 import { MAGIC_ITEM_TYPES, hasMagicEffects, isItemEquipped, curseVisible, bonusDamageComponents, itemAttackBonus, magicArmourPen } from '../utils/magic-items.js';
@@ -51,6 +53,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         editImage: TAMSActorSheet.prototype._onEditImage,
         fullHeal: TAMSActorSheet.prototype._onFullHeal,
         hazardDamage: TAMSActorSheet.prototype._onHazardDamage,
+        removeBuff: TAMSActorSheet.prototype._onRemoveBuff,
         moveItemUp: TAMSActorSheet.prototype._onMoveItemUp,
         moveItemDown: TAMSActorSheet.prototype._onMoveItemDown,
         itemGive: TAMSActorSheet.prototype._onItemGive,
@@ -308,6 +311,7 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
   /** @override */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
+    context.activeBuffs = buffRowsFor(this.document);
     this._activeTab ??= "stats";
 
     // Base context properties
@@ -2050,19 +2054,22 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     // Modifier totals per source item (traits, races, active magic items) for a target.
     const modifierSourcesFor = (targets) => {
         const totals = new Map();
+        const labels = new Map();
         for (const src of (this.document.system.modifierSources ?? [])) {
             if (!targets.includes(src.target)) continue;
             totals.set(src.itemId, (totals.get(src.itemId) || 0) + src.value);
+            if (src.label) labels.set(src.itemId, src.label);
         }
         return [...totals].filter(([, value]) => value !== 0).map(([itemId, value]) => ({
-            label: this.document.items.get(itemId)?.publicName ?? "?", value
+            label: labels.get(itemId) ?? this.document.items.get(itemId)?.publicName ?? "?", value
         }));
     };
 
     // Magic "Attacks with this item" bonus, while the item's requirements are met.
     const addItemAttackBonus = (weapon) => {
-        if (!weapon || !this.document.system.magicState?.[weapon.id]?.onUse) return;
-        const val = itemAttackBonus(weapon.system.magic);
+        if (!weapon) return;
+        const magicVal = this.document.system.magicState?.[weapon.id]?.onUse ? itemAttackBonus(weapon.system.magic) : 0;
+        const val = magicVal + itemBuffAttackBonus(weapon.system);
         if (val === 0) return;
         bonus += val;
         bonusSources.push({ label: weapon.publicName, value: val });
@@ -2644,13 +2651,18 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         // Magic AP from the weapon used (directly or via a weapon-damage ability) and fired ammo.
         for (const source of [item.type === 'weapon' ? item : weaponOverride, firedAmmo]) {
             if (source && magicState[source.id]?.onUse) armourPen += magicArmourPen(source.system.magic);
+            if (source) armourPen += itemBuffArmourPen(source.system);
         }
-        const ammoBonus = (firedAmmo && magicState[firedAmmo.id]?.onUse) ? bonusDamageComponents(firedAmmo.system.magic) : [];
+        const ammoBonus = [
+            ...((firedAmmo && magicState[firedAmmo.id]?.onUse) ? bonusDamageComponents(firedAmmo.system.magic) : []),
+            ...(firedAmmo ? itemBuffBonusDamage(firedAmmo.system) : [])
+        ];
         if (ammoBonus.length) {
             damageBreakdown = [...damageBreakdown, ...ammoBonus];
             damage += ammoBonus.reduce((sum, c) => sum + c.damage, 0);
         }
         for (const source of [weaponOverride ?? item, firedAmmo]) {
+            if (source) magicStatusIds.push(...itemBuffOnHitStatuses(source.system));
             if (!source || !magicState[source.id]?.onUse) continue;
             magicStatusIds.push(...(source.system.magic?.onHitStatusIds ?? []).filter(Boolean));
         }
@@ -2959,10 +2971,19 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
         }
     }
 
+    const buffPayload = item?.type === 'ability'
+        ? buffSnapshot(item.name, item.system.buff, { name: this.document.name, uuid: this.document.uuid })
+        : null;
+    const buffButtonHtml = buffPayload ? `
+        <div class="roll-row" style="margin-top: 5px;">
+            <button class="tams-apply-buff">${game.i18n.format("TAMS.Buff.ApplyButton", {buff: e(buffPayload.name)})}</button>
+        </div>` : "";
+
     const messageContent = `
       <div class="tams-roll">
         <h3 class="roll-label">${foundry.utils.escapeHTML(label)}</h3>
         ${descriptionHtml}
+        ${buffButtonHtml}
         ${ifButtonHtml}
         ${mishapButtonHtml}
         ${saveButtonHtml}
@@ -3016,7 +3037,8 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
             attackerWeaponId: item?.id || "",
             hasSave: item?.system?.hasSave ?? false,
             saveAgainst: item?.system?.saveAgainst ?? "",
-            saveDC: finalTotal
+            saveDC: finalTotal,
+            ...(buffPayload ? { buff: buffPayload } : {})
           }
         }
       }));
@@ -3027,6 +3049,16 @@ export class TAMSActorSheet extends foundry.applications.api.HandlebarsApplicati
     if (item && ["weapon", "skill", "ability"].includes(item.type)) {
       item.update({"system.usedInScene": true});
     }
+  }
+
+  /**
+   * End a buff early from the sheet.
+   * @param {Event} event The originating click event.
+   * @param {HTMLElement} target Carries data-buff-id and data-item-id.
+   * @protected
+   */
+  async _onRemoveBuff(event, target) {
+    await removeBuff(this.document, { buffId: target.dataset.buffId, itemId: target.dataset.itemId || null });
   }
 
   /**

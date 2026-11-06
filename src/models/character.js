@@ -1,3 +1,5 @@
+import { activeBuffEntries } from '../utils/buffs.js';
+import { activeBuffsField } from './buff-fields.js';
 import { computeEncumbrance } from '../utils/inventory.js';
 import { computeRawStaminaMax, computeRawResourceMax, computeFatiguedMax } from '../utils/fatigue.js';
 import { professionRank, distributeProfessionRewards } from '../utils/profession.js';
@@ -110,6 +112,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
       // in src/utils/combat.js); a resurrection ability sets it back to
       // "living" manually.
       lifeState: new fields.StringField({initial: "living"}),
+      buffs: activeBuffsField(fields),
       tempDR: new fields.NumberField({initial: 0, integer: true, min: 0}),
       stamina: new fields.SchemaField({
         value: new fields.NumberField({initial: 10, min: 0}),
@@ -254,7 +257,7 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
           this.traitProfessionBonuses[p] = (this.traitProfessionBonuses[p] || 0) + mod.value;
         }
       }
-      this.modifierSources.push({ itemId: sourceItem.id, target: mod.target, value: mod.value });
+      this.modifierSources.push({ itemId: sourceItem.id, label: sourceItem.label, target: mod.target, value: mod.value });
     };
 
     const traits = this.parent.items.filter(i => i.type === "trait" || i.type === "race");
@@ -284,6 +287,12 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     const activeMagicItems = this.parent.items.filter(i => this.magicState[i.id]?.passive);
     for (const item of activeMagicItems) {
       for (const mod of item.system.magic.modifiers) applyModifier(mod, item, {});
+    }
+
+    // Temporary buffs on the actor and on its equipped items. See src/utils/buffs.js.
+    const activeBuffs = activeBuffEntries(this.buffs, this.parent.items, this.parent.items);
+    for (const buff of activeBuffs) {
+      for (const mod of buff.modifiers) applyModifier(mod, { id: `buff:${buff.id}`, label: buff.name }, {});
     }
 
     // Compute effective sizes from character settings and size grants on traits/abilities.
@@ -318,7 +327,8 @@ export class TAMSCharacterData extends foundry.abstract.TypeDataModel {
     this.effectiveResistances = (this.resistances ?? []).map(r => ({...r, limbs: [...(r.limbs ?? [])]}));
     const resistanceSources = [
       ...this.parent.items.filter(i => i.type === "race").map(i => i.system),
-      ...activeMagicItems.map(i => i.system.magic)
+      ...activeMagicItems.map(i => i.system.magic),
+      ...activeBuffs
     ];
     for (const source of resistanceSources) {
       this.injuryCheckBonus += source.injuryCheckBonus || 0;

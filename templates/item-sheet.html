@@ -537,6 +537,107 @@
             </div>
             <hr>
 
+            {{!-- Temporary Buff --}}
+            <details class="tams-magic-section tams-buff-section" {{#if buffSectionOpen}}open{{/if}}>
+                <summary><h3 style="display: inline; border: none;"><i class="fas fa-hand-sparkles"></i> {{localize 'TAMS.Buff.Section'}}</h3></summary>
+                <p class="hint"><small>{{localize 'TAMS.Buff.SectionHint'}}</small></p>
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.Buff.Enabled'}}</label>
+                    <input type="checkbox" name="system.buff.enabled" {{checked system.buff.enabled}} {{buffDisabled}}/>
+                </div>
+                {{#if system.buff.enabled}}
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.Buff.AttachToLabel'}}</label>
+                    <select name="system.buff.attachTo" {{buffDisabled}}>{{selectOptions buffAttachOptions selected=system.buff.attachTo localize=true}}</select>
+                </div>
+                <div class="flexrow">
+                    <label title="{{localize 'TAMS.Buff.DurationHint'}}">{{localize 'TAMS.Buff.DurationLabel'}}</label>
+                    <select name="system.buff.duration" {{buffDisabled}}>{{selectOptions buffDurationOptions selected=system.buff.duration localize=true}}</select>
+                </div>
+                <div class="flexrow">
+                    <label title="{{localize 'TAMS.Buff.StackableHint'}}">{{localize 'TAMS.Buff.Stackable'}}</label>
+                    <input type="checkbox" name="system.buff.stackable" {{checked system.buff.stackable}} {{buffDisabled}}/>
+                </div>
+
+                <div class="flexrow magic-list-header">
+                    <h4>{{localize 'TAMS.Modifiers'}}</h4>
+                    {{#if buffEditable}}<a data-action="magicAdd" data-root="buff" data-list="modifiers" title="{{localize 'TAMS.Magic.Add'}}"><i class="fas fa-plus"></i></a>{{/if}}
+                </div>
+                {{#each buffModifiers as |mod|}}
+                <div class="flexrow magic-row" data-index="{{mod.index}}">
+                    <select data-magic-list="modifiers" data-root="buff" data-index="{{mod.index}}" data-field="target" {{../buffDisabled}}>
+                        {{selectOptions ../buffModifierTargetOptions selected=mod.target localize=true}}
+                    </select>
+                    <input type="number" class="magic-num" data-magic-list="modifiers" data-root="buff" data-index="{{mod.index}}" data-field="value" value="{{mod.value}}" {{../buffDisabled}}/>
+                    {{#if ../buffEditable}}<a class="magic-del" data-action="magicDelete" data-root="buff" data-list="modifiers" data-index="{{mod.index}}"><i class="fas fa-trash"></i></a>{{/if}}
+                </div>
+                {{/each}}
+
+                <div class="flexrow magic-list-header">
+                    <h4>{{localize 'TAMS.Race.Resistances'}}</h4>
+                    {{#if buffEditable}}<a data-action="magicAdd" data-root="buff" data-list="resistances" title="{{localize 'TAMS.Magic.Add'}}"><i class="fas fa-plus"></i></a>{{/if}}
+                </div>
+                {{#each buffResistances as |res|}}
+                <div class="magic-row-block" data-index="{{res.index}}">
+                    <div class="flexrow magic-row">
+                        <select data-magic-list="resistances" data-root="buff" data-index="{{res.index}}" data-field="damageType" {{../buffDisabled}}>
+                            {{selectOptions ../damageTypeOptions selected=res.damageType localize=true}}
+                        </select>
+                        <select data-magic-list="resistances" data-root="buff" data-index="{{res.index}}" data-field="category" {{../buffDisabled}}>
+                            <option value="resistance"    {{#if (eq res.category "resistance")}}selected{{/if}}>{{localize 'TAMS.Resistance'}}</option>
+                            <option value="immunity"      {{#if (eq res.category "immunity")}}selected{{/if}}>{{localize 'TAMS.Immunity'}}</option>
+                            <option value="vulnerability" {{#if (eq res.category "vulnerability")}}selected{{/if}}>{{localize 'TAMS.Vulnerability'}}</option>
+                            <option value="healing"       {{#if (eq res.category "healing")}}selected{{/if}}>{{localize 'TAMS.Healing'}}</option>
+                        </select>
+                        <input type="number" class="magic-num" data-magic-list="resistances" data-root="buff" data-index="{{res.index}}" data-field="value" value="{{res.value}}" {{../buffDisabled}}/>
+                        {{#if ../buffEditable}}<a class="magic-del" data-action="magicDelete" data-root="buff" data-list="resistances" data-index="{{res.index}}"><i class="fas fa-trash"></i></a>{{/if}}
+                    </div>
+                    <div class="flexrow magic-limbs">
+                        {{#each res.limbButtons as |btn|}}
+                        <a {{#if ../../buffEditable}}data-action="magicLimbToggle"{{/if}} data-root="buff" data-limb-key="{{btn.key}}" class="magic-limb {{#if btn.active}}active{{/if}}" title="{{localize btn.i18nKey}}">{{localize btn.abbrevKey}}</a>
+                        {{/each}}
+                    </div>
+                </div>
+                {{/each}}
+
+                {{#if buffAppliesToItem}}
+                <div class="flexrow magic-list-header">
+                    <h4 title="{{localize 'TAMS.Buff.BonusDamageHint'}}">{{localize 'TAMS.Magic.BonusDamage'}}</h4>
+                    {{#if buffEditable}}<a data-action="magicAdd" data-root="buff" data-list="bonusDamage" title="{{localize 'TAMS.Magic.Add'}}"><i class="fas fa-plus"></i></a>{{/if}}
+                </div>
+                {{#each buffBonusDamage as |dmg|}}
+                <div class="flexrow magic-row" data-index="{{dmg.index}}">
+                    <select data-magic-list="bonusDamage" data-root="buff" data-index="{{dmg.index}}" data-field="damageType" {{../buffDisabled}}>
+                        {{selectOptions ../damageTypeOptions selected=dmg.damageType localize=true}}
+                    </select>
+                    <input type="number" class="magic-num" data-magic-list="bonusDamage" data-root="buff" data-index="{{dmg.index}}" data-field="amount" value="{{dmg.amount}}" {{../buffDisabled}}/>
+                    {{#if ../buffEditable}}<a class="magic-del" data-action="magicDelete" data-root="buff" data-list="bonusDamage" data-index="{{dmg.index}}"><i class="fas fa-trash"></i></a>{{/if}}
+                </div>
+                {{/each}}
+
+                <div class="flexrow">
+                    <label>{{localize 'TAMS.Magic.ArmourPen'}}</label>
+                    <input type="number" class="magic-num" name="system.buff.armourPenetration" value="{{system.buff.armourPenetration}}" min="0" {{buffDisabled}}/>
+                </div>
+
+                <div class="flexrow magic-list-header">
+                    <h4>{{localize 'TAMS.Magic.OnHitStatuses'}}</h4>
+                    {{#if buffEditable}}<a data-action="magicAdd" data-root="buff" data-list="onHitStatusIds" title="{{localize 'TAMS.Magic.Add'}}"><i class="fas fa-plus"></i></a>{{/if}}
+                </div>
+                <datalist id="tams-buff-status-ids-{{document.id}}">
+                    {{#each buffStatusIdOptions as |opt|}}<option value="{{opt.id}}">{{opt.label}}</option>{{/each}}
+                </datalist>
+                {{#each buffStatuses as |st|}}
+                <div class="flexrow magic-row" data-index="{{st.index}}">
+                    <input type="text" list="tams-buff-status-ids-{{../document.id}}" data-magic-list="onHitStatusIds" data-root="buff" data-index="{{st.index}}" data-field="" value="{{st.id}}" {{../buffDisabled}}/>
+                    {{#if ../buffEditable}}<a class="magic-del" data-action="magicDelete" data-root="buff" data-list="onHitStatusIds" data-index="{{st.index}}"><i class="fas fa-trash"></i></a>{{/if}}
+                </div>
+                {{/each}}
+                {{/if}}
+                {{/if}}
+            </details>
+            <hr>
+
             {{!-- Passive Roll Bonus --}}
             <div class="flexrow" style="margin-bottom: 6px;">
                 <label>{{localize 'TAMS.IsPassiveQ'}}</label>
