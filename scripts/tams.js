@@ -4833,7 +4833,7 @@ class TAMSActor extends Actor {
       }
       for (let idx = 0; idx < customResources.length; idx++) {
         const multPath = `system.customResources.${idx}.mult`;
-        if (!foundry.utils.hasProperty(updateData, multPath)) continue;
+        if (Array.isArray(pendingResources) || !foundry.utils.hasProperty(updateData, multPath)) continue;
         const origRes = this.system.customResources[idx];
         const newMult = foundry.utils.getProperty(updateData, multPath);
         const oldMult = origRes.mult ?? 1;

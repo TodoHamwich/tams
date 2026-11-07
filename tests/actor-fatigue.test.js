@@ -106,6 +106,35 @@ describe('TAMSActor._preUpdate custom resource writes', () => {
     expect(updateData.system.customResources[0].value).toBe(0);
   });
 
+  it('adds a resource without treating it as a mult edit', async () => {
+    const actor = makeActor({ settings: { squadSize: 1 }, limbs: {} });
+    const resources = [...actor.system.customResources, { name: "New Resource", stat: "endurance", mult: 1.0, bonus: 0, value: 0, max: 0 }];
+    const updateData = foundry.utils.expandObject({ "system.customResources": resources });
+    await actor._preUpdate(updateData, {}, {});
+    const pending = foundry.utils.getProperty(updateData, "system.customResources");
+    expect(pending).toHaveLength(2);
+    expect(pending[1].name).toBe("New Resource");
+    expect(pending[1].value).toBe(0);
+  });
+
+  it('deletes a resource without changing the value of the one that moves up', async () => {
+    const actor = makeActor({ settings: { squadSize: 1 }, limbs: {} });
+    actor.system.customResources.push({ name: "Ki", stat: "endurance", mult: 2.0, bonus: 0, value: 5, max: 40 });
+    const updateData = foundry.utils.expandObject({ "system.customResources": [actor.system.customResources[1]] });
+    await actor._preUpdate(updateData, {}, {});
+    const pending = foundry.utils.getProperty(updateData, "system.customResources");
+    expect(pending).toHaveLength(1);
+    expect(pending[0].name).toBe("Ki");
+    expect(pending[0].value).toBe(5);
+  });
+
+  it('still adjusts the current value when the form edits a resource mult', async () => {
+    const actor = makeActor({ settings: { squadSize: 1 }, limbs: {} });
+    const updateData = foundry.utils.expandObject({ "system.customResources.0.mult": 2.0 });
+    await actor._preUpdate(updateData, {}, {});
+    expect(foundry.utils.getProperty(updateData, "system.customResources")[0].value).toBe(20);
+  });
+
   it('keeps renamed name/stat when the form also submits fatigue', async () => {
     const actor = makeActor({ settings: { squadSize: 1 }, limbs: {} });
     const updateData = foundry.utils.expandObject({

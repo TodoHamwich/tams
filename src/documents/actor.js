@@ -627,10 +627,12 @@ export class TAMSActor extends Actor {
         }
       }
 
-      // Custom resource mult changes: adjust value by the delta in max
+      // Custom resource mult changes: adjust value by the delta in max. A whole-array
+      // write (adding, deleting, spending) isn't a mult edit, and after an add or
+      // delete its indexes don't line up with the stored array.
       for (let idx = 0; idx < customResources.length; idx++) {
         const multPath = `system.customResources.${idx}.mult`;
-        if (!foundry.utils.hasProperty(updateData, multPath)) continue;
+        if (Array.isArray(pendingResources) || !foundry.utils.hasProperty(updateData, multPath)) continue;
         const origRes = this.system.customResources[idx];
         const newMult = foundry.utils.getProperty(updateData, multPath);
         const oldMult = origRes.mult ?? 1;
