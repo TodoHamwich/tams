@@ -43,17 +43,17 @@ describe('computeShortRestFatigueGain', () => {
     expect(computeShortRestFatigueGain()).toBe(0);
   });
 
-  it('floors at 1 for any spending under 10', () => {
+  it('floors at 1 for any spending under 5', () => {
     expect(computeShortRestFatigueGain(1)).toBe(1);
-    expect(computeShortRestFatigueGain(9)).toBe(1);
+    expect(computeShortRestFatigueGain(4)).toBe(1);
   });
 
-  it('uses floor(spent/10) once above the minimum', () => {
-    expect(computeShortRestFatigueGain(10)).toBe(1);
-    expect(computeShortRestFatigueGain(19)).toBe(1);
-    expect(computeShortRestFatigueGain(20)).toBe(2);
-    expect(computeShortRestFatigueGain(25)).toBe(2);
-    expect(computeShortRestFatigueGain(100)).toBe(10);
+  it('uses floor(spent/5) once above the minimum', () => {
+    expect(computeShortRestFatigueGain(5)).toBe(1);
+    expect(computeShortRestFatigueGain(9)).toBe(1);
+    expect(computeShortRestFatigueGain(10)).toBe(2);
+    expect(computeShortRestFatigueGain(25)).toBe(5);
+    expect(computeShortRestFatigueGain(100)).toBe(20);
   });
 });
 

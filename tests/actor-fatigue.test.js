@@ -61,9 +61,9 @@ describe('TAMSActor.takeShortRest', () => {
     });
     const result = await actor.takeShortRest();
     const staminaResult = result.resources.find(r => r.fatigueGained !== undefined);
-    expect(actor.system.stamina.fatigue).toBe(2); // floor(25/10)
+    expect(actor.system.stamina.fatigue).toBe(5); // floor(25/5)
     expect(actor.system.stamina.spentSinceRest).toBe(0);
-    expect(actor.system.stamina.value).toBe(18); // 20 - 2
+    expect(actor.system.stamina.value).toBe(15); // 20 - 5
   });
 
   it('does not gain fatigue when nothing was spent', async () => {

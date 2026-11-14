@@ -18,7 +18,7 @@ export function computeFatiguedMax(rawMax, fatigue = 0) {
 
 export function computeShortRestFatigueGain(spentSinceRest = 0) {
   if (!spentSinceRest || spentSinceRest <= 0) return 0;
-  return Math.max(1, Math.floor(spentSinceRest / 10));
+  return Math.max(1, Math.floor(spentSinceRest / 5));
 }
 
 // A single dinner OR sleep tick — isolated as the future cook's-roll hook point.

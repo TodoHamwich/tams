@@ -538,7 +538,7 @@ function computeFatiguedMax(rawMax, fatigue = 0) {
 }
 function computeShortRestFatigueGain(spentSinceRest = 0) {
   if (!spentSinceRest || spentSinceRest <= 0) return 0;
-  return Math.max(1, Math.floor(spentSinceRest / 10));
+  return Math.max(1, Math.floor(spentSinceRest / 5));
 }
 function computeLongRestTickHeal(governingStatValue) {
   return Math.floor((governingStatValue || 0) / 10);
